@@ -12,18 +12,6 @@ import { actAnswer } from "../../../me/act";
 import { createThread } from "../../../me/me-api";
 
 /**
-<<<<<<<< HEAD:apps/openproduct/web/src/app/threads/new/submit/route.ts
- * POST `/threads/new/submit` — the composer's door (openproduct-worldclass-v2 FO0).
- *
- * ONE SEGMENT DOWN FROM THE PAGE, AND NOT BY CHOICE. FO0 put this handler at
- * `threads/new/route.ts` beside `threads/new/page.tsx`, and Next refuses that
- * shape outright — "You cannot have two parallel pages that resolve to the
- * same path" — so `next build` failed on `main` for FO0, FO1 and FO2 (three
- * red runs nobody read). The page keeps the composer's address; the act
- * posts here. `THREADS_NEW_SUBMIT_PATH` in the contract is the one spelling,
- * and `forum-door.test.ts` pins that no `route.ts` sits beside the page.
- * Ported into MD2's PR because MD2 could not build either (openproduct-worldclass).
-========
  * POST `/threads/new/actions` — the composer's door (openproduct-worldclass-v2
  * FO0).
  *
@@ -38,7 +26,6 @@ import { createThread } from "../../../me/me-api";
  * took to notice. `tests/web`'s `page-route-collision` check now reads the
  * app tree for the pair, so the next one fails in the lane rather than in
  * the deploy.
->>>>>>>> origin/main:apps/openproduct/web/src/app/threads/new/actions/route.ts
  *
  * SIGNED OUT, THE ACT BOUNCES THROUGH SIGN-IN AND COMES BACK HERE with the
  * small fields in the address (FR3's return contract): the product, the

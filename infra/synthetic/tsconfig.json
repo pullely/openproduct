@@ -1,5 +1,12 @@
 {
   "extends": "../../tooling/tsconfig/worker.json",
+  "compilerOptions": {
+    // The suites read captured request headers with `Headers.entries()`.
+    // TypeScript declares the iterable half of the Fetch API (entries, keys,
+    // values, [Symbol.iterator]) in its own lib, which the shared worker
+    // config does not load, so `tsc` said TS2339 on a method the runtime has.
+    "lib": ["ES2022", "WebWorker", "WebWorker.Iterable"]
+  },
   "include": ["src/**/*.ts"],
   "exclude": ["node_modules", "dist"]
 }

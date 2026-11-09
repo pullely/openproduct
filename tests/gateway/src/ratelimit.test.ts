@@ -64,15 +64,30 @@ const read = (ip = "203.0.113.7") =>
   new Request("https://gw.test/v1/public/openproduct/projects", { headers: { "cf-connecting-ip": ip } });
 
 const realWarn = console.warn;
+const realNow = Date.now;
+
+/**
+ * Hold the clock still while a bucket is drained through the router. The
+ * anon bucket refills a token every half second (120 a minute), and 120 trips
+ * through `route()` take longer than that on a loaded machine: the suite then
+ * saw a refilled token and answered 200 where it meant to prove 429. The
+ * limiter reads `Date.now()`; freezing it is the same move `timing.test.ts`
+ * makes, and the refill arithmetic has its own test with explicit instants.
+ */
+function freezeClock(ms = realNow()): void {
+  Date.now = () => ms;
+}
 
 afterEach(() => {
   console.warn = realWarn;
+  Date.now = realNow;
   resetBuckets();
   resetSubjectCache();
 });
 
 describe("1 — a refusal is 429 with Retry-After, and it names the bucket", () => {
   it("the anon bucket, driven to exhaustion through the router", async () => {
+    freezeClock();
     const env = envWith();
     for (let i = 0; i < RATE_LIMITS.anon.limit; i += 1) {
       const res = await route(read(), env);
@@ -116,6 +131,7 @@ describe("1 — a refusal is 429 with Retry-After, and it names the bucket", () 
 
 describe("2 — the count is one object per key, shared by every isolate", () => {
   it("an isolate that has never seen this address is refused, because the object has", async () => {
+    freezeClock();
     const shared = namespace();
     const first = envWith(shared);
     for (let i = 0; i < RATE_LIMITS.anon.limit; i += 1) {
@@ -150,6 +166,7 @@ describe("2 — the count is one object per key, shared by every isolate", () =>
 
 describe("3 — an object that cannot be asked fails open to the old limiter, and says so once", () => {
   it("allows what the per-isolate bucket allows, refuses what it refuses, logs one line a minute", async () => {
+    freezeClock();
     const lines: string[] = [];
     console.warn = ((line: string) => {
       lines.push(line);
