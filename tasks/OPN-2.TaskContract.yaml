@@ -1,0 +1,40 @@
+# OPN-2: milestone OPN1. The product tree arrives from orun-cloud, made
+# self-contained and verify-only; the catalogue and search slice runs on D1
+# behind the unchanged repository interface; and a stage-only probe times the
+# slice on remote D1. The file is the contract; the task lives in Orunbase.
+apiVersion: orun.io/v1
+kind: TaskContract
+metadata:
+  name: OPN-2
+  title: "OPN1: the tree, with D1 proven on one slice"
+spec:
+  goal: The openproduct product tree builds and tests green in pullely/openproduct on GitHub-hosted runners, the catalogue and search slice runs on D1 with results equal to Postgres, and a stage probe has timed it on remote D1.
+  affects:
+    - core/**
+    - gateway/**
+    - web/**
+    - packages/**
+    - tests/**
+    - infra/**
+    - seam-fixtures/**
+    - tooling/**
+    - package.json
+    - pnpm-workspace.yaml
+    - pnpm-lock.yaml
+    - turbo.json
+    - .npmrc
+    - .gitignore
+    - .gitleaksignore
+    - .github/workflows/**
+    - intent.yaml
+    - SECURITY.md
+    - README.md
+    - tasks/OPN-2.TaskContract.yaml
+    - specs/epics/openproduct-standalone/**
+  doneWhen:
+    - CI on main is green on GitHub-hosted runners, every package installs, typechecks, lints and tests, and only the stage probe deploys
+    - the catalogue rebuild, the catalogue page and the search index run on D1 behind the unchanged repository interface
+    - the differential suite runs every slice case on Postgres and local D1 and every result is equal
+    - the probe's remote-D1 timings at 5,000 listings are in IMPLEMENTATION-STATUS.md, marked met or missed against design §5.3
+    - the go/no-go for the full port is recorded in IMPLEMENTATION-STATUS.md
+  gates: []

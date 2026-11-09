@@ -1,0 +1,120 @@
+// Rendered to wrangler.jsonc by tooling/wire/render.mjs (BF6 deploy-time wiring).
+// Resource IDs are NEVER committed: @@wiring(<component>/<env>:<key>)@@ tokens are
+// resolved from AWS Secrets Manager at deploy time (wire-live) or from the
+// committed wiring.fixture.json for offline dry-runs (wire-fixture).
+//
+// ────────────────────────────────────────────────────────────────────────────
+// THIS FILE IS A SECURITY CONTROL. Read design.md §3 before editing it.
+//
+// This worker serves a surface that anyone on the internet can read without
+// authenticating. The epic's central claim is not that the private planes are
+// guarded from it — it is that they are UNREACHABLE from this isolate. That
+// claim is exactly this binding list, and since OX5 the list is EMPTY:
+// `tests/openproduct-worker` reads this file and fails CI on ANY service
+// binding.
+//
+// (PROJECTS_WORKER was declared for OD3 and never called — dropped at OX1.
+// MEMBERSHIP_WORKER — the last binding — left at OX5: the LINK GRANT carries
+// the platform's one attestation at link time, and the S6 webhook replaced
+// the live JR status read. See 19-openproduct-seam.md.)
+//
+// Deliberately absent, each for a reason a future contributor will have to
+// argue with CI about:
+//
+//     MEMBERSHIP_WORKER   — the seam replaced it; per-relationship, not
+//                           per-request (openproduct-independence OX5)
+//     IDENTITY_WORKER     — must not be able to resolve a token or read a user
+//     CONFIG_WORKER       — secrets and flag metadata unreachable
+//     EVENTS_WORKER       — the audit stream unreachable
+//     STATE_WORKER        — runs, logs and the catalog unreachable
+//     AGENTS_WORKER       — session transcripts unreachable
+//     METERING/BILLING    — spend unreachable
+//     INTEGRATIONS_WORKER — the token broker stays away from this isolate.
+//                           The publish-time repo read runs in the gateway
+//                           over public HTTPS (S8), never a binding.
+//
+// LISTING_SEAM_SECRET (grant verification) is a SECRET, set per environment,
+// never templated here — the same posture as OPENPRODUCT_OPERATORS. It is
+// delivered by secrets-live from the escrow doc integrations/listing-seam/<env>
+// (the same value as membership-worker's and the gateway's), never by hand:
+//       wrangler secret put LISTING_SEAM_SECRET --env <env>
+//
+// No `workers_dev`: this worker is reached through the openproduct gateway,
+// never on a public hostname of its own.
+// ────────────────────────────────────────────────────────────────────────────
+{
+  "name": "openproduct-worker",
+  "compatibility_date": "2025-05-01",
+  "compatibility_flags": ["nodejs_compat"],
+  // Workers Logs (persisted, searchable in the dashboard): the request line
+  // and the structured error lines this worker prints are worth nothing if
+  // nobody can read them after the fact. Enabled at the default sampling.
+  "observability": { "enabled": true },
+  // ─── SMART PLACEMENT (openproduct-performance OPP13, answering D4/OPP11) ──
+  //
+  // Postgres is in ap-southeast-1 (`infra/supabase/component.yaml`) and this
+  // worker ran wherever the visitor was. `Server-Timing` on 2026-09-09 read
+  // 500–760 ms PER STATEMENT from IAD — a listing page's seven statements
+  // spanned 1.5 s, the sidebar's six 1.0 s, the contributors read 3.0 s — and
+  // `/v1/facets`, which asks the database nothing, cost 37 ms on the same
+  // worker. The per-statement cost is a transpacific round trip, not the
+  // query, which is the reading OPP11 said would make placement the answer.
+  //
+  // This worker has no visitors of its own: it is reached only through the
+  // gateway's `CORE` service binding, so moving it costs ONE cross-region hop
+  // per gateway miss instead of one per statement. The gateway stays where
+  // the reader is, and its cache with it (D4's concern, kept).
+  //
+  // `hint` names the region so placement does not wait on traffic analysis;
+  // Cloudflare falls back to default placement when it cannot honour it, so
+  // the worst case is today's behaviour. Inherited by every `env` below.
+  //
+  // Verified by the same instrument that found it — `dbspan` on the gateway's
+  // `Server-Timing` before and after the deploy — and recorded in the epic.
+  "placement": { "mode": "smart", "hint": "apac" },
+  "main": "src/index.ts",
+  "minify": false,
+  "vars": {
+    "ENVIRONMENT": "local"
+  },
+  "env": {
+    "dev": {
+      "vars": {
+        // Decided per environment in intent.yaml (saas-workspace-deletion WD9);
+        // "false" when a deploy job does not carry it (tooling/wire/render.mjs).
+        "WORKSPACE_PURGE_ENABLED": "@@env(WORKSPACE_PURGE_ENABLED|false)@@",
+        "ENVIRONMENT": "dev"
+      }
+    },
+    "stage": {
+      "workers_dev": false,
+      "vars": {
+        // Decided per environment in intent.yaml (saas-workspace-deletion WD9);
+        // "false" when a deploy job does not carry it (tooling/wire/render.mjs).
+        "WORKSPACE_PURGE_ENABLED": "@@env(WORKSPACE_PURGE_ENABLED|false)@@",
+        "ENVIRONMENT": "stage"
+      },
+      "hyperdrive": [
+        {
+          "binding": "PLATFORM_DB",
+          "id": "@@wiring(cloudflare-hyperdrive/stage:hyperdrive_id)@@"
+        }
+      ]
+    },
+    "prod": {
+      "workers_dev": false,
+      "vars": {
+        // Decided per environment in intent.yaml (saas-workspace-deletion WD9);
+        // "false" when a deploy job does not carry it (tooling/wire/render.mjs).
+        "WORKSPACE_PURGE_ENABLED": "@@env(WORKSPACE_PURGE_ENABLED|false)@@",
+        "ENVIRONMENT": "prod"
+      },
+      "hyperdrive": [
+        {
+          "binding": "PLATFORM_DB",
+          "id": "@@wiring(cloudflare-hyperdrive/prod:hyperdrive_id)@@"
+        }
+      ]
+    }
+  }
+}

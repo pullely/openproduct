@@ -1,0 +1,66 @@
+{
+  "$comment": "The listing seam's transport + vocabulary card (specs/components/19-openproduct-seam.md). Twin-copied: apps/openproduct/seam-fixtures (product) and tests/membership-worker/seam-fixtures (platform), byte-identical until the repo cut; after it, each side pins its own copy and a deliberate change ships by updating the fixture ON BOTH SIDES.",
+  "seam": "v1",
+  "signatureScheme": {
+    "algorithm": "HMAC-SHA256",
+    "signatureHeader": "X-Webhook-Signature",
+    "signaturePrefix": "sha256=",
+    "timestampHeader": "X-Webhook-Timestamp",
+    "idHeader": "X-Webhook-ID",
+    "signedPayload": "${timestamp}.${body}",
+    "toleranceSeconds": 300
+  },
+  "paths": {
+    "joinRequests": "/seam/v1/join-requests",
+    "workspaceEvents": "/seam/v1/workspace-events",
+    "workspacePurge": "/seam/v1/workspace-purge"
+  },
+  "urlEdges": {
+    "$comment": "URL edges (no credential, no delivery): the funnel in (S10), the workspace view out (S12, openproduct-reader OPR5), and the workspace picker in (S13). Each side pins the paths it mints or accepts.",
+    "funnel": {
+      "consoleLanding": "/start/openproduct",
+      "params": [
+        "name",
+        "tagline",
+        "pitch"
+      ]
+    },
+    "workspaceView": {
+      "productConsentPath": "/{slug}/workspace",
+      "consoleLandingPath": "/view/{workspaceRef}",
+      "query": "from=openproduct"
+    },
+    "listingPicker": {
+      "consoleLanding": "/start/openproduct/link",
+      "params": [
+        "workspace"
+      ],
+      "returnsTo": "/studio/link"
+    }
+  },
+  "grantBlob": {
+    "form": "base64url(JSON).hexHMAC-SHA256",
+    "maxAgeMs": 600000,
+    "payloadKeys": [
+      "seam",
+      "orgId",
+      "projectId",
+      "workspaceVisibility",
+      "doorRef",
+      "grantedBy",
+      "issuedAt"
+    ]
+  },
+  "doorRoleLadder": [
+    "project_viewer",
+    "viewer",
+    "builder"
+  ],
+  "joinRequestStatuses": [
+    "pending",
+    "approved",
+    "denied",
+    "withdrawn",
+    "expired"
+  ]
+}

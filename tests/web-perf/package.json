@@ -1,0 +1,29 @@
+{
+  "name": "@openproduct/web-perf",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "echo 'web-perf: plain ESM, nothing to build'",
+    "typecheck": "echo 'web-perf: plain ESM, no TS'",
+    "test": "node src/run.mjs",
+    "budgets": "node src/run.mjs budgets",
+    "wire": "node src/run.mjs wire",
+    "a11y": "node src/run.mjs a11y",
+    "axe": "node src/run.mjs axe",
+    "targets": "node src/run.mjs targets",
+    "snapshots": "node src/run.mjs snapshots",
+    "snapshots:update": "XP4_UPDATE_SNAPSHOTS=1 node src/run.mjs snapshots",
+    "walk": "node src/run.mjs walk",
+    "refresh": "node src/run.mjs refresh",
+    "lint": "echo 'web-perf: plain ESM scripts'",
+    "pixel": "node src/run.mjs pixel",
+    "chrome": "node src/run.mjs chrome",
+    "badge": "node src/run.mjs badge",
+    "probe": "node src/probe.mjs"
+  },
+  "devDependencies": {
+    "axe-core": "4.12.1",
+    "playwright": "^1.49.0"
+  }
+}

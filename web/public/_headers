@@ -1,0 +1,34 @@
+# OPP3a — immutable caching for content-hashed build assets
+# (openproduct-performance).
+#
+# Next fingerprints every file under `/_next/static/` — the hash is in the
+# filename — so a content change always produces a NEW URL and a stale cached
+# copy becomes unreachable rather than wrong. They are therefore safe to cache
+# for a year with no revalidation.
+#
+# WHAT WAS HAPPENING INSTEAD. The 2026-09-08 production probe read this from
+# `openproduct.live`:
+#
+#     GET /_next/static/chunks/webpack-ebd92b9e6361651a.js
+#     cf-cache-status: HIT
+#     cache-control: public, max-age=0, must-revalidate
+#
+# The `HIT` is the zone cache working. The `max-age=0, must-revalidate` beside
+# it is the Workers Assets default, which nobody had looked at: it makes the
+# browser send a conditional request for every chunk on every repeat visit and
+# on every navigation. A 304 is cheap, and one per chunk per page is not —
+# and OPP1 turned every navigation into a client-side one, which is exactly
+# when a browser goes back for its chunks.
+#
+# THE PLATFORM ALREADY DID THIS. `apps/web-console-next/public/_headers` is
+# PERF10, shipped and verified live in #305. openproduct became its own product
+# before that landed and never inherited it; this is the same file with this
+# product's own measurement behind it.
+#
+# Files in this `public/` directory are copied to the asset root
+# (`.open-next/assets/`) by the @opennextjs/cloudflare adapter, where the
+# Workers Assets runtime honours `_headers`. HTML is untouched: it is served by
+# the worker, not from this directory, and keeps the `s-maxage` OpenNext gives
+# it.
+/_next/static/*
+  Cache-Control: public, max-age=31536000, immutable

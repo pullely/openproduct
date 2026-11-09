@@ -1,0 +1,152 @@
+apiVersion: sourceplane.io/v1
+kind: Component
+metadata:
+  name: openproduct-worker
+  title: openproduct Core Worker
+  description: Internal worker behind the openproduct gateway — public reads, maker and contributor writes, auth sessions and sweep ingestion over the openproduct schema.
+spec:
+  type: cloudflare-worker-turbo
+  lifecycle: production
+  owner: platform
+  domain: starter-runtime
+  system: openproduct
+  docs:
+    overview: README.md
+  path: core
+  dependsOn:
+    # Build inputs: bundled into this component's artifact, so a change
+    # rescopes this component in --changed.
+    #
+    # The platform `contracts` and `db` edges left at OX6a: the generic
+    # machinery this worker used from them (SQL executor, uuid codec, content
+    # digest, purge endpoint, error/timing contracts) is VENDORED into the
+    # openproduct packages below — zero `@saas/*` imports remain under
+    # apps/openproduct (the twin-sync migration test's devDependency is the
+    # one cut-retired exception). This is the repo-cut boundary stated as
+    # build inputs.
+    # (@saas/policy-engine left at OX4 — authorization is listing-local now;
+    # see src/authorize.ts.)
+    - component: openproduct-db
+      input: true
+    # Runtime edges: NONE, since OX5. The membership-worker edge left with the
+    # binding it declared — the link grant and the S6/S7 seam webhooks carry
+    # what the binding carried, over HTTP (19-openproduct-seam.md). CI asserts
+    # the empty binding list against wrangler.template.jsonc
+    # (apps/openproduct/tests/core): the platform planes are not guarded from
+    # this isolate, they are unreachable from it. See design.md §3 before
+    # adding anything here.
+  subscribe:
+    environments:
+      - name: dev
+        dependencyRules: # dev lanes never wait on other lanes (intent.yaml, DEPENDENCY MODES)
+          - mode: advisory
+            when:
+              triggerRef: github-pull-request
+          - mode: advisory
+            when:
+              triggerRef: github-push-main
+        profile: verify
+        profileRules:
+          - profile: skip # main does not re-verify what its PR verified (CIS17)
+            when:
+              triggerRef: github-push-main
+          - profile: verify # manual runs from Orunbase (saas-manual-runs)
+            when:
+              triggerRef: github-dispatch
+      - name: stage
+        profile: verify
+        profileRules:
+          - profile: skip
+            when:
+              triggerRef: github-pull-request
+          - profile: deploy
+            when:
+              triggerRef: github-push-main
+          - profile: deploy # manual runs from Orunbase (saas-manual-runs)
+            when:
+              triggerRef: github-dispatch
+      - name: prod
+        profile: verify
+        profileRules:
+          - profile: skip
+            when:
+              triggerRef: github-pull-request
+          - profile: deploy
+            when:
+              triggerRef: github-push-main
+          - profile: deploy # manual runs from Orunbase (saas-manual-runs)
+            when:
+              triggerRef: github-dispatch
+  parameters:
+    nodeVersion: "22"
+    pnpmVersion: "10.12.1"
+    workspaceDir: ..
+    appDir: .
+    # Deploy-time wiring — wrangler.jsonc is rendered, never committed. Verify
+    # lanes render from wiring.fixture.json (offline); deploy lanes resolve
+    # real IDs from the Secrets Manager wiring manifest (BF5).
+    awsAccountId: "306024784101"
+    awsRegion: us-east-1
+    orgName: sourceplane
+    owner: sourceplane
+    repo: openproduct
+
+    # SS2: manifest key for the secrets-live escrow sync (saas-secrets-sync).
+    # Enrolled for LISTING_SEAM_SECRET (tooling/secrets-sync/integrations.manifest.json,
+    # `listing-seam`): without the param the deploy skipped secrets-live and the
+    # seam key had to be set by hand - and was not.
+    secretsWorker: openproduct-worker
+    turboFilter: "@openproduct/core"
+    wranglerConfig: wrangler.jsonc
+    wranglerTemplate: wrangler.template.jsonc
+    wiringComponents: "cloudflare-hyperdrive"
+    wiringEnvs: "stage,prod"
+    wiringFixture: wiring.fixture.json
+    installCommand: pnpm install --frozen-lockfile
+    # ─── THE SUITE RUNS HERE BECAUSE NOTHING ELSE SCHEDULES IT ──────────────
+    #
+    # `orun plan --changed` selects a component when ITS OWN files change, and a
+    # `dependsOn` edge does not pull a dependent INTO a plan — the note in
+    # `tests/web-perf/component.yaml` measured that, and `openproduct-worker-tests`
+    # declares the edge and is planned anyway only when its own files move. So a
+    # change under `apps/openproduct/core/` planned exactly three jobs — this
+    # component in dev, stage and prod — and the 754 tests in `@openproduct/core-tests` did not
+    # run. Across openproduct's three source components that was 2,046 tests
+    # that a source change never reached.
+    #
+    # MEASURED, NOT ASSUMED. `orun plan --changed --files
+    # apps/openproduct/core/src/x.ts` lists this component's three jobs and
+    # nothing else. In CI, PR #1358 touched `apps/openproduct/web/component.yaml`
+    # and `apps/openproduct/web/src/lib/platform.ts` and ran four jobs — `plan`
+    # plus `openproduct-web` in three environments. `openproduct-web-tests` was
+    # not among them, and the change merged.
+    #
+    # WHY IT IS IN `buildCommand` AND NOT ITS OWN STEP. This composition's verify
+    # profile has a FIXED capability list — setup-node, setup-pnpm, install,
+    # verify-structure, wire-fixture, build, typecheck, deploy-dry-run —
+    # with no pre-build hook to hang a lane on. `buildCommand` is the one
+    # free-form slot that runs before the deploy, and `onFailure: stop` on that
+    # step is what makes a red suite block the deploy rather than merely report.
+    #
+    # THE TESTS RUN FIRST, so a failure costs seconds rather than a whole build.
+    buildCommand: pnpm exec turbo run test --filter=@openproduct/core-tests && pnpm exec turbo run build --filter=@openproduct/core
+    typecheckCommand: pnpm exec turbo run typecheck --filter=@openproduct/core
+    # NO `dryRunCommand` AND NO `deployCommand`, and that is a fact about the
+    # composition rather than an omission (openproduct-operations OO3, found
+    # on the way): `cloudflare-worker-turbo`'s verify-deploy job runs
+    # `wrangler deploy --dry-run` and `wrangler deploy` itself, substituting
+    # the environment, and never reads either parameter. The two lines that
+    # stood here hardcoded `--env prod` and were dead text — which is also the
+    # answer to RS4's third "worth a look".
+    preDeployCommand: "echo 'No pre-deploy step configured.'"
+    migrationCommand: "echo 'No migrations configured.'"
+    smokeCommand: "echo 'No smoke test configured.'"
+  labels:
+    team: platform
+    layer: runtime
+    surface: openproduct
+    runtime: cloudflare
+# ci: deliver LISTING_SEAM_SECRET — the listing-seam escrow doc is seeded and active; this redeploy runs secrets-live for it
+# ci: redeploy — bundles @openproduct/db's executor fix (array parameters serialized to Postgres literals); the public directory 500s on prod until this ships
+# ci: redeploy — bundles @openproduct/db's jsonb fix (openproduct-worldclass-v2 LI1: every JSON parameter was double-encoded through the production driver, and the search index rebuild has 503'd on every sweep tick since RS0; a change under packages/db does not plan this component, so this line is what ships it)
+# ci: redeploy — openproduct-worldclass-v2 PE1: the same race on the worker (MD4's prod deploy at 06:47:52 after PE1's at 06:47:41); ships the head again

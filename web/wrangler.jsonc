@@ -1,0 +1,71 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "openproduct-web",
+  // OPP13 — `worker.ts` re-exports the generated `.open-next/worker.js` and
+  // registers its handler for background ISR revalidation (see the file).
+  "main": "worker.ts",
+  "compatibility_date": "2024-12-30",
+  "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
+  // Workers Logs (persisted, searchable in the dashboard): the request line
+  // and the structured error lines this worker prints are worth nothing if
+  // nobody can read them after the fact. Enabled at the default sampling.
+  "observability": { "enabled": true },
+  // ─── WORKERS CACHING (openproduct-performance OPP5) ─────────────────────
+  //
+  // THE MILESTONE IS THIS FLAG. OPP5 was scoped as "bind an R2 incremental
+  // cache so ISR is shared rather than per-isolate", and it sat blocked for a
+  // day behind D8: every writable store OpenNext offers is a binding, and this
+  // component cannot express one that differs between stage and prod
+  // (`cloudflare-workers-assets-turbo` deploys with `--name`, never `--env`).
+  //
+  // Workers Caching needs no binding at all. Cloudflare consults a cache
+  // BEFORE this worker runs, so a hit serves the document without executing
+  // Next — a stronger result than the incremental cache was reaching for.
+  // That one renders faster; this one does not render.
+  //
+  // IT WORKS BECAUSE THE PAGES ALREADY SAY THE RIGHT THING. Every public
+  // document has been emitting `s-maxage=60, stale-while-revalidate=240` since
+  // long before this epic, and until now NOTHING HONOURED IT — a production
+  // read on 2026-09-09 found no `cf-cache-status` on the apex at all. Workers
+  // Caching honours RFC 9111, so those directives start meaning something
+  // without a line of application code changing.
+  //
+  // THE PRIVATE HALF STAYS PRIVATE BY THE SAME MECHANISM. `/me/*` answers
+  // `private, no-cache, no-store, max-age=0, must-revalidate` (force-dynamic,
+  // OPP9), which is a BYPASS. Not a rule anybody has to remember here — it is
+  // the header those pages already send.
+  //
+  // I6 IS WHAT MAKES A SHARED CACHE SAFE AT ALL. A public document is
+  // byte-identical signed-in and signed-out — the overlay personalises after
+  // paint, over a separate request — so one stored document serving every
+  // visitor is the design rather than a risk. `Vary` is honoured, so Next's
+  // four RSC router headers keep prefetch variants in their own entries.
+  //
+  // THE COST, WHICH IS REAL AND CURRENTLY ZERO (decision D9). This bills every
+  // request at the standard Workers rate INCLUDING static-asset requests,
+  // which are normally free. Measured on the live site: ~16 asset requests per
+  // COLD page view, so roughly $4.80 per million cold views at $0.30/M —
+  // against about $0.20 per million saved in CPU. At scale it is a net cost,
+  // bought for latency rather than for money.
+  //
+  // Two things make that affordable now: the account's 10M included requests
+  // are far above this product's traffic, and OPP3a's `immutable` headers
+  // (verified live at `max-age=31536000`) mean a returning visitor re-requests
+  // ~zero assets. The number to re-measure before it matters is the share of
+  // views that are first-visit.
+  //
+  // OPP13 — WHAT SITS BEHIND A MISS NOW. Cloudflare does not serve stale
+  // while it revalidates (measured: `REVALIDATED` at 2–3 s to first byte
+  // after the sixty seconds), so a miss here used to be a full render. Since
+  // OPP13 the worker itself keeps every public document in the Workers Cache
+  // API (`open-next.config.ts`): a miss is served from that store without
+  // running Next, and a stale entry is re-rendered AFTER the response. The
+  // `s-maxage` on an intercepted response is the document's REMAINING
+  // freshness, so this cache and that one expire together and a document is
+  // never older than its `revalidate` on the way out.
+  "cache": { "enabled": true },
+  "assets": {
+    "directory": ".open-next/assets",
+    "binding": "ASSETS"
+  }
+}

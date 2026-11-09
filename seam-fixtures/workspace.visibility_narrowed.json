@@ -1,0 +1,9 @@
+{
+  "seam": "v1",
+  "eventId": "00000000-0000-4000-8000-000000000003",
+  "occurredAt": "2026-08-17T12:10:00.000Z",
+  "type": "workspace.visibility_narrowed",
+  "data": {
+    "orgId": "org_11111111111141118111111111111111"
+  }
+}

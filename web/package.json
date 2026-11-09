@@ -1,0 +1,36 @@
+{
+  "name": "@openproduct/web",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "next dev --webpack -p 3002",
+    "build": "next build --webpack && opennextjs-cloudflare build --skipBuild --skipWranglerConfigCheck",
+    "start": "next start -p 3002",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src"
+  },
+  "dependencies": {
+    "@openproduct/contracts": "workspace:*",
+    "@opennextjs/aws": "4.1.12",
+    "@opennextjs/cloudflare": "1.20.13",
+    "next": "16.4.2",
+    "react": "19.2.4",
+    "react-dom": "19.2.4"
+  },
+  "devDependencies": {
+    "@saas/eslint-config": "workspace:*",
+    "@saas/tsconfig": "workspace:*",
+    "@types/node": "^22.19.21",
+    "@types/react": "19.2.17",
+    "@types/react-dom": "^19.2.3",
+    "autoprefixer": "^10.5.0",
+    "eslint": "^9.39.4",
+    "eslint-config-next": "16.4.2",
+    "eslint-plugin-react-hooks": "^5.2.0",
+    "postcss": "^8.5.15",
+    "tailwindcss": "^3.4.19",
+    "typescript": "^5.9.3",
+    "wrangler": "^4.151.3"
+  }
+}

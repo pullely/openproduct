@@ -1,0 +1,107 @@
+apiVersion: sourceplane.io/v1
+kind: Component
+
+metadata:
+  name: openproduct-web-perf
+  title: openproduct Website performance tests
+  description: Browser lanes for openproduct.live — performance and wire budgets, accessibility walk, axe, tap targets and visual snapshots against a fixture build.
+  labels:
+    team: platform
+    layer: test
+    surface: openproduct
+
+spec:
+  type: turbo-package
+  lifecycle: production
+  owner: platform
+  # Its own runner under execution.lanes: a Next.js build and its cache
+  # (ORUN_NEXT_CACHE_DIR, the browsers) are per runner, not per job.
+  lane: isolated
+  domain: starter-tests
+  system: openproduct
+  docs:
+    overview: README.md
+
+  # THERE IS NO `dependsOn` HERE, AND THAT IS DELIBERATE — it is the difference
+  # between this lane gating and this lane reporting green without running.
+  #
+  # The first draft declared `dependsOn: openproduct-web (input: true)`, on the
+  # reasoning that it would rescope this component under `--changed` when the
+  # website moved. Two measurements said otherwise:
+  #
+  #   `orun plan --changed` over a web-only edit selects `openproduct-web` and
+  #   NOTHING ELSE. A dependsOn edge does not pull a dependent INTO a plan, so
+  #   the edge bought no scheduling at all.
+  #
+  #   And when both components ARE in one plan, it costs the whole lane. On a
+  #   pull request there is no `--remote-state` (a PR must never hold deploy
+  #   credentials), so each job coordinates through its own local state and
+  #   sees an in-plan dependency as unfinished. The job then prints
+  #   `✓ Done in 0.0s / 1 waiting`, runs nothing, and reports SUCCESS — which
+  #   is the worst possible outcome for a gate: a green check that measured
+  #   nothing. An edge to a component OUTSIDE the plan is dropped and harmless,
+  #   which is why this only bites on exactly the PRs that need the lane most.
+  #
+  # So: no edge. This lane is scheduled when its own files change — and,
+  # since openproduct#1882, when the WEBSITE's do. `change.inputs` selects it
+  # for a file outside its path without an edge, so neither problem above
+  # comes back: `orun plan --changed --files apps/openproduct/web/src/app/
+  # page.tsx` now plans `openproduct-web` AND this lane, each with no
+  # dependency. Without it OB3–OB8 changed the website, never ran this lane,
+  # and left it red on main in four budgets, the a11y walk, axe, the studio
+  # walk and the snapshots until a full verify found them.
+  #
+  # The website's own files only. A change to a package it bundles
+  # (`openproduct-contracts`) still selects the website and not this lane —
+  # the same line the console's lane draws (CIS10), which defers such a PR.
+  change:
+    inputs:
+      - apps/openproduct/web/**
+  # `serve.mjs` builds the website itself, against the fixture's address, so it
+  # needs nothing from another component's job.
+
+  # (The same reasoning is why this package declares no workspace dependency on
+  # `@openproduct/web`: turbo's `test` depends on `^build`, and the website's
+  # build is `next build` FOLLOWED BY the OpenNext Cloudflare bundle — minutes
+  # of work producing an artifact this lane cannot use.)
+
+  # `verify`, NOT `quick-check` — and this is the second thing that decided
+  # whether this lane gates anything at all.
+  #
+  # `quick-check` is four steps: setup-node, setup-pnpm, install, and
+  # `verify-structure`, which is literally `test -f package.json`. It does NOT
+  # include `pre-build`, which is where `preBuildCommand` — the lanes — runs.
+  # A component on `quick-check` installs its dependencies, confirms it has a
+  # package.json, and reports a green check named "Verify".
+  #
+  # This lane spent one CI run on it: `✓ Verify completed · 56.6s / steps 4
+  # passed`, of which 40.8s was the install, and neither lane executed.
+  #
+  # `verify` is the composition's own `defaultProfile`, and it runs pre-build,
+  # build and typecheck as well. `build` and `typecheck` here are echoes —
+  # there is nothing to compile — so the cost of the profile IS the lanes,
+  # which is the cost this component exists to pay.
+  subscribe:
+    environments:
+      - name: dev
+        dependencyRules: # dev lanes never wait on other lanes (intent.yaml, DEPENDENCY MODES)
+          - mode: advisory
+            when:
+              triggerRef: github-pull-request
+          - mode: advisory
+            when:
+              triggerRef: github-push-main
+        profile: verify
+        profileRules:
+          - profile: skip # main does not re-verify what its PR verified (CIS17)
+            when:
+              triggerRef: github-push-main
+
+  parameters:
+    nodeVersion: "22"
+    pnpmVersion: "10.12.1"
+    buildCommand: pnpm exec turbo run build --filter=./ --only
+    typecheckCommand: pnpm exec turbo run typecheck --filter=./ --only
+    # The lanes run in the PRE-BUILD step, matching every other test package
+    # here: this component has nothing to build, and the verdict is the run.
+    preBuildCommand: pnpm exec turbo run test --filter=./ --only

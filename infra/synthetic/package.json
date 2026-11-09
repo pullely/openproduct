@@ -1,0 +1,25 @@
+{
+  "name": "@openproduct/synthetic",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev",
+    "build": "wrangler deploy --dry-run --outdir dist",
+    "deploy": "wrangler deploy",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src",
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20260612.1",
+    "@saas/eslint-config": "workspace:*",
+    "@saas/tsconfig": "workspace:*",
+    "typescript": "^5.9.3",
+    "vitest": "3.2.6",
+    "wrangler": "^4.100.0"
+  },
+  "dependencies": {
+    "@openproduct/contracts": "workspace:*"
+  }
+}

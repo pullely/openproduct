@@ -1,0 +1,77 @@
+apiVersion: sourceplane.io/v1
+kind: Component
+metadata:
+  name: openproduct-db
+  title: openproduct Database
+  description: openproduct's data layer — the repository over the openproduct Postgres schema, its migration ladder and a self-contained migration runner CLI.
+spec:
+  type: turbo-package
+  lifecycle: production
+  owner: platform
+  domain: starter-data
+  system: openproduct
+  docs:
+    overview: README.md
+  dependsOn:
+    # The platform's migration chain, for the one test that still reads it
+    # (migrations-twin-sync, the cut-retired @saas import). NOT a build input:
+    # openproduct-core builds from this component, and an input edge would carry
+    # every platform migration on to openproduct's deploys. The twin test runs
+    # whenever this package's own ladder changes, which a mirrored migration
+    # always does.
+    - component: db-migrations
+  # `dev` ON `verify`, WITH `preBuildCommand` — the suite runs in CI (OV3).
+  #
+  # `quick-check` is four steps ending at `test -f package.json` — no
+  # `pre-build`, no `build`, no `typecheck` — so until RE3 this package's
+  # compiler had never run in CI and its green "Verify" meant the dependencies
+  # installed. `verify` is the composition's own `defaultProfile` and runs the
+  # build and typecheck commands below.
+  #
+  # THE SUITE IS WIRED IN NOW, and the number that kept it out is gone. The
+  # pg suite applies the manifest's whole migration ladder to a real pglite
+  # engine — the only way it can prove the claim it exists to prove — and used
+  # to do so before EVERY test: 425 tests in **12m31s**, all of it one file,
+  # which this file declined to spend on every plan that selects the
+  # component. openproduct-verification OV3 ended the number rather than the
+  # exclusion: the ladder is applied ONCE per run (`src/pg/global-setup.ts`
+  # dumps the migrated data directory to a file) and each test restores it
+  # into a fresh engine in half a second; the one file is nine, by cluster,
+  # over a shared harness. 555 tests in **2m09s** on a four-core machine,
+  # every file under ninety seconds. That is a cost a plan can carry, so it
+  # does — `preBuildCommand` runs the package's turbo `test` task before the
+  # build, exactly as `packages/cli` and `packages/sdk` do.
+  #
+  # `stage` and `prod` stay on `quick-check`: source-only package, nothing
+  # per-environment to check, so one real lane is the verification.
+    - component: openproduct-contracts
+      input: true
+  subscribe:
+    environments:
+      - name: dev
+        dependencyRules: # dev lanes never wait on other lanes (intent.yaml, DEPENDENCY MODES)
+          - mode: advisory
+            when:
+              triggerRef: github-pull-request
+          - mode: advisory
+            when:
+              triggerRef: github-push-main
+        profile: verify
+        profileRules:
+          - profile: skip # main does not re-verify what its PR verified (CIS17)
+            when:
+              triggerRef: github-push-main
+      - name: stage
+        profile: skip # a package deploys nowhere; its dev lane is the check (CIS1)
+      - name: prod
+        profile: skip # a package deploys nowhere; its dev lane is the check (CIS1)
+  parameters:
+    nodeVersion: "22"
+    pnpmVersion: "10.12.1"
+    buildCommand: pnpm exec turbo run build --filter=./
+    typecheckCommand: pnpm exec turbo run typecheck --filter=./
+    preBuildCommand: pnpm exec turbo run test --filter=./
+  labels:
+    team: platform
+    layer: shared
+    surface: openproduct

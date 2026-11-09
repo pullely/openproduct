@@ -1,0 +1,39 @@
+{
+  "name": "@openproduct/web-tests",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "tsc --noEmit",
+    "typecheck": "tsc --noEmit",
+    "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js",
+    "lint": "eslint src"
+  },
+  "dependencies": {
+    "@openproduct/contracts": "workspace:*"
+  },
+  "devDependencies": {
+    "@saas/eslint-config": "workspace:*",
+    "@saas/tsconfig": "workspace:*",
+    "@types/jest": "^29.5.14",
+    "@types/node": "^20.19.43",
+    "jest": "^29.7.0",
+    "ts-jest": "^29.4.11",
+    "typescript": "^5.9.3"
+  },
+  "jest": {
+    "maxWorkers": "100%",
+    "preset": "ts-jest/presets/default-esm",
+    "extensionsToTreatAsEsm": [".ts"],
+    "moduleNameMapper": {
+      "^(\\.{1,2}/.*)\\.js$": "$1",
+      "^@openproduct-web/(.*)$": "<rootDir>/../../web/src/$1",
+      "^@/(.*)$": "<rootDir>/../../web/src/$1",
+      "^@openproduct/contracts$": "<rootDir>/../../packages/contracts/src/index.ts"
+    },
+    "transform": {
+      "^.+\\.ts$": ["ts-jest", { "useESM": true }]
+    },
+    "testMatch": ["<rootDir>/src/**/*.test.ts"]
+  }
+}

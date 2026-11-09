@@ -1,0 +1,372 @@
+// ────────────────────────────────────────────────────────────────────────────
+// openproduct-gateway (openproduct-independence OX3) — the product's own
+// front door. THIS FILE IS A SECURITY CONTROL, same as core's:
+// tests/gateway asserts the binding list renders exactly one service binding
+// (CORE — inside the product boundary) and no data resource of any kind.
+//
+// The platform appears here only as PUBLIC URLS in vars — never a binding.
+// That is the seam (19-openproduct-seam.md): no service credential in either
+// direction, ever.
+//
+// No @@wiring(...)@@ tokens and no committed resource ids — this worker holds
+// no wired resource, so the file is committed directly rather than rendered.
+//
+// Secrets (delivered by secrets-live from the escrow — never by hand):
+//       wrangler secret put LISTING_SEAM_SECRET --env <env>
+//   the seam's shared HMAC key, escrow doc integrations/listing-seam/<env>,
+//   the same value as membership-worker's and core's.
+//
+// THIS FILE ALSO CARRIES THE PRODUCT'S ONLY SCHEDULE (openproduct-worldclass
+// RS0), and that is not a convenience — it is the difference between a
+// working product and an empty one. `src/index.ts`'s `scheduled()` handler
+// rebuilds the search index, sweeps the endorsement counts, ranks the launch
+// board and cuts the digest. Until RS0 this file declared no `triggers`, so
+// that handler had never fired in any environment: `/search` returned nothing
+// for a slug linked from the front page, every count rendered `—`, the
+// leaderboard was empty and the digest said nothing had launched. Four audit
+// findings, one absent block.
+//
+// So the rule, from WC-1: A SCHEDULED JOB WITH NO SCHEDULE IS AN OUTAGE, NOT
+// A SAFE DEFAULT. Every environment that serves traffic declares `triggers`
+// explicitly — never by inheriting a top-level block, because the whole
+// failure was a schedule nobody could see while reading the environment it
+// was missing from. `tests/gateway/src/bindings.test.ts` asserts each named
+// environment has one, so this cannot silently regress.
+// ────────────────────────────────────────────────────────────────────────────
+{
+  "name": "openproduct-gateway",
+  "compatibility_date": "2025-05-01",
+  // `global_fetch_strictly_public` IS THE SEAM'S URL EDGE WORKING AT ALL.
+  //
+  // This worker reaches the platform by URL (PLATFORM_API_URL — api-edge's
+  // workers.dev host — for the identity read, S2), never by service binding:
+  // that is the independence design (OPX-4, OX). But a Worker's global
+  // fetch() to a hostname on its OWN zone — and the account's workers.dev
+  // subdomain counts — is, by default, "routed to the zone's origin server,
+  // ignoring any Workers mapped to the URL" (Cloudflare compatibility flags,
+  // `global_fetch_private_origin`). A workers.dev host has no origin server
+  // behind it, so the request died before api-edge ever saw it, and every
+  // authenticated route answered 503 "Platform unreachable" — on prod and
+  // stage, for any token, from the OX3 swap until this flag. With the flag,
+  // such a request "loops back to the front door of Cloudflare and is
+  // treated like a request from the Internet", which is exactly what a URL
+  // edge means. The two OpenNext workers that call api-edge the same way
+  // carry it (their adapter emits it); this one did not.
+  "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
+  // Workers Logs (persisted, searchable in the dashboard): the request line
+  // and the structured error lines this worker prints are worth nothing if
+  // nobody can read them after the fact. Enabled at the default sampling.
+  "observability": { "enabled": true },
+  // WORKERS CACHING (openproduct-performance OPP4a).
+  //
+  // Cloudflare checks a cache BEFORE invoking this worker; on a hit the worker
+  // never runs. The whole configuration surface is this flag plus the two
+  // headers `router.ts`'s public branch sets — `cache-control` and
+  // `Cache-Tag`. No zone setting participates: Cache Rules, Page Rules, cache
+  // levels and the default cached-file-extensions list have NO EFFECT on a
+  // worker's own cache, on this hostname or any other.
+  //
+  // Three properties this buys that the hand-rolled `caches.default` layer of
+  // OPP4 could not, listed in the order they matter here:
+  //
+  //   REQUEST COLLAPSING  a burst of requests for the same cold key runs this
+  //                       worker ONCE per data centre. A launch board's
+  //                       traffic is spiky by construction — a listing hits
+  //                       the front page and a hundred readers arrive in the
+  //                       same second — and OPP4 paid a database read for
+  //                       every one of them.
+  //   READ-THROUGH        a hit costs no invocation at all, not merely no
+  //                       upstream read.
+  //   TIERED CACHE        on by default. The Cache API can never have it: it
+  //                       is documented as incompatible with tiered caching,
+  //                       on every plan.
+  //
+  // REPEATED IN EVERY ENVIRONMENT BELOW RATHER THAN INHERITED, for the reason
+  // this file's header already gives about `triggers`: the failure that cost
+  // this product four audit findings was a block nobody could see while
+  // reading the environment it was missing from. `bindings.test.ts` asserts
+  // each environment declares it.
+  //
+  // Unlike the Cache API, this works on `workers.dev` too — so dev and stage
+  // get the same cache as prod, which is the first time in this epic that a
+  // cache could be verified anywhere but production.
+  "cache": { "enabled": true },
+  // NO `routes` KEY HERE, DELIBERATELY (openproduct-performance OPP3).
+  //
+  // `api.openproduct.live` reaches this worker as a Worker ROUTE on the
+  // openproduct.live zone. OPP3 argued that only a Route keeps the request
+  // somewhere a cache works; that reasoning was half wrong (a Custom Domain
+  // has a functional Cache API too, and neither shape consults Cache Rules for
+  // a worker's own response — see the epic's IMPLEMENTATION-STATUS). What the
+  // Route is actually worth is a canonical hostname and `cf-cache-status`
+  // observability, and it stays for those.
+  //
+  // That Route is owned by TERRAFORM (`apps/openproduct/infra/domain`), beside
+  // the apex attachment and the zone itself, because a hostname needs a
+  // proxied DNS record before a route can match on it and those two must be
+  // created together. Declaring it here as well would give one hostname two
+  // owners that converge on different schedules — and the failure mode is a
+  // deploy silently reclaiming a route Terraform thinks it holds.
+  //
+  // `workers_dev` stays true below: a web build made before OPP3 still has the
+  // workers.dev host baked into its bundle, and that address must keep
+  // answering until every environment has rebuilt.
+  "main": "src/index.ts",
+  "minify": false,
+  "vars": {
+    "ENVIRONMENT": "local"
+  },
+  "env": {
+    "dev": {
+      "vars": {
+        "ENVIRONMENT": "dev",
+        "PLATFORM_API_URL": "https://api-edge-dev.oruncloud.workers.dev",
+        "SITE_ORIGIN": "https://openproduct-web-dev.oruncloud.workers.dev",
+        // MD1 — "true" only where Cloudflare Image Resizing is enabled on
+        // the zone. A zone feature this file cannot see, so it is stated
+        // rather than assumed; "false" serves the original at every width.
+        "MEDIA_RESIZING": "false"
+      },
+      // RS0 — every ten minutes. The cadence is set by what a run COSTS,
+      // not by what would be freshest: the index rebuild has its own 60s
+      // floor (REBUILD_FLOOR_MS) matched to the public document's cache TTL,
+      // so a faster cron would spend runs nobody can observe, while ingestion
+      // is capped at MAX_PER_RUN = 25 due sources per run against GitHub's
+      // unauthenticated 60-requests-per-hour ceiling (GITHUB_TOKEN is
+      // optional by design — the unauthenticated read is the degraded mode).
+      // Ten minutes keeps search at most ten minutes stale, closes a day
+      // boundary within ten minutes of midnight UTC, and stays inside that
+      // ceiling at today's corpus size. RS2 splits ingestion from
+      // materialisation onto two schedules, which is what makes this safe at
+      // RS3's corpus rather than merely safe now.
+      // TWO SCHEDULES, TWO KINDS OF WORK (RS2). The expressions are the
+      // ones `contracts/sweep-schedule.ts` names, and the gateway's binding
+      // test asserts that — a cron this file invents would silently run
+      // materialisation instead of what its author meant.
+      //
+      //   */10 * * * *   MATERIALISATION. Inward only: the search index, the
+      //                  endorsement counts, due launches, the boards, the
+      //                  defence sweep, the digest. Mandatory wherever the
+      //                  product serves traffic; frequency costs only our own
+      //                  compute, and its absence is what the 7 Sep audit
+      //                  measured.
+      //   23 * * * *     INGESTION. Outward, to GitHub. Hourly because that
+      //                  is what the unauthenticated 60-requests-per-hour
+      //                  ceiling affords at 25 due sources per run. Minute 23
+      //                  so the two coincide once an hour rather than every
+      //                  run. RS3's corpus needs GITHUB_TOKEN set before this
+      //                  cadence can keep up — 25 listings an hour is the
+      //                  whole of it otherwise.
+      "triggers": { "crons": ["*/10 * * * *", "23 * * * *"] },
+      // OPP4a — stated, not inherited. See the top-level block for why.
+      "cache": { "enabled": true },
+      // CS1 — THE RATE-LIMIT COUNTER, a Durable Object IN THIS WORKER. The
+      // limiter's own header planned it ("a Durable Object added to THIS
+      // worker — never a platform binding"), and CS-6 holds it to that: no
+      // `script_name`, the class is exported from `src/index.ts`, and the
+      // binding allowlist names it as the one object this worker holds, the
+      // way MD1's bucket is the one R2 binding. One object per bucket key,
+      // so the published number on /docs/api is the number enforced rather
+      // than a per-isolate approximation of it. A SQLite-backed class, which
+      // is the only kind new classes should be; it keeps no storage today
+      // (an evicted bucket is a refilled bucket) and costs nothing to have
+      // the option. Stated per environment, never inherited, for the reason
+      // `triggers` gives above.
+      "durable_objects": {
+        "bindings": [{ "name": "RATE_LIMIT", "class_name": "RateLimitBucket" }]
+      },
+      "migrations": [{ "tag": "v1", "new_sqlite_classes": ["RateLimitBucket"] }],
+      // OO3 — WHICH BUILD IS ANSWERING. The Worker's own version metadata
+      // (the version id and the moment it was uploaded), carried on /health
+      // as `build` and shown on /docs/checks, so "is the deploy I am
+      // measuring the one that is live" is a read rather than an inference
+      // (WC-H), and so the synthetic can hold every per-tick phase to having
+      // run after it. Not a data resource and not a platform binding: it is
+      // the runtime telling this worker about itself. Named in the
+      // allowlist as the one binding of its kind.
+      "version_metadata": { "binding": "CF_VERSION_METADATA" },
+      "services": [
+        {
+          "binding": "CORE",
+          "service": "openproduct-worker-dev"
+        }
+      ]
+    },
+    "stage": {
+      "workers_dev": true,
+      "vars": {
+        "ENVIRONMENT": "stage",
+        "PLATFORM_API_URL": "https://api-edge-stage.oruncloud.workers.dev",
+        "SITE_ORIGIN": "https://openproduct-web-stage.oruncloud.workers.dev",
+        // MD1 — "true" only where Cloudflare Image Resizing is enabled on
+        // the zone. A zone feature this file cannot see, so it is stated
+        // rather than assumed; "false" serves the original at every width.
+        "MEDIA_RESIZING": "false"
+      },
+      // RS0 — every ten minutes. The cadence is set by what a run COSTS,
+      // not by what would be freshest: the index rebuild has its own 60s
+      // floor (REBUILD_FLOOR_MS) matched to the public document's cache TTL,
+      // so a faster cron would spend runs nobody can observe, while ingestion
+      // is capped at MAX_PER_RUN = 25 due sources per run against GitHub's
+      // unauthenticated 60-requests-per-hour ceiling (GITHUB_TOKEN is
+      // optional by design — the unauthenticated read is the degraded mode).
+      // Ten minutes keeps search at most ten minutes stale, closes a day
+      // boundary within ten minutes of midnight UTC, and stays inside that
+      // ceiling at today's corpus size. RS2 splits ingestion from
+      // materialisation onto two schedules, which is what makes this safe at
+      // RS3's corpus rather than merely safe now.
+      // TWO SCHEDULES, TWO KINDS OF WORK (RS2). The expressions are the
+      // ones `contracts/sweep-schedule.ts` names, and the gateway's binding
+      // test asserts that — a cron this file invents would silently run
+      // materialisation instead of what its author meant.
+      //
+      //   */10 * * * *   MATERIALISATION. Inward only: the search index, the
+      //                  endorsement counts, due launches, the boards, the
+      //                  defence sweep, the digest. Mandatory wherever the
+      //                  product serves traffic; frequency costs only our own
+      //                  compute, and its absence is what the 7 Sep audit
+      //                  measured.
+      //   23 * * * *     INGESTION. Outward, to GitHub. Hourly because that
+      //                  is what the unauthenticated 60-requests-per-hour
+      //                  ceiling affords at 25 due sources per run. Minute 23
+      //                  so the two coincide once an hour rather than every
+      //                  run. RS3's corpus needs GITHUB_TOKEN set before this
+      //                  cadence can keep up — 25 listings an hour is the
+      //                  whole of it otherwise.
+      "triggers": { "crons": ["*/10 * * * *", "23 * * * *"] },
+      // OPP4a — stated, not inherited. See the top-level block for why.
+      "cache": { "enabled": true },
+      // CS1 — THE RATE-LIMIT COUNTER, a Durable Object IN THIS WORKER. The
+      // limiter's own header planned it ("a Durable Object added to THIS
+      // worker — never a platform binding"), and CS-6 holds it to that: no
+      // `script_name`, the class is exported from `src/index.ts`, and the
+      // binding allowlist names it as the one object this worker holds, the
+      // way MD1's bucket is the one R2 binding. One object per bucket key,
+      // so the published number on /docs/api is the number enforced rather
+      // than a per-isolate approximation of it. A SQLite-backed class, which
+      // is the only kind new classes should be; it keeps no storage today
+      // (an evicted bucket is a refilled bucket) and costs nothing to have
+      // the option. Stated per environment, never inherited, for the reason
+      // `triggers` gives above.
+      "durable_objects": {
+        "bindings": [{ "name": "RATE_LIMIT", "class_name": "RateLimitBucket" }]
+      },
+      "migrations": [{ "tag": "v1", "new_sqlite_classes": ["RateLimitBucket"] }],
+      // OO3 — WHICH BUILD IS ANSWERING. The Worker's own version metadata
+      // (the version id and the moment it was uploaded), carried on /health
+      // as `build` and shown on /docs/checks, so "is the deploy I am
+      // measuring the one that is live" is a read rather than an inference
+      // (WC-H), and so the synthetic can hold every per-tick phase to having
+      // run after it. Not a data resource and not a platform binding: it is
+      // the runtime telling this worker about itself. Named in the
+      // allowlist as the one binding of its kind.
+      "version_metadata": { "binding": "CF_VERSION_METADATA" },
+      // MD1 — openproduct's OWN media bucket (WC-C). The one data resource
+      // this worker holds, and the binding allowlist names it as the one
+      // exception rather than dropping its assertion (MD-4, OPX-4). NOT
+      // bound in dev, like state-worker's ORUN_STATE: the bucket exists
+      // where terraform made it, and a binding to a bucket that does not
+      // exist is a deploy that fails. Dev answers 503 storage_unavailable.
+      "r2_buckets": [
+        {
+          "binding": "MEDIA",
+          "bucket_name": "openproduct-media-stage"
+        }
+      ],
+      "services": [
+        {
+          "binding": "CORE",
+          "service": "openproduct-worker-stage"
+        }
+      ]
+    },
+    "prod": {
+      "workers_dev": true,
+      "vars": {
+        "ENVIRONMENT": "prod",
+        "PLATFORM_API_URL": "https://api-edge-prod.oruncloud.workers.dev",
+        "SITE_ORIGIN": "https://openproduct.live",
+        // MD1 — "true" only where Cloudflare Image Resizing is enabled on
+        // the zone. A zone feature this file cannot see, so it is stated
+        // rather than assumed; "false" serves the original at every width.
+        "MEDIA_RESIZING": "false"
+      },
+      // RS0 — every ten minutes. The cadence is set by what a run COSTS,
+      // not by what would be freshest: the index rebuild has its own 60s
+      // floor (REBUILD_FLOOR_MS) matched to the public document's cache TTL,
+      // so a faster cron would spend runs nobody can observe, while ingestion
+      // is capped at MAX_PER_RUN = 25 due sources per run against GitHub's
+      // unauthenticated 60-requests-per-hour ceiling (GITHUB_TOKEN is
+      // optional by design — the unauthenticated read is the degraded mode).
+      // Ten minutes keeps search at most ten minutes stale, closes a day
+      // boundary within ten minutes of midnight UTC, and stays inside that
+      // ceiling at today's corpus size. RS2 splits ingestion from
+      // materialisation onto two schedules, which is what makes this safe at
+      // RS3's corpus rather than merely safe now.
+      // TWO SCHEDULES, TWO KINDS OF WORK (RS2). The expressions are the
+      // ones `contracts/sweep-schedule.ts` names, and the gateway's binding
+      // test asserts that — a cron this file invents would silently run
+      // materialisation instead of what its author meant.
+      //
+      //   */10 * * * *   MATERIALISATION. Inward only: the search index, the
+      //                  endorsement counts, due launches, the boards, the
+      //                  defence sweep, the digest. Mandatory wherever the
+      //                  product serves traffic; frequency costs only our own
+      //                  compute, and its absence is what the 7 Sep audit
+      //                  measured.
+      //   23 * * * *     INGESTION. Outward, to GitHub. Hourly because that
+      //                  is what the unauthenticated 60-requests-per-hour
+      //                  ceiling affords at 25 due sources per run. Minute 23
+      //                  so the two coincide once an hour rather than every
+      //                  run. RS3's corpus needs GITHUB_TOKEN set before this
+      //                  cadence can keep up — 25 listings an hour is the
+      //                  whole of it otherwise.
+      "triggers": { "crons": ["*/10 * * * *", "23 * * * *"] },
+      // OPP4a — stated, not inherited. See the top-level block for why.
+      "cache": { "enabled": true },
+      // CS1 — THE RATE-LIMIT COUNTER, a Durable Object IN THIS WORKER. The
+      // limiter's own header planned it ("a Durable Object added to THIS
+      // worker — never a platform binding"), and CS-6 holds it to that: no
+      // `script_name`, the class is exported from `src/index.ts`, and the
+      // binding allowlist names it as the one object this worker holds, the
+      // way MD1's bucket is the one R2 binding. One object per bucket key,
+      // so the published number on /docs/api is the number enforced rather
+      // than a per-isolate approximation of it. A SQLite-backed class, which
+      // is the only kind new classes should be; it keeps no storage today
+      // (an evicted bucket is a refilled bucket) and costs nothing to have
+      // the option. Stated per environment, never inherited, for the reason
+      // `triggers` gives above.
+      "durable_objects": {
+        "bindings": [{ "name": "RATE_LIMIT", "class_name": "RateLimitBucket" }]
+      },
+      "migrations": [{ "tag": "v1", "new_sqlite_classes": ["RateLimitBucket"] }],
+      // OO3 — WHICH BUILD IS ANSWERING. The Worker's own version metadata
+      // (the version id and the moment it was uploaded), carried on /health
+      // as `build` and shown on /docs/checks, so "is the deploy I am
+      // measuring the one that is live" is a read rather than an inference
+      // (WC-H), and so the synthetic can hold every per-tick phase to having
+      // run after it. Not a data resource and not a platform binding: it is
+      // the runtime telling this worker about itself. Named in the
+      // allowlist as the one binding of its kind.
+      "version_metadata": { "binding": "CF_VERSION_METADATA" },
+      // MD1 — openproduct's OWN media bucket (WC-C). The one data resource
+      // this worker holds, and the binding allowlist names it as the one
+      // exception rather than dropping its assertion (MD-4, OPX-4). NOT
+      // bound in dev, like state-worker's ORUN_STATE: the bucket exists
+      // where terraform made it, and a binding to a bucket that does not
+      // exist is a deploy that fails. Dev answers 503 storage_unavailable.
+      "r2_buckets": [
+        {
+          "binding": "MEDIA",
+          "bucket_name": "openproduct-media-prod"
+        }
+      ],
+      "services": [
+        {
+          "binding": "CORE",
+          "service": "openproduct-worker-prod"
+        }
+      ]
+    }
+  }
+}

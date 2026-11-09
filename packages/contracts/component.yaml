@@ -1,0 +1,66 @@
+apiVersion: sourceplane.io/v1
+kind: Component
+metadata:
+  name: openproduct-contracts
+  title: openproduct Contracts
+  description: openproduct's shared wire contracts — public projection key sets, API, MCP and seam shapes, sweep schedules and SLOs, used by every openproduct app.
+spec:
+  type: turbo-package
+  lifecycle: production
+  owner: platform
+  domain: starter-contracts
+  system: openproduct
+  docs:
+    overview: README.md
+  # `dev` IS THE GATE, AND UNTIL THE WORLDCLASS EPIC'S RE3 IT GATED NOTHING.
+  #
+  # `quick-check` is four steps — setup-node, setup-pnpm, install, and
+  # `verify-structure`, which is literally `test -f package.json`. It contains
+  # neither `pre-build`, `build` nor `typecheck`, so a component subscribed to
+  # it reports a green check named "Verify" having compiled nothing and run
+  # nothing. `openproduct-web-perf`'s component.yaml carries the long version
+  # of that finding.
+  #
+  # This package sat there, and the cost is recorded rather than hypothetical:
+  # `d523b96` merged a `tsc` error in `badge.test.ts` behind a green
+  # `openproduct-contracts · dev · Verify`. The parameters below had named the
+  # right commands the whole time; the profile never reached the step that runs
+  # them.
+  #
+  # `verify` is the composition's own `defaultProfile` and runs pre-build,
+  # build and typecheck. `stage` and `prod` stay on `quick-check`: this is a
+  # source-only package with nothing per-environment to check, so one real lane
+  # is the verification and the other two would be the same seven seconds twice
+  # more.
+  subscribe:
+    environments:
+      - name: dev
+        dependencyRules: # dev lanes never wait on other lanes (intent.yaml, DEPENDENCY MODES)
+          - mode: advisory
+            when:
+              triggerRef: github-pull-request
+          - mode: advisory
+            when:
+              triggerRef: github-push-main
+        profile: verify
+        profileRules:
+          - profile: skip # main does not re-verify what its PR verified (CIS17)
+            when:
+              triggerRef: github-push-main
+      - name: stage
+        profile: skip # a package deploys nowhere; its dev lane is the check (CIS1)
+      - name: prod
+        profile: skip # a package deploys nowhere; its dev lane is the check (CIS1)
+  parameters:
+    nodeVersion: "22"
+    pnpmVersion: "10.12.1"
+    buildCommand: pnpm exec turbo run build --filter=./
+    typecheckCommand: pnpm exec turbo run typecheck --filter=./
+    # The suite runs in the PRE-BUILD step, matching every other lane in this
+    # estate: 817 tests over the wire shapes the whole product agrees on, which
+    # until now ran only on the machine of whoever remembered to run them.
+    preBuildCommand: pnpm exec turbo run test --filter=./
+  labels:
+    team: platform
+    layer: shared
+    surface: openproduct

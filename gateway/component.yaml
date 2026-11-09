@@ -1,0 +1,149 @@
+apiVersion: sourceplane.io/v1
+kind: Component
+metadata:
+  name: openproduct-gateway
+  title: openproduct Gateway
+  description: openproduct's public API front door — CORS, rate limits, sign-in and token-to-subject, media, MCP and the scheduled sweeps, forwarding to the core worker.
+spec:
+  type: cloudflare-worker-turbo
+  lifecycle: production
+  owner: platform
+  domain: starter-runtime
+  system: openproduct
+  docs:
+    overview: README.md
+  links:
+    - title: Production
+      url: https://api.openproduct.live
+      icon: web
+    - title: Stage
+      url: https://openproduct-gateway-stage.oruncloud.workers.dev
+      icon: web
+    - title: API docs
+      url: https://openproduct.live/docs/api
+      icon: docs
+  path: gateway
+  dependsOn:
+    # Runtime edge: the one service binding, inside the product boundary.
+    # The platform is reached only over public HTTPS (seam edges S2/S8) —
+    # deliberately NOT a dependsOn, because it is deliberately not a binding.
+    - component: openproduct-worker
+      mode: advisory
+    # MD1 — the media bucket, bound by name as `MEDIA` in stage and prod. THE
+    # EDGE IS REAL for the reason `openproduct-api-domain` gave for its own:
+    # a deploy that binds a bucket which does not exist yet is a deploy that
+    # fails. On a pull request this edge changes nothing — the gateway already
+    # carries one, and the scheduler's treatment of edges on PRs is
+    # openproduct-verification's OV1, not this component's.
+    - component: openproduct-media
+    - component: openproduct-contracts
+      input: true
+  subscribe:
+    environments:
+      - name: dev
+        dependencyRules: # dev lanes never wait on other lanes (intent.yaml, DEPENDENCY MODES)
+          - mode: advisory
+            when:
+              triggerRef: github-pull-request
+          - mode: advisory
+            when:
+              triggerRef: github-push-main
+        profile: verify
+        profileRules:
+          - profile: skip # main does not re-verify what its PR verified (CIS17)
+            when:
+              triggerRef: github-push-main
+          - profile: verify # manual runs from Orunbase (saas-manual-runs)
+            when:
+              triggerRef: github-dispatch
+      - name: stage
+        profile: verify
+        profileRules:
+          - profile: skip
+            when:
+              triggerRef: github-pull-request
+          - profile: deploy
+            when:
+              triggerRef: github-push-main
+          - profile: deploy # manual runs from Orunbase (saas-manual-runs)
+            when:
+              triggerRef: github-dispatch
+      - name: prod
+        profile: verify
+        profileRules:
+          - profile: skip
+            when:
+              triggerRef: github-pull-request
+          - profile: deploy
+            when:
+              triggerRef: github-push-main
+          - profile: deploy # manual runs from Orunbase (saas-manual-runs)
+            when:
+              triggerRef: github-dispatch
+  parameters:
+    nodeVersion: "22"
+    pnpmVersion: "10.12.1"
+    workspaceDir: ..
+    appDir: .
+    awsAccountId: "306024784101"
+    awsRegion: us-east-1
+    orgName: sourceplane
+    owner: sourceplane
+    repo: openproduct
+
+    # SS2: manifest key for the secrets-live escrow sync (saas-secrets-sync).
+    # Enrolled for LISTING_SEAM_SECRET (tooling/secrets-sync/integrations.manifest.json,
+    # `listing-seam`): without the param the deploy skipped secrets-live and the
+    # seam key had to be set by hand - and was not.
+    secretsWorker: openproduct-gateway
+    turboFilter: "@openproduct/gateway"
+    # No wrangler template and no wiring: this worker holds no wired resource,
+    # so wrangler.jsonc is committed directly (the composition's template steps
+    # are conditional on wranglerTemplate and simply skip).
+    wranglerConfig: wrangler.jsonc
+    installCommand: pnpm install --frozen-lockfile
+    # ─── THE SUITE RUNS HERE BECAUSE NOTHING ELSE SCHEDULES IT ──────────────
+    #
+    # `orun plan --changed` selects a component when ITS OWN files change, and a
+    # `dependsOn` edge does not pull a dependent INTO a plan — the note in
+    # `tests/web-perf/component.yaml` measured that, and `openproduct-gateway-tests`
+    # declares the edge and is planned anyway only when its own files move. So a
+    # change under `apps/openproduct/gateway/` planned exactly three jobs — this
+    # component in dev, stage and prod — and the 248 tests in `@openproduct/gateway-tests` did not
+    # run. Across openproduct's three source components that was 2,046 tests
+    # that a source change never reached.
+    #
+    # MEASURED, NOT ASSUMED. `orun plan --changed --files
+    # apps/openproduct/gateway/src/x.ts` lists this component's three jobs and
+    # nothing else. In CI, PR #1358 touched `apps/openproduct/web/component.yaml`
+    # and `apps/openproduct/web/src/lib/platform.ts` and ran four jobs — `plan`
+    # plus `openproduct-web` in three environments. `openproduct-web-tests` was
+    # not among them, and the change merged.
+    #
+    # WHY IT IS IN `buildCommand` AND NOT ITS OWN STEP. This composition's verify
+    # profile has a FIXED capability list — setup-node, setup-pnpm, install,
+    # verify-structure, wire-fixture, build, typecheck, deploy-dry-run —
+    # with no pre-build hook to hang a lane on. `buildCommand` is the one
+    # free-form slot that runs before the deploy, and `onFailure: stop` on that
+    # step is what makes a red suite block the deploy rather than merely report.
+    #
+    # THE TESTS RUN FIRST, so a failure costs seconds rather than a whole build.
+    buildCommand: pnpm exec turbo run test --filter=@openproduct/gateway-tests && pnpm exec turbo run build --filter=@openproduct/gateway
+    typecheckCommand: pnpm exec turbo run typecheck --filter=@openproduct/gateway
+    # NO `dryRunCommand` AND NO `deployCommand`, and that is a fact about the
+    # composition rather than an omission (openproduct-operations OO3, found
+    # on the way): `cloudflare-worker-turbo`'s verify-deploy job runs
+    # `wrangler deploy --dry-run` and `wrangler deploy` itself, substituting
+    # the environment, and never reads either parameter. The two lines that
+    # stood here hardcoded `--env prod` and were dead text — which is also the
+    # answer to RS4's third "worth a look".
+    preDeployCommand: "echo 'No pre-deploy step configured.'"
+    migrationCommand: "echo 'No migrations configured.'"
+    smokeCommand: "echo 'No smoke test configured.'"
+  labels:
+    team: platform
+    layer: runtime
+    surface: openproduct
+    runtime: cloudflare
+# ci: deliver LISTING_SEAM_SECRET — the listing-seam escrow doc is seeded and active; this redeploy runs secrets-live for it
+# ci: redeploy — openproduct-worldclass-v2 PE1: two main runs deployed this worker to prod seconds apart (MD4's at 06:49:42, PE1's at 06:49:37 on 10 Sep 2026) and the older commit landed last, so production's gateway refused the history tab its own main had already merged; this line ships the head again (OV5's register has the entry)

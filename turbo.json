@@ -1,0 +1,31 @@
+{
+  "$schema": "https://turbo.build/schema.json",
+  "//": "test and typecheck are never cached (saas-ci-scope CIS14): several suites reach the code they test through tsconfig aliases or by path, which turbo does not hash, so a replayed pass could be stale. build is cached, locally and, in CI dev lanes, remotely.",
+  "tasks": {
+    "build": {
+      "dependsOn": ["^build"],
+      "outputs": ["dist/**", ".wrangler/**"]
+    },
+    "dev": {
+      "cache": false,
+      "persistent": true
+    },
+    "test": {
+      "dependsOn": ["^build"],
+      "outputs": ["coverage/**"],
+      "cache": false
+    },
+    "lint": {
+      "outputs": []
+    },
+    "typecheck": {
+      "dependsOn": ["^build"],
+      "outputs": [],
+      "cache": false
+    },
+    "deploy": {
+      "dependsOn": ["build", "test", "typecheck", "lint"],
+      "cache": false
+    }
+  }
+}
