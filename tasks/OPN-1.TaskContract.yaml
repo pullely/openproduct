@@ -1,0 +1,21 @@
+# OPN-1: the spec. Lands the openproduct-standalone doc set (milestone OPN0),
+# plus the intent and CI that let this repository plan through Orunbase. The
+# file is the contract; the task itself lives in Orunbase.
+apiVersion: orun.io/v1
+kind: TaskContract
+metadata:
+  name: OPN-1
+  title: "OPN0: the openproduct-standalone spec"
+spec:
+  goal: The openproduct-standalone design is adopted on main, and this repository plans through its Orunbase workspace on GitHub-hosted runners.
+  affects:
+    - specs/epics/openproduct-standalone/**
+    - tasks/OPN-1.TaskContract.yaml
+    - intent.yaml
+    - .github/workflows/ci.yml
+    - README.md
+  doneWhen:
+    - README.md, design.md, implementation-plan.md, risks-and-open-questions.md and IMPLEMENTATION-STATUS.md are on main under specs/epics/openproduct-standalone/
+    - CI runs on main on GitHub-hosted runners, and its plan job passes with an empty plan
+    - orun task show OPN-1 reads done
+  gates: []
