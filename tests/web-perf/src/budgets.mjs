@@ -196,7 +196,7 @@ const FONTS = { bytes: 82_000, files: 3 };
  */
 /**
  * OB3–CL5 — THE BUDGETS WENT UP, BY WHAT WAS MEASURED, AND THE LANE HAD NOT
- * RUN FOR ANY OF IT (openproduct#1882).
+ * RUN FOR ANY OF IT (sourceplane/orun-cloud#1882).
  *
  * No open-builds or calm milestone selected this lane (a website change did
  * not, until this change gave it `change.inputs`), so it went red on main
@@ -255,8 +255,8 @@ const FONTS = { bytes: 82_000, files: 3 };
  * NEXT 16 — THE JS BUDGETS WENT UP BY THE FRAMEWORK, AND ONLY THE FRAMEWORK.
  *
  * Next.js 15 left its two-year support window and `@opennextjs/cloudflare`
- * refused to build it, so the app moved to `next@16.4.2` (openproduct, after
- * #2020 did the console). Measured here, on full builds of the same commit,
+ * refused to build it, so the app moved to `next@16.4.2` (sourceplane/orun-cloud,
+ * after its #2020 did the console). Measured here, on full builds of the same commit,
  * before and after:
  *
  *   /             141,438 → 171,249     15 chunks → 15     +29,811
@@ -821,7 +821,7 @@ export async function runBudgets(base, gateway) {
     //
     // The page's own heading is how its body is told from another's. CL5
     // (#1889) said "build" where it said "product", and this lane — which no
-    // website change selected yet — kept the old words (openproduct#1882).
+    // website change selected yet — kept the old words (sourceplane/orun-cloud#1882).
     const NOT_FOUND_HEADING = "No build lives at this address";
     for (const absent of ABSENT) {
       const res = await context.request.get(base + absent.path, { maxRedirects: 0 });

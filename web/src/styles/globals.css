@@ -266,7 +266,7 @@
        dialog with no scrim at all in dark. As a token it can go darker in the
        dark ramp, which is the direction a scrim has to move. */
     --tile-fill: 0.8 0.099;
-    /* 0.41 0.069, not 0.42 0.071 (orun-cloud#1882): the browser rounds each
+    /* 0.41 0.069, not 0.42 0.071 (sourceplane/orun-cloud#1882): the browser rounds each
        colour to 8 bits, and at 0.42 0.071 the pair rounds to 4.48 at its
        worst hue (23) — under WCAG's 4.5, and axe flagged the tiles of slugs
        near it. 0.41 0.069 is 4.66 at its worst hue; the chroma steps

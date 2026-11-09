@@ -121,7 +121,7 @@ const quiet = (page, still = 250, cap = 8000) =>
 // THE STRIP'S STEPS, as `STRIP_STEPS` in @openproduct/contracts draws them.
 // OB6 (#1873) took Launches out of the strip — its page stays, below — and
 // renamed People to "People and roles", and this list said otherwise until a
-// full verify ran the lane (openproduct#1882).
+// full verify ran the lane (sourceplane/orun-cloud#1882).
 const STEPS = [
   { id: "details", segment: "details", label: "Details" },
   // MD2 — the step that used to be a span with a title.

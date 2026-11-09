@@ -46,7 +46,7 @@ describe("the targets lane is a gate", () => {
     // QE3 — every list this epic added is a keyboard row, so j/k walk it and
     // the row, not its title, is the finger's target.
     const app = resolve(__dirname, "../../../web/src/app");
-    // OB6's Builds tab — the maker page's default — too (openproduct#1882).
+    // OB6's Builds tab — the maker page's default — too (sourceplane/orun-cloud#1882).
     // CP3 — the two forum lists draw `ThreadTile`, which carries the row.
     for (const file of ["threads/thread-tile.tsx", "search/page.tsx", "people/[handle]/page.tsx"]) {
       expect([file, readFileSync(resolve(app, file), "utf-8").includes("data-keyrow")]).toEqual([file, true]);

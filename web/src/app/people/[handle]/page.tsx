@@ -226,7 +226,7 @@ function ListingRows({ listings }: { listings: readonly PublicProfileListing[] }
       {listings.map((listing) => (
         // A KEYBOARD ROW (QE3). OB6 made this the Builds tab, the maker page's
         // default, where `MakerRows` used to be; without the attribute j and
-        // k found no row on it (openproduct#1882). A tile is still a row.
+        // k found no row on it (sourceplane/orun-cloud#1882). A tile is still a row.
         <li key={listing.slug} data-keyrow className="list-none">
           <AppLink
             href={`/${listing.slug}`}

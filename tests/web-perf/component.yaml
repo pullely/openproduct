@@ -43,7 +43,7 @@ spec:
   #   which is why this only bites on exactly the PRs that need the lane most.
   #
   # So: no edge. This lane is scheduled when its own files change — and,
-  # since openproduct#1882, when the WEBSITE's do. `change.inputs` selects it
+  # since sourceplane/orun-cloud#1882, when the WEBSITE's do. `change.inputs` selects it
   # for a file outside its path without an edge, so neither problem above
   # comes back: `orun plan --changed --files apps/openproduct/web/src/app/
   # page.tsx` now plans `openproduct-web` AND this lane, each with no

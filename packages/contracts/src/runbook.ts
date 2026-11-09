@@ -97,7 +97,7 @@ export const DEPLOY_LAG = {
   title: "The deploy lags main",
   rule: "A re-score, a verification lane, or any measurement of \"what the product does\" does not run until the branch under test is the branch that is live. Measuring a deploy that lags main under-reports the fix and somebody draws the wrong conclusion about which milestone worked (WC-H).",
   read: [
-    "The deploy run: GitHub Actions on sourceplane/openproduct → the run for the merge commit → the job named `<component> · prod · Deploy`. Its revision line names the commit; a green job is a deploy that finished, and a job that has not run is a deploy that has not happened.",
+    "The deploy run: GitHub Actions on pullely/openproduct → the run for the merge commit → the job named `<component> · prod · Deploy`. Its revision line names the commit; a green job is a deploy that finished, and a job that has not run is a deploy that has not happened.",
     "The worker's versions: Cloudflare dashboard → Workers → the worker → Deployments. The active version's upload time is the deploy's moment; compare it with the merge commit's time.",
     "The live side itself: /health on the gateway carries `build` — the active Worker version's id and the moment it was uploaded (OO3, from the version_metadata binding) — and /docs/checks shows it under the heading. A version uploaded before the merge is a deploy that has not happened yet. It is a version, not a commit: the estate's composition uploads without a tag, so the SHA is read from the deploy job and the time compared here.",
   ],

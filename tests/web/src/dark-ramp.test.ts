@@ -294,7 +294,7 @@ describe("contrast, measured, in both ramps", () => {
     // The tile is the one text pair whose hue is not the ramp's: it is the
     // slug's, so every hue on the circle is some product's. At an ink of
     // 0.42 0.071 the worst hue (23) is 4.48 once each colour is rounded to
-    // 8 bits, which is what axe reads off the page (openproduct#1882); at
+    // 8 bits, which is what axe reads off the page (sourceplane/orun-cloud#1882); at
     // 0.41 0.069 it is 4.66 (hue 33). Measured on the rounded hex, like
     // every pair here.
     const under: string[] = [];

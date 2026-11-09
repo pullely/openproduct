@@ -304,7 +304,7 @@ describe("the tile is derived, never random", () => {
   });
 
   it("never renders an empty tile", () => {
-    expect(initialsOf("openproduct")).toBe("OC");
+    expect(initialsOf("open-product")).toBe("OP");
     expect(initialsOf("kettleworks")).toBe("KE");
     expect(initialsOf("a")).toBe("A");
     // A blank tile is a rendering bug that looks like missing data.
