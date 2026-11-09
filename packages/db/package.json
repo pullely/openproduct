@@ -10,7 +10,9 @@
     "./ids": "./src/ids.ts",
     "./content": "./src/content.ts",
     "./purge": "./src/purge.ts",
-    "./d1": "./src/d1/index.ts"
+    "./d1": "./src/d1/index.ts",
+    "./d1/corpus": "./src/d1/scale/corpus.ts",
+    "./d1/slice.sql": "./src/d1/migrations/0001_slice.sql"
   },
   "scripts": {
     "build": "tsc --project tsconfig.build.json && cp -r src/migrations dist/",

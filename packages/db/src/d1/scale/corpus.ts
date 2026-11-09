@@ -20,8 +20,15 @@
 // `ROWS_PER_STATEMENT` rows, because remote D1 stops any one statement at
 // 30 s; the generator runs inside the database, so it binds four parameters
 // and no row ever crosses the wire.
+//
+// THE LOAD IS A PLAN. `d1SliceCorpusPlan` lists every statement, in order,
+// with its parameters; `loadD1SliceCorpus` runs the plan in one go (the
+// suites), and the D1 probe Worker (infra/d1-probe) runs it a step per
+// request on remote D1, so no one invocation holds more than one bounded
+// statement and every statement's own `meta.timings` is on record.
 
 import type { CorpusShape } from "../../scale/corpus.js";
+import type { SearchIndexRow } from "../../types.js";
 import type { D1SqlExecutor } from "../executor.js";
 
 export { CORPUS_NOW, SCALE_CORPUS, SMOKE_CORPUS, SUITE_CORPUS, corpusSlug } from "../../scale/corpus.js";
@@ -50,33 +57,46 @@ export interface D1CorpusReport {
   readonly totalMs: number;
 }
 
-/** Build the slice corpus into a migrated, empty D1 database. */
-export async function loadD1SliceCorpus(sql: D1SqlExecutor, shape: CorpusShape, now: string): Promise<D1CorpusReport> {
-  const steps: D1CorpusStep[] = [];
-  const started = Date.now();
+/** One statement of the corpus load: a bounded range of one table. */
+export interface D1CorpusStatement {
+  /** The step it belongs to (the report's `table`). */
+  readonly table: string;
+  /** Rows the range writes at most (a filtered range such as `n % 3 = 0` writes fewer). */
+  readonly rows: number;
+  readonly text: string;
+  readonly params: readonly unknown[];
+  /** False for the bookkeeping statements the step report has never listed (the index-state stamp). */
+  readonly reported: boolean;
+}
+
+/** Every statement that builds the slice corpus into a migrated, empty D1 database, in order. */
+export function d1SliceCorpusPlan(shape: CorpusShape, now: string): D1CorpusStatement[] {
+  const plan: D1CorpusStatement[] = [];
   const N = shape.listings;
 
   /** One table, written in ranges [lo, hi] of the series, each one bounded statement. */
-  const ranged = async (table: string, total: number, rowsPerSeriesValue: number, text: (lo: string, hi: string) => string) => {
-    const t = Date.now();
+  const ranged = (table: string, total: number, rowsPerSeriesValue: number, text: (lo: string, hi: string) => string) => {
     const per = Math.max(1, Math.floor(ROWS_PER_STATEMENT / rowsPerSeriesValue));
-    let statements = 0;
     for (let lo = 1; lo <= total; lo += per) {
       const hi = Math.min(total, lo + per - 1);
       // CAST: D1 binds EVERY JS number as REAL (typeof(?) is "real" even for
       // 5), and REAL arithmetic leaks into text — '$[' || n % 3 || ']' became
       // '$[1.0]', a bad JSON path, on the first run.
-      await sql.execute(text("CAST($2 AS INTEGER)", "CAST($3 AS INTEGER)"), [now, lo, hi]);
-      statements += 1;
+      plan.push({
+        table,
+        rows: (hi - lo + 1) * rowsPerSeriesValue,
+        text: text("CAST($2 AS INTEGER)", "CAST($3 AS INTEGER)"),
+        params: [now, lo, hi],
+        reported: true,
+      });
     }
-    steps.push({ table, rows: total * rowsPerSeriesValue, statements, ms: Date.now() - t });
   };
   const series = (lo: string, hi: string, v = "n") =>
     `WITH RECURSIVE s(${v}) AS (SELECT ${lo} UNION ALL SELECT ${v} + 1 FROM s WHERE ${v} < ${hi})`;
 
   // ── Listings: published over the last `days × 2`, a third without a live
   //    address, facets and licences on rotation (corpus.ts, verbatim shape).
-  await ranged("profiles", N, 1, (lo, hi) => `${series(lo, hi)}
+  ranged("profiles", N, 1, (lo, hi) => `${series(lo, hi)}
     INSERT INTO profiles
       (id, org_id, project_id, slug, visibility, tagline, pitch_body, pitch_digest, repo_url, live_url,
        stack, stack_canonical, repo_visibility, repo_licence, repo_checked_at, reviewed_at, reviewed_by,
@@ -99,7 +119,7 @@ export async function loadD1SliceCorpus(sql: D1SqlExecutor, shape: CorpusShape, 
 
   // ── A year of ingestion AT THE CAP: `observationsPerDay` a day, round-robin
   //    over the corpus, two metrics per observation.
-  await ranged("metrics (ingestion)", shape.days * shape.observationsPerDay, 2, (lo, hi) => `${series(lo, hi, "g")}
+  ranged("metrics (ingestion)", shape.days * shape.observationsPerDay, 2, (lo, hi) => `${series(lo, hi, "g")}
     INSERT INTO metrics (id, profile_id, metric, window_key, value, source, observed_at)
     SELECT printf('%08x-%04x-4000-8000-%012x', 4, k.k, g), ${listingId(`1 + (g % ${N})`)},
            CASE k.k WHEN 0 THEN 'merges' ELSE 'last_touched' END,
@@ -111,7 +131,7 @@ export async function loadD1SliceCorpus(sql: D1SqlExecutor, shape: CorpusShape, 
 
   // ── The board's `launch` metric for `launchesPerDay` live launches a day,
   //    each on its own listing, dated an hour after its launch (LC3).
-  await ranged("metrics (board)", shape.days * shape.launchesPerDay, 1, (lo, hi) => `${series(lo, hi, "g")}
+  ranged("metrics (board)", shape.days * shape.launchesPerDay, 1, (lo, hi) => `${series(lo, hi, "g")}
     INSERT INTO metrics (id, profile_id, metric, window_key, value, source, observed_at)
     SELECT printf('%08x-0000-4000-8000-%012x', 5, g), ${listingId(`1 + (g % ${N})`)}, 'launch',
            date($1, '-${shape.days} days', '+' || (g * 86400.0 / ${shape.launchesPerDay}) || ' seconds'),
@@ -122,7 +142,7 @@ export async function loadD1SliceCorpus(sql: D1SqlExecutor, shape: CorpusShape, 
   // ── The upvote counts the OB3 tick writes: both windows for every listed
   //    build, zeros included, an hour old — so the folded key is (merges+1)×(upvotes+1)
   //    for real, not (merges+1)×1.
-  await ranged("metrics (upvotes)", N, 2, (lo, hi) => `${series(lo, hi)}
+  ranged("metrics (upvotes)", N, 2, (lo, hi) => `${series(lo, hi)}
     INSERT INTO metrics (id, profile_id, metric, window_key, value, source, observed_at)
     SELECT printf('%08x-%04x-4000-8000-%012x', 6, k.k, n), ${listingId("n")}, 'endorsements',
            CASE k.k WHEN 0 THEN '7d' ELSE 'total' END,
@@ -131,12 +151,12 @@ export async function loadD1SliceCorpus(sql: D1SqlExecutor, shape: CorpusShape, 
       FROM s, (SELECT 0 AS k UNION ALL SELECT 1 AS k) k`);
 
   // ── Openings on every third listing; a hero on every fourth.
-  await ranged("role_openings", N, 1, (lo, hi) => `${series(lo, hi)}
+  ranged("role_openings", N, 1, (lo, hi) => `${series(lo, hi)}
     INSERT INTO role_openings (id, profile_id, title, description, commitment, status, sort_order, created_at, updated_at)
     SELECT printf('%08x-0000-4000-8000-%012x', 7, n), ${listingId("n")}, 'Maintainer', 'Keep the lights on.',
            'a-few-hours-a-week', 'open', 0, $1, $1
       FROM s WHERE n % 3 = 0`);
-  await ranged("product_media", N, 1, (lo, hi) => `${series(lo, hi)}
+  ranged("product_media", N, 1, (lo, hi) => `${series(lo, hi)}
     INSERT INTO product_media (id, profile_id, kind, storage_ref, alt_text, width, height, position, created_at)
     SELECT printf('%08x-0000-4000-8000-%012x', 8, n), ${listingId("n")}, 'hero',
            printf('%064x', n) || '.png', 'The dashboard', 1200, 630, 0, $1
@@ -145,7 +165,7 @@ export async function loadD1SliceCorpus(sql: D1SqlExecutor, shape: CorpusShape, 
   // ── The search index the rebuild would have written, and its term rows.
   const doc = `'["product",' || json_quote(printf('%05d', n)) || ',' || json_quote(${pick(CATEGORIES, "n % 4")}) || ','
                || json_quote(${pick(LANGUAGES, "n % 4")}) || ',"dull","deterministic"]'`;
-  await ranged("search_index", N, 1, (lo, hi) => `${series(lo, hi)}
+  ranged("search_index", N, 1, (lo, hi) => `${series(lo, hi)}
     INSERT INTO search_index (kind, entity_id, title, summary, terms, facets, built_at)
     SELECT 'listing', 'product-' || printf('%05d', n), 'product-' || printf('%05d', n),
            'A dull, deterministic product for measuring page weight (#' || n || ').',
@@ -153,16 +173,63 @@ export async function loadD1SliceCorpus(sql: D1SqlExecutor, shape: CorpusShape, 
            json_object('category', json_array(${pick(CATEGORIES, "n % 4")}), 'hosting', json_array(${pick(HOSTINGS, "n % 3")})),
            $1
       FROM s`);
-  await ranged("search_index_terms", N, 6, (lo, hi) => `
+  ranged("search_index_terms", N, 6, (lo, hi) => `
     INSERT INTO search_index_terms (term, kind, entity_id)
     SELECT DISTINCT t.value, d.kind, d.entity_id
       FROM search_index d, json_each(d.terms) t
      WHERE d.kind = 'listing' AND d.entity_id BETWEEN 'product-' || printf('%05d', ${lo}) AND 'product-' || printf('%05d', ${hi})
        AND $1 IS NOT NULL`);
-  await sql.execute(`UPDATE search_index_state SET built_at = $1, dirty_at = NULL`, [now]);
+  plan.push({
+    table: "search_index_state",
+    rows: 1,
+    text: `UPDATE search_index_state SET built_at = $1, dirty_at = NULL`,
+    params: [now],
+    reported: false,
+  });
+  plan.push({ table: "ANALYZE", rows: 0, text: `ANALYZE`, params: [], reported: true });
+  return plan;
+}
 
-  const t = Date.now();
-  await sql.execute(`ANALYZE`);
-  steps.push({ table: "ANALYZE", rows: 0, statements: 1, ms: Date.now() - t });
+/** Build the slice corpus into a migrated, empty D1 database: the whole plan, in order. */
+export async function loadD1SliceCorpus(sql: D1SqlExecutor, shape: CorpusShape, now: string): Promise<D1CorpusReport> {
+  const started = Date.now();
+  const steps: Array<{ table: string; rows: number; statements: number; ms: number }> = [];
+  for (const statement of d1SliceCorpusPlan(shape, now)) {
+    const t = Date.now();
+    await sql.execute(statement.text, [...statement.params]);
+    if (!statement.reported) continue;
+    const last = steps[steps.length - 1];
+    if (last && last.table === statement.table) {
+      last.rows += statement.rows;
+      last.statements += 1;
+      last.ms += Date.now() - t;
+    } else {
+      steps.push({ table: statement.table, rows: statement.rows, statements: 1, ms: Date.now() - t });
+    }
+  }
   return { shape, steps, totalMs: Date.now() - started };
+}
+
+const DOC_CATEGORIES = ["developer-tools", "productivity", "infrastructure", "design"];
+const DOC_LANGUAGES = ["typescript", "go", "rust", "python"];
+const DOC_HOSTINGS = ["self-host", "cloud", "both"];
+
+/**
+ * The corpus's search documents — the rows the `search_index` step writes —
+ * as `replaceSearchIndex` input. Workers-safe (the probe Worker replaces the
+ * index with these), and re-exported by `./harness.ts` for the suites.
+ */
+export function corpusDocs(n: number, kind = "listing"): SearchIndexRow[] {
+  return Array.from({ length: n }, (_, i) => {
+    const k = i + 1;
+    const id = `product-${String(k).padStart(5, "0")}`;
+    return {
+      kind,
+      entityId: id,
+      title: id,
+      summary: `A dull, deterministic product for measuring page weight (#${k}).`,
+      terms: ["product", String(k).padStart(5, "0"), DOC_CATEGORIES[k % 4]!, DOC_LANGUAGES[k % 4]!, "dull", "deterministic"],
+      facets: { category: [DOC_CATEGORIES[k % 4]!], hosting: [DOC_HOSTINGS[k % 3]!] },
+    };
+  });
 }

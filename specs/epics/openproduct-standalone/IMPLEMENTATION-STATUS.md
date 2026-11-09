@@ -27,7 +27,9 @@ the code departed from `design.md`.
 | Cloudflare connection | `openproduct` (`int_7fbdaafa…`), inherited from the account |
 | Epic in Orunbase | `openproduct-standalone`, EP-1 (`epc_0TXVHJ8Z`) |
 | Milestones | OPN0 `mls_VEMWNC1J` · OPN1 `mls_GPBDDEE7` · OPN2 `mls_GQ855EQV` · OPN3 `mls_QJP277KN` · OPN4 `mls_GFTKS4Q0` |
-| Tasks | OPN-1 `tsk_N14BB1XD` (OPN0, contract attached) |
+| Tasks | OPN-1 `tsk_N14BB1XD` (OPN0, done: merged as `1fc8305`, PR #1) · OPN-2 `tsk_85D0P8WW` (OPN1, contract attached) |
+| Project environments | `dev`, `stage`, `prod`, created through `POST …/projects/{prj}/environments` on 2026-11-09. A baseline bootstrap creates them; this repository never had one, and secret authoring refused until they existed |
+| Stage secrets | `CLOUDFLARE_API_TOKEN` (`workers-deploy`), `CLOUDFLARE_ACCOUNT_ID` (`account-id`), `CLOUDFLARE_D1_TOKEN` (`d1-edit`), `CLOUDFLARE_WORKERS_SUBDOMAIN` (`workers-subdomain`): all brokered from connection `int_7fbdaafa…`. `PROBE_TOKEN`: static, random, set from stdin. None has a prod counterpart yet |
 
 ## D1 slice proof
 
@@ -81,9 +83,23 @@ written here after that run.
 
 ## OPN1 — as built (so far)
 
-Task OPN-2, branch `orun/OPN-2-the-tree`. Not done: the D1 probe
-(`infra/cloudflare-d1-probe`, `infra/d1-probe`), its remote timings and the
-go/no-go are still to land, and CI has not run on `main`.
+Task OPN-2, branch `orun/OPN-2-the-tree`. The D1 probe is integrated. Still
+to come: its remote run (which happens on this branch's merge), the remote
+timings, the go/no-go, and a green CI on `main`.
+
+### The D1 probe
+
+- **`infra/cloudflare-d1-probe`** (terraform, stage only): one D1 database, `openproduct-probe-stage`, location hint `apac`, with read replication on so session reads can be measured. State is on the platform (`backend "http"`). It publishes `WIRING_CLOUDFLARE_D1_PROBE`. A variable check refuses any environment but stage. It uses cloudflare provider `~> 5.28` (cirrus is on 4.30), because `primary_location_hint` and `read_replication` exist only in v5.
+- **`infra/d1-probe`** (Worker `openproduct-d1-probe`, stage only):
+  - Its routes are `/schema`, `/reset`, `/load`, `/bench`, `/negative` and `/export`. Every one requires `PROBE_TOKEN`, compared in constant time, and anything else is a bare 404.
+  - Its smoke (`scripts/probe-run.mjs`) runs after the stage deploy: it loads the full corpus, benches 50 runs per operation, sends the negative probes, diffs `/export` against `expected/full.json` (generated from local D1), and prints one JSON report into the run log.
+  - Local result: 12 Worker tests pass on real workerd, and an opt-in full-size run (5,000 listings × 365 days) equals its snapshot.
+- **Plan on a merge to `main`:** `cloudflare-d1-probe.stage.terraform` (apply), then `openproduct-d1-probe.stage` (deploy and smoke). Those are the only two non-verify jobs out of 20.
+- **Departure from design §5.2 ("run on demand by dispatch"):** the probe runs on the merge that changes it. `openproduct-db` is an ordering edge, not an input, so later `packages/db` changes don't re-run it; bumping `infra/d1-probe/RUN` does. A full run writes about 8 M D1 rows and takes about 10 minutes, so it must not repeat on every merge.
+- **Not covered:**
+  - Replication on versus off is approximated inside one database: plain-binding reads, which go to the primary, are compared against session reads.
+  - The recovery after a refused cold replace is untested, because local D1 cannot be made to refuse it.
+  - The probe needs the account on Workers Paid (`limits.cpu_ms`, 1,000 queries per invocation).
 
 ### The cut
 
@@ -94,7 +110,7 @@ go/no-go are still to land, and CI has not run on `main`.
 
 ### What CI sees
 
-- **Discovery:** `core/`, `gateway/`, `web/`, `packages/`, `tests/`, `infra/synthetic/`: 10 components. `infra/{media,api-domain,domain}` stay undiscovered (terraform that needs Cloudflare credentials even to plan); their files stay because `deploy-ordering.test.ts` reads them.
+- **Discovery:** `core/`, `gateway/`, `web/`, `packages/`, `tests/`, `infra/synthetic/`, plus the two probe roots: 12 components. `infra/{media,api-domain,domain}` stay undiscovered (terraform that needs Cloudflare credentials even to plan); their files stay because `deploy-ordering.test.ts` reads them.
 - **Every lane is verify.** `orun plan` (orun dev build): full plan 18 jobs; `github-push-main` 18; a pull request over this branch's diff 18; `github-dispatch` 8 (stage and prod of the four Workers); `local-development` 10. Every job is `cloudflare-worker-turbo.verify`, `cloudflare-workers-assets-turbo.verify` or `turbo-package.verify`. No deploy, apply or plan-only profile is reachable.
 - **`.github/workflows/ci.yml`:** `plan` and `run` skip a fork's pull request; `offline-verify` (fork pull requests only, `contents: read`, no OIDC, no secrets) installs, typechecks, lints, tests (the db package alone), builds the website and runs the browser lanes; `gitleaks` (pinned 8.30.1, sha256 checked) scans each pull request's and push's commits and the checked-out tree.
 
@@ -103,7 +119,7 @@ go/no-go are still to land, and CI has not run on `main`.
 | Check | Result |
 |---|---|
 | `pnpm install --frozen-lockfile` | pass |
-| `pnpm exec turbo run typecheck lint` | 22 of 22 tasks pass |
+| `pnpm exec turbo run typecheck lint` | 22 of 22 tasks pass; 24 of 24 with the probe integrated |
 | `@openproduct/db` tests, alone | 28 files pass, 3 opt-in skipped; 648 tests pass, 12 skipped (the proof's 649, less the retired lock-sync test) |
 | every other suite, in parallel | contracts 1213, synthetic 38, core-tests 881 (54 suites), gateway-tests 341 (18), web-tests 1481 (100): all pass |
 | `@openproduct/web-perf` browser lanes | run under macOS Google Chrome through the suite's `XP4_CHROMIUM` (no Playwright browser here, and none downloaded): 649 checks pass (budget 238, wire 24, targets 35, a11y 95, axe 143, chrome 7, badge 7, studio 36, studio-timing 9, refresh 2, authed 53); **34 fail, all environmental**: 32 snapshot geometries (every width 1270 recorded against 1280 measured at a 1280 viewport, the recording browser's 10 px scrollbar against macOS overlay scrollbars, plus font-width deltas) and 2 axe `target-size` (a 23.5 px target on the desktop thread page). No web code changed beyond comments. **Not yet run on Linux Chromium**, which is what CI uses |
@@ -111,7 +127,7 @@ go/no-go are still to land, and CI has not run on `main`.
 | `tests/core/src/repo-root.test.ts` | 5 of 5 pass; with a planted reach of each kind it fails 4 of 5 and names all eleven plants |
 | `orun validate` | pass |
 | `orun pr check OPN-2 --base origin/main` | pass; one warning, the PR body's manifest block (written when the PR opens) |
-| `orun task check OPN-2 --base origin/main` | **fails**, see departure 12 |
+| `orun task check OPN-2 --base origin/main` | pass: 15 changed components, all inside the contract (departure 12) |
 | `gitleaks detect --source . --no-git`, and over the history | no leaks found, both |
 | `actionlint .github/workflows/ci.yml` | clean |
 
@@ -128,7 +144,7 @@ go/no-go are still to land, and CI has not run on `main`.
 9. **A flaky suite was fixed.** `tests/gateway/src/ratelimit.test.ts` drained the anon bucket (a token every half second) through the router on the wall clock, and under the parallel suite run three cases saw a refilled token. They freeze `Date.now`, as `timing.test.ts` does.
 10. **Retirements had already happened.** The cut script had removed `migrations-twin-sync.test.ts`, `import-boundary.test.ts` and the `@saas/db-migrations` devDependency; OPN-2 confirmed and dropped `packages/db`'s `db-migrations` edge. The undiscovered infra components lost `AWS_EC2_METADATA_DISABLED`, and `openproduct-domain` its platform-only `cloudflare-domain` edge; their `plan-only`/`apply` subscriptions are untouched and inert while undiscovered.
 11. **`offline-verify` takes node from `engines` (`>=20`)**, so a fork's run uses the newest release that satisfies it, while the components' lanes pin `nodeVersion: "22"`. Every local run here was on node 26.
-12. **`orun task check` cannot pass this contract as written.** The offline check compares `affects` entries by exact string against the changed components' refs (`default/openproduct/openproduct-worker`), and this contract's `affects` are path globs (`core/**`). All 927 changed files are inside those globs, checked separately; the CLI reports all 13 changed components "outside". Either the contract names component refs, or the check learns paths.
+12. **`orun task check` compares components, not paths.** The offline check matches `affects` entries by exact string against the changed components' refs (`default/openproduct/openproduct-worker`). The platform's compliance check leaves this rule to the CLI. So the OPN-2 contract lists the 15 component refs beside its path globs, and was re-attached (`68f606f6`). The check now reports "15 changed component(s), all inside the contract". Contracts from here on name both.
 13. **`tests/web-perf/src/studio.mjs` now honours `XP4_CHROMIUM`,** as every sibling lane already did; without it the studio lane crashed the suite on any machine without Playwright's own browser. CI installs that browser, so CI behaviour is unchanged.
 14. **Not run locally:** the Workers' own builds (`wrangler deploy --dry-run --outdir dist`) and their verify lanes' `deploy-dry-run` step, which only CI runs here.
 

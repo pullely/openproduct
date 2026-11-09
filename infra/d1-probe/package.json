@@ -1,0 +1,29 @@
+{
+  "name": "@openproduct/d1-probe",
+  "version": "0.0.0",
+  "private": true,
+  "license": "MIT",
+  "type": "module",
+  "scripts": {
+    "build": "wrangler deploy --dry-run --outdir dist",
+    "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.node.json",
+    "lint": "eslint src test",
+    "test": "vitest run",
+    "wire:fixture": "node ../../tooling/wire/render.mjs --template wrangler.template.jsonc --out wrangler.jsonc --map wiring.fixture.json",
+    "probe": "node scripts/probe-run.mjs",
+    "expected": "node scripts/expected.mjs"
+  },
+  "dependencies": {
+    "@openproduct/db": "workspace:*"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20260612.1",
+    "@saas/eslint-config": "workspace:*",
+    "@saas/tsconfig": "workspace:*",
+    "@types/node": "^22.15.3",
+    "miniflare": "5.20261104.0-beta",
+    "typescript": "^5.9.3",
+    "vitest": "3.2.6",
+    "wrangler": "^4.100.0"
+  }
+}

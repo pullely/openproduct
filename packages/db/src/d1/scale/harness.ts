@@ -1,7 +1,6 @@
 // Shared by the D1 scale suites (OPN D1 slice): timing, the report line, and
 // reading a SQLite query plan.
 
-import type { SearchIndexRow } from "../../types.js";
 import type { D1SqlExecutor, D1Statement } from "../executor.js";
 
 /** Opt-in, like OS0's baseline: `D1_SCALE=1` (suite size) or `D1_SCALE=full` (365 days of ingestion). */
@@ -76,22 +75,5 @@ export const WATCHED: readonly string[] = [
   "profiles", "catalog_cards", "metrics", "search_index", "search_index_terms", "role_openings", "product_media",
 ];
 
-const CATEGORIES = ["developer-tools", "productivity", "infrastructure", "design"];
-const LANGUAGES = ["typescript", "go", "rust", "python"];
-const HOSTINGS = ["self-host", "cloud", "both"];
-
-/** The corpus's search documents (scale/corpus.ts's search_index rows), as replaceSearchIndex input. */
-export function corpusDocs(n: number, kind = "listing"): SearchIndexRow[] {
-  return Array.from({ length: n }, (_, i) => {
-    const k = i + 1;
-    const id = `product-${String(k).padStart(5, "0")}`;
-    return {
-      kind,
-      entityId: id,
-      title: id,
-      summary: `A dull, deterministic product for measuring page weight (#${k}).`,
-      terms: ["product", String(k).padStart(5, "0"), CATEGORIES[k % 4]!, LANGUAGES[k % 4]!, "dull", "deterministic"],
-      facets: { category: [CATEGORIES[k % 4]!], hosting: [HOSTINGS[k % 3]!] },
-    };
-  });
-}
+/** The corpus's search documents — now beside the corpus itself (Workers-safe, used by the probe Worker). */
+export { corpusDocs } from "./corpus.js";

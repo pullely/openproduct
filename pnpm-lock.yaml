@@ -88,6 +88,37 @@ importers:
         specifier: ^4.100.0
         version: 4.100.0(@cloudflare/workers-types@4.20260612.1)
 
+  infra/d1-probe:
+    dependencies:
+      '@openproduct/db':
+        specifier: workspace:*
+        version: link:../../packages/db
+    devDependencies:
+      '@cloudflare/workers-types':
+        specifier: ^4.20260612.1
+        version: 4.20260612.1
+      '@saas/eslint-config':
+        specifier: workspace:*
+        version: link:../../tooling/eslint
+      '@saas/tsconfig':
+        specifier: workspace:*
+        version: link:../../tooling/tsconfig
+      '@types/node':
+        specifier: ^22.15.3
+        version: 22.19.21
+      miniflare:
+        specifier: 5.20261104.0-beta
+        version: 5.20261104.0-beta(@types/node@22.19.21)
+      typescript:
+        specifier: ^5.9.3
+        version: 5.9.3
+      vitest:
+        specifier: 3.2.6
+        version: 3.2.6(@types/debug@4.1.13)(@types/node@22.19.21)(jsdom@20.0.3)(terser@5.48.0)
+      wrangler:
+        specifier: ^4.100.0
+        version: 4.151.3(@cloudflare/workers-types@4.20260612.1)(@types/node@22.19.21)
+
   infra/synthetic:
     dependencies:
       '@openproduct/contracts':
@@ -339,7 +370,7 @@ importers:
         version: 5.9.3
       wrangler:
         specifier: ^4.151.3
-        version: 4.151.3(@types/node@22.19.21)
+        version: 4.151.3(@cloudflare/workers-types@4.20260612.1)(@types/node@22.19.21)
 
 packages:
 
@@ -7352,7 +7383,7 @@ snapshots:
       glob: 13.0.6
       next: 16.4.2(@babel/core@7.29.7)(@types/node@22.19.21)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
       ts-tqdm: 0.8.6
-      wrangler: 4.151.3(@types/node@22.19.21)
+      wrangler: 4.151.3(@cloudflare/workers-types@4.20260612.1)(@types/node@22.19.21)
       yargs: 18.2.0
     transitivePeerDependencies:
       - encoding
@@ -11659,7 +11690,7 @@ snapshots:
       - bufferutil
       - utf-8-validate
 
-  wrangler@4.151.3(@types/node@22.19.21):
+  wrangler@4.151.3(@cloudflare/workers-types@4.20260612.1)(@types/node@22.19.21):
     dependencies:
       '@cloudflare/kv-asset-handler': 0.5.0
       '@cloudflare/unenv-preset': 2.16.2(unenv@2.0.0-rc.24)(workerd@1.20261019.1)
@@ -11670,6 +11701,7 @@ snapshots:
       unenv: 2.0.0-rc.24
       workerd: 1.20261019.1
     optionalDependencies:
+      '@cloudflare/workers-types': 4.20260612.1
       fsevents: 2.3.3
     transitivePeerDependencies:
       - '@types/node'

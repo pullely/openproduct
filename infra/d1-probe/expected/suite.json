@@ -1,0 +1,137 @@
+{
+  "//": "Expected /export sections for PROBE_SIZE=suite, generated on LOCAL D1 (miniflare/workerd) by scripts/expected.mjs. Regenerate with: pnpm --filter @openproduct/d1-probe expected -- --size suite",
+  "size": "suite",
+  "sections": {
+    "catalogue": {
+      "pages": 25,
+      "cards": 5000,
+      "firstSlug": "product-01253",
+      "lastSlug": "product-05000",
+      "digest": "1ed3470db434d6a5e0ff10185cdfad88af68dc8444977ceb4c0d1ef1b1f62298",
+      "pageDigests": [
+        "a82a7a65e54f3c553873eb6bb051eb679e1818956b6818376bc6373ffad9b101",
+        "29d7e6d90e7eb5cbd2d7aa25695b2d24f82ffa9725ad8c63b7506a73dc5a58ea",
+        "6d020e3402ea25ce08a593921fba985affb7d0d0abc793239311fdef425eb010",
+        "1afd630e6c7f908ab13349e66090f0b853d9c39c6f3db15a8a1509f73fcc3bce",
+        "55d008a4db18ac2ea8b107e1b75b879813e0fe82bc0bb45ff3d7423a877fac6f",
+        "f765191ee765a39d4046de8d35794973c5d37f06dd6fec7a78b72d5d5279f1ff",
+        "9ea4d3166f22f88c9c5fcc71105a64b7dc84758c45029d72a06b3765ebc1b6f2",
+        "ec0ce6ab6ac76b1b77baa6c2e6a71656b172ddf7e09fe731190463f064d84c4f",
+        "5cc670f456a3ec502531e955c269b17e507aec81aca63ae24e8497c2a53638fd",
+        "64e00428c88f7119a7488a74efa608f585715ade26ab75f71b02b0a2bf28a614",
+        "642539ee95b8ec5c8cc778dad04879baa4b7749b4c19262ed51df40399fed29f",
+        "28fa2b2af8757f013604109dd6e536d89c0df2378b66df922dd1c090a9552f45",
+        "e74b6293b87d1d86d133671719f2c762b0fd8cab6e2e7d259d2fb3915818651f",
+        "349e51ca31a4f9d43fe25dbd786d3a60fddb74437a7925aef55b557a826b451f",
+        "02f44ca5a384cc7b03542fe54c8788a21a74400c3f8ca0a1f9e4fd3997e27e8c",
+        "334a04ca4a44eee6f663f666868902325a6cf2ca337b9f104f41b50049faed61",
+        "5b69f922c1dc09369a72bef27ba6edf7ac905fa78c93ab9bb13fbc5a5373a55d",
+        "02449a17fd7cf750f075406eff3191f4f4a96c32391b2183ea3f7f5396c889c9",
+        "5363eb070b6900de5391491cee47218decf2231973db373daadc2ba5fe7934ad",
+        "c72e1043d8cdd56261c610516927349131457ef98b339aee9059ce9c2c11ff05",
+        "a933c8cacdf5731614be3dca5583fe4c93c25eb7701f3736fafa70024594b5d4",
+        "1cf0f93839b0fd3c076b5ec56a1a77bbd3f02ef86e600153dd6677d86fece29e",
+        "6bf7bb72653f376aeb692c17a1587947500f3768c8c176f2109b84ec4171e130",
+        "1f9900959842ec33aca3550c81eae7d1571be62127f02a513f91dc9fe354e13c",
+        "82126dc457ca917a3a89ee9a4c8e6bbf150229277e68593aebb42f5348f2b4ec"
+      ]
+    },
+    "census": {
+      "computedAt": "2026-09-09T12:00:00.000Z",
+      "cardCount": 5000,
+      "windows": {
+        "today": 20,
+        "week": 145,
+        "month": 625,
+        "total": 5000
+      }
+    },
+    "searchIndex": {
+      "rows": 5000,
+      "digest": "b0f4714f060e581d185d80fb7612e1ab2d55d310ff34703934f12eac8fd7b668",
+      "bytes": 1588891
+    },
+    "searchIndexTerms": {
+      "rows": 30000,
+      "digest": "817defb4762869c7d6975b7d2b5469024897eca12f4ff2bba2845898013d4972",
+      "bytes": 1161251
+    },
+    "searchIndexState": {
+      "builtAt": "2026-09-09T12:00:00.000Z",
+      "dirtyAt": null
+    },
+    "candidates": {
+      "common": {
+        "terms": [
+          "product"
+        ],
+        "count": 5000,
+        "digest": "2b8dab18bb6f63b2abe0b1cd83ec86ce88448032274b03dad70589a23f2069c4"
+      },
+      "rare": {
+        "terms": [
+          "00060"
+        ],
+        "count": 1,
+        "digest": "ddce6f12c931643fddc08c6691bfd45cc0499b67d692fbb945b32c2b1f161562",
+        "ids": [
+          "listing/product-00060"
+        ]
+      },
+      "multi": {
+        "terms": [
+          "00060",
+          "rust",
+          "nope"
+        ],
+        "count": 1251,
+        "digest": "8dc8e4b5f57105bd76497e1d8c406e736c3f4222a58e95d9333ab1cdf9aa8d2c"
+      },
+      "fourTerms": {
+        "terms": [
+          "00060",
+          "00061",
+          "00062",
+          "zzz"
+        ],
+        "count": 3,
+        "digest": "3b4722c3636d25b5ab7e99ad351c578a8587bbca34f116b2a02be460ec25a86d",
+        "ids": [
+          "listing/product-00060",
+          "listing/product-00061",
+          "listing/product-00062"
+        ]
+      },
+      "category": {
+        "terms": [
+          "design"
+        ],
+        "count": 1250,
+        "digest": "19a32a96fe74fa7aff61477b40b6da9178f0f43bc850aebefb4de4d1c5a316b7"
+      },
+      "absent": {
+        "terms": [
+          "nope"
+        ],
+        "count": 0,
+        "digest": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "ids": []
+      },
+      "none": {
+        "terms": [],
+        "count": 0,
+        "digest": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "ids": []
+      },
+      "truncated": {
+        "terms": [
+          "product"
+        ],
+        "limit": 50,
+        "count": 50,
+        "allMatch": true,
+        "distinct": true
+      }
+    }
+  }
+}

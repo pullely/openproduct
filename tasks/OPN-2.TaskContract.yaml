@@ -31,6 +31,24 @@ spec:
     - README.md
     - tasks/OPN-2.TaskContract.yaml
     - specs/epics/openproduct-standalone/**
+    # The component refs below are what `orun task check` compares the diff
+    # against (it matches changed components, not paths). The paths above are
+    # the human-readable ceiling for the same change.
+    - default/openproduct/cloudflare-d1-probe
+    - default/openproduct/openproduct-api-domain
+    - default/openproduct/openproduct-contracts
+    - default/openproduct/openproduct-d1-probe
+    - default/openproduct/openproduct-db
+    - default/openproduct/openproduct-domain
+    - default/openproduct/openproduct-gateway
+    - default/openproduct/openproduct-gateway-tests
+    - default/openproduct/openproduct-media
+    - default/openproduct/openproduct-synthetic
+    - default/openproduct/openproduct-web
+    - default/openproduct/openproduct-web-perf
+    - default/openproduct/openproduct-web-tests
+    - default/openproduct/openproduct-worker
+    - default/openproduct/openproduct-worker-tests
   doneWhen:
     - CI on main is green on GitHub-hosted runners, every package installs, typechecks, lints and tests, and only the stage probe deploys
     - the catalogue rebuild, the catalogue page and the search index run on D1 behind the unchanged repository interface

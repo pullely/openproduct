@@ -247,6 +247,14 @@ The deep keyset page walks the order index from the start and filters as it goes
 
 **Pass criteria:** every result equals the local result; the rebuild stays under ~3 s of wall-clock time and well under 30 s; the replace batch is accepted; page reads stay under ~50 ms at p95 from the Worker.
 
+### Built, not yet run (OPN-2: `infra/cloudflare-d1-probe`, `infra/d1-probe`)
+
+The test above exists as two stage-only components; nothing has been deployed.
+
+- `infra/cloudflare-d1-probe`: terraform for one D1 database, `openproduct-probe-stage`, with location hint `apac` and read replication `auto` (cloudflare provider v5). It publishes `WIRING_CLOUDFLARE_D1_PROBE`.
+- `infra/d1-probe`: the `openproduct-d1-probe` Worker, bound to that database as `DB`. Every route is POST, requires the bearer `PROBE_TOKEN`, and answers anything else with a bare 404. `/schema` applies `0001_slice.sql` unchanged. `/load` runs `d1SliceCorpusPlan`, the same statements `loadD1SliceCorpus` runs, one per request. `/bench` covers step 4, including the Sessions API under three constraints. `/negative` covers step 5. `/export` covers step 6 as SHA-256 digests. `scripts/probe-run.mjs` is the component's smoke: it compares `/export` with `expected/<size>.json`, a snapshot made on local D1 by `scripts/expected.mjs`.
+- What the Worker's tests show on local D1: the 34-argument call, the 2.1 MB value and the 56 MB result are all **accepted**, and the 60-byte LIKE pattern is **refused**. An export taken after the whole bench equals the snapshot of a freshly loaded corpus at 5,000 listings × 365 days. The replace payload is 899,893 + 423,999 bytes in one 7-statement batch.
+
 ## Recommendation: GO, with conditions, for porting the rest of `repository.ts`
 
 **Why go.** The hardest constructs in the repository all have direct, verified SQLite forms and match Postgres result for result: LATERAL, DISTINCT ON, jsonb aggregation, recordset expansion, array overlap backed by GIN, row-value IS DISTINCT FROM, FILTER, keyset pagination under "C" collation, and conditional upsert. Performance on local D1 matches PGlite for the write that matters. The rest of the repository has **no interactive transactions, no `FOR UPDATE`, no advisory locks and no full-text search**. Its comments say it already assumes an executor without transactions, which removes the usual blocker for a D1 port. The measured remainder:
