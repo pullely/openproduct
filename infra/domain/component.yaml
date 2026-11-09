@@ -35,20 +35,12 @@ spec:
     # nothing). Declaring a default here would shadow the parameterDefault —
     # the silent-empty failure cloudflare-domain documents from Task 0083.
 
-  env:
-    AWS_EC2_METADATA_DISABLED: "true"
-
   dependsOn:
     # The worker the hostname attaches to must exist first.
     - component: openproduct-web
     # (The gateway edge left with the `api.` Route — see openproduct-api-domain.)
-    # Ordering for the OX2 cutover: cloudflare-domain's apply (which DESTROYS
-    # its old openproduct attach to the console worker) must converge before
-    # this component creates the new attach — two components must never both
-    # claim the hostname. The seconds-scale detach window between the two
-    # applies is the OX-A accepted blip, behind the deploy lane's approval
-    # gate. This edge can be dropped once the cutover has converged.
-    - component: cloudflare-domain
+    # (The platform's `cloudflare-domain` edge, which ordered the OX2 cutover
+    # off the console worker, converged long ago and stayed in orun-cloud.)
 
   subscribe:
     environments:

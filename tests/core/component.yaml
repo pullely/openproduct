@@ -66,10 +66,6 @@ spec:
             when:
               triggerRef: github-push-main
         profile: verify
-        profileRules:
-          - profile: skip # main does not re-verify what its PR verified (CIS17)
-            when:
-              triggerRef: github-push-main
   parameters:
     nodeVersion: "22"
     pnpmVersion: "10.12.1"

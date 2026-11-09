@@ -28,10 +28,12 @@ spec:
   # them.
   #
   # `verify` is the composition's own `defaultProfile` and runs pre-build,
-  # build and typecheck. `stage` and `prod` stay on `quick-check`: this is a
-  # source-only package with nothing per-environment to check, so one real lane
-  # is the verification and the other two would be the same seven seconds twice
-  # more.
+  # build and typecheck.
+  #
+  # DEV ONLY: a package deploys nowhere, and its dev lane is the check (CIS1).
+  # (In the monorepo stage and prod subscribed with `profile: skip`;
+  # stack-tectonic 0.21.0 has no such profile, and not subscribing is what
+  # skip meant.)
   subscribe:
     environments:
       - name: dev
@@ -43,14 +45,6 @@ spec:
             when:
               triggerRef: github-push-main
         profile: verify
-        profileRules:
-          - profile: skip # main does not re-verify what its PR verified (CIS17)
-            when:
-              triggerRef: github-push-main
-      - name: stage
-        profile: skip # a package deploys nowhere; its dev lane is the check (CIS1)
-      - name: prod
-        profile: skip # a package deploys nowhere; its dev lane is the check (CIS1)
   parameters:
     nodeVersion: "22"
     pnpmVersion: "10.12.1"

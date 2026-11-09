@@ -35,6 +35,12 @@ spec:
     # (apps/openproduct/tests/core): the platform planes are not guarded from
     # this isolate, they are unreachable from it. See design.md §3 before
     # adding anything here.
+  # VERIFY-ONLY IN EVERY ENVIRONMENT UNTIL OPN2 (openproduct-standalone
+  # design §2). No trigger reaches a deploy profile: a merge to main verifies
+  # stage and prod, it does not converge them. The monorepo's `skip` rules
+  # (main does not re-verify what its PR verified, CIS17; a PR does not plan
+  # stage or prod) went with the profile, which stack-tectonic 0.21.0 does not
+  # define. OPN2 brings the deploy rules back.
   subscribe:
     environments:
       - name: dev
@@ -46,56 +52,26 @@ spec:
             when:
               triggerRef: github-push-main
         profile: verify
-        profileRules:
-          - profile: skip # main does not re-verify what its PR verified (CIS17)
-            when:
-              triggerRef: github-push-main
-          - profile: verify # manual runs from Orunbase (saas-manual-runs)
-            when:
-              triggerRef: github-dispatch
       - name: stage
         profile: verify
-        profileRules:
-          - profile: skip
-            when:
-              triggerRef: github-pull-request
-          - profile: deploy
-            when:
-              triggerRef: github-push-main
-          - profile: deploy # manual runs from Orunbase (saas-manual-runs)
-            when:
-              triggerRef: github-dispatch
       - name: prod
         profile: verify
-        profileRules:
-          - profile: skip
-            when:
-              triggerRef: github-pull-request
-          - profile: deploy
-            when:
-              triggerRef: github-push-main
-          - profile: deploy # manual runs from Orunbase (saas-manual-runs)
-            when:
-              triggerRef: github-dispatch
   parameters:
     nodeVersion: "22"
     pnpmVersion: "10.12.1"
     workspaceDir: ..
     appDir: .
-    # Deploy-time wiring — wrangler.jsonc is rendered, never committed. Verify
-    # lanes render from wiring.fixture.json (offline); deploy lanes resolve
-    # real IDs from the Secrets Manager wiring manifest (BF5).
-    awsAccountId: "306024784101"
-    awsRegion: us-east-1
     orgName: sourceplane
-    owner: sourceplane
+    owner: pullely
     repo: openproduct
 
-    # SS2: manifest key for the secrets-live escrow sync (saas-secrets-sync).
-    # Enrolled for LISTING_SEAM_SECRET (tooling/secrets-sync/integrations.manifest.json,
-    # `listing-seam`): without the param the deploy skipped secrets-live and the
-    # seam key had to be set by hand - and was not.
-    secretsWorker: openproduct-worker
+    # Deploy-time wiring — wrangler.jsonc is rendered, never committed
+    # (.gitignore). Verify lanes render it OFFLINE from wiring.fixture.json; no
+    # verify lane resolves a secret. The template still binds PLATFORM_DB
+    # (Hyperdrive) in this milestone. OPN2 moves it to D1 `DB`, wired from
+    # `secretEnv` WIRING_CLOUDFLARE_D1_<ENV> (the infra component's
+    # secretOutputs), and names the runtime keys (LISTING_SEAM_SECRET,
+    # OPENPRODUCT_AUTH_SEAM_SECRET) in `runtimeSecrets`, cirrus's pattern.
     turboFilter: "@openproduct/core"
     wranglerConfig: wrangler.jsonc
     wranglerTemplate: wrangler.template.jsonc
@@ -146,7 +122,3 @@ spec:
     layer: runtime
     surface: openproduct
     runtime: cloudflare
-# ci: deliver LISTING_SEAM_SECRET — the listing-seam escrow doc is seeded and active; this redeploy runs secrets-live for it
-# ci: redeploy — bundles @openproduct/db's executor fix (array parameters serialized to Postgres literals); the public directory 500s on prod until this ships
-# ci: redeploy — bundles @openproduct/db's jsonb fix (openproduct-worldclass-v2 LI1: every JSON parameter was double-encoded through the production driver, and the search index rebuild has 503'd on every sweep tick since RS0; a change under packages/db does not plan this component, so this line is what ships it)
-# ci: redeploy — openproduct-worldclass-v2 PE1: the same race on the worker (MD4's prod deploy at 06:47:52 after PE1's at 06:47:41); ships the head again

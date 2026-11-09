@@ -32,10 +32,26 @@ compositions:
       cloudflare-domain: stack-tectonic
       db-migrate: stack-tectonic
 
-# discovery: the product's units arrive in OPN1 (the tree), which adds the
-# roots (core/, gateway/, web/, packages/, tests/, infra/) with the folders
-# themselves. orun refuses a root that does not exist, so until then there is
-# nothing to discover and every plan is empty.
+# The roots that hold this milestone's components (OPN1). Every one of them
+# subscribes verify-only in every environment until OPN2 switches deploys on.
+discovery:
+  roots:
+    - core/
+    - gateway/
+    - web/
+    - packages/
+    - tests/
+    - infra/synthetic/
+    # NOT DISCOVERED YET, ON PURPOSE: infra/media, infra/api-domain and
+    # infra/domain. They are terraform components that need the Cloudflare
+    # credentials even to plan, so they join when their environments do:
+    # media at OPN2, the two domain components at the prod switch (OPN3).
+    # Their files stay in the tree because tests/web/src/deploy-ordering.test.ts
+    # reads their component.yaml and terraform to hold the deploy order.
+    #
+    # TODO(OPN-2): the D1 probe's roots (infra/cloudflare-d1-probe for the
+    # throwaway database, infra/d1-probe for the stage-only Worker) are added
+    # here when those components are integrated (design §5.2).
 
 # Work (epics, milestones, tasks) lives in Orunbase, not in this file. The
 # design is under specs/epics/<slug>/ and the task contracts under tasks/.

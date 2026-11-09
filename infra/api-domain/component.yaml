@@ -35,9 +35,6 @@ spec:
     # nothing). Declaring a default here would shadow the parameterDefault —
     # the silent-empty failure cloudflare-domain documents from Task 0083.
 
-  env:
-    AWS_EC2_METADATA_DISABLED: "true"
-
   dependsOn:
     # THE GATEWAY, AND NOTHING ELSE. That is the whole point of this component
     # existing separately from `openproduct-domain`.

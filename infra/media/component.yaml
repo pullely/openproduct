@@ -34,9 +34,6 @@ spec:
     terraformDir: terraform
     terraformVersion: "1.15.3"
 
-  env:
-    AWS_EC2_METADATA_DISABLED: "true"
-
   subscribe:
     # STAGE AND PROD ONLY, like `cloudflare-r2`'s orun-state buckets: the
     # gateway's dev environment binds no bucket (a binding to a bucket that

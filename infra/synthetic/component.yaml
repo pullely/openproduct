@@ -18,6 +18,12 @@ spec:
   # way a visitor does, and holds no binding to either — a synthetic that
   # shared a binding with the thing it watches would share the failure. The
   # only resource it owns is its own Durable Object.
+  # VERIFY-ONLY IN EVERY ENVIRONMENT UNTIL OPN2 (openproduct-standalone
+  # design §2). No trigger reaches a deploy profile: a merge to main verifies
+  # stage and prod, it does not converge them. The monorepo's `skip` rules
+  # (main does not re-verify what its PR verified, CIS17; a PR does not plan
+  # stage or prod) went with the profile, which stack-tectonic 0.21.0 does not
+  # define. OPN2 brings the deploy rules back.
   subscribe:
     environments:
       - name: dev
@@ -29,54 +35,25 @@ spec:
             when:
               triggerRef: github-push-main
         profile: verify
-        profileRules:
-          - profile: skip # main does not re-verify what its PR verified (CIS17)
-            when:
-              triggerRef: github-push-main
-          - profile: verify # manual runs from Orunbase (saas-manual-runs)
-            when:
-              triggerRef: github-dispatch
       - name: stage
         profile: verify
-        profileRules:
-          - profile: skip
-            when:
-              triggerRef: github-pull-request
-          - profile: deploy
-            when:
-              triggerRef: github-push-main
-          - profile: deploy # manual runs from Orunbase (saas-manual-runs)
-            when:
-              triggerRef: github-dispatch
       - name: prod
         profile: verify
-        profileRules:
-          - profile: skip
-            when:
-              triggerRef: github-pull-request
-          - profile: deploy
-            when:
-              triggerRef: github-push-main
-          - profile: deploy # manual runs from Orunbase (saas-manual-runs)
-            when:
-              triggerRef: github-dispatch
   parameters:
     nodeVersion: "22"
     pnpmVersion: "10.12.1"
     workspaceDir: ../..
     appDir: .
-    awsAccountId: "306024784101"
-    awsRegion: us-east-1
     orgName: sourceplane
-    owner: sourceplane
+    owner: pullely
     repo: openproduct
     turboFilter: "@openproduct/synthetic"
     # No wrangler template and no wiring: this worker holds no wired resource,
     # so wrangler.jsonc is committed directly (the composition's template steps
-    # are conditional on wranglerTemplate and simply skip). No secretsWorker
+    # are conditional on wranglerTemplate and simply skip). No runtimeSecrets
     # either — OO-A has not named a channel, so there is no secret to deliver;
-    # when it does, ALERT_SEAM_SECRET is enrolled in the secrets-sync manifest
-    # and this gains the parameter, the way the gateway did for its seam key.
+    # when it does, ALERT_SEAM_SECRET is declared in secretEnv and named in
+    # runtimeSecrets, the way the gateway's seam keys are.
     wranglerConfig: wrangler.jsonc
     installCommand: pnpm install --frozen-lockfile
     # The suite runs in the build step, first, for the reason the gateway's

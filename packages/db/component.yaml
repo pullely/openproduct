@@ -13,13 +13,10 @@ spec:
   docs:
     overview: README.md
   dependsOn:
-    # The platform's migration chain, for the one test that still reads it
-    # (migrations-twin-sync, the cut-retired @saas import). NOT a build input:
-    # openproduct-core builds from this component, and an input edge would carry
-    # every platform migration on to openproduct's deploys. The twin test runs
-    # whenever this package's own ladder changes, which a mirrored migration
-    # always does.
-    - component: db-migrations
+    # (The platform's `db-migrations` edge left with the twin-sync test it
+    # existed for, at the repository cut.)
+    - component: openproduct-contracts
+      input: true
   # `dev` ON `verify`, WITH `preBuildCommand` — the suite runs in CI (OV3).
   #
   # `quick-check` is four steps ending at `test -f package.json` — no
@@ -42,10 +39,13 @@ spec:
   # does — `preBuildCommand` runs the package's turbo `test` task before the
   # build, exactly as `packages/cli` and `packages/sdk` do.
   #
-  # `stage` and `prod` stay on `quick-check`: source-only package, nothing
-  # per-environment to check, so one real lane is the verification.
-    - component: openproduct-contracts
-      input: true
+  # THE D1 SLICE RUNS HERE TOO: src/d1/** starts local D1 through miniflare
+  # (workerd), offline, inside the same `turbo run test`.
+  #
+  # DEV ONLY: a package deploys nowhere, and its dev lane is the check (CIS1).
+  # (In the monorepo stage and prod subscribed with `profile: skip`;
+  # stack-tectonic 0.21.0 has no such profile, and not subscribing is what
+  # skip meant.)
   subscribe:
     environments:
       - name: dev
@@ -57,14 +57,6 @@ spec:
             when:
               triggerRef: github-push-main
         profile: verify
-        profileRules:
-          - profile: skip # main does not re-verify what its PR verified (CIS17)
-            when:
-              triggerRef: github-push-main
-      - name: stage
-        profile: skip # a package deploys nowhere; its dev lane is the check (CIS1)
-      - name: prod
-        profile: skip # a package deploys nowhere; its dev lane is the check (CIS1)
   parameters:
     nodeVersion: "22"
     pnpmVersion: "10.12.1"

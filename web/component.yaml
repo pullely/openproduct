@@ -42,7 +42,18 @@ spec:
     #     openproduct-domain     -> openproduct-web
     #
     # `tests/web/src/deploy-ordering.test.ts` asserts both halves.
-    - component: openproduct-api-domain
+    #
+    # NOT DECLARED IN OPN1: `openproduct-api-domain` is not discovered until
+    # the prod switch (OPN3), and this build bakes no API hostname until then
+    # (see buildEnv below), so there is nothing to order and orun would drop
+    # the edge with a warning. The edge comes back with the variable, and the
+    # ordering test fails if the variable comes back without it.
+  # VERIFY-ONLY IN EVERY ENVIRONMENT UNTIL OPN2 (openproduct-standalone
+  # design §2). No trigger reaches a deploy profile: a merge to main verifies
+  # stage and prod, it does not converge them. The monorepo's `skip` rules
+  # (main does not re-verify what its PR verified, CIS17; a PR does not plan
+  # stage or prod) went with the profile, which stack-tectonic 0.21.0 does not
+  # define. OPN2 brings the deploy rules back.
   subscribe:
     environments:
       - name: dev
@@ -54,37 +65,10 @@ spec:
             when:
               triggerRef: github-push-main
         profile: verify
-        profileRules:
-          - profile: skip # main does not re-verify what its PR verified (CIS17)
-            when:
-              triggerRef: github-push-main
-          - profile: verify # manual runs from Orunbase (saas-manual-runs)
-            when:
-              triggerRef: github-dispatch
       - name: stage
         profile: verify
-        profileRules:
-          - profile: skip
-            when:
-              triggerRef: github-pull-request
-          - profile: deploy
-            when:
-              triggerRef: github-push-main
-          - profile: deploy # manual runs from Orunbase (saas-manual-runs)
-            when:
-              triggerRef: github-dispatch
       - name: prod
         profile: verify
-        profileRules:
-          - profile: skip
-            when:
-              triggerRef: github-pull-request
-          - profile: deploy
-            when:
-              triggerRef: github-push-main
-          - profile: deploy # manual runs from Orunbase (saas-manual-runs)
-            when:
-              triggerRef: github-dispatch
   parameters:
     nodeVersion: "22"
     pnpmVersion: "10.12.1"
@@ -104,6 +88,8 @@ spec:
     workerName: openproduct-web
     environmentAwareWorkerName: true
 
+    # The old account's workers.dev subdomain; only the deploy's smoke reads it.
+    # TODO(OPN2): the openproduct Cloudflare account's subdomain (design §4).
     workersDevSubdomain: oruncloud
 
     environmentBuildVar: NEXT_PUBLIC_DEPLOY_ENV
@@ -176,15 +162,28 @@ spec:
     # THE CONSEQUENCE, STATED: OPP4's cache can only be verified in prod until
     # a stage zone exists. That is recorded in the epic rather than papered
     # over with a hostname on the prod zone answering for stage traffic.
-    buildEnv:
-      dev:
-        NEXT_PUBLIC_CONSOLE_ORIGIN: https://orun-web-console-next-dev.oruncloud.workers.dev
-      stage:
-        NEXT_PUBLIC_CONSOLE_ORIGIN: https://stage.orunbase.com
-      prod:
-        NEXT_PUBLIC_CONSOLE_ORIGIN: https://app.orunbase.com
-        NEXT_PUBLIC_SITE_ORIGIN: https://openproduct.live
-        NEXT_PUBLIC_OPENPRODUCT_API_URL: https://api.openproduct.live
+    #
+    # ─── AND IN THIS REPOSITORY, NOT DECLARED AT ALL (OPN1) ─────────────
+    #
+    # The monorepo set these through the composition's `buildEnv` parameter.
+    # stack-tectonic 0.21.0's cloudflare-workers-assets-turbo has no
+    # `buildEnv` (its parameters are closed, so orun refuses the component),
+    # and in this milestone the website only verifies: every one of the three
+    # reads in `src/lib/platform.ts` degrades on its own when unset (the
+    # gateway's workers.dev host, a relative console link, no canonical). The
+    # values the deploys used are kept here so OPN2 restores exactly them,
+    # by whatever the pinned stack then offers:
+    #
+    #   dev:   NEXT_PUBLIC_CONSOLE_ORIGIN       https://orun-web-console-next-dev.oruncloud.workers.dev
+    #   stage: NEXT_PUBLIC_CONSOLE_ORIGIN       https://stage.orunbase.com
+    #   prod:  NEXT_PUBLIC_CONSOLE_ORIGIN       https://app.orunbase.com
+    #          NEXT_PUBLIC_SITE_ORIGIN          https://openproduct.live
+    #          NEXT_PUBLIC_OPENPRODUCT_API_URL  https://api.openproduct.live
+    #
+    # The last one is the hostname the rule above is about: when it comes
+    # back, `openproduct-api-domain` must be discovered and this component
+    # must depend on it, and `tests/web/src/deploy-ordering.test.ts` holds
+    # that the moment the line is active again.
 
     # ─── THE SUITE RUNS HERE BECAUSE NOTHING ELSE SCHEDULES IT ──────────────
     #

@@ -56,7 +56,7 @@ spec:
   # the same line the console's lane draws (CIS10), which defers such a PR.
   change:
     inputs:
-      - apps/openproduct/web/**
+      - web/**
   # `serve.mjs` builds the website itself, against the fixture's address, so it
   # needs nothing from another component's job.
 
@@ -92,10 +92,6 @@ spec:
             when:
               triggerRef: github-push-main
         profile: verify
-        profileRules:
-          - profile: skip # main does not re-verify what its PR verified (CIS17)
-            when:
-              triggerRef: github-push-main
 
   parameters:
     nodeVersion: "22"
