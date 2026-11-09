@@ -63,6 +63,8 @@ comes with its equality proof.
 
 `index-coverage` moves to `EXPLAIN QUERY PLAN`.
 
+The website's first real deploy happens here. If the Worker fails at startup with `ChunkLoadError … instrumentation`, the standalone trace is incomplete: follow `nextjs-on-workers` §10 (copy the build's server directory over the standalone one before OpenNext bundles it).
+
 **Going live.**
 - Deploy profiles are switched on for stage and prod.
 - Operator-set secrets are created in the workspace (design §4), with fresh seam keys **not yet** known to the platform.
