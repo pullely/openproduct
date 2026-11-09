@@ -10,7 +10,7 @@ build step.
 | | |
 |---|---|
 | **Component** | `openproduct-web-perf` · `turbo-package` |
-| **System** | [openproduct](../../../../docs/systems/openproduct.md) |
+| **System** | openproduct (sourceplane/orun-cloud `docs/systems/openproduct.md`) |
 | **Owner** | platform |
 | **Environments** | dev (`verify`, on pull requests) |
 
@@ -70,4 +70,4 @@ Useful environment variables, which `turbo.json` passes through:
 ## Related
 
 - Subject: [`openproduct-web`](../../web/README.md) · unit-level suite: [`openproduct-web-tests`](../web/README.md)
-- [`specs/epics/openproduct-commons/`](../../../../specs/epics/openproduct-commons/README.md) (XP4) · [`specs/epics/openproduct-worldclass-v2/`](../../../../specs/epics/openproduct-worldclass-v2/README.md) (QE, the budgets in CI)
+- `specs/epics/openproduct-commons/` (in sourceplane/orun-cloud) (XP4) · `specs/epics/openproduct-worldclass-v2/` (in sourceplane/orun-cloud) (QE, the budgets in CI)

@@ -1,0 +1,15 @@
+{
+  "$comment": "Decision WC2-8 (openproduct-worldclass-v2, recorded in sourceplane/orun-cloud specs/epics/openproduct-worldclass-v2/README.md): the performance budget is the number measured on 9 September 2026, held in CI, on the wire. Its numbers moved here at the repository cut (openproduct-standalone OPN1), so wire-budget.test.ts reads nothing outside this repository. They move only by a recorded decision: append an amendment here and change WIRE in tests/web-perf/src/wire.mjs in the same commit.",
+  "decision": "WC2-8",
+  "bytesKB": 276,
+  "requests": 30,
+  "thirdPartyHosts": 0,
+  "amendments": [
+    {
+      "date": "2026-10-22",
+      "fromKB": 250,
+      "toKB": 276,
+      "why": "The Next 16 upgrade. Next.js 15 left its support window and the OpenNext adapter stopped building it; 16.4.2's runtime (its router and the React it vendors) costs every page 26.5 KB more on the wire, and no app code grew. 276 is 250 plus exactly that rise, so every archetype keeps the margin it had."
+    }
+  ]
+}

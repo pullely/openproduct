@@ -33,8 +33,8 @@ import { dirname, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const REPO_ROOT = resolve(__dirname, "../../../../..");
-const ROOTS = ["apps/openproduct/core/src", "apps/openproduct/gateway/src"];
+const REPO_ROOT = resolve(__dirname, "../../..");
+const ROOTS = ["core/src", "gateway/src"];
 
 /** Anything that produces a value nobody typed. */
 const RANDOM = /crypto\.randomUUID\(|crypto\.getRandomValues\(|Math\.random\(/;
@@ -49,42 +49,42 @@ const RANDOM = /crypto\.randomUUID\(|crypto\.getRandomValues\(|Math\.random\(/;
  */
 const GENERATORS: Array<{ file: string; count: number; what: string }> = [
   {
-    file: "apps/openproduct/core/src/handlers/seam-events.ts",
+    file: "core/src/handlers/seam-events.ts",
     count: 3,
     what: "an event id for a seam delivery — a row in our own log",
   },
   {
-    file: "apps/openproduct/core/src/ids.ts",
+    file: "core/src/ids.ts",
     count: 1,
     what: "a UUID primary key for one of openproduct's own rows",
   },
   {
-    file: "apps/openproduct/core/src/router.ts",
+    file: "core/src/router.ts",
     count: 1,
     what: "a request id, for correlating log lines",
   },
   {
-    file: "apps/openproduct/gateway/src/auth-seam.ts",
+    file: "gateway/src/auth-seam.ts",
     count: 1,
     what: "a webhook delivery id on the subject-by-email call",
   },
   {
-    file: "apps/openproduct/gateway/src/auth.ts",
+    file: "gateway/src/auth.ts",
     count: 1,
     what: "the 32 bytes behind an `ops_` SESSION token — a pointer AT a subject, never one",
   },
   {
-    file: "apps/openproduct/gateway/src/http.ts",
+    file: "gateway/src/http.ts",
     count: 1,
     what: "a request id, for correlating log lines",
   },
   {
-    file: "apps/openproduct/gateway/src/password.ts",
+    file: "gateway/src/password.ts",
     count: 1,
     what: "an argon2id salt",
   },
   {
-    file: "apps/openproduct/gateway/src/seam.ts",
+    file: "gateway/src/seam.ts",
     count: 1,
     what: "a webhook delivery id on the digest and notification calls",
   },
@@ -114,8 +114,8 @@ describe("AC3 — openproduct mints no identity of its own", () => {
   it("finds a file to scan, so a broken path cannot read as a pass", () => {
     // The failure mode every source scan has: a wrong root, zero files, green.
     expect(FILES.length).toBeGreaterThan(30);
-    expect(FILES).toContain("apps/openproduct/gateway/src/auth.ts");
-    expect(FILES).toContain("apps/openproduct/core/src/handlers/auth.ts");
+    expect(FILES).toContain("gateway/src/auth.ts");
+    expect(FILES).toContain("core/src/handlers/auth.ts");
   });
 
   it("generates a random value in exactly the places listed above, and no others", () => {
@@ -159,13 +159,13 @@ describe("AC3 — openproduct mints no identity of its own", () => {
       }
     }
     expect(crossings).toEqual([
-      "apps/openproduct/gateway/src/auth.ts: const subjectId = await deps.resolveSubjectByEmail(env, email);",
+      "gateway/src/auth.ts: const subjectId = await deps.resolveSubjectByEmail(env, email);",
     ]);
   });
 });
 
 describe("AC3 — a credential is written only behind a consumed token", () => {
-  const AUTH = "apps/openproduct/core/src/handlers/auth.ts";
+  const AUTH = "core/src/handlers/auth.ts";
 
   it("writes one in exactly one place", () => {
     // "An unverified address never merges" is a claim about how many ways
@@ -216,7 +216,7 @@ describe("AC3 — the `reset` purpose stays in the vocabulary and out of the cod
 
   it("is still a value the vocabulary and the schema admit", () => {
     const contracts = readFileSync(
-      resolve(REPO_ROOT, "apps/openproduct/packages/contracts/src/credentials.ts"),
+      resolve(REPO_ROOT, "packages/contracts/src/credentials.ts"),
       "utf-8",
     );
     expect(contracts).toContain('CREDENTIAL_TOKEN_PURPOSES = ["verify", "reset"]');

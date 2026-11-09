@@ -11,7 +11,7 @@ service binding.
 | | |
 |---|---|
 | **Component** | `openproduct-worker` · `cloudflare-worker-turbo` |
-| **System** | [openproduct](../../../docs/systems/openproduct.md) |
+| **System** | openproduct (sourceplane/orun-cloud `docs/systems/openproduct.md`) |
 | **Owner** | platform |
 | **Environments** | dev (verify on pull requests) · stage · prod (deploy on push to `main`) |
 
@@ -81,7 +81,7 @@ schedule.
   ([`openproduct-supabase`](../infra/supabase/README.md) +
   [`openproduct-hyperdrive`](../infra/hyperdrive/README.md)) is provisioned and
   migrated. Moving this binding to it is step 4 of the deferred
-  [cutover runbook](../../../specs/epics/openproduct-independence/CUTOVER-RUNBOOK.md).
+  cutover runbook (sourceplane/orun-cloud `specs/epics/openproduct-independence/CUTOVER-RUNBOOK.md`).
 - **Build inputs:** [`openproduct-db`](../packages/db/README.md) (`input: true`)
   and, through it, [`openproduct-contracts`](../packages/contracts/README.md).
   Nothing under `apps/openproduct` imports a `@saas/*` package.
@@ -137,6 +137,6 @@ pnpm --filter @openproduct/core wire:fixture               # render wrangler.jso
 ## Related
 
 - Tests: [`tests/core`](../tests/core/README.md)
-- Seam contract: [`specs/components/19-openproduct-seam.md`](../../../specs/components/19-openproduct-seam.md)
-- Binding allowlist design: [`specs/epics/saas-openproduct/design.md`](../../../specs/epics/saas-openproduct/design.md) §3
-- Extraction and cutover: [`specs/epics/openproduct-independence/`](../../../specs/epics/openproduct-independence/README.md)
+- Seam contract: `specs/components/19-openproduct-seam.md` (in sourceplane/orun-cloud)
+- Binding allowlist design: `specs/epics/saas-openproduct/design.md` (in sourceplane/orun-cloud) §3
+- Extraction and cutover: `specs/epics/openproduct-independence/` (in sourceplane/orun-cloud)

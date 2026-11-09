@@ -9,7 +9,7 @@ is set, which today is prod. In every other environment it plans to nothing.
 | | |
 |---|---|
 | **Component** | `openproduct-api-domain` · `terraform` |
-| **System** | [openproduct](../../../../docs/systems/openproduct.md) |
+| **System** | openproduct (sourceplane/orun-cloud `docs/systems/openproduct.md`) |
 | **Owner** | platform |
 | **Environments** | stage (plans to nothing) · prod — plan on pull requests, apply on push to `main` |
 | **URL** | <https://api.openproduct.live> (prod) |
@@ -72,4 +72,4 @@ S3 backend (`workspace_key_prefix = "env"`, lockfile enabled).
 ## Related
 
 - Gateway: [`openproduct-gateway`](../../gateway/README.md) · apex: [`openproduct-domain`](../domain/README.md)
-- [`specs/epics/openproduct-performance/`](../../../../specs/epics/openproduct-performance/README.md) (OPP3, the 2026-09-09 outage)
+- `specs/epics/openproduct-performance/` (in sourceplane/orun-cloud) (OPP3, the 2026-09-09 outage)

@@ -12,7 +12,10 @@ import { fileURLToPath } from "node:url";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const PERF = resolve(__dirname, "../../web-perf/src");
-const SPEC = resolve(__dirname, "../../../../../specs/epics/openproduct-worldclass-v2/README.md");
+// WC2-8's numbers, as the decision records them. They lived in the monorepo's
+// specs/epics/openproduct-worldclass-v2/README.md until the repository cut;
+// this repository carries them itself, beside this test.
+const DECISION = resolve(__dirname, "wire-budget.decision.json");
 const APP = resolve(__dirname, "../../../web/src/app");
 const read = (file: string) => readFileSync(file, "utf-8");
 const code = (file: string) =>
@@ -31,9 +34,20 @@ describe("WC2-8's three numbers", () => {
     // 250 → 276 KB at the Next 16 upgrade (2026-10-22): the runtime grew,
     // the app did not. The number here and the number in the decision move
     // together or not at all.
-    const wc28 = read(SPEC).split("\n").find((l) => l.startsWith("| **WC2-8** |")) ?? "";
-    expect(wc28).toContain("~~≤ 250 KB~~");
-    expect(wc28).toContain("≤ 276 KB");
+    const wc28 = JSON.parse(read(DECISION)) as {
+      decision: string;
+      bytesKB: number;
+      requests: number;
+      thirdPartyHosts: number;
+      amendments: Array<{ date: string; fromKB: number; toKB: number }>;
+    };
+    expect(wc28.decision).toBe("WC2-8");
+    expect(wc28.amendments.map((a) => [a.date, a.fromKB, a.toKB])).toEqual([["2026-10-22", 250, 276]]);
+    // The budget in force is the last amendment's, and the lane holds exactly it.
+    expect(wc28.bytesKB).toBe(wc28.amendments.at(-1)!.toKB);
+    expect(wire).toContain(
+      `export const WIRE = { bytes: ${wc28.bytesKB} * 1024, requests: ${wc28.requests}, thirdPartyHosts: ${wc28.thirdPartyHosts} };`,
+    );
   });
 
   it("are measured at both of the audit's viewports, on the three archetypes it measured", () => {

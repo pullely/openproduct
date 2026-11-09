@@ -52,7 +52,9 @@
   "observability": { "enabled": true },
   // ─── SMART PLACEMENT (openproduct-performance OPP13, answering D4/OPP11) ──
   //
-  // Postgres is in ap-southeast-1 (`infra/supabase/component.yaml`) and this
+  // Postgres is in ap-southeast-1 (the Supabase projects the old deployment's
+  // `infra/supabase` provisions; D1 keeps the `apac` hint, openproduct-
+  // standalone design §3.1) and this
   // worker ran wherever the visitor was. `Server-Timing` on 2026-09-09 read
   // 500–760 ms PER STATEMENT from IAD — a listing page's seven statements
   // spanned 1.5 s, the sidebar's six 1.0 s, the contributors read 3.0 s — and

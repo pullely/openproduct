@@ -9,7 +9,7 @@ uploads to it and serves them from it.
 | | |
 |---|---|
 | **Component** | `openproduct-media` · `terraform` |
-| **System** | [openproduct](../../../../docs/systems/openproduct.md) |
+| **System** | openproduct (sourceplane/orun-cloud `docs/systems/openproduct.md`) |
 | **Owner** | platform |
 | **Environments** | stage · prod — `plan-only` on pull requests, `apply` on push to `main`. There is no dev bucket, because the gateway's dev environment binds none |
 
@@ -59,4 +59,4 @@ deletes an object.
 ## Related
 
 - [`openproduct-gateway`](../../gateway/README.md) (`src/media.ts`, `src/capture.ts`)
-- [`specs/epics/openproduct-worldclass/`](../../../../specs/epics/openproduct-worldclass/README.md) (MD1, listing media)
+- `specs/epics/openproduct-worldclass/` (in sourceplane/orun-cloud) (MD1, listing media)

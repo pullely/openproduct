@@ -12,7 +12,7 @@ watcher.
 | | |
 |---|---|
 | **Component** | `openproduct-synthetic` · `cloudflare-worker-turbo` |
-| **System** | [openproduct](../../../../docs/systems/openproduct.md) |
+| **System** | openproduct (sourceplane/orun-cloud `docs/systems/openproduct.md`) |
 | **Owner** | platform |
 | **Environments** | dev (verify on pull requests) · stage · prod (deploy on push to `main`) |
 
@@ -98,4 +98,4 @@ template:
 
 - What it reads: [`openproduct-gateway`](../../gateway/README.md) `/health` · [`openproduct-web`](../../web/README.md)
 - SLOs and runbook: [`openproduct-contracts`](../../packages/contracts/README.md) (`src/slo.ts`, `src/synthetic.ts`, `src/runbook.ts`). The runbook is published at `/docs/runbook` on the site
-- [`specs/epics/openproduct-operations/`](../../../../specs/epics/openproduct-operations/README.md) (OO0–OO3)
+- `specs/epics/openproduct-operations/` (in sourceplane/orun-cloud) (OO0–OO3)

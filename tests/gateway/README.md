@@ -9,7 +9,7 @@ and exercises the router, auth, seam and sweep with stubbed `CORE`, R2 and
 | | |
 |---|---|
 | **Component** | `openproduct-gateway-tests` · `turbo-package` |
-| **System** | [openproduct](../../../../docs/systems/openproduct.md) |
+| **System** | openproduct (sourceplane/orun-cloud `docs/systems/openproduct.md`) |
 | **Owner** | platform |
 | **Environments** | dev (`verify`, on pull requests) |
 
@@ -46,4 +46,4 @@ pnpm exec turbo run typecheck --filter=@openproduct/gateway-tests
 ## Related
 
 - Subject: [`openproduct-gateway`](../../gateway/README.md)
-- Seam contract: [`specs/components/19-openproduct-seam.md`](../../../../specs/components/19-openproduct-seam.md)
+- Seam contract: `specs/components/19-openproduct-seam.md` (in sourceplane/orun-cloud)

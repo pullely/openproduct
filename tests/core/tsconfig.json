@@ -9,12 +9,6 @@
     "declarationMap": false,
     "baseUrl": ".",
     "paths": {
-      "@saas/contracts": ["../../../../packages/contracts/src/index.ts"],
-      "@saas/contracts/*": ["../../../../packages/contracts/src/*.ts"],
-      "@saas/db/hyperdrive": ["../../../../packages/db/src/hyperdrive/index.ts"],
-      "@saas/db/content": ["../../../../packages/db/src/content/doc.ts"],
-      "@saas/db/events": ["../../../../packages/db/src/events/index.ts"],
-      "@saas/db/ids": ["../../../../packages/db/src/ids/index.ts"],
       "@openproduct-worker/*": ["../../core/src/*.ts"],
       "@openproduct/contracts": ["../../packages/contracts/src/index.ts"],
       "@openproduct/db": ["../../packages/db/src/index.ts"]

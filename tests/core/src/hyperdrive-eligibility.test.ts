@@ -45,7 +45,7 @@ import { readFileSync, readdirSync, statSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
-const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "../../../../..");
+const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "../../..");
 
 /**
  * The functions Hyperdrive names, plus the id generators — `nextval`,
@@ -67,8 +67,8 @@ function sourceFiles(dir: string): string[] {
 function statements(): { file: string; line: number; sql: string }[] {
   const found: { file: string; line: number; sql: string }[] = [];
   const roots = [
-    resolve(ROOT, "apps/openproduct/packages/db/src"),
-    resolve(ROOT, "apps/openproduct/core/src"),
+    resolve(ROOT, "packages/db/src"),
+    resolve(ROOT, "core/src"),
   ];
   for (const root of roots) {
     for (const file of sourceFiles(root)) {

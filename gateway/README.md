@@ -11,7 +11,7 @@ platform. It applies CORS, rate limits and auth, then forwards to the
 | | |
 |---|---|
 | **Component** | `openproduct-gateway` · `cloudflare-worker-turbo` |
-| **System** | [openproduct](../../../docs/systems/openproduct.md) |
+| **System** | openproduct (sourceplane/orun-cloud `docs/systems/openproduct.md`) |
 | **Owner** | platform |
 | **Environments** | dev (verify on pull requests) · stage · prod (deploy on push to `main`) |
 | **URL** | prod: <https://api.openproduct.live> (Worker Route owned by [`openproduct-api-domain`](../infra/api-domain/README.md)); also `openproduct-gateway-{stage,prod}.oruncloud.workers.dev` |
@@ -143,6 +143,6 @@ pnpm --filter @openproduct/gateway dev                         # wrangler dev
 ## Related
 
 - Tests: [`tests/gateway`](../tests/gateway/README.md)
-- Seam contract (S2, S6, S7, S8): [`specs/components/19-openproduct-seam.md`](../../../specs/components/19-openproduct-seam.md)
-- [`specs/epics/openproduct-independence/`](../../../specs/epics/openproduct-independence/README.md) (the gateway's origin) · [`openproduct-performance`](../../../specs/epics/openproduct-performance/README.md) (caching, the `api.` hostname) · [`openproduct-worldclass`](../../../specs/epics/openproduct-worldclass/README.md) (the sweep schedule, media, MCP)
+- Seam contract (S2, S6, S7, S8): `specs/components/19-openproduct-seam.md` (in sourceplane/orun-cloud)
+- `specs/epics/openproduct-independence/` (in sourceplane/orun-cloud) (the gateway's origin) · `openproduct-performance` (sourceplane/orun-cloud `specs/epics/openproduct-performance/README.md`) (caching, the `api.` hostname) · `openproduct-worldclass` (sourceplane/orun-cloud `specs/epics/openproduct-worldclass/README.md`) (the sweep schedule, media, MCP)
 - Public API docs page: <https://openproduct.live/docs/api>

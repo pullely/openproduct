@@ -9,7 +9,7 @@ browser. Browser-driven checks are in [`tests/web-perf`](../web-perf/README.md).
 | | |
 |---|---|
 | **Component** | `openproduct-web-tests` · `turbo-package` |
-| **System** | [openproduct](../../../../docs/systems/openproduct.md) |
+| **System** | openproduct (sourceplane/orun-cloud `docs/systems/openproduct.md`) |
 | **Owner** | platform |
 | **Environments** | dev (`verify`, on pull requests) |
 
@@ -59,4 +59,4 @@ pnpm exec turbo run typecheck --filter=@openproduct/web-tests
 ## Related
 
 - Subject: [`openproduct-web`](../../web/README.md) · browser lanes: [`openproduct-web-perf`](../web-perf/README.md)
-- [`specs/epics/openproduct-performance/`](../../../../specs/epics/openproduct-performance/README.md) (the deploy-ordering incident)
+- `specs/epics/openproduct-performance/` (in sourceplane/orun-cloud) (the deploy-ordering incident)

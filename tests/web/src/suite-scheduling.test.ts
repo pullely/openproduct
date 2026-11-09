@@ -39,13 +39,13 @@ import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
-const REPO = resolve(dirname(fileURLToPath(import.meta.url)), "../../../../..");
+const REPO = resolve(dirname(fileURLToPath(import.meta.url)), "../../..");
 
 /** Each source component, and the suite its build must run first. */
 const WIRED = [
-  { component: "apps/openproduct/web/component.yaml", suite: "@openproduct/web-tests", app: "@openproduct/web" },
-  { component: "apps/openproduct/gateway/component.yaml", suite: "@openproduct/gateway-tests", app: "@openproduct/gateway" },
-  { component: "apps/openproduct/core/component.yaml", suite: "@openproduct/core-tests", app: "@openproduct/core" },
+  { component: "web/component.yaml", suite: "@openproduct/web-tests", app: "@openproduct/web" },
+  { component: "gateway/component.yaml", suite: "@openproduct/gateway-tests", app: "@openproduct/gateway" },
+  { component: "core/component.yaml", suite: "@openproduct/core-tests", app: "@openproduct/core" },
 ] as const;
 
 describe("a source change runs the suite that guards it", () => {
@@ -76,7 +76,7 @@ describe("a source change runs the suite that guards it", () => {
     // reuse the deploy job's build and would add minutes to every deploy,
     // prod included. The cheap suites are wired; the expensive lane is
     // scheduled instead by its own `change.inputs` on the website's files
-    // (openproduct#1882), and this line is where that decision is visible.
+    // (sourceplane/orun-cloud#1882), and this line is where that decision is visible.
     //
     // IT ALSO CLOSES THE SILENT NO-OP. A turbo filter that matches nothing
     // exits 0 with `Tasks: 0 successful`, so a typo in a `buildCommand` would
@@ -84,9 +84,9 @@ describe("a source change runs the suite that guards it", () => {
     // class of failure this file exists for. The wiring assertion above pins
     // the filter to a name, and this one pins that name to a package that
     // actually exists.
-    const suites = readdirSync(resolve(REPO, "apps/openproduct/tests"))
+    const suites = readdirSync(resolve(REPO, "tests"))
       .map((dir) => {
-        const pkg = resolve(REPO, "apps/openproduct/tests", dir, "package.json");
+        const pkg = resolve(REPO, "tests", dir, "package.json");
         return existsSync(pkg) ? (JSON.parse(readFileSync(pkg, "utf-8")).name as string) : null;
       })
       .filter((name): name is string => name !== null)
@@ -118,8 +118,8 @@ describe("a source change runs the suite that guards it", () => {
     //
     // `tests/web-perf/component.yaml` reasoned its way here first and wrote it
     // down. This is the assertion that keeps the other three from drifting back.
-    for (const dir of readdirSync(resolve(REPO, "apps/openproduct/tests"))) {
-      const yaml = resolve(REPO, "apps/openproduct/tests", dir, "component.yaml");
+    for (const dir of readdirSync(resolve(REPO, "tests"))) {
+      const yaml = resolve(REPO, "tests", dir, "component.yaml");
       if (!existsSync(yaml)) continue;
       const source = readFileSync(yaml, "utf-8")
         .replace(/^\s*#.*$/gm, "")

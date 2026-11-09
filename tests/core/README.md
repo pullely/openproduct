@@ -10,7 +10,7 @@ guards that keep openproduct isolated from the platform.
 | | |
 |---|---|
 | **Component** | `openproduct-worker-tests` · `turbo-package` |
-| **System** | [openproduct](../../../../docs/systems/openproduct.md) |
+| **System** | openproduct (sourceplane/orun-cloud `docs/systems/openproduct.md`) |
 | **Owner** | platform |
 | **Environments** | dev (`verify`, on pull requests) |
 
@@ -61,5 +61,5 @@ pnpm exec turbo run typecheck --filter=@openproduct/core-tests
 ## Related
 
 - Subject: [`openproduct-worker`](../../core/README.md)
-- Design: [`specs/epics/saas-openproduct/design.md`](../../../../specs/epics/saas-openproduct/design.md) §3 (the binding allowlist)
-- [`specs/epics/openproduct-verification/`](../../../../specs/epics/openproduct-verification/README.md)
+- Design: `specs/epics/saas-openproduct/design.md` (in sourceplane/orun-cloud) §3 (the binding allowlist)
+- `specs/epics/openproduct-verification/` (in sourceplane/orun-cloud)

@@ -94,13 +94,14 @@ describe("the database-facing worker runs near the database", () => {
       placement?: { mode?: string; hint?: string };
     };
     expect(parsed.placement).toEqual({ mode: "smart", hint: "apac" });
-    // `infra/supabase/component.yaml` pins the database to ap-southeast-1;
-    // the hint names that region and nothing else.
-    const supabase = readFileSync(
-      resolve(__dirname, "../../../infra/supabase/component.yaml"),
-      "utf-8",
-    );
-    expect(supabase).toContain("supabaseRegion: ap-southeast-1");
+    // Until the repository cut this also read `infra/supabase/component.yaml`,
+    // which pinned the database to ap-southeast-1, so the hint named that
+    // region and nothing else. The Supabase projects never deploy from this
+    // repository (openproduct-standalone design §2, "Retired"); the D1
+    // database that replaces them takes the same `apac` location hint
+    // (design §3.1). TODO(OPN2): when infra/cloudflare-d1 provisions
+    // openproduct-stage and openproduct-prod, read its location hint here,
+    // the way this read the Supabase region.
   });
 });
 

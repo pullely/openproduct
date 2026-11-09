@@ -48,19 +48,23 @@
 // question for a person rather than a build failure: a token may have moved
 // deliberately, and the lane cannot know which.
 
-import { readFileSync } from "node:fs";
-import { dirname, resolve } from "node:path";
-import { fileURLToPath } from "node:url";
+import { existsSync, readFileSync } from "node:fs";
+import { resolve } from "node:path";
 
 import { chromium } from "playwright";
 
-const __dirname = dirname(fileURLToPath(import.meta.url));
-
-/** The archive, as committed. Read as text — never executed. */
-const ARTBOARD = resolve(
-  __dirname,
-  "../../../../../specs/epics/openproduct-launch/design/Openproduct_Launch.artboard.html",
-);
+/**
+ * The archive, read as text — never executed. It is the launch design's
+ * artboard (openproduct-launch OL-9), committed in sourceplane/orun-cloud at
+ * `specs/epics/openproduct-launch/design/Openproduct_Launch.artboard.html`,
+ * and it did not come along at the repository cut (openproduct-standalone
+ * OPN1): this repository reads nothing above its own root. Point
+ * OPENPRODUCT_LAUNCH_ARTBOARD at a copy to run the lane; without one it says
+ * so and compares nothing, which is what a report-only lane may do.
+ */
+const ARTBOARD = process.env.OPENPRODUCT_LAUNCH_ARTBOARD
+  ? resolve(process.env.OPENPRODUCT_LAUNCH_ARTBOARD)
+  : null;
 
 /**
  * THE MAPPING, AND IT IS THE WHOLE ARGUMENT.
@@ -132,6 +136,7 @@ function sameColour(a, b) {
 
 /** The design's tokens, parsed out of the archive. */
 function designTokens() {
+  if (ARTBOARD === null || !existsSync(ARTBOARD)) return null;
   const raw = readFileSync(ARTBOARD, "utf-8");
   // The prototype hangs its palette on `[data-accent]` rather than `:root`,
   // because the accent is swappable (OL-9 ships it as one build-time value).
@@ -148,7 +153,11 @@ function designTokens() {
 export async function runPixel(base) {
   const design = designTokens();
   if (design === null) {
-    console.log("pixel: the archived design's token block could not be read — nothing compared");
+    console.log(
+      ARTBOARD === null
+        ? "pixel: OPENPRODUCT_LAUNCH_ARTBOARD is not set — the archived design is not in this repository, nothing compared"
+        : "pixel: the archived design's token block could not be read — nothing compared",
+    );
     return;
   }
 

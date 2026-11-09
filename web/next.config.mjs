@@ -120,10 +120,12 @@ const nextConfig = {
   // renders unstyled. Five minutes keeps the 60s freshness posture while a
   // stale shell dies shortly after any deploy.
   expireTime: 300,
-  // Trace from the monorepo root so the standalone build pulls in workspace
+  // Trace from the workspace root so the standalone build pulls in workspace
   // dependencies (e.g. @openproduct/contracts) instead of trying to resolve
-  // them from the per-app node_modules. Three levels up: apps/openproduct/web.
-  outputFileTracingRoot: path.join(__dirname, "../../.."),
+  // them from the per-app node_modules. One level up: this repository's root.
+  // (It was three levels up, apps/openproduct/web, inside the monorepo, and
+  // OpenNext fails when the trace root is above the repository.)
+  outputFileTracingRoot: path.join(__dirname, ".."),
   typescript: {
     ignoreBuildErrors: false,
   },

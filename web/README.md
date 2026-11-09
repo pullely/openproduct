@@ -11,7 +11,7 @@ the [openproduct Gateway](../gateway/README.md) over HTTPS.
 | | |
 |---|---|
 | **Component** | `openproduct-web` · `cloudflare-workers-assets-turbo` |
-| **System** | [openproduct](../../../docs/systems/openproduct.md) |
+| **System** | openproduct (sourceplane/orun-cloud `docs/systems/openproduct.md`) |
 | **Owner** | platform |
 | **Environments** | dev (verify on pull requests) · stage · prod (deploy on push to `main`) |
 | **URL** | prod: <https://openproduct.live> (Custom Domain owned by [`openproduct-domain`](../infra/domain/README.md)) · stage: <https://openproduct-web-stage.oruncloud.workers.dev> |
@@ -130,5 +130,5 @@ not relocatable between runs.
 
 - Tests: [`tests/web`](../tests/web/README.md) · [`tests/web-perf`](../tests/web-perf/README.md)
 - Webfonts: [`src/fonts/README.md`](src/fonts/README.md)
-- Seam URL edges: [`specs/components/19-openproduct-seam.md`](../../../specs/components/19-openproduct-seam.md)
-- [`specs/epics/openproduct-independence/`](../../../specs/epics/openproduct-independence/README.md) (the standalone site) · [`openproduct-performance`](../../../specs/epics/openproduct-performance/README.md) (caching, the 2026-09-09 hostname outage) · [`openproduct-studio`](../../../specs/epics/openproduct-studio/README.md)
+- Seam URL edges: `specs/components/19-openproduct-seam.md` (in sourceplane/orun-cloud)
+- `specs/epics/openproduct-independence/` (in sourceplane/orun-cloud) (the standalone site) · `openproduct-performance` (sourceplane/orun-cloud `specs/epics/openproduct-performance/README.md`) (caching, the 2026-09-09 hostname outage) · `openproduct-studio` (sourceplane/orun-cloud `specs/epics/openproduct-studio/README.md`)

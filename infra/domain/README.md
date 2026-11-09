@@ -9,7 +9,7 @@ It finds the zone, or creates it in `managed` mode, and attaches the apex to the
 | | |
 |---|---|
 | **Component** | `openproduct-domain` · `terraform` |
-| **System** | [openproduct](../../../../docs/systems/openproduct.md) |
+| **System** | openproduct (sourceplane/orun-cloud `docs/systems/openproduct.md`) |
 | **Owner** | platform |
 | **Environments** | stage (plans to nothing) · prod — plan on pull requests, apply on push to `main` |
 | **URL** | <https://openproduct.live> (prod) |
@@ -43,7 +43,7 @@ records why.
 
 - [`openproduct-web`](../../web/README.md): the Custom Domain attaches to the
   Worker by name, so the Worker must exist first.
-- `cloudflare-domain` ([`infra/terraform/cloudflare-domain`](../../../../infra/terraform/cloudflare-domain/)):
+- `cloudflare-domain` (`infra/terraform/cloudflare-domain` (in sourceplane/orun-cloud)):
   this orders the cutover that moved the apex off the console Worker, so that
   two components never claim the hostname at once. The `component.yaml` notes
   say this edge can be dropped once that cutover has converged.
@@ -64,4 +64,4 @@ The Cloudflare provider is pinned to v4, which names the resource
 ## Related
 
 - [`openproduct-api-domain`](../api-domain/README.md) · [`openproduct-web`](../../web/README.md)
-- [`specs/epics/openproduct-independence/`](../../../../specs/epics/openproduct-independence/README.md) (OX2, the standalone site on its own apex)
+- `specs/epics/openproduct-independence/` (in sourceplane/orun-cloud) (OX2, the standalone site on its own apex)

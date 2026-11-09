@@ -11,7 +11,7 @@ and the db package all import it.
 | | |
 |---|---|
 | **Component** | `openproduct-contracts` · `turbo-package` |
-| **System** | [openproduct](../../../../docs/systems/openproduct.md) |
+| **System** | openproduct (sourceplane/orun-cloud `docs/systems/openproduct.md`) |
 | **Owner** | platform |
 | **Environments** | dev only (`verify`); stage and prod are `skip`, because a package deploys nowhere |
 
@@ -70,5 +70,5 @@ are `skip`. There is nothing to deploy.
 ## Related
 
 - Consumers: [core](../../core/README.md) · [gateway](../../gateway/README.md) · [web](../../web/README.md) · [synthetic](../../infra/synthetic/README.md) · [db](../db/README.md)
-- Projection contract: [`specs/epics/saas-openproduct/design.md`](../../../../specs/epics/saas-openproduct/design.md) §4
-- Seam contract: [`specs/components/19-openproduct-seam.md`](../../../../specs/components/19-openproduct-seam.md)
+- Projection contract: `specs/epics/saas-openproduct/design.md` (in sourceplane/orun-cloud) §4
+- Seam contract: `specs/components/19-openproduct-seam.md` (in sourceplane/orun-cloud)
