@@ -1,0 +1,29 @@
+# Dependencies and build output
+node_modules/
+dist/
+.next/
+.open-next/
+.turbo/
+.wrangler/
+coverage/
+*.tsbuildinfo
+
+# Local environment and credentials: never committed
+.env
+.env.*
+!.env.example
+.dev.vars
+*.pem
+
+# Rendered at deploy time from wrangler.template.jsonc and the wiring secrets
+core/wrangler.jsonc
+
+# orun local state
+.orun/
+plan.json
+
+# OS and editors
+.DS_Store
+.idea/
+.vscode/*
+!.vscode/extensions.json
