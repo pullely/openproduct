@@ -93,20 +93,33 @@ These apply to every statement in `repository.ts` (about 340), and OPN1 proves t
 | `ORDER BY … NULLS LAST` | the same; SQLite has supported it since 3.30 | several |
 | `COLLATE "C"` | SQLite's default `BINARY` collation (byte order); OPN1 verifies equivalence | several |
 | `ON CONFLICT … DO UPDATE … WHERE`, `RETURNING` | the same; SQLite supports both | 68 / 87 |
-| data-modifying CTE (`WITH x AS (INSERT …)`) | separate statements in one `db.batch()` | 2 |
+| data-modifying CTE (`WITH x AS (INSERT …)`) | separate statements in one `db.batch()`. These are rewritten first: they are exactly factory trap 16 | 4 |
+| `to_char(…)`, `AT TIME ZONE` | `strftime` in UTC, each with its own differential case, because day boundaries are where they break | 15 / 11 |
+| `ILIKE` | `lower(x) LIKE lower(?)`, with the pattern kept within D1's 50-byte limit. `lower()` folds ASCII only, so slugs and handles are constrained to ASCII, or folded in JS | 5 |
+| `gen_random_uuid()` | the id is minted in JS | 2 |
+| `json_build_object` with more than 32 arguments | `json_insert` over a smaller object, because D1 allows at most 32 arguments per function | slice: 1 |
+| a bound JS number used in arithmetic or text | `CAST(? AS INTEGER)`: D1 binds every JS number as REAL, which leaks into text as `1.0` | several |
+| `CREATE INDEX … DESC NULLS LAST` | `… DESC`: SQLite sorts NULL lowest, so the order is the same, and it refuses `NULLS` in an index | several |
+| an order that relied on the join | an explicit outer `ORDER BY`: SQLite does not keep join output order | slice: 1 |
+| `now()`, `REGEXP`, `LEAST`, `GREATEST` | an instant bound from JS; JS for patterns; multi-argument `MIN` / `MAX`. `sqlite_version()`, `if()` and `unistr()` are blocked on D1 | 29 `now()` |
 | `CREATE FUNCTION … plpgsql` + `CREATE TRIGGER` | `CREATE TRIGGER … BEGIN SELECT RAISE(ABORT, '…') … END` | 2 triggers |
 | `openproduct.try_jsonb()` repair function | `json_valid()` in SQL, or repair in JS at read | 1 |
 | schema prefix `openproduct.` | dropped; the database is the boundary | all |
 | `BOOLEAN` | `INTEGER` 0/1 with a `CHECK` | several |
 
-SQLite text cuts off at a NUL character (factory trap 50). No key may be built with `\u0000` as a separator; use a JSON array.
+Three more differences:
+- **NUL characters.** Postgres refuses a NUL in text, but SQLite stores it and then cuts strings off at it (factory trap 50). The D1 repository refuses NUL in JS, and no key is built with `\u0000` as a separator.
+- **Time precision.** D1 keeps milliseconds, not microseconds. The fixed timestamp format is enforced by a `strftime(…) IS col` CHECK on every timestamp column, not by a LIKE pattern, because of the 50-byte limit.
+- **Counts on production Postgres.** The OPN1 proof found that the old deployment's postgres.js executor reports 0 for every write count without `RETURNING`. PGlite hides this. Nothing in control flow depends on it, but it shows the counts are only right on D1 when they come from `RETURNING`.
 
 ### 3.4 Limits, and how the code stays under them
 
 | D1 limit | How openproduct stays under it |
 |---|---|
 | 100 bound parameters per statement | Bulk writes bind **one** JSON value and expand it with `json_each`. No statement is built with a parameter per row. |
-| 2 MB per string, BLOB or row | Bulk JSON payloads are chunked at about 1 MB. The search rebuild at 5,000 documents is the largest, and OPN1 measures it. |
+| 32 arguments per SQL function (**local workerd does not enforce it**) | Wide JSON objects are built with `json_insert`. A static guard (`remote-limits.ts`) checks every statement the tests run. |
+| 50 bytes per LIKE or GLOB pattern | Format checks use `strftime` round-trips. User-supplied search patterns are cut to the limit. |
+| 2 MB per string, BLOB or row (**local workerd does not enforce it**) | Bulk JSON payloads are chunked at about 1 MB (the 5,000-document search replace is two chunks, of 900 KB and 424 KB). The static guard checks every bound value. |
 | 100 KB per SQL statement | Generated SQL never inlines data. |
 | 1,000 queries per invocation (a `batch()` counts as one) | Sweep phases batch their writes. The ingestion phase already caps sources per run. |
 | 30 s per query | Each sweep phase is a handful of set-based statements. The weekly digest's snapshot-pair read (6.5 s on Postgres at a year of snapshots) is the slowest read known today and gets its own OPN2 check. |
@@ -129,6 +142,7 @@ with the change-detection lock rule carried over. The Postgres runner,
 
 - **The D1 harness** runs local D1 through workerd (`miniflare` / wrangler's `getPlatformProxy()` from vitest). That is real SQLite in the same runtime D1 uses, **never** better-sqlite3 or PGlite standing in for D1. The cirrus port shipped SQL that passed on a Postgres-like engine and failed on D1 (factory trap 16). That must not happen twice.
 - **The differential suite (OPN1 and OPN2):** the same fixture is seeded into PGlite and local D1, the same methods are called with the same inputs, and every result is deep-equal, including order, cursors, census windows and report counts. It is the safety net for the port, and it is deleted along with Postgres at the end of OPN2.
+- **The remote-limits guard** runs after every D1 test. It refuses any statement that breaks a limit local workerd lets through but remote D1 enforces: 32 function arguments, 2 MB per value, 100 bound parameters, 100 KB per statement and 50-byte patterns. OPN1's remote probe confirms that the service refuses each one, so the guard matches reality.
 - **The scale suite** (`packages/db/src/scale`: 5,000 listings, a year of ingestion and snapshots) moves to D1. `index-coverage` asserts `EXPLAIN QUERY PLAN` uses an index wherever the Postgres plan did.
 
 ## 4. The deploy path
@@ -184,6 +198,8 @@ The catalogue and search slice of the 10-minute sweep and its public reads. It e
    - seeds the slice's tables at the scale target (5,000 listings, the corpus's metrics, upvotes and media shape);
    - times each method 20 times from inside Cloudflare;
    - posts its report to the run log.
+
+   It also sends negative probes that local D1 accepts and remote D1 must refuse (a 34-argument `json_object`, a 2.1 MB bound value, a result over 50 MB). Then it diffs the remote results against local D1's for the same corpus, and they must be equal.
 
    It stays as a stage-only component, run on demand by dispatch, and OPN2 re-runs it over the whole data layer. Its database is emptied after each run. Laptop-to-D1 timings are not used: they measure the network to this machine, not the product.
 

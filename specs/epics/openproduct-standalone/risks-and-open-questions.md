@@ -24,8 +24,18 @@ per statement. The search rebuild binds one JSON payload of every document,
 and at 5,000 documents that payload can pass 2 MB.
 
 **Mitigation:** one JSON parameter per statement, expanded with `json_each`
-and chunked at about 1 MB. Local workerd may not enforce every limit the
-service does, so OPN1's remote probe is where the limits are proven.
+and chunked at about 1 MB.
+
+The local proof confirmed that local workerd does **not** enforce two of the
+service's limits: 32 arguments per SQL function, and 2 MB per value. A
+34-argument `json_object` ran locally and would fail on D1. Two things guard
+against that:
+- A static remote-limits guard checks every statement the tests run (design §3.6).
+- OPN1's remote probe sends a negative probe for each of these limits, to prove the guard matches the service.
+
+If the 1.3 MB, 7-statement replace batch is refused remotely, the fallback
+is already designed: several smaller batches, each atomic and each leaving
+the index consistent.
 
 ## OPN-C — green tests, broken on D1 (RISK, mitigated)
 
