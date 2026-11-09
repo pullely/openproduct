@@ -1,0 +1,147 @@
+apiVersion: sourceplane.io/v1
+kind: Intent
+
+metadata:
+  name: openproduct
+  description: "openproduct.live: a public directory of open builds. Standalone on Cloudflare (Workers, D1, R2, Durable Objects), deployed through Orunbase."
+  namespace: sourceplane
+
+execution:
+  state:
+    backendUrl: https://api.orunbase.com
+    # The public openproduct workspace (openproduct-live) in pullely's
+    # openproduct account. The claim is sent on every remote op, including
+    # CI's OIDC exchange, and declaring it implies strict mode: a run that
+    # resolves no workspace fails fast.
+    workspace: ws_VTNEQKAP
+    requireOrg: true
+    autopushCatalog: true
+
+compositions:
+  sources:
+    # Consumed as a pinned OCI artifact, never vendored. Bumping the tag is
+    # the deliberate upgrade step.
+    - name: stack-tectonic
+      kind: oci
+      ref: oci://ghcr.io/sourceplane/stack-tectonic:0.21.0
+  resolution:
+    precedence:
+      - stack-tectonic
+    bindings:
+      terraform: stack-tectonic
+      cloudflare-domain: stack-tectonic
+      db-migrate: stack-tectonic
+
+# discovery: the product's units arrive in OPN1 (the tree), which adds the
+# roots (core/, gateway/, web/, packages/, tests/, infra/) with the folders
+# themselves. orun refuses a root that does not exist, so until then there is
+# nothing to discover and every plan is empty.
+
+# Work (epics, milestones, tasks) lives in Orunbase, not in this file. The
+# design is under specs/epics/<slug>/ and the task contracts under tasks/.
+
+automation:
+  triggerBindings:
+    github-pull-request:
+      description: Pull request validation
+      on:
+        provider: github
+        event: pull_request
+        actions:
+          - opened
+          - synchronize
+          - reopened
+          - ready_for_review
+        baseBranches:
+          - main
+      plan:
+        scope: changed
+        base: pull_request.base.sha
+        head: pull_request.head.sha
+
+    github-push-main:
+      description: Main branch convergence after merge
+      on:
+        provider: github
+        event: push
+        branches:
+          - main
+
+    github-dispatch:
+      description: A run or a deploy asked for from Orunbase
+      on:
+        provider: github
+        event: workflow_dispatch
+        branches:
+          - main
+      plan:
+        scope: selected
+        components: inputs.component
+        environments: inputs.environment
+        autopush: false
+        requireRule: true
+
+    local-development:
+      description: Local testing
+      on:
+        provider: local
+
+environments:
+  dev:
+    activation:
+      triggerRefs:
+        - github-pull-request
+        - github-push-main
+        - local-development
+    parameterDefaults:
+      terraform:
+        lane: verify
+        namespace: sourceplane
+        namespacePrefix: dev-
+        owner: pullely
+        repo: openproduct
+    policies:
+      requireApproval: "false"
+    env:
+      BASE_DOMAIN: openproduct.live
+
+  stage:
+    activation:
+      triggerRefs:
+        - github-pull-request
+        - github-push-main
+        - github-dispatch
+    parameterDefaults:
+      terraform:
+        lane: verify
+        namespace: sourceplane
+        namespacePrefix: stg-
+        owner: pullely
+        repo: openproduct
+    policies:
+      requireApproval: "true"
+    env:
+      BASE_DOMAIN: openproduct.live
+
+  prod:
+    activation:
+      triggerRefs:
+        - github-pull-request
+        - github-push-main
+        - github-dispatch
+    promotion:
+      dependsOn:
+        - environment: stage
+    parameterDefaults:
+      terraform:
+        lane: verify
+        namespace: sourceplane
+        namespacePrefix: prod-
+        owner: pullely
+        repo: openproduct
+        # OPENPRODUCT_CUSTOM_DOMAIN (openproduct.live) is set here only at the
+        # prod switch (OPN3). Until then the domain components plan to nothing.
+    policies:
+      requireApproval: "true"
+    env:
+      BASE_DOMAIN: openproduct.live

@@ -12,8 +12,9 @@ follow, endorse, comment and apply for open roles.
 openproduct is being rebuilt here, in the open, as a standalone,
 Cloudflare-only product: Workers, D1, R2 and Durable Objects, deployed through
 Orunbase like every product it lists. The plan is the
-[`openproduct-standalone`](work/epics/openproduct-standalone/README.md) epic.
-It lands as this repository's first pull request.
+[`openproduct-standalone`](specs/epics/openproduct-standalone/README.md) epic.
+The epic and its tasks are tracked in Orunbase; this repository holds the
+design and the task contracts.
 
 Until that epic's switch milestone, openproduct.live is still served by the
 previous deployment.
