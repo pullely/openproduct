@@ -14,7 +14,9 @@ Cloudflare-only product: Workers, D1, R2 and Durable Objects, deployed through
 Orunbase like every product it lists. The plan is the
 [`openproduct-standalone`](specs/epics/openproduct-standalone/README.md) epic.
 The epic and its tasks are tracked in Orunbase; this repository holds the
-design and the task contracts.
+product's code (cut from its old home at OPN1, and verify-only until OPN2
+deploys it), the design and the task contracts. To report a security issue,
+see [SECURITY.md](SECURITY.md).
 
 Until that epic's switch milestone, openproduct.live is still served by the
 previous deployment.

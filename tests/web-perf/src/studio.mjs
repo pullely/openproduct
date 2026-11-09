@@ -149,7 +149,9 @@ export async function runStudio(base) {
   };
 
   const listing = `${base}/studio/${STUDIO_ORG}/${STUDIO_PROFILE}`;
-  const browser = await chromium.launch();
+  const browser = await chromium.launch({
+    ...(process.env.XP4_CHROMIUM ? { executablePath: process.env.XP4_CHROMIUM } : {}),
+  });
   try {
     const context = await browser.newContext({ viewport: { width: 1280, height: 900 } });
     await context.addCookies(sessionCookie(base));
