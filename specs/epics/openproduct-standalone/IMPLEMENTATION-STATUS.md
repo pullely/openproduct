@@ -7,7 +7,7 @@ the code departed from `design.md`.
 |---|---|---|
 | OPN0 — the spec | ✅ done | [#1](https://github.com/pullely/openproduct/pull/1) |
 | OPN1 — the tree, with D1 proven on one slice | ✅ done: **no-go for D1**, the owner's call (2026-11-11) | [#2](https://github.com/pullely/openproduct/pull/2), [#3](https://github.com/pullely/openproduct/pull/3), [#4](https://github.com/pullely/openproduct/pull/4) |
-| OPN2 — live on its own URLs, on Supabase | 🚧 in progress | |
+| OPN2 — live on its own URLs, on Supabase | ✅ done (2026-11-11). Password sign-up moves to OPN3 (see OPN-8) | [#5](https://github.com/pullely/openproduct/pull/5), [#6](https://github.com/pullely/openproduct/pull/6), [#7](https://github.com/pullely/openproduct/pull/7), [#8](https://github.com/pullely/openproduct/pull/8), [#9](https://github.com/pullely/openproduct/pull/9) |
 | OPN3 — openproduct.live served from here | | |
 | OPN4 — openproduct, listed on openproduct.live | | |
 
@@ -27,7 +27,7 @@ the code departed from `design.md`.
 | Cloudflare connection | `openproduct` (`int_7fbdaafa…`), inherited from the account |
 | Epic in Orunbase | `openproduct-standalone`, EP-1 (`epc_0TXVHJ8Z`) |
 | Milestones | OPN0 `mls_VEMWNC1J` · OPN1 `mls_GPBDDEE7` · OPN2 `mls_GQ855EQV` · OPN3 `mls_QJP277KN` · OPN4 `mls_GFTKS4Q0` |
-| Tasks | OPN-1 `tsk_N14BB1XD` (OPN0, done: merged as `1fc8305`, PR #1) · OPN-2 `tsk_85D0P8WW` (OPN1, done: PR #2) · OPN-4 `tsk_DEKB9MPX` (OPN1, done: PR #3) · OPN-3 `tsk_DQTEWGM3` (OPN1, done: PR #4) · OPN-5 `tsk_KSEVSQNN` (OPN2, done: merged as `b8d55d3`, PR #5) · OPN-6 `tsk_8417K5E5` (OPN2, done: merged as `2b7b101`, PR #6) · OPN-7 `tsk_WFT2NPB0` (OPN2, done: merged as `0aeb50a`, PR #7) · OPN-8 `tsk_GXBYVA6W` (OPN2: openproduct goes live on its own URLs) |
+| Tasks | OPN-1 `tsk_N14BB1XD` (OPN0, done: merged as `1fc8305`, PR #1) · OPN-2 `tsk_85D0P8WW` (OPN1, done: PR #2) · OPN-4 `tsk_DEKB9MPX` (OPN1, done: PR #3) · OPN-3 `tsk_DQTEWGM3` (OPN1, done: PR #4) · OPN-5 `tsk_KSEVSQNN` (OPN2, done: merged as `b8d55d3`, PR #5) · OPN-6 `tsk_8417K5E5` (OPN2, done: merged as `2b7b101`, PR #6) · OPN-7 `tsk_WFT2NPB0` (OPN2, done: merged as `0aeb50a`, PR #7) · OPN-8 `tsk_GXBYVA6W` (OPN2, done: merged as `5070529`, PR #8, and `8e9f80e`, PR #9) |
 | Project environments | `dev`, `stage`, `prod`, created through `POST …/projects/{prj}/environments` on 2026-11-09. A baseline bootstrap creates them; this repository never had one, and secret authoring refused until they existed |
 | Stage secrets | `CLOUDFLARE_API_TOKEN` (`workers-deploy`), `CLOUDFLARE_ACCOUNT_ID` (`account-id`), `CLOUDFLARE_D1_TOKEN` (`d1-edit`), `CLOUDFLARE_WORKERS_SUBDOMAIN` (`workers-subdomain`): all brokered from connection `int_7fbdaafa…`. `PROBE_TOKEN`: static, random, set from stdin. None has a prod counterpart yet |
 | Supabase connection | **`openproduct`** (`int_cc19cfd5…`), created by the owner on 2026-11-11 for this product and inherited from the account (OPN-T). The account's older `arca-orun` (`int_d9116c21…`) is not used, so every brokered Supabase secret names `openproduct` explicitly |
@@ -235,7 +235,7 @@ The owner upgraded the `openproduct` Cloudflare account to Workers Paid on 2026-
 
 Design §8 lists the Orunbase account's limits; this is the Cloudflare side of the same question.
 
-## OPN2 — as built (so far)
+## OPN2 — as built
 
 ### OPN-5: the D1 trial retires
 
@@ -312,11 +312,21 @@ instead of failing on keys that do not exist yet.
   - `CLOUDFLARE_R2_TOKEN` on stage and prod (`r2-data`);
   - fresh `LISTING_SEAM_SECRET` and `OPENPRODUCT_AUTH_SEAM_SECRET` per environment (OPN-K).
 - **Left for the owner:** `OPENPRODUCT_OPERATORS`, `GITHUB_TOKEN` and the screenshot-capture pair. Each is optional per request.
-- **The secrets were stored on 2026-11-11 (#8). The first deploy (run 43110234860) met two account limits that the monorepo's account never had:**
+- **The secrets were stored on 2026-11-11 (#8). The first deploy (run 43110234860) met two account settings that the monorepo's account never needed:**
   - **core's placement.** `{ "mode": "smart", "hint": "apac" }` is refused ("placement hint not allowed", 10023). It is now `{ "region": "aws:ap-southeast-1" }`, the documented Placement Hints form, naming the Supabase projects' region.
   - **R2 was not enabled** on the openproduct account ("Please enable R2 through the Cloudflare Dashboard", 10042), so `openproduct-media` could not create its buckets. The gateway and the website wait on it. The owner enabled it on 2026-11-12.
   - **The follow-up (#9)** also touches the media, gateway and website `component.yaml` files. `orun plan --changed` schedules only components whose files change, so its merge redeploys all four in order.
   - What did deploy: `openproduct-synthetic` on stage and prod.
+- **Live (2026-11-11, #9's merge, run 43113656168, all green).** The run deployed, in order:
+  - `openproduct-media` (both buckets), then core with the new placement, then the gateway, then the website, stage before prod;
+  - the seam keys: core's `LISTING_SEAM_SECRET`, and the gateway's `LISTING_SEAM_SECRET` and `OPENPRODUCT_AUTH_SEAM_SECRET`. The screenshot pair was skipped by name.
+- **Checked from outside, on both environments:**
+  - `openproduct-web-<env>.openproduct.workers.dev` renders the empty catalogue ("No builds are listed yet") with no console errors, and `/docs/api` answers 200;
+  - `openproduct-gateway-<env>.openproduct.workers.dev/health` is `ok` (`core`, `platform`, `seam` configured), and all seven sweep phases ran at 23:00 UTC and are healthy. The 22:50 tick, 7 minutes after the triggers were registered, did not run;
+  - `/v1/products` reads Postgres in ~25–40 ms for three queries (`Server-Timing` `dbspan`), so the placement holds core next to the database.
+- **The synthetic monitor:** `search-freshness`, `count-freshness` and `cache-hit` all hold on stage. `cache-hit` needs six front-page samples before it judges, so until it has them it keeps the `unreachable` recorded before the website existed. Prod reached six at 23:15.
+- **Approval did not gate the merge.** `intent.yaml` sets `requireApproval: "true"` on stage and prod, yet the push-to-main run went from stage to prod without a pause. OPN2's "converges … with approval" is therefore met only in the sense that the merged PR is the approval. Whether a push should wait on an Orunbase approval is a platform question, left open for the owner (risk OPN-V).
+- **No secret is in GitHub Actions** (`gh secret list` is empty) or in a committed file.
 - **Departure from OPN2's "done when": password sign-up.** The gateway's password sign-in asks the platform's identity-worker for the account, over the auth seam, and the platform holds one `OPENPRODUCT_AUTH_SEAM_SECRET`: the monorepo deploy's. Until the platform holds this repository's key, the new site's password sign-in is refused. Giving the platform the new key cuts the old deploy off, which is the switch, so it moves to OPN3 with the listing seam. Browsing, `/health` and the sweeps do not need it.
 
 ## Departures from the design

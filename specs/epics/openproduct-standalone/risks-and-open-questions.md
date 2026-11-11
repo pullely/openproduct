@@ -251,3 +251,17 @@ in another repository, so it is its own pull request there.
 (sourceplane/stack-tectonic#23) adds `buildFilter`, default `@saas/db`. The
 pin here moves to 0.22.0 in the Hyperdrive and migration task (OPN-7), the
 one that adds `db-migrate`.
+
+## OPN-V — approval does not gate a merge's deploy (OPEN)
+
+`intent.yaml` sets `requireApproval: "true"` on stage and prod. OPN2's
+"done when" reads "a merge to `main` converges stage and then prod through
+Orunbase with approval". On #9's merge (run 43113656168), the push-to-main
+run went from stage straight to prod without waiting on anything: the
+merged pull request was the only approval.
+
+That may be the platform's intended reading of the policy for a push, with
+the wait applying to dispatches. If it is not, prod deploys with no human in
+the loop after the merge. **The owner's question:** should a push to `main`
+wait on an Orunbase approval before prod? If so, that is a platform change,
+in orun-cloud, rather than a change here.
