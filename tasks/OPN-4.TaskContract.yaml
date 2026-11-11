@@ -1,0 +1,28 @@
+# OPN-4: a task of milestone OPN1, landing before OPN-3. The first remote run
+# of the stage probe (2026-11-11) never reached its benchmark. Remote D1
+# answered "D1 DB is overloaded. Too many resources consumed within a 10
+# second window" at corpus load step 10, and again on /reset and on a
+# negative probe. This makes the probe pace itself:
+# - it waits out an overload and asks again, counting the waits as a finding;
+# - it times the write ops at the sweep's cadence, not as a burst;
+# - it tests the 2 MB limit on a STORED value. A bound one was accepted remotely.
+# Its merge re-runs the probe. The file is the contract; the task lives in
+# Orunbase.
+apiVersion: orun.io/v1
+kind: TaskContract
+metadata:
+  name: OPN-4
+  title: "OPN1: the probe paces itself under D1's overload protection"
+spec:
+  goal: The stage probe reaches a verdict on remote D1 despite its overload protection, and reports how often it was throttled.
+  affects:
+    - infra/d1-probe/**
+    - tasks/OPN-4.TaskContract.yaml
+    - default/openproduct/openproduct-d1-probe
+  doneWhen:
+    - an answer of "D1 DB is overloaded" is waited out and retried in every phase, never taken as a refusal or a verdict, and the waits are counted in the report's throttle section
+    - write ops run PROBE_WRITE_RUNS times (default 10), each chunk after a cool-down, and read ops PROBE_RUNS times (default 50)
+    - row2mb tests the 2 MB limit on a stored value, and bound2mb records the bound-value answer without judging it
+    - the probe's local tests pass, including an injected overload that is waited out and counted
+    - the merge re-runs the probe on stage
+  gates: []

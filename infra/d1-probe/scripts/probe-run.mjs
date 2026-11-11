@@ -28,7 +28,11 @@
 //   CLOUDFLARE_API_BASE           default https://api.cloudflare.com/client/v4 (tests point it local)
 //   PROBE_WORKER_NAME             default openproduct-d1-probe-stage
 //   PROBE_SIZE                    full (default: 5,000 listings, 365 days) | suite | smoke
-//   PROBE_RUNS                    timed runs per op, default 50
+//   PROBE_RUNS                    timed runs per read op, default 50
+//   PROBE_WRITE_RUNS              timed runs per write op, default 10, each chunk after
+//   PROBE_WRITE_COOLDOWN_MS       a cool-down, default 12000 (the sweep is not a burst)
+//   PROBE_OVERLOAD_RETRIES        retries after "D1 DB is overloaded", default 8, each after
+//   PROBE_OVERLOAD_WAIT_MS        a wait of this × attempt (capped at ×3), default 11000
 //   PROBE_PHASES                  default schema,reset,load,bench,negative,export,cleanup
 //   PROBE_EXPECTED_FILE           default expected/<size>.json beside this package
 //   PROBE_WRITE_EXPECTED=1        write the export to the expected file instead of comparing
@@ -69,7 +73,7 @@ const BENCH_OPS = [
 /** Runs per request: writes and the Sessions pass are split finely (each request stays short and far inside the query limit). */
 const CHUNK = { write: 10, read: 50, sessions: 10 };
 const WRITE_OPS = new Set(["rebuildCatalogue.cold", "rebuildCatalogue.quiet", "replaceSearchIndex.cold", "replaceSearchIndex.unchanged"]);
-const NEGATIVE_PROBES = ["args34", "string2mb", "result50mb", "like51"];
+const NEGATIVE_PROBES = ["args34", "row2mb", "bound2mb", "result50mb", "like51"];
 const D1_QUERY_LIMIT_MS = 30_000;
 
 /** Design §5.3 — measured on remote D1, from the probe. */
@@ -218,13 +222,49 @@ async function config(env) {
     writeExpected: env.PROBE_WRITE_EXPECTED === "1",
     samples: env.PROBE_SAMPLES === "1",
     firstCallAttempts: Math.max(1, Number(env.PROBE_FIRST_CALL_ATTEMPTS || 6) || 6),
+    // The write ops (a cold or quiet catalogue rebuild, a search-index
+    // replace) are timed at the sweep's cadence, not as a burst: the sweep runs
+    // one of each every 10 minutes, and fifty back to back measure D1's
+    // overload protection instead of the operation.
+    writeRuns: Math.max(1, Math.min(runs, Number(env.PROBE_WRITE_RUNS || 10) || 10)),
+    writeCooldownMs: Math.max(0, Number(env.PROBE_WRITE_COOLDOWN_MS ?? 12_000)),
+    overloadRetries: Math.max(0, Number(env.PROBE_OVERLOAD_RETRIES ?? 8)),
+    overloadWaitMs: Math.max(0, Number(env.PROBE_OVERLOAD_WAIT_MS ?? 11_000)),
+    throttle: { events: 0, waitedMs: 0, byPath: {} },
   };
+}
+
+/** D1 rate-limiting the database over a 10-second window: retry after it, never a verdict. */
+function isOverload(message) {
+  return /D1 DB is overloaded|Too many resources consumed/i.test(String(message ?? ""));
+}
+
+/** Wait out the window, recorded: how often D1 throttled this run is itself a finding. */
+async function waitOutOverload(cfg, where, attempt) {
+  const waitMs = cfg.overloadWaitMs * Math.min(attempt, 3);
+  cfg.throttle.events += 1;
+  cfg.throttle.waitedMs += waitMs;
+  const key = where.replace(/[?&]step=\d+/, "").replace(/[?&]runs=\d+/, "");
+  cfg.throttle.byPath[key] = (cfg.throttle.byPath[key] ?? 0) + 1;
+  log(`D1 overloaded at ${where} (attempt ${attempt}) — waiting ${waitMs} ms for the window to pass`);
+  await new Promise((done) => setTimeout(done, waitMs));
 }
 
 // ─── the Worker ─────────────────────────────────────────────────────────────
 
 function client(cfg) {
-  return async function call(path, { timeoutMs = 300_000 } = {}) {
+  return async function call(path, opts = {}) {
+    for (let attempt = 1; ; attempt += 1) {
+      try {
+        return await callOnce(path, opts);
+      } catch (error) {
+        if (!(error instanceof WorkerAnswer) || !isOverload(error.message) || attempt > cfg.overloadRetries) throw error;
+        await waitOutOverload(cfg, path, attempt);
+      }
+    }
+  };
+
+  async function callOnce(path, { timeoutMs = 300_000 } = {}) {
     let res;
     try {
       res = await fetch(`${cfg.base}${path}`, {
@@ -247,7 +287,7 @@ function client(cfg) {
     if (body && typeof body.error === "string") throw new WorkerAnswer(path, res.status, body.error);
     if (res.status === 404) throw new Transport(`${path}: 404 — the Worker is not reachable at the target yet, or it refuses this token`);
     throw new Transport(`${path}: HTTP ${res.status}${text ? ` ${text.slice(0, 160).replace(/\s+/g, " ")}` : ""}`);
-  };
+  }
 }
 
 /** The first call waits out a fresh workers.dev route (and a cold start): ~75 s over six attempts. */
@@ -356,13 +396,25 @@ function mergeSessions(chunks) {
 async function benchPhase(call, cfg, report, failures) {
   const bench = {};
   for (const op of BENCH_OPS) {
-    const chunk = op === "sessions" ? CHUNK.sessions : WRITE_OPS.has(op) ? CHUNK.write : CHUNK.read;
+    const isWrite = WRITE_OPS.has(op);
+    const chunk = op === "sessions" ? CHUNK.sessions : isWrite ? CHUNK.write : CHUNK.read;
+    const wanted = isWrite ? cfg.writeRuns : cfg.runs;
     const chunks = [];
     let done = 0;
-    while (done < cfg.runs) {
-      const runs = Math.min(chunk, cfg.runs - done);
-      const res = await call(`/bench?op=${encodeURIComponent(op)}&runs=${runs}`);
-      const result = res.ops[op];
+    let overloads = 0;
+    while (done < wanted) {
+      const runs = Math.min(chunk, wanted - done);
+      if (isWrite && cfg.writeCooldownMs > 0) await new Promise((ok) => setTimeout(ok, cfg.writeCooldownMs));
+      const path = `/bench?op=${encodeURIComponent(op)}&runs=${runs}`;
+      let result;
+      for (let attempt = 1; ; attempt += 1) {
+        result = (await call(path)).ops[op];
+        // An overload is D1 throttling the database, not the operation failing:
+        // wait the window out and time the chunk again. Counted, and reported.
+        if (result.accepted || !isOverload(result.error) || attempt > cfg.overloadRetries) break;
+        overloads += 1;
+        await waitOutOverload(cfg, path, attempt);
+      }
       chunks.push(result);
       done += runs;
       if (!result.accepted || result.supported === false) break;
@@ -408,8 +460,9 @@ async function benchPhase(call, cfg, report, failures) {
     const checkFailures = chunks.flatMap((c) => c.checkFailures).slice(0, 10);
     const info = Object.assign({}, ...chunks.map((c) => c.info));
     bench[op] = {
-      requested: cfg.runs,
+      requested: wanted,
       completed: samples.length,
+      overloads,
       accepted: error === null,
       ...(op.startsWith("replaceSearchIndex") ? { batch: error === null ? "accepted" : "refused" } : {}),
       error,
@@ -427,23 +480,31 @@ async function benchPhase(call, cfg, report, failures) {
     }
     if (checkFailures.length > 0) failures.push(`bench ${op}: wrong result — ${checkFailures[0]}`);
     const s = bench[op].summary.wallMs;
-    log(`bench ${op}: ${samples.length}/${cfg.runs} runs, wall p50 ${s?.p50 ?? "-"} ms p95 ${s?.p95 ?? "-"} ms${error ? ` — ${error}` : ""}`);
+    log(`bench ${op}: ${samples.length}/${wanted} runs${overloads ? ` (${overloads} overload retries)` : ""}, wall p50 ${s?.p50 ?? "-"} ms p95 ${s?.p95 ?? "-"} ms${error ? ` — ${error}` : ""}`);
   }
   report.bench = bench;
 }
 
-async function negativePhase(call, report, failures) {
+async function negativePhase(call, cfg, report, failures) {
   const probes = [];
   for (const name of NEGATIVE_PROBES) {
-    try {
-      const res = await call(`/negative?probe=${name}`, { timeoutMs: 120_000 });
-      probes.push(res.probes[0]);
-    } catch (error) {
-      // A Worker that died on an accepted 56 MB result answers with an edge error, not JSON.
-      probes.push({ probe: name, expected: "refused", outcome: "inconclusive", error: error.message });
+    let p;
+    for (let attempt = 1; ; attempt += 1) {
+      try {
+        const res = await call(`/negative?probe=${name}`, { timeoutMs: 120_000 });
+        p = res.probes[0];
+      } catch (error) {
+        // A Worker that died on an accepted 56 MB result answers with an edge error, not JSON.
+        p = { probe: name, expected: "refused", outcome: "inconclusive", error: error.message };
+      }
+      // "D1 DB is overloaded" decides nothing about the limit: ask again after the window.
+      if (p.outcome !== "overloaded" || attempt > cfg.overloadRetries) break;
+      await waitOutOverload(cfg, `/negative?probe=${name}`, attempt);
     }
-    const p = probes.at(-1);
+    if (p.outcome === "overloaded") p = { ...p, outcome: "inconclusive" };
+    probes.push(p);
     log(`negative ${name}: ${p.outcome}${p.error ? ` — ${p.error}` : ""}`);
+    if (p.expected === "observed") continue;
     if (p.outcome === "accepted") failures.push(`negative ${name}: ACCEPTED (${p.limit}) — remote D1 should refuse it`);
     if (p.outcome === "inconclusive") failures.push(`negative ${name}: no decision — ${p.error}`);
   }
@@ -578,7 +639,7 @@ export async function main(env = process.env) {
       }
     }
     if (has("bench") && loaded) await benchPhase(call, cfg, report, failures);
-    if (has("negative")) await negativePhase(call, report, failures);
+    if (has("negative")) await negativePhase(call, cfg, report, failures);
     if (has("export") && loaded) await exportPhase(call, cfg, report, failures);
     if (has("bench")) report.budgets = budgets(report.bench);
     if (has("cleanup")) {
@@ -592,6 +653,7 @@ export async function main(env = process.env) {
       // No verdict: let the composition's retry run the whole probe again.
       log(`no verdict: ${error.message}`);
       report.verdict = "error";
+      report.throttle = cfg.throttle;
       report.failures = [...failures, `transport: ${error.message}`];
       process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
       return 3;
@@ -601,6 +663,8 @@ export async function main(env = process.env) {
   const finishedAt = new Date();
   report.finishedAt = finishedAt.toISOString();
   report.durationMs = finishedAt.getTime() - startedAt.getTime();
+  // How often D1 throttled the run, and how long the probe waited it out.
+  report.throttle = cfg.throttle;
   report.verdict = failures.length === 0 ? "pass" : "fail";
   report.failures = failures;
   const exitCode = failures.length === 0 ? 0 : 1;
