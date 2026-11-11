@@ -5,7 +5,7 @@ mitigation), **RESOLVED** (decided; says what and why), **ACCEPTED** (a cost
 we carry knowingly), **SETTLED** (decided for now; revisit on a stated
 cadence), **OPEN** (needs an answer before the milestone named).
 
-## OPN-A — D1 is too slow for the sweep at scale (RISK, mitigated)
+## OPN-A — D1 is too slow for the sweep at scale (RESOLVED: no-go)
 
 The catalogue and search phases rebuild set-wise every 10 minutes. On a
 database that runs one query at a time, with writes persisted across
@@ -17,7 +17,12 @@ inside Cloudflare, against budgets set in advance (design §5.3). If D1 misses
 by more than 2×, OPN2 ports to a new Supabase connection instead. Nothing
 after OPN2 depends on the engine.
 
-## OPN-B — D1's size limits on bulk writes (RISK, mitigated)
+**Resolved (2026-11-11):** the probe met every write budget, and missed the
+read budgets by 5–7× on the plain binding while meeting them through D1
+sessions. The owner called no-go: OPN2 runs on Supabase (IMPLEMENTATION-STATUS,
+design §11).
+
+## OPN-B — D1's size limits on bulk writes (RETIRED with D1)
 
 The limits are 100 bound parameters per statement, 2 MB per value and 100 KB
 per statement. The search rebuild binds one JSON payload of every document,
@@ -37,7 +42,7 @@ If the 1.3 MB, 7-statement replace batch is refused remotely, the fallback
 is already designed: several smaller batches, each atomic and each leaving
 the index consistent.
 
-## OPN-C — green tests, broken on D1 (RISK, mitigated)
+## OPN-C — green tests, broken on D1 (RETIRED with D1)
 
 The cirrus port shipped Postgres-only SQL (a data-modifying CTE, `now()`)
 that tests on a Postgres-like engine never caught. Organization create then
@@ -47,7 +52,7 @@ failed on D1 (factory trap 16).
 - The D1 harness is workerd's own SQLite, never better-sqlite3 or PGlite.
 - Every ported statement is covered by the differential suite until Postgres is deleted. The suite compares results, not just "did not throw".
 
-## OPN-D — the 10 GB database cap (SETTLED)
+## OPN-D — the 10 GB database cap (RETIRED with D1; see OPN-T for Supabase's)
 
 D1 cannot grow a database past 10 GB. At the scale target the snapshot table
 gains about 1.8 million rows a year and observations about 438,000. That is
@@ -152,7 +157,7 @@ are not copied.
 re-list through openproduct.live → Create or "Link a workspace". The
 platform's public workspaces themselves are unaffected.
 
-## OPN-N — read replication (SETTLED)
+## OPN-N — read replication (RETIRED with D1)
 
 Off at first. With it on, every read-after-write path needs the Sessions API
 and a bookmark, or a maintainer can save and then see the old value.
@@ -160,7 +165,7 @@ and a bookmark, or a maintainer can save and then see the old value.
 **Revisit** after OPN4, with traffic numbers. Public reads are edge-cached,
 so replication helps cache misses and signed-in reads only.
 
-## OPN-O — a Postgres feature with no SQLite form (RISK, low)
+## OPN-O — a Postgres feature with no SQLite form (RETIRED with D1)
 
 The inventory (design §3.3) found nothing without an equivalent:
 - no interactive transactions in production code;
@@ -211,3 +216,29 @@ Free plan", code `100328`). The Free plan cannot carry the product either:
 **Decided (2026-11-11):** the owner upgraded the account to Workers Paid.
 It is a standing prerequisite: design §8 names it beside the Orunbase
 account's limits.
+
+## OPN-T — which Supabase connection (OPEN)
+
+The account shares one Supabase connection with every workspace: `arca-orun`
+(`int_d9116c21…`, connected 2026-10-25). openproduct's two projects can go
+there, or into a new connection for an `openproduct` Supabase organization,
+as the Cloudflare side got its own (OPN-F).
+
+The organization's plan matters too. Supabase's free plan holds two active
+projects per organization, caps each database at 500 MB and pauses a project
+after a week without activity. The monorepo's openproduct projects needed a
+paid organization.
+
+**Needed before** OPN2's database task. The owner chooses.
+
+## OPN-U — stack-tectonic's migration job builds only lumen's package (RISK)
+
+The `db-migrate` composition in stack-tectonic 0.21.0 runs
+`turbo run build --filter=@saas/db` and closes its parameters, so it cannot
+build `@openproduct/db`. orun-cloud's own copy of the composition grew a
+`buildFilter` parameter for exactly this.
+
+**Mitigation:** the same additive parameter in stack-tectonic (default
+`@saas/db`, so lumen is unchanged), released as a new minor version. This
+repository's pin then moves to it, in OPN2's database task. It is a change
+in another repository, so it is its own pull request there.

@@ -50,12 +50,11 @@ spec:
   # deploy + smoke (the remote probe itself) on the merge to main.
   subscribe:
     environments:
+      # Stood down at OPN1's no-go (OPN-3, 2026-11-11): verify only, so a
+      # merge no longer deploys the probe or runs its smoke. Run 2 was its
+      # last run. OPN2 destroys its Worker and database, then deletes it.
       - name: stage
         profile: verify
-        profileRules:
-          - profile: deploy
-            when:
-              triggerRef: github-push-main
   parameters:
     nodeVersion: "22"
     pnpmVersion: "10.12.1"

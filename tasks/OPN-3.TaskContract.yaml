@@ -1,25 +1,29 @@
 # OPN-3: the second and last task of milestone OPN1. The stage probe that
 # OPN-2's merge deployed has run on remote D1. This records what it measured
 # against design §5.3, what CI taught on its first runs, and the go/no-go for
-# porting the rest of the data layer (OPN2). It lands separately because the
-# numbers exist only after the probe is live (milestone rule: a part that must
-# be live before the next). The file is the contract; the task lives in
-# Orunbase.
+# porting the rest of the data layer (OPN2): no-go, the owner's call. It
+# stands the probe down and writes the Supabase path into the design. It
+# lands separately because the numbers exist only after the probe is live
+# (milestone rule: a part that must be live before the next). The file is the
+# contract; the task lives in Orunbase.
 apiVersion: orun.io/v1
 kind: TaskContract
 metadata:
   name: OPN-3
   title: "OPN1: the D1 go/no-go"
 spec:
-  goal: The remote-D1 results of the stage probe are recorded against design §5.3, and the go/no-go for the full D1 port is written in IMPLEMENTATION-STATUS.md.
+  goal: The remote-D1 results of the stage probe are recorded against design §5.3, the go/no-go for the full D1 port (no-go, the owner's call) is written in IMPLEMENTATION-STATUS.md, the probe stands down, and the epic's docs describe OPN2 on Supabase.
   affects:
     - specs/epics/openproduct-standalone/**
     - tasks/OPN-3.TaskContract.yaml
     - infra/d1-probe/RUN
+    - infra/d1-probe/component.yaml
     - default/openproduct/openproduct-d1-probe
   doneWhen:
     - IMPLEMENTATION-STATUS.md carries the probe's remote numbers for every design §5.3 operation, each marked met or missed
     - it records whether remote results equal local, whether the replace batch was accepted, and how remote D1 answered each negative probe
-    - the go/no-go for OPN2 is written, with its conditions
-    - the OPN1 row reads done and links PR #2 and this PR
+    - the go/no-go for OPN2 is written, with the rule, the reading, the recommendation and the owner's decision
+    - the OPN1 row reads done and links PRs #2, #3 and this PR
+    - the probe is verify-only, so a merge to main no longer deploys it or runs its smoke
+    - design §11, the plan's OPN2 and the risks (OPN-T, OPN-U) describe OPN2 on Supabase, with the existing code taken as it is
   gates: []

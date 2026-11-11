@@ -6,8 +6,8 @@ the code departed from `design.md`.
 | Milestone | State | PR |
 |---|---|---|
 | OPN0 — the spec | ✅ done | [#1](https://github.com/pullely/openproduct/pull/1) |
-| OPN1 — the tree, with D1 proven on one slice | | |
-| OPN2 — live on its own URLs, all on D1 | | |
+| OPN1 — the tree, with D1 proven on one slice | ✅ done: **no-go for D1**, the owner's call (2026-11-11) | [#2](https://github.com/pullely/openproduct/pull/2), [#3](https://github.com/pullely/openproduct/pull/3), [#4](https://github.com/pullely/openproduct/pull/4) |
+| OPN2 — live on its own URLs, on Supabase | | |
 | OPN3 — openproduct.live served from here | | |
 | OPN4 — openproduct, listed on openproduct.live | | |
 
@@ -27,9 +27,10 @@ the code departed from `design.md`.
 | Cloudflare connection | `openproduct` (`int_7fbdaafa…`), inherited from the account |
 | Epic in Orunbase | `openproduct-standalone`, EP-1 (`epc_0TXVHJ8Z`) |
 | Milestones | OPN0 `mls_VEMWNC1J` · OPN1 `mls_GPBDDEE7` · OPN2 `mls_GQ855EQV` · OPN3 `mls_QJP277KN` · OPN4 `mls_GFTKS4Q0` |
-| Tasks | OPN-1 `tsk_N14BB1XD` (OPN0, done: merged as `1fc8305`, PR #1) · OPN-2 `tsk_85D0P8WW` (OPN1, contract attached) |
+| Tasks | OPN-1 `tsk_N14BB1XD` (OPN0, done: merged as `1fc8305`, PR #1) · OPN-2 `tsk_85D0P8WW` (OPN1, done: PR #2) · OPN-4 `tsk_DEKB9MPX` (OPN1, done: PR #3) · OPN-3 `tsk_DQTEWGM3` (OPN1, this record: PR #4) |
 | Project environments | `dev`, `stage`, `prod`, created through `POST …/projects/{prj}/environments` on 2026-11-09. A baseline bootstrap creates them; this repository never had one, and secret authoring refused until they existed |
 | Stage secrets | `CLOUDFLARE_API_TOKEN` (`workers-deploy`), `CLOUDFLARE_ACCOUNT_ID` (`account-id`), `CLOUDFLARE_D1_TOKEN` (`d1-edit`), `CLOUDFLARE_WORKERS_SUBDOMAIN` (`workers-subdomain`): all brokered from connection `int_7fbdaafa…`. `PROBE_TOKEN`: static, random, set from stdin. None has a prod counterpart yet |
+| Supabase connection | **not chosen yet.** The account shares one Supabase connection, `arca-orun` (`int_d9116c21…`). Whether openproduct's projects go there or to a new connection is open question OPN-T |
 
 ## D1 slice proof
 
@@ -71,21 +72,82 @@ The incompatibilities found are now rules in design §3.3 and §3.4:
 Two of these limits (32 arguments, 2 MB per value) are not enforced by local
 workerd. That is why the static remote-limits guard exists.
 
-### Remote half: open, OPN1
+### Remote half: done (2026-11-11)
 
-The probe on stage (design §5.2) is still to run. It must show three things:
-- every remote result equals local;
-- the 1.3 MB, 7-statement replace batch is accepted;
-- remote D1 refuses the three negative probes.
+Two runs on stage, both on Workers Paid, each from the merge that changed
+the probe. The probe database's primary is in APAC (`HKG`), with read
+replication on. Timings are wall-clock inside the probe Worker around each
+D1 call, beside the SQL time D1 reports.
 
-It also records the rebuild's single-writer pause. The formal go/no-go is
-written here after that run.
+**Run 1** (PR #2's merge, re-run after the upgrade) stopped early. The schema
+applied, and applied again with no change. Then D1 refused step 10 of the
+18-step corpus load: "D1 DB is overloaded. Too many resources consumed within
+a 10 second window". The 50 MB result and the long LIKE pattern were refused.
+A 2.1 MB value bound into a `SELECT` was accepted, but that probe tested the
+wrong thing, because the 2 MB limit is on stored values. The 34-argument
+probe hit the same overload, so it said nothing. OPN-4 (PR #3) made the probe
+wait out overloads, pace its heavy writes and store the 2 MB value.
 
-## OPN1 — as built (so far)
+**Run 2** (PR #3's merge, run `43001100946`) reached every phase. It took
+15 minutes, 473 s of it waiting out 17 overloads.
 
-Task OPN-2, branch `orun/OPN-2-the-tree`. The D1 probe is integrated. Still
-to come: its remote run (which happens on this branch's merge), the remote
-timings, the go/no-go, and a green CI on `main`.
+| Operation (5,000 listings) | Budget (design §5.3) | Plain binding: the primary, `HKG` | Through a session: a replica | SQL p50 | Reading |
+|---|---|---|---|---|---|
+| `rebuildCatalogue`, cold | ≤ 30 s; each statement ≤ 10 s | p50 1,407 ms, p95 1,422 ms (7 of 10 runs); slowest statement 888 ms | — | 917 ms | met |
+| `rebuildCatalogue`, quiet tick | ≤ 3 s | p50 1,103 ms, p95 1,138 ms (5 of 10 runs) | — | 864 ms | met |
+| `replaceSearchIndex`, 5,000 documents, cold | ≤ 30 s | p50 849 ms, p95 1,808 ms | — | 135 ms | met |
+| `replaceSearchIndex`, no change | ≤ 5 s | p50 1,852 ms, p95 1,930 ms | — | 212 ms | met |
+| `listCataloguePage`, first page | p50 ≤ 50 ms, p95 ≤ 150 ms | p50 362 ms, p95 576 ms | p50 15 ms, p95 39 ms | 1.7 ms | missed by more than 2× on the primary; met through a session |
+| `listCataloguePage`, deep page | same | p50 353 ms, p95 504 ms | p50 13 ms, p95 34 ms | 1.5 ms | same |
+| `searchCandidates`, common term | same | p50 244 ms, p95 257 ms | p50 12 ms, p95 21 ms | 1.6 ms | same |
+| `searchCandidates`, rare term | same | p50 230 ms, p95 246 ms | p50 10 ms, p95 68 ms | 0.2 ms | same |
+| `searchCandidates`, multi-term | same | p50 243 ms, p95 258 ms | p50 11 ms, p95 15 ms | 0.7 ms | same |
+
+The session column is the `first-unconstrained` session; `first-primary` and
+a writer's bookmark gave the same numbers. The incomplete write rows stopped
+on an overload, not on a slow run.
+
+What the remote half had to show:
+- **Every remote result equals local: yes.** `/export` matched local D1's snapshot: 5,000 catalogue cards and 5,000 search documents.
+- **The replace batch is accepted: yes.** Ten cold 5,000-document replaces out of ten.
+- **Remote D1 refuses the negative probes: two of four.**
+  - Refused: the 56 MB result ("D1 query result exceeded the maximum response size limit of 50 MB") and the 60-byte LIKE pattern ("LIKE or GLOB pattern too complex").
+  - **Accepted:** a 34-argument `json_object` (all 17 keys came back) and a 2.1 MB stored row (`length(v)` was 2,100,000). Cloudflare still documents both limits. The static guard is stricter than the service, which is the safe direction.
+
+Also measured:
+- **Sessions.** After a write, 50 reads under each of `first-unconstrained`, `first-primary` and the writer's bookmark: none stale. A replica in `ENAM` served 49 of 50.
+- **The overloads** are D1's per-instance rate limit on CPU and memory over 10 seconds (Cloudflare, "Debug D1"). Each read replica is limited on its own. The probe tripped it by sending ten cold rebuilds in one request. D1 stopped that request after seven, about 6.4 s of SQL inside 10 s, and each retry repeated the whole chunk into the same wall. A quiet tick costs about 0.86 s of SQL, because it scans every listing.
+- **Not measured on its own:** the rebuild's single-writer pause. A cold rebuild held the writer for about 0.9 s of SQL.
+
+## The go/no-go (OPN-3, 2026-11-11): no-go, OPN2 runs on Supabase
+
+**The rule** (design §5.3, set before anything was measured): go if every
+budget is met and the differential suite is fully equal; no-go if any budget
+is missed by more than 2×.
+
+**The reading.**
+- Every write budget was met, by 2.6× or more, and every remote result equals local.
+- Every read budget measured on the plain binding was missed by 5–7×, so the probe's report reads "no-go by §5.3".
+- The read misses are distance, not D1: 0.2–1.7 ms of SQL inside 230–360 ms of round trip, from a Worker near the North American runner to the primary in APAC. The same reads through a session met every read budget.
+
+**The recommendation** was go, on two conditions: every public read through a
+D1 session, and the sweep kept under the 10-second resource window.
+
+**The decision (the owner, 2026-11-11): no-go.** OPN2 runs on Supabase. The
+code the new repository needs is taken as it is. The Postgres repository and
+its migration ladder are already in the tree, and the Supabase, Hyperdrive
+and migration components come from orun-cloud (design §11).
+
+**What follows.**
+- OPN2 becomes "live on its own URLs, on Supabase" (implementation plan).
+- The D1 slice and the probe retire in OPN2: `packages/db/src/d1/` with its harness and suites, miniflare, `infra/d1-probe` and `infra/cloudflare-d1-probe`. The probe's database and Worker are destroyed first.
+- **The probe stands down now.** This record drops its deploy rule, so a merge no longer deploys it or runs its smoke, and `main` goes green. Run 2 was its last run.
+
+## OPN1 — as built
+
+Three tasks: OPN-2 (the tree, the slice and the probe, PR #2), OPN-4 (the
+probe paces itself, PR #3) and OPN-3 (the remote numbers and the go/no-go,
+PR #4).
 
 ### The D1 probe
 
@@ -148,7 +210,7 @@ timings, the go/no-go, and a green CI on `main`.
 13. **`tests/web-perf/src/studio.mjs` now honours `XP4_CHROMIUM`,** as every sibling lane already did; without it the studio lane crashed the suite on any machine without Playwright's own browser. CI installs that browser, so CI behaviour is unchanged.
 14. **Not run locally:** the Workers' own builds (`wrangler deploy --dry-run --outdir dist`) and their verify lanes' `deploy-dry-run` step, which only CI runs here.
 15. **The cut script's fixes were not upstreamed to orun-cloud.** The plan called for one orun-cloud PR first, so the cut could be re-taken from a newer SHA. Two things made it not worth it. orun-cloud's `apps/openproduct/` has not changed since `b421bc672`, and the code freeze holds from `ffb71be69`. And the monorepo copy is deleted at OPN4. If the freeze breaks, the change is ported here by hand.
-16. **OPN1 is two tasks, not one.** The remote numbers exist only after this branch's merge deploys the probe. So OPN-2's contract ends at "the probe runs and prints its report", and **OPN-3** records the numbers and the go/no-go in this file. That follows the milestone rule for a part that must be live before the next. Later milestones' tasks shift by one: OPN2 is OPN-4, OPN3 is OPN-5, OPN4 is OPN-6.
+16. **OPN1 is two tasks, not one.** The remote numbers exist only after this branch's merge deploys the probe. So OPN-2's contract ends at "the probe runs and prints its report", and **OPN-3** records the numbers and the go/no-go in this file. That follows the milestone rule for a part that must be live before the next. A third task, OPN-4, joined when run 1 showed the probe had to pace itself, so the plan no longer names later task keys: each is whatever Orunbase mints next.
 
 The orun catalog (`autopushCatalog: true`) indexes all 13 `component.yaml` files, the three undiscovered infra components included, though plans see 10.
 
@@ -176,4 +238,4 @@ Design §8 lists the Orunbase account's limits; this is the Cloudflare side of t
 ## Departures from the design
 
 (One subsection per departure: what the design said, what was built, why.)
-OPN1's are listed under "OPN1 — as built (so far)" above until the milestone closes.
+OPN1's are listed under "OPN1 — as built" above. The largest is the engine itself: the design is D1, and OPN2 runs on Supabase (the go/no-go above, design §11).
