@@ -1,0 +1,78 @@
+apiVersion: sourceplane.io/v1
+kind: Component
+metadata:
+  name: openproduct-synthetic
+  title: openproduct Synthetic Monitor
+  description: Scheduled Worker that walks openproduct as an anonymous visitor every five minutes, judges /health and the three SLOs, and logs every flip.
+spec:
+  type: cloudflare-worker-turbo
+  lifecycle: production
+  owner: platform
+  domain: starter-runtime
+  system: openproduct
+  docs:
+    overview: README.md
+  path: infra/synthetic
+  # NO dependsOn, AND THAT IS THE DESIGN (OO-1: the watcher is not the
+  # watched). This worker reaches the gateway and the site by public URL, the
+  # way a visitor does, and holds no binding to either — a synthetic that
+  # shared a binding with the thing it watches would share the failure. The
+  # only resource it owns is its own Durable Object.
+  # VERIFY-ONLY IN EVERY ENVIRONMENT UNTIL OPN2 (openproduct-standalone
+  # design §2). No trigger reaches a deploy profile: a merge to main verifies
+  # stage and prod, it does not converge them. The monorepo's `skip` rules
+  # (main does not re-verify what its PR verified, CIS17; a PR does not plan
+  # stage or prod) went with the profile, which stack-tectonic 0.21.0 does not
+  # define. OPN2 brings the deploy rules back.
+  subscribe:
+    environments:
+      - name: dev
+        dependencyRules: # dev lanes never wait on other lanes (intent.yaml, DEPENDENCY MODES)
+          - mode: advisory
+            when:
+              triggerRef: github-pull-request
+          - mode: advisory
+            when:
+              triggerRef: github-push-main
+        profile: verify
+      - name: stage
+        profile: verify
+      - name: prod
+        profile: verify
+  parameters:
+    nodeVersion: "22"
+    pnpmVersion: "10.12.1"
+    workspaceDir: ../..
+    appDir: .
+    orgName: sourceplane
+    owner: pullely
+    repo: openproduct
+    turboFilter: "@openproduct/synthetic"
+    # No wrangler template and no wiring: this worker holds no wired resource,
+    # so wrangler.jsonc is committed directly (the composition's template steps
+    # are conditional on wranglerTemplate and simply skip). No runtimeSecrets
+    # either — OO-A has not named a channel, so there is no secret to deliver;
+    # when it does, ALERT_SEAM_SECRET is declared in secretEnv and named in
+    # runtimeSecrets, the way the gateway's seam keys are.
+    wranglerConfig: wrangler.jsonc
+    installCommand: pnpm install --frozen-lockfile
+    # The suite runs in the build step, first, for the reason the gateway's
+    # component gives: nothing else in the plan would schedule it, and
+    # `onFailure: stop` on this step is what makes a red suite block the deploy.
+    buildCommand: pnpm exec turbo run test --filter=@openproduct/synthetic && pnpm exec turbo run build --filter=@openproduct/synthetic
+    typecheckCommand: pnpm exec turbo run typecheck --filter=@openproduct/synthetic
+    # NO `dryRunCommand` AND NO `deployCommand`, and that is a fact about the
+    # composition rather than an omission (openproduct-operations OO3, found
+    # on the way): `cloudflare-worker-turbo`'s verify-deploy job runs
+    # `wrangler deploy --dry-run` and `wrangler deploy` itself, substituting
+    # the environment, and never reads either parameter. The two lines that
+    # stood here hardcoded `--env prod` and were dead text — which is also the
+    # answer to RS4's third "worth a look".
+    preDeployCommand: "echo 'No pre-deploy step configured.'"
+    migrationCommand: "echo 'No migrations configured.'"
+    smokeCommand: "echo 'No smoke test configured.'"
+  labels:
+    team: platform
+    layer: runtime
+    surface: openproduct
+    runtime: cloudflare

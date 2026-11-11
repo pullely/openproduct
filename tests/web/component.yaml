@@ -1,0 +1,79 @@
+apiVersion: sourceplane.io/v1
+kind: Component
+metadata:
+  name: openproduct-web-tests
+  title: openproduct Website tests
+  description: Jest suite for the openproduct website — routes, pages, auth, cache config, deploy ordering and UI conventions; runs inside the website's build.
+spec:
+  type: turbo-package
+  # ─── NO `dependsOn`, AND REMOVING IT IS WHY THIS SUITE RUNS AT ALL ────────
+  #
+  # It used to declare edges to the components it tests. Those edges scheduled
+  # nothing — `orun plan --changed` selects a component when its OWN files
+  # change, and an edge does not pull a dependent into a plan — and they cost
+  # the entire suite whenever the subject WAS in the same plan.
+  #
+  # On a pull request there is no `--remote-state` (a PR must never hold deploy
+  # credentials), so each job coordinates through its own local state and reads
+  # an in-plan dependency as unfinished. The job then prints `✓ Done in 0.0s /
+  # 1 waiting`, runs nothing, and reports SUCCESS.
+  #
+  # OBSERVED, NOT FEARED. Both #1364 and #1365 carry that line verbatim in this
+  # job's log, so every green check named `openproduct-web-tests` on this epic's
+  # pull requests measured NOTHING. The property is perverse and exact: the
+  # edge made the suite run only when the code it guards had NOT changed.
+  #
+  # `tests/web-perf/component.yaml` reasoned its way to declaring no edge for
+  # this very reason and wrote it down; these three did not follow, and this is
+  # them following. The edges bought no ordering worth having either — turbo
+  # builds whatever the tests import, so this package needs nothing from
+  # another component's job.
+  lifecycle: production
+  owner: platform
+  domain: starter-tests
+  system: openproduct
+  docs:
+    overview: README.md
+  # `verify`, NOT `quick-check` — and the reason is recorded twice already in
+  # this estate, at `packages/contracts/component.yaml` and, at length, at
+  # `tests/web-perf/component.yaml`.
+  #
+  # `quick-check` is four steps: setup-node, setup-pnpm, install, and
+  # `verify-structure`, which is literally `test -f package.json`. It never
+  # reaches `pre-build`, which is where `preBuildCommand` runs — and
+  # `preBuildCommand` below is this package's entire purpose. The parameters
+  # named the right command the whole time; the profile never reached the step
+  # that runs it. So this component installed its dependencies, confirmed it
+  # had a package.json, and reported a green check named "Verify" having run
+  # none of its 953 tests.
+  #
+  # AND THE PROFILE IS ONLY HALF OF IT. On PR #1335 six of seven openproduct
+  # checks printed `✓ Done in 0.0s / 1 waiting` and ran nothing at all — the
+  # website's build and typecheck among them — because a PR carries no
+  # `--remote-state`, so each job coordinates through its own local state and
+  # sees an in-plan dependency as unfinished. That is a workflow-level defect
+  # this file cannot fix; the epic's IMPLEMENTATION-STATUS records it with the
+  # job ids. What this change fixes is the half that is a component's own to
+  # declare: when this lane IS scheduled, it now runs.
+  subscribe:
+    environments:
+      - name: dev
+        dependencyRules: # dev lanes never wait on other lanes (intent.yaml, DEPENDENCY MODES)
+          - mode: advisory
+            when:
+              triggerRef: github-pull-request
+          - mode: advisory
+            when:
+              triggerRef: github-push-main
+        profile: verify
+  parameters:
+    nodeVersion: "22"
+    pnpmVersion: "10.12.1"
+    buildCommand: pnpm exec turbo run build --filter=./
+    typecheckCommand: pnpm exec turbo run typecheck --filter=./
+    preBuildCommand: pnpm exec turbo run test --filter=./
+  labels:
+    folded-into: openproduct-web # its tests run in that component's build (CIS13)
+    team: platform
+    layer: test
+    surface: openproduct

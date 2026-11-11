@@ -1,0 +1,88 @@
+// ────────────────────────────────────────────────────────────────────────────
+// openproduct-synthetic (openproduct-operations OO1) — the reader of /health.
+//
+// OO-1: THE WATCHER IS NOT THE WATCHED. This worker holds NO service binding,
+// no bucket, no KV, no queue — not to core, not to the gateway, not to the
+// platform. It reaches the product by PUBLIC URL, as a visitor does, so that
+// nothing that can fail in the product can fail here too. `config.test.ts`
+// asserts the binding list is exactly one Durable Object: its own memory.
+//
+// THE SCHEDULE IS THE WHOLE POINT, and RS0's rule applies to it twice over: a
+// synthetic with no cron is the `/health` nobody fetched, one level up. Every
+// environment declares `triggers` explicitly — never by inheriting a
+// top-level block — and the test asserts the expression is the contract's.
+//
+// OO-A IS NOT ANSWERED HERE. `ALERT_DELIVERY_URL`, `ALERT_SEAM_SECRET` and
+// `OPERATOR_SUBJECT_ID` are deliberately absent: the first names a platform
+// host and the second is a secret, and the third is a decision. Absent, a
+// flip is a log line and nothing is sent. `MAINTENANCE_UNTIL` (OO-C) is set
+// in the dashboard when a cold run is expected, and is absent for the same
+// reason the velocity override is: a committed window is a window that needs
+// a deploy to close.
+// ────────────────────────────────────────────────────────────────────────────
+{
+  "name": "openproduct-synthetic",
+  "compatibility_date": "2025-05-01",
+  // `global_fetch_strictly_public`: the gateway's own header explains it — a
+  // Worker's fetch() to a hostname on its own zone (workers.dev included) is
+  // routed to the zone's origin by default, and a workers.dev host has none.
+  // This worker reaches two such hostnames by URL and needs the flag for the
+  // same reason the gateway did.
+  "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
+  // Workers Logs: the four lines this worker prints (OO2's vocabulary) are
+  // what the saved queries read; they are worth nothing unless persisted.
+  "observability": { "enabled": true },
+  "main": "src/index.ts",
+  "minify": false,
+  "vars": {
+    "ENVIRONMENT": "local"
+  },
+  "env": {
+    "dev": {
+      "vars": {
+        "ENVIRONMENT": "dev",
+        "API_ORIGIN": "https://openproduct-gateway-dev.oruncloud.workers.dev",
+        "SITE_ORIGIN": "https://openproduct-web-dev.oruncloud.workers.dev"
+      },
+      // OO1 — every five minutes, the contract's expression (SYNTHETIC_CRON).
+      "triggers": { "crons": ["*/5 * * * *"] },
+      // The one resource this worker holds: its own memory of the last cycle.
+      "durable_objects": {
+        "bindings": [{ "name": "SYNTHETIC_STATE", "class_name": "SyntheticState" }]
+      },
+      "migrations": [{ "tag": "v1", "new_sqlite_classes": ["SyntheticState"] }]
+    },
+    "stage": {
+      "workers_dev": true,
+      "vars": {
+        "ENVIRONMENT": "stage",
+        "API_ORIGIN": "https://openproduct-gateway-stage.oruncloud.workers.dev",
+        "SITE_ORIGIN": "https://openproduct-web-stage.oruncloud.workers.dev"
+      },
+      // OO1 — every five minutes, the contract's expression (SYNTHETIC_CRON).
+      "triggers": { "crons": ["*/5 * * * *"] },
+      // The one resource this worker holds: its own memory of the last cycle.
+      "durable_objects": {
+        "bindings": [{ "name": "SYNTHETIC_STATE", "class_name": "SyntheticState" }]
+      },
+      "migrations": [{ "tag": "v1", "new_sqlite_classes": ["SyntheticState"] }]
+    },
+    "prod": {
+      "workers_dev": true,
+      "vars": {
+        "ENVIRONMENT": "prod",
+        // The canonical hostnames: the Route `openproduct-api-domain` owns,
+        // and the apex. The synthetic reads what a visitor reads.
+        "API_ORIGIN": "https://api.openproduct.live",
+        "SITE_ORIGIN": "https://openproduct.live"
+      },
+      // OO1 — every five minutes, the contract's expression (SYNTHETIC_CRON).
+      "triggers": { "crons": ["*/5 * * * *"] },
+      // The one resource this worker holds: its own memory of the last cycle.
+      "durable_objects": {
+        "bindings": [{ "name": "SYNTHETIC_STATE", "class_name": "SyntheticState" }]
+      },
+      "migrations": [{ "tag": "v1", "new_sqlite_classes": ["SyntheticState"] }]
+    }
+  }
+}

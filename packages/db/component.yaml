@@ -1,0 +1,69 @@
+apiVersion: sourceplane.io/v1
+kind: Component
+metadata:
+  name: openproduct-db
+  title: openproduct Database
+  description: openproduct's data layer — the repository over the openproduct Postgres schema, its migration ladder and a self-contained migration runner CLI.
+spec:
+  type: turbo-package
+  lifecycle: production
+  owner: platform
+  domain: starter-data
+  system: openproduct
+  docs:
+    overview: README.md
+  dependsOn:
+    # (The platform's `db-migrations` edge left with the twin-sync test it
+    # existed for, at the repository cut.)
+    - component: openproduct-contracts
+      input: true
+  # `dev` ON `verify`, WITH `preBuildCommand` — the suite runs in CI (OV3).
+  #
+  # `quick-check` is four steps ending at `test -f package.json` — no
+  # `pre-build`, no `build`, no `typecheck` — so until RE3 this package's
+  # compiler had never run in CI and its green "Verify" meant the dependencies
+  # installed. `verify` is the composition's own `defaultProfile` and runs the
+  # build and typecheck commands below.
+  #
+  # THE SUITE IS WIRED IN NOW, and the number that kept it out is gone. The
+  # pg suite applies the manifest's whole migration ladder to a real pglite
+  # engine — the only way it can prove the claim it exists to prove — and used
+  # to do so before EVERY test: 425 tests in **12m31s**, all of it one file,
+  # which this file declined to spend on every plan that selects the
+  # component. openproduct-verification OV3 ended the number rather than the
+  # exclusion: the ladder is applied ONCE per run (`src/pg/global-setup.ts`
+  # dumps the migrated data directory to a file) and each test restores it
+  # into a fresh engine in half a second; the one file is nine, by cluster,
+  # over a shared harness. 555 tests in **2m09s** on a four-core machine,
+  # every file under ninety seconds. That is a cost a plan can carry, so it
+  # does — `preBuildCommand` runs the package's turbo `test` task before the
+  # build, exactly as `packages/cli` and `packages/sdk` do.
+  #
+  # THE D1 SLICE RUNS HERE TOO: src/d1/** starts local D1 through miniflare
+  # (workerd), offline, inside the same `turbo run test`.
+  #
+  # DEV ONLY: a package deploys nowhere, and its dev lane is the check (CIS1).
+  # (In the monorepo stage and prod subscribed with `profile: skip`;
+  # stack-tectonic 0.21.0 has no such profile, and not subscribing is what
+  # skip meant.)
+  subscribe:
+    environments:
+      - name: dev
+        dependencyRules: # dev lanes never wait on other lanes (intent.yaml, DEPENDENCY MODES)
+          - mode: advisory
+            when:
+              triggerRef: github-pull-request
+          - mode: advisory
+            when:
+              triggerRef: github-push-main
+        profile: verify
+  parameters:
+    nodeVersion: "22"
+    pnpmVersion: "10.12.1"
+    buildCommand: pnpm exec turbo run build --filter=./
+    typecheckCommand: pnpm exec turbo run typecheck --filter=./
+    preBuildCommand: pnpm exec turbo run test --filter=./
+  labels:
+    team: platform
+    layer: shared
+    surface: openproduct

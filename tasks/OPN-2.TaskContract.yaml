@@ -1,0 +1,59 @@
+# OPN-2: milestone OPN1. The product tree arrives from orun-cloud, made
+# self-contained and verify-only; the catalogue and search slice runs on D1
+# behind the unchanged repository interface; and a stage-only probe times the
+# slice on remote D1. Recording the numbers and the go/no-go is OPN-3, which
+# lands after the probe has run. The file is the contract; the task lives in
+# Orunbase.
+apiVersion: orun.io/v1
+kind: TaskContract
+metadata:
+  name: OPN-2
+  title: "OPN1: the tree, with D1 proven on one slice"
+spec:
+  goal: The openproduct product tree builds and tests green in pullely/openproduct on GitHub-hosted runners, the catalogue and search slice runs on D1 with results equal to Postgres, and a stage probe times it on remote D1.
+  affects:
+    - core/**
+    - gateway/**
+    - web/**
+    - packages/**
+    - tests/**
+    - infra/**
+    - seam-fixtures/**
+    - tooling/**
+    - package.json
+    - pnpm-workspace.yaml
+    - pnpm-lock.yaml
+    - turbo.json
+    - .npmrc
+    - .gitignore
+    - .gitleaksignore
+    - .github/workflows/**
+    - intent.yaml
+    - SECURITY.md
+    - README.md
+    - tasks/OPN-2.TaskContract.yaml
+    - specs/epics/openproduct-standalone/**
+    # The component refs below are what `orun task check` compares the diff
+    # against (it matches changed components, not paths). The paths above are
+    # the human-readable ceiling for the same change.
+    - default/openproduct/cloudflare-d1-probe
+    - default/openproduct/openproduct-api-domain
+    - default/openproduct/openproduct-contracts
+    - default/openproduct/openproduct-d1-probe
+    - default/openproduct/openproduct-db
+    - default/openproduct/openproduct-domain
+    - default/openproduct/openproduct-gateway
+    - default/openproduct/openproduct-gateway-tests
+    - default/openproduct/openproduct-media
+    - default/openproduct/openproduct-synthetic
+    - default/openproduct/openproduct-web
+    - default/openproduct/openproduct-web-perf
+    - default/openproduct/openproduct-web-tests
+    - default/openproduct/openproduct-worker
+    - default/openproduct/openproduct-worker-tests
+  doneWhen:
+    - CI on main is green on GitHub-hosted runners, every package installs, typechecks, lints and tests, and only the stage probe deploys
+    - the catalogue rebuild, the catalogue page and the search index run on D1 behind the unchanged repository interface
+    - the differential suite runs every slice case on Postgres and local D1 and every result is equal
+    - the stage probe deploys from main and its smoke prints its remote-D1 report in the run log
+  gates: []

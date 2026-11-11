@@ -4,15 +4,20 @@ name: CI
 # design §2, §7). A public repository, so:
 #   - GitHub-hosted runners only. Never a self-hosted runner.
 #   - `pull_request`, never `pull_request_target`. A fork's PR gets no OIDC
-#     token and no secrets from GitHub, so its lanes fail closed. An offline
-#     verify job for forks arrives with the code (OPN1).
+#     token and no secrets from GitHub, so `plan` and `run` would fail
+#     closed: they are skipped for forks, and `offline-verify` proves the
+#     tree instead, with fixtures and no remote state. Fork runs still wait
+#     for a maintainer's approval (design §7).
+#   - `gitleaks` scans what every pull request and every push to main
+#     brings, forks included: it needs no secret.
 #   - The only credential CI holds is GitHub's own GITHUB_TOKEN. Every
 #     provider credential is an Orunbase workspace secret, brokered per run
 #     through the OIDC exchange and log-redacted. Nothing provider-shaped is
 #     stored in GitHub.
-#   - Deploy and apply profiles are gated on the `github-push-main` trigger
-#     in every component.yaml, and stage and prod require approval
-#     (intent.yaml).
+#   - Until OPN2 no component reaches a deploy or apply profile from any
+#     trigger: every lane is a verify lane. From OPN2 deploy and apply are
+#     gated on the `github-push-main` trigger in each component.yaml, and
+#     stage and prod require approval (intent.yaml).
 
 on:
   push:
@@ -53,6 +58,9 @@ permissions:
 
 jobs:
   plan:
+    # Not for a fork's pull request: GitHub gives it no OIDC token, so the
+    # exchange with the workspace would fail closed. offline-verify runs.
+    if: ${{ !(github.event_name == 'pull_request' && github.event.pull_request.head.repo.fork) }}
     runs-on: ubuntu-latest
     outputs:
       job-matrix: ${{ steps.matrix.outputs.job-matrix }}
@@ -86,7 +94,7 @@ jobs:
   run:
     needs: plan
     runs-on: ubuntu-latest
-    if: ${{ needs.plan.outputs.job-matrix != '[]' && needs.plan.outputs.job-matrix != '' }}
+    if: ${{ !(github.event_name == 'pull_request' && github.event.pull_request.head.repo.fork) && needs.plan.outputs.job-matrix != '[]' && needs.plan.outputs.job-matrix != '' }}
     strategy:
       fail-fast: false
       # Stagger the fan-out: every lane hits the lease-bound resolve at job
@@ -118,10 +126,21 @@ jobs:
           # Every run reports to the platform, a pull request's included: a
           # verify lane still resolves the wiring its fixture stands in for.
           # Fork PRs get no OIDC token from GitHub and fail closed here.
+          #
+          # --isolation none: this runner runs exactly one job, so there is
+          # nothing to isolate it from. Without the flag orun stages a private
+          # copy under .orun/runs/…/work and LINKS node_modules back to this
+          # checkout. Every package's real path then sits outside the copy,
+          # so Next's outputFileTracingRoot drops them from the standalone
+          # output, and OpenNext reaches out to the real node_modules and
+          # fails bundling sharp's native .node files (first CI run on
+          # OPN-2). orun-cloud's pipeline runs with the same flag for the
+          # same reason.
           orun run \
             --plan plan.json \
             --runner github-actions \
             --remote-state \
+            --isolation none \
             --job "${{ matrix.job-id }}" \
             --exec-id "${{ github.run_id }}" \
             $retry_flag
@@ -129,3 +148,89 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           DOCKER_CONFIG: /home/runner/.docker
+
+  # A FORK'S PULL REQUEST, PROVED OFFLINE (openproduct-standalone design §2,
+  # §7). No OIDC, no secrets, no remote state, and no token beyond a read of
+  # this repository: the same suites the orun verify lanes run, over the
+  # committed fixtures. Same-repository pull requests get the orun lanes
+  # instead, and this job does not run for them.
+  offline-verify:
+    if: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.fork }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+      # pnpm before node, so setup-node can cache the store. Both versions
+      # come from package.json: packageManager pins pnpm, engines names node.
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v6
+        with:
+          node-version-file: package.json
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Typecheck and lint, every package
+        run: pnpm exec turbo run typecheck lint
+      - name: Test, every package but the database's and the browser lanes
+        run: pnpm exec turbo run test --filter='!@openproduct/db' --filter='!@openproduct/web-perf'
+      # Alone, because its suites time out under the parallel load above: the
+      # pg suite restores a migrated PGlite for every test, and the D1 slice
+      # starts local D1 (workerd, through miniflare) for its own.
+      - name: Test the database package, alone
+        run: pnpm exec turbo run test --filter=@openproduct/db
+      - name: Build the website (Next.js, then the OpenNext bundle)
+        run: pnpm exec turbo run build --filter=@openproduct/web
+      # The browser lanes build the website over a fixture gateway and walk it
+      # in Chromium: budgets, wire, a11y, axe, targets, snapshots and the rest.
+      - name: Browser lanes
+        run: |
+          pnpm --filter @openproduct/web-perf exec playwright install --with-deps chromium
+          pnpm exec turbo run test --filter=@openproduct/web-perf --only
+
+  # SECRET SCANNING on what this run brings: a pull request's commits (base to
+  # head), a push's commits (before to after; a new branch, its history), and
+  # the tree as checked out. The gitleaks binary is pinned by version and
+  # checksum rather than taken from an action.
+  gitleaks:
+    if: ${{ github.event_name != 'workflow_dispatch' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    env:
+      GITLEAKS_VERSION: "8.30.1"
+      # sha256 of gitleaks_8.30.1_linux_x64.tar.gz, as the release's
+      # gitleaks_8.30.1_checksums.txt and GitHub's asset digest both state.
+      GITLEAKS_SHA256: 551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Install gitleaks (pinned, checksum-verified)
+        run: |
+          set -euo pipefail
+          tarball="gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz"
+          curl -fsSL -o "${RUNNER_TEMP}/${tarball}" \
+            "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/${tarball}"
+          echo "${GITLEAKS_SHA256}  ${RUNNER_TEMP}/${tarball}" | sha256sum -c -
+          tar -xzf "${RUNNER_TEMP}/${tarball}" -C "${RUNNER_TEMP}" gitleaks
+          "${RUNNER_TEMP}/gitleaks" version
+      - name: Scan the commits this run brings
+        env:
+          BASE_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.event.before }}
+          HEAD_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+        run: |
+          set -euo pipefail
+          if [ -z "${BASE_SHA}" ] || [ "${BASE_SHA}" = "0000000000000000000000000000000000000000" ] \
+            || ! git cat-file -e "${BASE_SHA}^{commit}" 2>/dev/null; then
+            range="${HEAD_SHA}"
+          else
+            range="${BASE_SHA}..${HEAD_SHA}"
+          fi
+          echo "gitleaks: scanning ${range}"
+          "${RUNNER_TEMP}/gitleaks" git --redact --no-banner --exit-code 1 --log-opts="${range}" .
+      - name: Scan the tree as checked out
+        run: '"${RUNNER_TEMP}/gitleaks" dir --redact --no-banner --exit-code 1 .'

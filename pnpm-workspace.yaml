@@ -1,0 +1,10 @@
+packages:
+  - "core"
+  - "gateway"
+  - "web"
+  - "packages/*"
+  - "tests/*"
+  - "tooling/*"
+  # infra/* holds the synthetic monitor (@openproduct/synthetic). Without this
+  # line it falls out of the workspace: no install, no typecheck, no tests.
+  - "infra/*"

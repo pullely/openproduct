@@ -1,0 +1,12 @@
+{
+  "seam": "v1",
+  "eventId": "00000000-0000-4000-8000-000000000002",
+  "occurredAt": "2026-08-17T12:05:00.000Z",
+  "type": "join_request.decided",
+  "data": {
+    "jrRequestRef": "jreq_99999999888847778666555555555555",
+    "subjectId": "usr_0123456789abcdef0123456789abcdef",
+    "status": "approved",
+    "occurredAt": "2026-08-17T12:05:00.000Z"
+  }
+}

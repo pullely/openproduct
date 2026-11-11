@@ -27,3 +27,6 @@ plan.json
 .idea/
 .vscode/*
 !.vscode/extensions.json
+
+# Rendered at deploy time from its template and the probe database wiring
+infra/d1-probe/wrangler.jsonc

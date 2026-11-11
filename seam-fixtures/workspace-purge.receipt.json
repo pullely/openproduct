@@ -1,0 +1,25 @@
+{
+  "data": {
+    "context": "openproduct",
+    "lifecycleRequestId": "77777777-6666-4555-8444-333333333333",
+    "done": true,
+    "rowsDeleted": 0,
+    "shredded": 0,
+    "tables": [
+      {
+        "table": "openproduct.audit_log",
+        "rowsDeleted": 0,
+        "drained": true
+      },
+      {
+        "table": "openproduct.profiles",
+        "rowsDeleted": 0,
+        "drained": true
+      }
+    ]
+  },
+  "meta": {
+    "requestId": "req_fixture",
+    "cursor": null
+  }
+}

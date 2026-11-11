@@ -1,0 +1,15 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noEmit": false,
+    "declaration": true,
+    "outDir": "dist",
+    "rootDir": "src"
+  },
+  // ONLY the runner plane builds to dist — the repository is consumed as
+  // source by the workers' bundlers, and compiling it here would drag
+  // cross-package @saas sources outside rootDir. The CLI needs exactly the
+  // manifest and the vendored runner, both self-contained.
+  "include": ["src/runner/**/*.ts", "src/manifest.ts"],
+  "exclude": ["src/**/*.test.ts", "node_modules", "dist"]
+}

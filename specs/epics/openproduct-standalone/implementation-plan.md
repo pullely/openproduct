@@ -30,12 +30,12 @@ The PR's review is the design's adoption.
 
 ## OPN1 — the tree, with D1 proven on one slice
 
-Task **OPN-2**, one pull request.
+Two tasks, because one part must be live before the next: **OPN-2** lands the tree, the slice and the probe, and its merge runs the probe on stage. **OPN-3** then records the remote numbers and the go/no-go in the status file.
 - **The cut.** The product code arrives from orun-cloud at a named commit, made self-contained and verify-only (design §2).
 - **The slice proof.** The catalogue and search slice runs on D1 behind the unchanged repository interface: `packages/db/src/d1/` (cirrus's executor), the slice's SQLite schema, the six methods, the D1 harness and the differential suite (design §5).
-- **The probe.** `infra/cloudflare-d1` for the throwaway `openproduct-probe` database, and the stage-only `openproduct-d1-probe` Worker. These are the only components that apply anything, and only on stage.
+- **The probe.** `infra/cloudflare-d1-probe` for the throwaway `openproduct-probe-stage` database, and the stage-only `openproduct-d1-probe` Worker. These are the only components that apply anything, and only on stage.
 
-**Prerequisite in orun-cloud:** one PR upstreams the cut script's fixes, so the cut is reproducible from a named SHA. The code freeze on `apps/openproduct/` starts at that SHA (risk OPN-H).
+**The cut SHA is orun-cloud `ffb71be69`.** Its `apps/openproduct/` is identical to the `b421bc672` cut. The fixes were made here rather than upstreamed (see IMPLEMENTATION-STATUS). The code freeze on `apps/openproduct/` in orun-cloud starts at that SHA (risk OPN-H).
 
 **Done when**
 - CI on `main` is green on GitHub-hosted runners: every package installs, typechecks, lints and tests, and only the stage probe deploys
@@ -46,7 +46,7 @@ Task **OPN-2**, one pull request.
 
 ## OPN2 — live on its own URLs, all on D1
 
-Task **OPN-3**, one pull request. This is the largest pull request of the
+Task **OPN-4**, one pull request. This is the largest pull request of the
 epic. The differential suite makes it reviewable: every ported statement
 comes with its equality proof.
 
@@ -62,6 +62,8 @@ comes with its equality proof.
 - the differential harness, once its last case has passed.
 
 `index-coverage` moves to `EXPLAIN QUERY PLAN`.
+
+The website's first real deploy happens here. If the Worker fails at startup with `ChunkLoadError … instrumentation`, the standalone trace is incomplete: follow `nextjs-on-workers` §10 (copy the build's server directory over the standalone one before OpenNext bundles it).
 
 **Going live.**
 - Deploy profiles are switched on for stage and prod.
@@ -82,7 +84,7 @@ comes with its equality proof.
 Design §6, in order:
 1. **orun-cloud PR (stage):** `LISTING_SEAM_URL` (stage) and `openproductWebBase` become configuration, set to the new stage hosts, and the stage seam keys rotate on both sides. Then the full listing flow is run on stage.
 2. **orun-cloud PR (prod):** `LISTING_SEAM_URL` (prod) becomes `https://api.openproduct.live`, and the prod keys rotate on both sides.
-3. **OPN-4**, this repository: `OPENPRODUCT_CUSTOM_DOMAIN` is set for prod and the two domain components apply, after the `openproduct.live` zone moves to the new Cloudflare account (risk OPN-G).
+3. **OPN-5**, this repository: `OPENPRODUCT_CUSTOM_DOMAIN` is set for prod and the two domain components apply, after the `openproduct.live` zone moves to the new Cloudflare account (risk OPN-G).
 4. The old prod `core` is set `READ_ONLY=true`.
 
 **Done when**
@@ -93,7 +95,7 @@ Design §6, in order:
 
 ## OPN4 — openproduct, listed on openproduct.live
 
-**OPN-5, this repository: the listing.** Create it from openproduct.live →
+**OPN-6, this repository: the listing.** Create it from openproduct.live →
 Create into this workspace's project, link `pullely/openproduct`, then pitch,
 review and publish. The repo covenant then watches this repository. The same
 PR updates the README's **Shipped as** and this epic's status.

@@ -1,0 +1,224 @@
+apiVersion: sourceplane.io/v1
+kind: Component
+metadata:
+  name: openproduct-web
+  title: openproduct Website
+  description: The openproduct.live website and maker studio — a Next.js 16 app on Cloudflare Workers (OpenNext) that reads and writes through the openproduct gateway.
+spec:
+  type: cloudflare-workers-assets-turbo
+  lifecycle: production
+  owner: platform
+  # Its own runner under execution.lanes: a Next.js build and its cache
+  # (ORUN_NEXT_CACHE_DIR, the browsers) are per runner, not per job.
+  lane: isolated
+  domain: starter-ui
+  system: openproduct
+  docs:
+    overview: README.md
+    pages:
+      - { path: src/fonts/README.md, role: reference, title: Webfonts }
+  links:
+    - title: Production
+      url: https://openproduct.live
+      icon: web
+    - title: Stage
+      url: https://openproduct-web-stage.oruncloud.workers.dev
+      icon: web
+  path: web
+  dependsOn:
+    - component: openproduct-contracts
+      input: true
+    # THE HOSTNAME MUST EXIST BEFORE THIS BUILD BAKES IT IN.
+    #
+    # This edge is the other half of the 2026-09-09 fix. `openproduct-api-domain`
+    # creates `api.openproduct.live` and depends on the GATEWAY only, so it can
+    # apply without waiting on this component — but nothing ordered it BEFORE
+    # this build until this line. On a fresh estate the build could still run
+    # first and bake a name that did not exist yet, which is the outage.
+    #
+    # Acyclic, and the whole chain reads:
+    #     openproduct-api-domain -> openproduct-gateway
+    #     openproduct-web        -> openproduct-api-domain
+    #     openproduct-domain     -> openproduct-web
+    #
+    # `tests/web/src/deploy-ordering.test.ts` asserts both halves.
+    #
+    # NOT DECLARED IN OPN1: `openproduct-api-domain` is not discovered until
+    # the prod switch (OPN3), and this build bakes no API hostname until then
+    # (see buildEnv below), so there is nothing to order and orun would drop
+    # the edge with a warning. The edge comes back with the variable, and the
+    # ordering test fails if the variable comes back without it.
+  # VERIFY-ONLY IN EVERY ENVIRONMENT UNTIL OPN2 (openproduct-standalone
+  # design §2). No trigger reaches a deploy profile: a merge to main verifies
+  # stage and prod, it does not converge them. The monorepo's `skip` rules
+  # (main does not re-verify what its PR verified, CIS17; a PR does not plan
+  # stage or prod) went with the profile, which stack-tectonic 0.21.0 does not
+  # define. OPN2 brings the deploy rules back.
+  subscribe:
+    environments:
+      - name: dev
+        dependencyRules: # dev lanes never wait on other lanes (intent.yaml, DEPENDENCY MODES)
+          - mode: advisory
+            when:
+              triggerRef: github-pull-request
+          - mode: advisory
+            when:
+              triggerRef: github-push-main
+        profile: verify
+      - name: stage
+        profile: verify
+      - name: prod
+        profile: verify
+  parameters:
+    nodeVersion: "22"
+    pnpmVersion: "10.12.1"
+
+    workspaceDir: ..
+    appDir: .
+
+    turboFilter: "@openproduct/web"
+    wranglerConfig: wrangler.jsonc
+
+    workerEntrypoint: .open-next/worker.js
+    assetsDir: .open-next/assets
+
+    # Per-env worker names: openproduct-web-{dev,stage,prod}. The prod custom
+    # domain (openproduct.live) attaches via apps/openproduct/infra/domain —
+    # no longer as a second apex on the console worker.
+    workerName: openproduct-web
+    environmentAwareWorkerName: true
+
+    # The old account's workers.dev subdomain; only the deploy's smoke reads it.
+    # TODO(OPN2): the openproduct Cloudflare account's subdomain (design §4).
+    workersDevSubdomain: oruncloud
+
+    environmentBuildVar: NEXT_PUBLIC_DEPLOY_ENV
+
+    installCommand: pnpm install --frozen-lockfile
+    # Cross-product URLs are seam edges (S5, S10 — 19-openproduct-seam.md) and
+    # are declared in EVERY environment: the prod-only setting was the #1052
+    # regression class. NEXT_PUBLIC_SITE_ORIGIN names this site's canonical
+    # origin (prod only — preview hosts advertise no canonical).
+    # ─── THE API HOSTNAME, AND THE OUTAGE IT COST TO SET SAFELY ──────────
+    #
+    # `NEXT_PUBLIC_OPENPRODUCT_API_URL` is set again, and this comment is here
+    # so nobody has to relearn why it once could not be.
+    #
+    # OPP3 set it, and it took openproduct.live down for ~50 minutes on
+    # 2026-09-09. The dependency was CIRCULAR AND UNSATISFIABLE:
+    #
+    #   openproduct-web (prod build)  bakes       api.openproduct.live
+    #   api.openproduct.live          created by  openproduct-domain
+    #   openproduct-domain            dependsOn   openproduct-web
+    #
+    # The hostname could never exist before the build that needed it. The prod
+    # build shipped pointing at a name with no DNS record, every public read
+    # failed, the front page rendered its error boundary — and the smoke
+    # failure then blocked `openproduct-domain` from ever running, so the name
+    # stayed uncreated and the loop could not resolve itself. dev and stage
+    # stayed green throughout, because this line was the only difference.
+    #
+    # THE RULE IT BOUGHT: NEVER BAKE A HOSTNAME INTO A BUILD IN THE SAME
+    # CHANGE THAT CREATES THE HOSTNAME. Two deploys — one creates the name,
+    # one starts using it — and no `dependsOn` collapses that into one while
+    # the creator depends on the consumer.
+    #
+    # WHAT MAKES IT SAFE NOW is not that the hostname happens to exist. It is
+    # that the SHAPE changed: `openproduct-api-domain` creates it and depends
+    # on the GATEWAY only, and this component depends on THAT (see `dependsOn`
+    # above). The chain is acyclic and the hostname is created before this
+    # build on any estate, including one built from nothing:
+    #
+    #   openproduct-api-domain -> openproduct-gateway
+    #   openproduct-web        -> openproduct-api-domain
+    #   openproduct-domain     -> openproduct-web
+    #
+    # `tests/web/src/deploy-ordering.test.ts` asserts both halves, and each
+    # was verified by breaking it.
+    #
+    # AND IT IS WORTH LITTLE, WHICH IS WORTH KNOWING. Since OPP4a the
+    # gateway's cache is Workers Caching — keyed to the WORKER, not to a
+    # hostname — and `openproduct-gateway-prod.oruncloud.workers.dev` serves
+    # `cf-cache-status: HIT` identically. This variable buys a canonical
+    # public API address. It buys no performance at all, so it is never a
+    # reason to hurry.
+    #
+    # OPP3 — `NEXT_PUBLIC_OPENPRODUCT_API_URL` IS DECLARED WHERE THE ZONE
+    # EXISTS, AND NOWHERE ELSE.
+    #
+    # `openproductApiBase()` falls back to the gateway's workers.dev host when
+    # this is unset, and until OPP3 it was unset in every environment — which
+    # is why every public read went to a hostname where the Cache API is
+    # unavailable and Cache Rules do not apply, and why the 2026-09-08
+    # production probe found no `cf-cache-status` on any dynamic response.
+    #
+    # Only PROD gets it, because only prod has the zone:
+    # `OPENPRODUCT_CUSTOM_DOMAIN` is a prod-only parameterDefault, so
+    # `api.openproduct.live` is the one environment where the Route exists.
+    # dev and stage keep the workers.dev fallback deliberately — a build var
+    # pointing at a hostname the infra never created is the silent-empty
+    # failure cloudflare-domain documents, wearing a different mask.
+    #
+    # THE CONSEQUENCE, STATED: OPP4's cache can only be verified in prod until
+    # a stage zone exists. That is recorded in the epic rather than papered
+    # over with a hostname on the prod zone answering for stage traffic.
+    #
+    # ─── AND IN THIS REPOSITORY, NOT DECLARED AT ALL (OPN1) ─────────────
+    #
+    # The monorepo set these through the composition's `buildEnv` parameter.
+    # stack-tectonic 0.21.0's cloudflare-workers-assets-turbo has no
+    # `buildEnv` (its parameters are closed, so orun refuses the component),
+    # and in this milestone the website only verifies: every one of the three
+    # reads in `src/lib/platform.ts` degrades on its own when unset (the
+    # gateway's workers.dev host, a relative console link, no canonical). The
+    # values the deploys used are kept here so OPN2 restores exactly them,
+    # by whatever the pinned stack then offers:
+    #
+    #   dev:   NEXT_PUBLIC_CONSOLE_ORIGIN       https://orun-web-console-next-dev.oruncloud.workers.dev
+    #   stage: NEXT_PUBLIC_CONSOLE_ORIGIN       https://stage.orunbase.com
+    #   prod:  NEXT_PUBLIC_CONSOLE_ORIGIN       https://app.orunbase.com
+    #          NEXT_PUBLIC_SITE_ORIGIN          https://openproduct.live
+    #          NEXT_PUBLIC_OPENPRODUCT_API_URL  https://api.openproduct.live
+    #
+    # The last one is the hostname the rule above is about: when it comes
+    # back, `openproduct-api-domain` must be discovered and this component
+    # must depend on it, and `tests/web/src/deploy-ordering.test.ts` holds
+    # that the moment the line is active again.
+
+    # ─── THE SUITE RUNS HERE BECAUSE NOTHING ELSE SCHEDULES IT ──────────────
+    #
+    # `orun plan --changed` selects a component when ITS OWN files change, and a
+    # `dependsOn` edge does not pull a dependent INTO a plan — the note in
+    # `tests/web-perf/component.yaml` measured that, and `openproduct-web-tests`
+    # declares the edge and is planned anyway only when its own files move. So a
+    # change under `apps/openproduct/web/` planned exactly three jobs — this
+    # component in dev, stage and prod — and the 1,044 tests in `@openproduct/web-tests` did not
+    # run. Across openproduct's three source components that was 2,046 tests
+    # that a source change never reached.
+    #
+    # MEASURED, NOT ASSUMED. `orun plan --changed --files
+    # apps/openproduct/web/src/x.ts` lists this component's three jobs and
+    # nothing else. In CI, PR #1358 touched `apps/openproduct/web/component.yaml`
+    # and `apps/openproduct/web/src/lib/platform.ts` and ran four jobs — `plan`
+    # plus `openproduct-web` in three environments. `openproduct-web-tests` was
+    # not among them, and the change merged.
+    #
+    # WHY IT IS IN `buildCommand` AND NOT ITS OWN STEP. This composition's verify
+    # profile has a FIXED capability list — setup-node, setup-pnpm, install,
+    # verify-structure, build, verify-output, deploy-dry-run —
+    # with no pre-build hook to hang a lane on. `buildCommand` is the one
+    # free-form slot that runs before the deploy, and `onFailure: stop` on that
+    # step is what makes a red suite block the deploy rather than merely report.
+    #
+    # THE TESTS RUN FIRST, so a failure costs seconds rather than a whole build.
+    buildCommand: pnpm exec turbo run test --filter=@openproduct/web-tests && pnpm exec turbo run build --filter=@openproduct/web
+
+    # Smoke: the directory page's static marker, with the same retry posture
+    # the console's smoke learned the hard way (a worker upload returns before
+    # every edge serves it).
+    smokeCommand: "ok=; for i in $(seq 1 20); do html=$(curl -sfL \"${DEPLOYED_URL}/\" || true); if printf '%s' \"${html}\" | grep -q 'openproduct'; then ok=1; break; fi; sleep 6; done; [ -n \"${ok}\" ] || { echo \"smoke: 'openproduct' not served by ${DEPLOYED_URL} after ~120s\"; exit 1; }"
+  labels:
+    team: platform
+    layer: delivery
+    surface: openproduct
+    runtime: cloudflare

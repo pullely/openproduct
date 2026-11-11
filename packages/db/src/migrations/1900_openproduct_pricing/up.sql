@@ -1,0 +1,41 @@
+-- 1900_openproduct_pricing (openproduct-worldclass-v2 PP3)
+--
+-- PRICING IS ONE ENUMERATED, AUTHORED FIELD.
+--
+-- Context: openproduct
+--
+-- The audit's W·10 lists a pricing badge among what the benchmark's product
+-- page carries and this one did not. The design (WC2 §PP) answers with one
+-- field — free · open-core · paid · self-host — authored by the maintainers,
+-- provenance-tagged, and filterable at its own address.
+--
+-- ─── WHY THIS IS A THIRD ASSIGNED FACET AND NOT A NEW SHAPE ──────────────
+--
+-- `category` and `hosting` (1320) are the two assigned facets: nullable
+-- TEXT, no default, the vocabulary held in the contract (`facets.ts`) and
+-- refused at the API rather than at the column. Pricing is the same shape
+-- for the same reasons —
+--
+--   NULLABLE, DELIBERATELY. An unanswered facet is NOT an empty string and
+--   NOT a default bucket. "Free" assigned to a listing whose maintainers
+--   never said so would put it in a filter nobody chose, and a reader who
+--   filtered to free products would be shown a claim nobody made.
+--
+--   NO CHECK CONSTRAINT, LIKE ITS TWO SIBLINGS. The vocabulary is the
+--   contract's, one list the studio's select, the API's refusal, the facet
+--   count and the filter page all read. A CHECK here would be a second copy
+--   of that list, and a vocabulary change would need a migration to say the
+--   same thing twice. The write path refuses an unrecognised value with the
+--   vocabulary in the refusal (`profiles.ts`, `parseFacet`), which is the
+--   sentence a maintainer can act on and a CHECK violation is not.
+--
+-- ─── WHY THE PRODUCT DOES NOT TAKE MONEY ─────────────────────────────────
+--
+-- Pricing here describes the listed product, in its maintainers' words. It
+-- is not a price this estate charges, collects or verifies; the README's
+-- does-not list is unchanged by this column.
+--
+-- Additive, idempotent.
+
+ALTER TABLE openproduct.profiles
+  ADD COLUMN IF NOT EXISTS pricing TEXT;

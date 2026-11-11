@@ -1,0 +1,1858 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* FR0 — the ramp this file's values are drawn for; the dark scopes
+       below override it. */
+    color-scheme: light;
+    /* OL1 — the design's three faces (design-reference.md §2). Each has
+       exactly one job, and the job is why it is here rather than a taste:
+       Geist is every UI voice, Newsreader is display ONLY (page titles, the
+       wordmark, collection titles, the feed's rank numerals), Geist Mono is
+       the machine facts — licences, logo initials, vote counts, component
+       names. All three load via next/font (app/layout.tsx) and land here as
+       CSS variables; the stacks behind them are the swap fallbacks. */
+    --font-sans: var(--font-geist, "Geist"), ui-sans-serif, system-ui,
+      -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+    --font-serif: var(--font-newsreader, "Newsreader"), ui-serif, Georgia,
+      "Times New Roman", serif;
+    --font-mono: var(--font-geist-mono, "Geist Mono"), ui-monospace, "SF Mono",
+      "Cascadia Code", "JetBrains Mono", Menlo, Consolas, monospace;
+
+    /* The masthead's height, and the ONE place it is written down.
+       Five things have to agree on it: the band itself, the rail that pins
+       under it, the boot frame's placeholder rail, and — since the panels
+       stopped covering the band — the Ask dock and the History panel. A number
+       that five files each spell out is a number four of them eventually get
+       wrong. The band is desktop-only (`md:flex`), so every consumer applies
+       this at `md` and up and sits at the viewport top below it.
+
+       56px rather than 50 (8a): the band carries a 36px field, a 30px round
+       control and a 24px mark on one row now, and 50 left the tallest of them
+       7px of air on each side — which reads as a control jammed into a strip
+       rather than sitting in a band. */
+    --masthead-h: 56px;
+
+    /* The rail's width, and the ONE place it is written down — because the
+       band's left cell is now the same column as the rail beneath it. The
+       divider between "where you are" and "what page you are on" runs from the
+       top of the band to the bottom of the viewport, and a rail and a header
+       cell that each spelled 256px would part company the first time one of
+       them was tuned. `lib/shell/rail.ts` mirrors the numbers for the boot
+       frame, and console-chrome.test.ts asserts the two agree. */
+    --rail-w: 256px;
+
+    /* The space the phone tab bar occupies, and the ONE place it is written
+       down. The shell reserves it as bottom padding on the page column; a
+       surface that pins something to the bottom edge (a chat composer) has to
+       cancel that reserve and re-add it inside the pinned box, or the box
+       lifts off the edge over the last scroll of the page. Two files spelling
+       the same expression is how they drift apart.
+
+       4.5rem is 63px under this console's 14px root — a hair more than the
+       bar's own 56px, which is the slack it already shipped with. Kept
+       verbatim so naming it changes no page's spacing. */
+    --tabbar-reserve: calc(env(safe-area-inset-bottom) + 4.5rem);
+
+    /* Northwind light — the canonical console surface. Neutral gray paper
+       (#FAFAFA canvas, #FFFFFF cards, #F5F5F5 rail), near-black ink (#171717),
+       and reserved accent colors: green #3A8159, amber #C39B45/#9A7B2D,
+       red #C94A44, run-blue #3B76C9, link-blue #2563C9. */
+    --background: 0.985 0.004 80; /* the page */
+    --foreground: 0.21 0.01 80; /* headings, names */
+    --card: 1 0 0; /* cards, the header's glass */
+    --card-foreground: 0.21 0.01 80;
+    --popover: 1 0 0;
+    --popover-foreground: 0.21 0.01 80;
+    /* Primary is Northwind ink: black buttons, black active states.
+       `bg-primary/10` ≈ the #E4E4E4 active-nav tint. */
+    --primary: 0.21 0.01 80; /* the one black button */
+    --primary-foreground: 1 0 0;
+    --secondary: 0.96 0.006 80; /* the active nav pill — the design's --chip */
+    --secondary-foreground: 0.36 0.01 80;
+    --muted: 0.965 0.005 80; /* row hover */
+    --muted-foreground: 0.52 0.012 80; /* meta lines, inactive nav */
+    --accent: 0.965 0.005 80; /* nav hover — the design's --hover */
+    --accent-foreground: 0.21 0.01 80;
+    /* Darkened by FR5, from `0.5836 0.1610 26.30`. That painted #C94C45 and
+       measured 4.37:1 on the page — under AA for text, and `text-destructive`
+       IS painted, once, on the studio's report actions. Darkening the ink
+       raises BOTH figures at once (a darker fill carries white better), so
+       there is no trade: 4.92:1 on the page, 5.14:1 for white on it. Hue and
+       chroma untouched; the two hexes are a step apart. */
+    --destructive: 0.555 0.1610 26.30; /* #BF433D */
+    --destructive-foreground: 1.0000 0 0;
+    --warning: 0.5983 0.1025 86.88; /* #9A7B2D (text); dot uses --warning-accent */
+    --warning-foreground: 1.0000 0 0;
+    --success: 0.5 0.12 150; /* "N people wanted" */
+    --success-foreground: 1.0000 0 0;
+    /* Informational / running blue (#3B76C9) and prose-link blue (#2563C9). */
+    --info: 0.5689 0.1382 257.26;
+    --info-foreground: 1.0000 0 0;
+    --link: 0.5238 0.1713 259.76;
+    --border: 0.915 0.006 80; /* card and control borders */
+    --input: 0.915 0.006 80;
+    --ring: 0.21 0.01 80;
+    --radius: 0.75rem; /* cards 12px; md 10px; sm 8px */
+
+    /* Console design ramp — the neutrals and tinted inks the Overview and the
+       rail read from directly. `copy` is body prose (a step lighter than
+       `secondary-foreground`), `faint` is the quiet mono metadata, `surface-2`
+       is the inner-card hairline / segmented-track fill, and the `*-strong`
+       inks are the pill and numeral colors on soft tinted fills. */
+    --copy: 0.36 0.01 80; /* taglines, prose */
+    /* #716D67 — 4.92:1 on the page, 5.14:1 on a card. Was #A3A3A3 (2.4:1),
+       which `text-faint` painted every timestamp, empty state and quiet
+       caption with: not "quiet", unreadable. The type system names exactly
+       three inks that clear WCAG AA at these sizes — #171717, #595959,
+       #6E6E68 — and this is the third. Anything at or lighter than #8C8C88
+       is not a text colour; #9A9A94 is legible only against the ink header
+       and bands.
+
+       AND FOR MOST OF THIS PROGRAM'S LIFE THIS LINE WAS A CLAIM, NOT A
+       COLOUR (openproduct-worldclass FR5). The paragraph above shipped
+       beside `0.68 0.01 80`, which paints **#9B9891** and measures **2.76:1**
+       — a hair off the #A3A3A3 it says it replaced, and lighter than the
+       #8C8C88 the same paragraph calls "not a text colour". It is very
+       nearly #9A9A94, the value named on the last line as legible ONLY
+       against the ink header: the wrong hex out of the paragraph was the one
+       that got converted. The fix was recorded, reviewed and never reached a
+       pixel, exactly as VC4's chroma did.
+
+       0.536 is #6E6E68's own lightness, carried into this ramp's neutral
+       family (hue 80, chroma 0.01) rather than its own 106.7°. FR5's axe pass
+       is what found it, and is what will notice if it drifts again — the
+       whole light ramp measured contrast in a browser for the first time,
+       and this was the only text token in it that failed. */
+    --faint: 0.536 0.01 80; /* licences, ranks 02+, kbd hints */
+    --surface-2: 0.945 0.005 80;
+    --border-strong: 0.855 0.008 80;
+    --border-hover: 0.885 0.007 80;
+    --warning-strong: 0.5105 0.0912 88.07; /* #7C621D — the New pill's ink */
+    --warning-pill: 0.5057 0.0884 88.36; /* #7A6320 */
+    --warning-soft-border: 0.8938 0.0357 88.99; /* #EBDDBB */
+    --warning-wash-soft: 0.9547 0.0231 88.93; /* #F7EFDC */
+    --info-strong: 0.4946 0.1286 257.39; /* #2C5AA8 */
+    --info-border: 0.9141 0.0235 255.08; /* #D7E3F5 */
+    --success-border: 0.88 0.06 150;
+
+    /* Soft tint fills for status pills and row washes. */
+    --success-soft: 0.95 0.035 150;
+    --warning-soft: 0.9451 0.0304 90.33; /* #F5EDD8 */
+    --warning-accent: 0.7195 0.1153 87.49; /* #C39B45 dot */
+    --warning-wash: 0.9768 0.0192 95.26; /* #FBF7E8 row tint */
+    --destructive-soft: 0.9509 0.0193 22.45; /* #FBEBEA */
+    --destructive-wash: 0.9628 0.0133 26.54; /* #FCF0EF row tint */
+    --info-soft: 0.9544 0.0161 258.35; /* #E9F0FB */
+
+    /* Work plane (orun-work-v5 WV0) — rung glyphs, meters, agent actors.
+       See specs/epics/orun-work-v5/design.md §1. */
+    --work-track: 0.9466 0 0; /* #EDEDED meter + ring track */
+    --work-track-warning: 0.9190 0.0369 90.37; /* #EDE3C8 in-progress ring track */
+    --work-track-info: 0.9115 0.0260 258.36; /* #D9E4F4 in-review ring track */
+    --work-idle: 0.6830 0 0; /* #999999 ready ring */
+    --work-idle-faint: 0.7326 0 0; /* #A8A8A8 draft dashed ring */
+    --work-outline: 0.8054 0 0; /* #C0C0C0 upcoming diamond, unassigned ring */
+    --agent: 0.5435 0.0721 307.71; /* #7A648F agent star */
+    --agent-soft: 0.9371 0.0164 308.27; /* #ECE6F2 agent avatar fill */
+    --agent-strong: 0.4714 0.0677 303.79; /* #63527A design-agent glyph ink + kicker */
+
+    /* Brand amber — the eclipse's earth (see brand/README.md). One colour seen
+       through two grounds: #B8862F carries on paper, #E3B34C carries on ink.
+       `--brand-amber` is the page ground, `--brand-amber-inverted` the opposite,
+       for a mark riding an inverted chip (the rail's ink org square). This is
+       identity, not status — `--warning*` stays the functional amber. */
+    --brand-amber: 0.6538 0.1178 77.40; /* #B8862F */
+    --brand-amber-inverted: 0.7913 0.1311 83.59; /* #E3B34C */
+    --warning-border: 0.9172 0.0447 90.40; /* #EFE3C2 drift banner border */
+    --warning-ink: 0.4729 0.0778 88.95; /* #6E5A22 drift banner ink */
+
+    /* Catalog v2 (Orunbase Console v2) — the exact inks the catalog index and the
+       service page draw with. The design is a light surface, so each value is
+       the literal hex from `design/Orun_Console_v2.dc.html` here and a lifted
+       equivalent under `.dark`. These are DISTINCT from the semantic ramp
+       above: the catalog's kind glyphs, verdict marks and metal tiers each
+       carry their own hue in the design, a half-step off `--success` /
+       `--destructive`, and rounding them to the semantic tokens is exactly the
+       drift this surface is meant not to have. */
+    --ink-2: 0.3211 0 0; /* #333333 — the pitch, facet labels */
+    --avatar: 0.9079 0 0; /* #E0E0E0 — owner/on-call avatar fill */
+    --rule-dot: 0.8373 0 0; /* #C9C9C9 — the eyebrow separator */
+    /* Kind glyph pairs — Component/service blue, API/worker violet,
+       System·Domain·Group/job green, Resource neutral. */
+    --kind-service-bg: 0.9554 0.0162 255.04; /* #EAF1FB */
+    --kind-job-bg: 0.9525 0.0151 155.56; /* #EAF3ED */
+    /* Verdict inks (scorecard marks, status dots). */
+    --verdict-pass: 0.5407 0.0913 154.77; /* #3E7D52 */
+    --verdict-fail: 0.5351 0.1467 26.25; /* #B0433D */
+    --status-healthy: 0.5805 0.0901 154.07; /* #4C8A5F — the healthy dot */
+    /* Metal tiers. Gold is `--warning` (#9A7B2D); Silver is
+       `--muted-foreground` (#737373); only Bronze needs its own value. */
+    --tier-bronze: 0.6619 0.0505 79.47; /* #A6906B */
+
+    /* Overview v3 — the warm hairline family the Orun Overview design draws
+       with. Distinct from `--border` (#E5E5E5, a neutral grey) because the
+       design's rules carry a little of the paper's warmth: at 1px that is the
+       difference between a card that sits ON the page and one cut out of it.
+       Scoped to the Overview today; the rest of the console still rules with
+       `--border`, and these are the values the other surfaces would adopt if
+       that palette moves.
+         --line       card and cell borders
+         --line-soft  the divider BETWEEN rows inside one card
+         --track      the unfilled part of a progress meter */
+    --line: 0.945 0.005 80; /* dividers inside a card */
+    --line-soft: 0.9352 0.0057 91.46; /* #EBEAE5 — the divider between rows */
+    --track: 0.9283 0.0069 91.47; /* #EAE8E2 */
+
+    /* The activity plane's failure pair. Deliberately NOT `--destructive`
+       (#C94A44): a run that went red on the change feed is drawn a shade
+       deeper and browner than a destructive action, so a column of ladders
+       reads as machine outcome rather than as a warning aimed at the reader. */
+    --run-failed: 0.5607 0.1315 26.27; /* #B4524A — the mark */
+    --run-failed-ink: 0.4969 0.1171 30.61; /* #9A4238 — the text */
+
+    /* ── openproduct-commons XP0 — the commons shell ──────────────────
+       The reference design's chrome is a full-bleed dark panel over a paper
+       page, and one accent colour that means exactly one thing.
+
+       WHY THE PANEL IS ITS OWN TOKEN SET rather than `--card` inverted: it is
+       the product's chrome, not a surface that follows the reader.
+
+       WHY `--endorse` IS RESERVED: gold appears once per row and it always
+       means endorsement (XP-1). Two golds exist because one of them is text:
+       `--endorse` is the ▲ mark (a glyph, not a label), `--endorse-ink` is the
+       deeper value any gold *word* uses, so the accent never buys itself a
+       contrast exemption. */
+    --panel: 0.2044 0 0; /* #171717 */
+    --panel-foreground: 0.9446 0.0086 88.85; /* #EFECE4 */
+    --panel-muted: 0.7394 0.0074 106.58; /* #ABABA6 — the search's placeholder and ⌘K */
+    --panel-line: 0.9307 0.0108 88.86; /* used at low alpha for the panel's hairlines */
+    --panel-raised: 0.2376 0 0; /* #1F1F1F — the account menu */
+    --panel-raised-line: 0.3211 0 0; /* #333333 */
+    /* THE ONE RESERVED ACCENT, and the four hues it can be.
+       The fill, the soft wash and the line are ONE lightness and ONE chroma
+       across all four hues — only H moves. That is the reason the ramp is
+       authored in oklch rather than in HSL: contrast becomes a property of
+       the ramp instead of a property of the theme somebody picked.
+
+       `--endorse-ink` is the exception, and it is deliberate: it is the
+       accent used AS A WORD (rank #1, a voted count), it is the only one that
+       has to clear AA as text, and equal L and C at different hues do not
+       read as equal contrast on paper. The prototype tunes it per hue, and
+       the four values below are its own. `[data-accent]` carries the other
+       three hues; ocean is :root. */
+    /* The ink on an accent fill — white on paper, near-black on the dark ramp. */
+    --on-accent: 1 0 0;
+    --endorse: 0.62 0.105 205; /* ocean — the logo dot, the unread badge, the ▲ */
+    --endorse-ink: 0.46 0.078 205; /* accent as a word: rank #1, a voted count */
+    --endorse-soft: 0.95 0.035 205; /* voted fill, unread row, the `#1 today` badge */
+    --endorse-line: 0.86 0.08 205; /* the voted box's border */
+
+    /* FR0 — THE THREE TOKENS THAT ARE NOT WHOLE COLOURS.
+
+       `--tile-fill` and `--tile-ink` are a LIGHTNESS AND CHROMA PAIR, not a
+       triple: `feed/tile.ts` supplies the third coordinate, because the hue is
+       the slug's and the ramp has no business deciding it.
+       `oklch(var(--tile-fill) 294)` is what a browser sees. Splitting the token
+       this way is what lets a tile follow the theme without the component
+       reading the theme — the hue goes in the markup and the ramp answers in
+       CSS, so the bytes are identical in both (I6).
+
+       `--scrim` is the ink behind a modal. It was an inline
+       `oklch(0.2 0.01 80 / 0.45)` in `auth-modal.tsx`, which is a fine dimming
+       layer over a near-white page and almost nothing over a near-black one — a
+       dialog with no scrim at all in dark. As a token it can go darker in the
+       dark ramp, which is the direction a scrim has to move. */
+    --tile-fill: 0.8 0.099;
+    /* 0.41 0.069, not 0.42 0.071 (sourceplane/orun-cloud#1882): the browser rounds each
+       colour to 8 bits, and at 0.42 0.071 the pair rounds to 4.48 at its
+       worst hue (23) — under WCAG's 4.5, and axe flagged the tiles of slugs
+       near it. 0.41 0.069 is 4.66 at its worst hue; the chroma steps
+       down with the lightness so the ink stays inside sRGB at every hue
+       (`dark-ramp.test.ts` holds both). The dark ramp swaps the pair. */
+    --tile-ink: 0.41 0.069;
+    --scrim: 0.2 0.01 80;
+
+    /* The design's two column reservations. Distinct from `--rail-w` (256px),
+       which is the console rail this app inherited and no longer renders. */
+    --facet-rail-w: 272px;
+    --product-aside-w: 320px;
+
+    /* ─── THE SECOND RAMP (openproduct-worldclass FR0) ────────────────────
+       The audit's P1·09: zero `prefers-color-scheme: dark` rules, anywhere.
+       Confirmed, and cheap for exactly the reason OL1 gave when it moved 164
+       values out of hex: in OKLCH, lightness is a COORDINATE. A dark theme is
+       therefore a second set of values on the same tokens (WC-8) rather than
+       a second stylesheet — nothing below this line is a new selector for an
+       existing component, and no component knows which ramp it is in.
+
+       EIGHTY-TWO VALUES, WRITTEN OUT, AND NOT COMPUTED. `oklch()` needs a
+       literal triple, so a runtime formula is not available even if it were
+       wise; and it would not be, because a dark ramp is not one function of
+       the light one. The families below each answer a different question and
+       three of them INVERT a relationship rather than reflecting a number:
+
+         SURFACES re-rank. A card is lighter than the page in both ramps,
+         because elevation moves toward the light source in both — so `--card`
+         does not reflect to something darker than `--background`, it stays
+         above it and the whole stack re-bases low.
+
+         WASHES flip sign. `--warning-wash` is a row tinted DARKER than a
+         near-white page; on a near-black page a tinted row is LIGHTER. Its
+         dark value is not the reflection of 0.9768, it is a low lightness
+         with the chroma raised, because a tint that survives on dark has to
+         carry its colour rather than its brightness.
+
+         `*-foreground` inverts with its chip. White on a mid-lightness
+         `--destructive` is the light ramp's answer; in dark the chip itself
+         rises to 0.72 and the ink on it has to go DARK. Reflecting these to
+         black-on-dark would have been a solid red chip with unreadable text.
+
+       AND THE PANEL RISES. `--panel` is already dark in the light ramp — it
+       is the one surface drawn as an inversion — so in dark it cannot sink
+       any further and stay visible. It goes UP, to 0.255 over a 0.165 page.
+
+       CHROMA IS NOT FREE AT THESE LIGHTNESSES. Five of the values below were
+       authored at a chroma sRGB cannot hold and are written here at the
+       largest it can: ocean's `--dk-endorse` wanted 0.16 at L 0.72 and gets
+       0.122, and `--dk-link` wanted 0.14 and gets 0.1231. Authoring the
+       unreachable number would not have been harmless — the browser gamut-maps
+       it anyway, so the stylesheet would have stated a colour it never paints.
+
+       EVERY PAIR IS MEASURED, and `dark-ramp.test.ts` holds them: no text
+       pair in the dark ramp is more than a fifth worse than the same pair in
+       the light one, and every pair the light ramp clears at 4.5:1 the dark
+       ramp clears too. In practice the dark ramp is the more contrasty of the
+       two on almost every pair — `--warning` on the page goes from 3.83 to
+       9.59 — because the light ramp's chromatic inks were drawn to sit on a
+       near-white page and their dark counterparts sit far from a near-black
+       one. */
+
+    /* the page, and the stack that sits on it */
+    --dk-background: 0.165 0.004 80;
+    --dk-card: 0.205 0.005 80;
+    --dk-popover: 0.225 0.005 80;
+    --dk-secondary: 0.255 0.007 80;
+    --dk-muted: 0.225 0.005 80;
+    --dk-accent: 0.225 0.005 80;
+    --dk-surface-2: 0.24 0.006 80;
+    --dk-primary: 0.93 0.006 80;
+    --dk-primary-foreground: 0.18 0.004 80;
+
+    /* ink */
+    --dk-foreground: 0.935 0.006 80;
+    --dk-card-foreground: 0.935 0.006 80;
+    --dk-popover-foreground: 0.935 0.006 80;
+    --dk-accent-foreground: 0.935 0.006 80;
+    --dk-secondary-foreground: 0.88 0.008 80;
+    --dk-copy: 0.86 0.008 80;
+    /* The quiet pair is floored at a secondary row in a well-set dark UI:
+       #959597 on #0B0B0C, APCA Lc 45. 0.6 (#83807A) sat at Lc 34 on a card
+       and read as greyed-out; 0.70 (#A29E98) is Lc 49, and muted moves a
+       step up with it (0.72 -> 0.76, #B4B0AA, Lc 59) to stay the louder of
+       the two. */
+    --dk-muted-foreground: 0.76 0.01 80;
+    --dk-faint: 0.7 0.01 80;
+    --dk-ink-2: 0.87 0 0;
+    --dk-ring: 0.85 0.008 80;
+
+    /* lines */
+    --dk-border: 0.3 0.006 80;
+    --dk-input: 0.32 0.006 80;
+    --dk-border-hover: 0.36 0.007 80;
+    --dk-border-strong: 0.42 0.008 80;
+    --dk-line: 0.27 0.005 80;
+    --dk-line-soft: 0.28 0.0057 91.46;
+    --dk-track: 0.29 0.0069 91.47;
+    --dk-rule-dot: 0.42 0 0;
+    --dk-avatar: 0.32 0 0;
+    --dk-work-track: 0.28 0 0;
+    --dk-work-outline: 0.45 0 0;
+    --dk-work-idle: 0.58 0 0;
+    --dk-work-idle-faint: 0.52 0 0;
+
+    /* washes — a tinted row, which on a dark page means lighter, not darker */
+    --dk-warning-wash: 0.225 0.03 95.26;
+    --dk-warning-wash-soft: 0.245 0.036 88.93;
+    --dk-warning-soft: 0.255 0.045 90.33;
+    --dk-destructive-wash: 0.225 0.028 26.54;
+    --dk-destructive-soft: 0.245 0.04 22.45;
+    --dk-info-soft: 0.245 0.038 258.35;
+    --dk-success-soft: 0.245 0.048 150;
+    --dk-agent-soft: 0.25 0.038 308.27;
+    --dk-kind-service-bg: 0.245 0.038 255.04;
+    --dk-kind-job-bg: 0.245 0.038 155.56;
+    --dk-work-track-warning: 0.29 0.05 90.37;
+    --dk-work-track-info: 0.29 0.045 258.36;
+
+    /* tinted borders */
+    --dk-warning-soft-border: 0.4 0.055 88.99;
+    --dk-info-border: 0.4 0.045 255.08;
+    --dk-success-border: 0.42 0.08 150;
+    --dk-warning-border: 0.4 0.06 90.4;
+
+    /* chromatic ink and status */
+    --dk-destructive: 0.72 0.15 26.3;
+    --dk-warning: 0.78 0.11 86.88;
+    --dk-success: 0.74 0.12 150;
+    --dk-info: 0.74 0.13 257.26;
+    --dk-link: 0.76 0.123 259.76;
+    --dk-warning-strong: 0.8 0.1 88.07;
+    --dk-warning-pill: 0.8 0.1 88.36;
+    --dk-warning-ink: 0.82 0.09 88.95;
+    --dk-warning-accent: 0.76 0.12 87.49;
+    --dk-info-strong: 0.78 0.112 257.39;
+    --dk-agent: 0.74 0.09 307.71;
+    --dk-agent-strong: 0.8 0.08 303.79;
+    --dk-brand-amber: 0.78 0.12 77.4;
+    --dk-brand-amber-inverted: 0.8 0.13 83.59;
+    --dk-verdict-pass: 0.76 0.1 154.77;
+    --dk-verdict-fail: 0.72 0.15 26.25;
+    --dk-status-healthy: 0.76 0.1 154.07;
+    --dk-run-failed: 0.73 0.14 26.27;
+    --dk-run-failed-ink: 0.78 0.12 30.61;
+    --dk-tier-bronze: 0.75 0.06 79.47;
+
+    /* the ink ON a solid chip, which inverts with the chip */
+    --dk-destructive-foreground: 0.18 0.01 26.3;
+    --dk-warning-foreground: 0.18 0.01 86.88;
+    --dk-success-foreground: 0.18 0.01 150;
+    --dk-info-foreground: 0.18 0.01 257.26;
+
+    /* the dark panel, which has to RISE on a dark page rather than sink */
+    --dk-panel: 0.255 0 0;
+    --dk-panel-foreground: 0.9446 0.0086 88.85;
+    --dk-panel-muted: 0.76 0.0074 106.58;
+    --dk-panel-line: 0.9307 0.0108 88.86;
+    --dk-panel-raised: 0.3 0 0;
+    --dk-panel-raised-line: 0.36 0 0;
+
+    /* the tile, and the ink behind a dialog */
+    --dk-tile-fill: 0.41 0.069;
+    --dk-tile-ink: 0.8 0.099;
+    --dk-scrim: 0.06 0.004 80;
+
+    /* ocean's dark accent — the other three hues carry theirs in their own
+       `[data-accent]` block below, exactly as the light ones do. */
+    --dk-on-accent: 0.18 0.01 205;
+    --dk-endorse: 0.72 0.122 205;
+    --dk-endorse-ink: 0.8 0.13 205;
+    --dk-endorse-soft: 0.25 0.042 205;
+    --dk-endorse-line: 0.44 0.075 205;
+  }
+
+
+  /* OL-9 — THE FOUR ACCENT HUES.
+     Each block redefines the accent family and NOTHING else, because that is
+     the design's own claim about itself: one lightness ramp, one accent hue,
+     and the accent swappable "without redrawing anything". A block that had
+     to also restate a border or an ink would be evidence the claim was false.
+
+     `data-accent` is stamped on <html> from NEXT_PUBLIC_OPENPRODUCT_ACCENT at
+     build time, so it is in the first byte of the document and identical for
+     every visitor — an accent chosen per-visitor would be a second render of
+     a page that I6 requires to be one (and is out of scope besides). Ocean is
+     the default and is already in :root, so it needs no block. */
+  :root[data-accent="ember"] {
+    --endorse: 0.62 0.17 25;
+    --endorse-ink: 0.48 0.16 25;
+    --endorse-soft: 0.95 0.024 25;
+    --endorse-line: 0.86 0.075 25;
+    --dk-endorse: 0.72 0.16 25;
+    --dk-endorse-ink: 0.8 0.114 25;
+    --dk-endorse-soft: 0.25 0.05 25;
+    --dk-endorse-line: 0.44 0.1 25;
+  }
+  :root[data-accent="moss"] {
+    --endorse: 0.62 0.17 150;
+    --endorse-ink: 0.46 0.126 150;
+    --endorse-soft: 0.95 0.035 150;
+    --endorse-line: 0.86 0.08 150;
+    --dk-endorse: 0.72 0.16 150;
+    --dk-endorse-ink: 0.8 0.13 150;
+    --dk-endorse-soft: 0.25 0.05 150;
+    --dk-endorse-line: 0.44 0.1 150;
+  }
+  :root[data-accent="plum"] {
+    --endorse: 0.62 0.17 340;
+    --endorse-ink: 0.47 0.16 340;
+    --endorse-soft: 0.95 0.033 340;
+    --endorse-line: 0.86 0.08 340;
+    --dk-endorse: 0.72 0.16 340;
+    --dk-endorse-ink: 0.8 0.13 340;
+    --dk-endorse-soft: 0.25 0.05 340;
+    --dk-endorse-line: 0.44 0.1 340;
+  }
+
+  /* ─── WHICH RAMP, AND WHO DECIDES (openproduct-worldclass FR0) ──────────
+     Two scopes, and they are two because CSS gives no way to make one:
+
+       `[data-theme="dark"]`    a reader who has said dark, on any device.
+       `[data-theme="system"]`  a reader who chose System, on a device that
+                                prefers dark — under the media query.
+
+     LIGHT IS THE DEFAULT. A reader who has said nothing gets the light page
+     on every device; the device's own preference is followed only once they
+     picked System in the footer, which stamps the attribute the media query
+     answers. No attribute, no dark: the default cannot be flipped by a
+     setting the reader never touched.
+
+     THE DECLARATION LISTS ARE IDENTICAL AND ARE ALIASES, NOT VALUES. Every
+     line below is `--x: var(--dk-x)`, so the eighty-two numbers live in one
+     place and these blocks carry none of them; `dark-ramp.test.ts` asserts
+     the two lists are the same text. Duplicating the VALUES here would be the
+     drift this file has spent four epics avoiding.
+
+     AND THE ACCENT BLOCKS ARE UNTOUCHED BY ALL OF THIS, which is the neat
+     part: `--dk-endorse` is resolved per accent on `:root` by the same
+     cascade the light values use, so there is no dark×accent matrix. Four
+     accents × two ramps, and the accent family still redefines nothing
+     outside itself (WC-8).
+
+     `color-scheme` is here so the browser's OWN surfaces follow — scrollbars,
+     the caret, form controls, the canvas behind an over-scroll. A page whose
+     tokens are dark and whose scrollbar is white is the detail that makes a
+     dark theme read as unfinished.
+
+     NOTHING HERE READS A SESSION (WC-4, I6). The attribute is set by whoever
+     is holding the document; the media query is the device's own answer. The
+     page's bytes do not change either way, which is what keeps it one cached
+     document. */
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --background: var(--dk-background);
+    --foreground: var(--dk-foreground);
+    --card: var(--dk-card);
+    --card-foreground: var(--dk-card-foreground);
+    --popover: var(--dk-popover);
+    --popover-foreground: var(--dk-popover-foreground);
+    --primary: var(--dk-primary);
+    --primary-foreground: var(--dk-primary-foreground);
+    --secondary: var(--dk-secondary);
+    --secondary-foreground: var(--dk-secondary-foreground);
+    --muted: var(--dk-muted);
+    --muted-foreground: var(--dk-muted-foreground);
+    --accent: var(--dk-accent);
+    --accent-foreground: var(--dk-accent-foreground);
+    --destructive: var(--dk-destructive);
+    --destructive-foreground: var(--dk-destructive-foreground);
+    --warning: var(--dk-warning);
+    --warning-foreground: var(--dk-warning-foreground);
+    --success: var(--dk-success);
+    --success-foreground: var(--dk-success-foreground);
+    --info: var(--dk-info);
+    --info-foreground: var(--dk-info-foreground);
+    --link: var(--dk-link);
+    --border: var(--dk-border);
+    --input: var(--dk-input);
+    --ring: var(--dk-ring);
+    --copy: var(--dk-copy);
+    --faint: var(--dk-faint);
+    --surface-2: var(--dk-surface-2);
+    --border-strong: var(--dk-border-strong);
+    --border-hover: var(--dk-border-hover);
+    --warning-strong: var(--dk-warning-strong);
+    --warning-pill: var(--dk-warning-pill);
+    --warning-soft-border: var(--dk-warning-soft-border);
+    --warning-wash-soft: var(--dk-warning-wash-soft);
+    --info-strong: var(--dk-info-strong);
+    --info-border: var(--dk-info-border);
+    --success-border: var(--dk-success-border);
+    --success-soft: var(--dk-success-soft);
+    --warning-soft: var(--dk-warning-soft);
+    --warning-accent: var(--dk-warning-accent);
+    --warning-wash: var(--dk-warning-wash);
+    --destructive-soft: var(--dk-destructive-soft);
+    --destructive-wash: var(--dk-destructive-wash);
+    --info-soft: var(--dk-info-soft);
+    --work-track: var(--dk-work-track);
+    --work-track-warning: var(--dk-work-track-warning);
+    --work-track-info: var(--dk-work-track-info);
+    --work-idle: var(--dk-work-idle);
+    --work-idle-faint: var(--dk-work-idle-faint);
+    --work-outline: var(--dk-work-outline);
+    --agent: var(--dk-agent);
+    --agent-soft: var(--dk-agent-soft);
+    --agent-strong: var(--dk-agent-strong);
+    --brand-amber: var(--dk-brand-amber);
+    --brand-amber-inverted: var(--dk-brand-amber-inverted);
+    --warning-border: var(--dk-warning-border);
+    --warning-ink: var(--dk-warning-ink);
+    --ink-2: var(--dk-ink-2);
+    --avatar: var(--dk-avatar);
+    --rule-dot: var(--dk-rule-dot);
+    --kind-service-bg: var(--dk-kind-service-bg);
+    --kind-job-bg: var(--dk-kind-job-bg);
+    --verdict-pass: var(--dk-verdict-pass);
+    --verdict-fail: var(--dk-verdict-fail);
+    --status-healthy: var(--dk-status-healthy);
+    --tier-bronze: var(--dk-tier-bronze);
+    --line: var(--dk-line);
+    --line-soft: var(--dk-line-soft);
+    --track: var(--dk-track);
+    --run-failed: var(--dk-run-failed);
+    --run-failed-ink: var(--dk-run-failed-ink);
+    --panel: var(--dk-panel);
+    --panel-foreground: var(--dk-panel-foreground);
+    --panel-muted: var(--dk-panel-muted);
+    --panel-line: var(--dk-panel-line);
+    --panel-raised: var(--dk-panel-raised);
+    --panel-raised-line: var(--dk-panel-raised-line);
+    --on-accent: var(--dk-on-accent);
+    --endorse: var(--dk-endorse);
+    --endorse-ink: var(--dk-endorse-ink);
+    --endorse-soft: var(--dk-endorse-soft);
+    --endorse-line: var(--dk-endorse-line);
+    --tile-fill: var(--dk-tile-fill);
+    --tile-ink: var(--dk-tile-ink);
+    --scrim: var(--dk-scrim);
+  }
+
+  @media (prefers-color-scheme: dark) {
+    /* LIGHT IS THE DEFAULT. The device's preference is followed only when
+       the reader chose "System" in the footer; with nothing stored, the
+       page is light on every device. */
+    :root[data-theme="system"] {
+      color-scheme: dark;
+      --background: var(--dk-background);
+      --foreground: var(--dk-foreground);
+      --card: var(--dk-card);
+      --card-foreground: var(--dk-card-foreground);
+      --popover: var(--dk-popover);
+      --popover-foreground: var(--dk-popover-foreground);
+      --primary: var(--dk-primary);
+      --primary-foreground: var(--dk-primary-foreground);
+      --secondary: var(--dk-secondary);
+      --secondary-foreground: var(--dk-secondary-foreground);
+      --muted: var(--dk-muted);
+      --muted-foreground: var(--dk-muted-foreground);
+      --accent: var(--dk-accent);
+      --accent-foreground: var(--dk-accent-foreground);
+      --destructive: var(--dk-destructive);
+      --destructive-foreground: var(--dk-destructive-foreground);
+      --warning: var(--dk-warning);
+      --warning-foreground: var(--dk-warning-foreground);
+      --success: var(--dk-success);
+      --success-foreground: var(--dk-success-foreground);
+      --info: var(--dk-info);
+      --info-foreground: var(--dk-info-foreground);
+      --link: var(--dk-link);
+      --border: var(--dk-border);
+      --input: var(--dk-input);
+      --ring: var(--dk-ring);
+      --copy: var(--dk-copy);
+      --faint: var(--dk-faint);
+      --surface-2: var(--dk-surface-2);
+      --border-strong: var(--dk-border-strong);
+      --border-hover: var(--dk-border-hover);
+      --warning-strong: var(--dk-warning-strong);
+      --warning-pill: var(--dk-warning-pill);
+      --warning-soft-border: var(--dk-warning-soft-border);
+      --warning-wash-soft: var(--dk-warning-wash-soft);
+      --info-strong: var(--dk-info-strong);
+      --info-border: var(--dk-info-border);
+      --success-border: var(--dk-success-border);
+      --success-soft: var(--dk-success-soft);
+      --warning-soft: var(--dk-warning-soft);
+      --warning-accent: var(--dk-warning-accent);
+      --warning-wash: var(--dk-warning-wash);
+      --destructive-soft: var(--dk-destructive-soft);
+      --destructive-wash: var(--dk-destructive-wash);
+      --info-soft: var(--dk-info-soft);
+      --work-track: var(--dk-work-track);
+      --work-track-warning: var(--dk-work-track-warning);
+      --work-track-info: var(--dk-work-track-info);
+      --work-idle: var(--dk-work-idle);
+      --work-idle-faint: var(--dk-work-idle-faint);
+      --work-outline: var(--dk-work-outline);
+      --agent: var(--dk-agent);
+      --agent-soft: var(--dk-agent-soft);
+      --agent-strong: var(--dk-agent-strong);
+      --brand-amber: var(--dk-brand-amber);
+      --brand-amber-inverted: var(--dk-brand-amber-inverted);
+      --warning-border: var(--dk-warning-border);
+      --warning-ink: var(--dk-warning-ink);
+      --ink-2: var(--dk-ink-2);
+      --avatar: var(--dk-avatar);
+      --rule-dot: var(--dk-rule-dot);
+      --kind-service-bg: var(--dk-kind-service-bg);
+      --kind-job-bg: var(--dk-kind-job-bg);
+      --verdict-pass: var(--dk-verdict-pass);
+      --verdict-fail: var(--dk-verdict-fail);
+      --status-healthy: var(--dk-status-healthy);
+      --tier-bronze: var(--dk-tier-bronze);
+      --line: var(--dk-line);
+      --line-soft: var(--dk-line-soft);
+      --track: var(--dk-track);
+      --run-failed: var(--dk-run-failed);
+      --run-failed-ink: var(--dk-run-failed-ink);
+      --panel: var(--dk-panel);
+      --panel-foreground: var(--dk-panel-foreground);
+      --panel-muted: var(--dk-panel-muted);
+      --panel-line: var(--dk-panel-line);
+      --panel-raised: var(--dk-panel-raised);
+      --panel-raised-line: var(--dk-panel-raised-line);
+      --on-accent: var(--dk-on-accent);
+    --endorse: var(--dk-endorse);
+      --endorse-ink: var(--dk-endorse-ink);
+      --endorse-soft: var(--dk-endorse-soft);
+      --endorse-line: var(--dk-endorse-line);
+      --tile-fill: var(--dk-tile-fill);
+      --tile-ink: var(--dk-tile-ink);
+      --scrim: var(--dk-scrim);
+    }
+  }
+
+  * {
+    @apply border-border;
+  }
+  /* ─── FR2 — FORTY-FOUR PIXELS, WHERE THE POINTER IS A FINGER ──────────
+     The audit's P0·05 ends with "several links 14–22px tall against the 44px
+     minimum", and a census over twelve routes at 375px found between eight
+     and forty-four targets under it on every one of them.
+
+     ONE RULE RATHER THAN TWO HUNDRED CLASS NAMES, and the reason is that this
+     is not a design decision per control — it is a property of the pointer.
+     Every `button`, `summary`, `select`, `input` and `textarea` on this site
+     is a CONTROL: something a person aims at and presses. None of them is
+     prose. So the floor belongs on the elements themselves at the widths
+     where the pointer is a finger, not on the two hundred call sites that
+     would each have to remember it and each be a place to forget.
+
+     `min-height` BEATS `height`, which is what makes this work without
+     touching a single component: an element with `height: 36px` and
+     `min-height: 44px` is used at 44. The design's own numbers survive
+     everywhere above `sm`, where a mouse is a pixel wide.
+
+     ANCHORS ARE NOT IN THIS LIST, and that is deliberate. A link inside a
+     sentence is exempt from the target-size rule (WCAG 2.5.5's "inline"
+     exception) and forcing 44px on one would put a 44px line box in the
+     middle of a paragraph — the fix would be worse than the finding. The
+     STANDALONE links — a footer row, a row title, an avatar — are fixed at
+     their call sites, where the difference between the two is visible.
+
+     `pointer: coarse` IS NOT IN THE QUERY. A narrow window on a laptop gets
+     the larger targets too, which is the right trade: the cost is a slightly
+     roomier control for somebody who has deliberately made their window
+     phone-shaped, and the alternative is a phone that reports `fine` — which
+     several do, including every phone in desktop-mode — getting 26px vote
+     buttons. */
+  @media (max-width: 639.98px) {
+    button,
+    summary,
+    select,
+    textarea,
+    [role="button"],
+    input:not([type="hidden"]) {
+      min-height: 44px;
+      min-width: 44px;
+    }
+
+    /* AND THE STANDALONE LINKS, which the rule above deliberately leaves
+       alone. `a` is the one element that is BOTH: a footer's row of
+       destinations and a word in the middle of a sentence are the same tag,
+       and only the call site knows which. `tap` is how a call site says "this
+       one is a control" — a row title, an avatar, a footer link, a range
+       pill. A link inside a paragraph does not wear it and keeps its line
+       box, which is WCAG 2.5.5's inline exception rather than an excuse.
+
+       `tap-h` is the same claim for something already laid out as a block or
+       a flex row, where forcing `inline-flex` would change how it sits. */
+    .tap {
+      display: inline-flex;
+      align-items: center;
+      min-height: 44px;
+      min-width: 44px;
+    }
+
+    .tap-h {
+      min-height: 44px;
+      align-items: center;
+    }
+  }
+
+  /* FR1 — THE BOTTOM BAR'S RESERVE, and it lives here rather than on twenty
+     page components. `section-bar.tsx` is `fixed`, so it takes no space in the
+     document and would otherwise sit on top of the last row of every page —
+     which on the launches page is a product, and on a product page is the
+     comment box. The reserve is the bar's 56px plus the phone's own home
+     indicator, which is exactly what `--tabbar-reserve` already spells; the
+     token's note says two files spelling the same expression is how they
+     drift apart, so this reads the token rather than restating it.
+
+     ON `body`, so the site footer clears the bar too. A footer that renders
+     under a fixed bar is the half of this that is easy to miss, because the
+     bar is opaque and the footer simply looks shorter than it is. */
+  @media (max-width: 639.98px) {
+    body {
+      padding-bottom: var(--tabbar-reserve);
+    }
+  }
+
+  html,
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-family: var(--font-sans);
+    font-size: 14px;
+    -webkit-font-smoothing: antialiased;
+  }
+  /* The design's base: Geist at 15px. `html` keeps 14px so every rem-based
+     reservation above resolves as it always has; the type the page inherits
+     is the prototype's. */
+  body {
+    font-size: 15px;
+  }
+  /* The scrollbar is a LAYOUT fact, not a decoration. Every screen in this
+     console is a centered column (`Screen`'s 1060px measure, the Agents hero's
+     820px), so on a browser with classic scrollbars — Chrome, which the styled
+     `::-webkit-scrollbar` below forces even where the OS would overlay — a view
+     tall enough to scroll is drawn 10px narrower than a short one, and the
+     whole page slides 5px sideways the moment you switch to a shorter one.
+     Reserve the gutter once, at the root, and a tab switch moves the CONTENT
+     and nothing else. */
+  html {
+    scrollbar-gutter: stable;
+    /* MX0: the visible-viewport height. `lib/shell/viewport.ts` overwrites this
+       with `visualViewport.height` (which shrinks for the software keyboard);
+       the `100dvh` here is the pre-hydration and no-visualViewport fallback, so
+       `.h-vvh` / `.max-h-vvh` are always resolvable. */
+    --app-vvh: 100dvh;
+  }
+  @supports not (scrollbar-gutter: stable) {
+    html {
+      overflow-y: scroll;
+    }
+  }
+  /* The Startup Program band, once the reader has closed it. Hidden here
+     rather than unmounted in React because the answer has to land before first
+     paint: the inline head script stamps the attribute (lib/shell/
+     startup-notice.ts), and a band that painted and then vanished on hydration
+     would shove every page down 40px and back on every cold load — for exactly
+     the readers who already said no.
+
+     Note which way the default falls. `off` is written only when the reader
+     actually dismissed it, so no attribute means the band shows: a browser
+     with no JS, no storage, or a script that threw gets the announcement
+     rather than silently losing it. */
+  :root[data-startup-notice="off"] [data-startup-notice-band] {
+    display: none;
+  }
+  /* MX0 overscroll doctrine. Below the mobile boundary the document is the app
+     frame: pull-to-refresh reloading the shell mid-gesture is a bug, not a
+     feature (it fires against the drawer's edge swipe and against any
+     downward drag on a bottom sheet). Overlays add `overscroll-contain`
+     themselves so their own scroll never chains out to the page. Desktop is
+     untouched — the rule is scoped to the one boundary the shell switches on. */
+  @media (max-width: 767.98px) {
+    html,
+    body {
+      overscroll-behavior-y: none;
+    }
+  }
+  a {
+    color: inherit;
+  }
+  ::selection {
+    background: oklch(var(--link) / 0.14);
+  }
+
+  /* Northwind scrollbars: light thumb inset from a transparent track. */
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: oklch(0.8923 0 0);
+    border-radius: 6px;
+    border: 2px solid oklch(var(--background));
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: oklch(0.8294 0 0);
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  /* Respect the OS "reduce motion" setting: collapse animations/transitions to
+     a near-instant state so the UI stays functional without movement. */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    ::before,
+    ::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}
+
+@layer components {
+  /*
+   * Console design interaction layer. These recipes are keyed on data
+   * attributes rather than utility classes because they describe *relationships*
+   * — a row's hover reaching into its glyph and its trailing chevron, the
+   * rail's collapsed state reaching into every label inside it — which Tailwind
+   * cannot express at the call site.
+   */
+
+  /*
+   * The rail and the Overview are typeset against the browser's `normal`
+   * line-height, not Tailwind preflight's 1.5. The design's row and band
+   * rhythm is built on it — at 1.5 every nav row grows 2px and the rail's
+   * eleven rows drift 22px down the page. Elements that want a specific
+   * leading (the lede's 1.7, the greeting's 1.04, the switcher's 1.25) still
+   * set it themselves; this only changes what "unspecified" means here.
+   */
+  [data-rail-aside],
+  [data-console-surface] {
+    line-height: normal;
+  }
+
+  /* ── The rail ─────────────────────────────────────────────────────── */
+  /* Width is driven from `<html data-rail>` (set pre-paint by the inline boot
+     script in app/layout.tsx) so a collapsed rail never flashes open on load
+     and the server/client markup stays identical. */
+  /* 256px (WS-S). The column carries two navigations rather than one — the
+     product nav slides out and the settings nav slides in — so the width has to
+     hold the longer of the two without truncating either. It is a token because
+     the masthead's left cell is the same column (8a): one number, two boxes,
+     and the divider between them is a single unbroken line. */
+  [data-rail-aside],
+  [data-masthead-workspace] {
+    width: var(--rail-w);
+    transition: width 280ms cubic-bezier(0.2, 0.7, 0.2, 1);
+  }
+  :root[data-rail="min"] {
+    --rail-w: 64px;
+  }
+  /* The rail's horizontal inset lives here rather than on the aside, because
+     the settings pane's header rule runs edge to edge and a scroll container
+     cannot paint outside itself. Which means it also has to answer for the
+     collapsed rail: 18px on each side of 64px leaves 28px, and a 15px glyph in
+     a row with its own 8px padding does not fit in 12px. */
+  [data-rail-aside] [data-railpad] {
+    padding-left: 18px;
+    padding-right: 18px;
+  }
+  :root[data-rail="min"] [data-rail-aside] [data-railpad] {
+    padding-left: 8px;
+    padding-right: 8px;
+  }
+  :root[data-rail="min"] [data-rail-aside] [data-label] {
+    display: none !important;
+  }
+  :root[data-rail="min"] [data-rail-aside] [data-navrow] {
+    justify-content: center;
+  }
+  /* The foot holds the version and the collapse toggle. At 64px the version is
+     a `data-label` and hides, so the toggle is alone and centres — the same
+     answer `data-navrow` gets one rule up, for the same reason. */
+  :root[data-rail="min"] [data-rail-aside] [data-railfoot] {
+    justify-content: center;
+  }
+  /* Find and Ask used to be centred here too. Find left the rail entirely
+     (WO-Q2 — search is the front door's field) and Ask moved to the right-edge
+     gutter (WO-Q1), which is 52px in both rail modes and has nothing to fold. */
+  :root[data-rail="min"] [data-rail-aside] [data-user],
+  :root[data-rail="min"] [data-rail-aside] [data-org] {
+    justify-content: center;
+  }
+
+  /* The band's left cell folds with the rail, by the same hook: at 64px the
+     wordmark, the rule and the workspace's name go, and what is left — the mark
+     that goes home, and the chevron that opens the switcher — centres. It has
+     to fold, or the collapsed rail would sit under a 256px header cell and the
+     divider (the whole reason the cell is the rail's width) would step.
+     The chevron is NOT a `data-label`: it is the only thing left saying the
+     mark beside it has a menu. What gives it the room is this — the trigger's
+     own padding, which 48px of content box cannot spare. */
+  :root[data-rail="min"] [data-masthead-workspace] [data-label] {
+    display: none !important;
+  }
+  :root[data-rail="min"] [data-masthead-workspace] {
+    justify-content: center;
+    gap: 6px;
+    padding-left: 8px;
+    padding-right: 8px;
+  }
+  :root[data-rail="min"] [data-masthead-workspace] [data-workspace-pill] {
+    padding-left: 0;
+    padding-right: 0;
+  }
+
+  /* The Work home's rows (design §8.2). The wash itself rides on the element
+     as `--row-hover`, from `lib/initiatives/palette` — the plane's components
+     may not spell a hex (WV-5), and a hover state cannot be an inline style. */
+  [data-wrow]:hover {
+    background: var(--row-hover);
+  }
+
+  /* The ladder row under an opened epic (design §8.2). Its own wash, one
+     step warmer than a row's, plus the amber edge the mock draws — a hover
+     state cannot be an inline style, and the plane's components may not
+     spell a hex (WV-5). */
+  [data-msrow]:hover {
+    background: var(--row-hover);
+    box-shadow: inset 2px 0 0 var(--row-hover-edge);
+  }
+
+  /* The Work home's facet chips (design §8.2) — the mock's `[data-facet]`,
+     verbatim. The whole chip lives here rather than half here and half
+     inline, because `:hover` and `[data-on="1"]` cannot both be expressed
+     from the component and an inline color would win over either. */
+  [data-facet] {
+    flex-shrink: 0;
+    border: 1px solid #e5e5e5;
+    border-radius: 7px;
+    background: #ffffff;
+    padding: 5px 10px;
+    font-family: inherit;
+    font-size: 12px;
+    font-weight: 500;
+    color: #595959;
+    cursor: pointer;
+    transition:
+      background-color 0.12s ease,
+      color 0.12s ease,
+      border-color 0.12s ease;
+  }
+
+  [data-facet]:hover {
+    border-color: #c9cfd6;
+    color: #171717;
+  }
+
+  [data-facet][data-on="1"] {
+    border-color: transparent;
+    background: #171717;
+    color: #fafafa;
+  }
+
+  [data-navrow] {
+    position: relative;
+    transition: background-color 150ms ease;
+  }
+  [data-navrow]:hover {
+    background: oklch(var(--foreground) / 0.06);
+    color: oklch(var(--foreground));
+  }
+  [data-navrow] svg:first-of-type {
+    transition: transform 220ms cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+  [data-navrow]:hover svg:first-of-type {
+    transform: translateX(1px) scale(1.15) rotate(-5deg);
+  }
+
+  /* ── The composer ─────────────────────────────────────────────────── */
+  [data-composer] {
+    transition:
+      box-shadow 280ms cubic-bezier(0.2, 0.7, 0.2, 1),
+      border-color 280ms;
+  }
+  [data-composer]:focus-within {
+    border-color: oklch(var(--foreground) / 0.24);
+    box-shadow:
+      0 1px 2px oklch(var(--foreground) / 0.03),
+      0 16px 40px -22px oklch(var(--foreground) / 0.28);
+  }
+  [data-chip] {
+    transition:
+      transform 160ms cubic-bezier(0.2, 0.7, 0.2, 1),
+      border-color 160ms,
+      box-shadow 160ms;
+  }
+  [data-chip]:hover {
+    transform: translateY(-1px);
+    border-color: oklch(var(--foreground) / 0.28);
+    box-shadow: 0 2px 8px oklch(var(--foreground) / 0.05);
+  }
+  [data-send] {
+    transition: transform 180ms cubic-bezier(0.2, 0.7, 0.2, 1);
+  }
+  [data-send]:hover:not(:disabled) {
+    transform: scale(1.08) rotate(8deg);
+  }
+
+  /* ── Cards and their rows ─────────────────────────────────────────── */
+  [data-card] {
+    transition:
+      border-color 250ms ease,
+      box-shadow 300ms ease,
+      transform 300ms cubic-bezier(0.2, 0.7, 0.2, 1);
+  }
+  [data-card]:hover {
+    border-color: oklch(var(--border-hover));
+    box-shadow: 0 10px 26px -18px oklch(var(--foreground) / 0.18);
+    transform: translateY(-1px);
+  }
+  [data-listrow] {
+    transition: background-color 140ms ease;
+  }
+  [data-listrow]:hover {
+    background: oklch(var(--muted));
+  }
+  [data-listrow] [data-arrow] {
+    opacity: 0;
+    transform: translateX(-4px);
+    transition:
+      opacity 180ms ease,
+      transform 180ms cubic-bezier(0.2, 0.7, 0.2, 1);
+  }
+  [data-listrow]:hover [data-arrow] {
+    opacity: 1;
+    transform: none;
+  }
+  [data-listrow] > span:first-child {
+    transition: transform 200ms cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+  [data-listrow]:hover > span:first-child {
+    transform: rotate(-6deg) scale(1.08);
+  }
+
+  /* ── The Agents console ───────────────────────────────────────────── */
+  /*
+   * The tile is the console's one row shape (see lib/agents/tiles.ts). Its
+   * lift, its glyph spring, and its trailing chevron are a *relationship*
+   * between the card and things inside it, which is why they live here rather
+   * than at the call site.
+   */
+  [data-tile] {
+    box-shadow:
+      0 1px 2px oklch(var(--foreground) / 0.04),
+      0 10px 30px -24px oklch(var(--foreground) / 0.3);
+    transition:
+      transform 250ms cubic-bezier(0.2, 0.7, 0.2, 1),
+      box-shadow 250ms ease,
+      border-color 250ms ease;
+  }
+  [data-tile]:hover {
+    transform: translateY(-2px);
+    border-color: oklch(var(--border-hover));
+    box-shadow:
+      0 1px 2px oklch(var(--foreground) / 0.05),
+      0 22px 44px -26px oklch(var(--foreground) / 0.35);
+  }
+  [data-tile] [data-chev] {
+    opacity: 0;
+    transform: translateX(-3px);
+    transition:
+      opacity 150ms ease,
+      transform 150ms ease;
+  }
+  [data-tile]:hover [data-chev] {
+    opacity: 1;
+    transform: none;
+  }
+  [data-tile] [data-tile-glyph] {
+    transition: transform 220ms cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+  [data-tile]:hover [data-tile-glyph] {
+    transform: rotate(-5deg) scale(1.06);
+  }
+  /* A tile is a pointer target on a phone too — but the lift is a hover
+     affordance, so touch gets a press state instead. */
+  @media (hover: none) {
+    [data-tile]:active {
+      transform: none;
+      background: oklch(var(--muted));
+    }
+
+    /* MX8 — a tap has to be answered. On a device with no hover there is no
+       state between "resting" and "the route changed", so a press that lands
+       during a slow navigation reads as a press that missed. A 60ms opacity
+       dip on the pressed control is the cheapest honest acknowledgement:
+       compositor-only, no layout, and it inherits the global reduced-motion
+       collapse below.
+
+       Scoped to real controls, and explicitly NOT to anything that already
+       paints its own press state (the tab bar's pill, tiles above, the nav
+       rows), so nothing double-dips. */
+    a:active,
+    button:active,
+    [role="button"]:active,
+    [role="tab"]:active {
+      opacity: 0.72;
+    }
+    [data-tile]:active,
+    [data-navrow]:active,
+    [data-selkind]:active,
+    [data-mode-btn]:active,
+    nav[aria-label="Primary"] a:active {
+      opacity: 1;
+    }
+  }
+
+  /* The kind selector: page-level navigation as pill buttons, per the design.
+     Selected is ink-on-paper; the count rides inside the pill so the label and
+     its number can never wrap apart. */
+  [data-selkind] {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    border-radius: 9999px;
+    border: 1px solid oklch(var(--border));
+    background: oklch(var(--card));
+    padding: 6px 14px;
+    font-size: 12.5px;
+    font-weight: 500;
+    color: oklch(var(--copy));
+    white-space: nowrap;
+    transition:
+      border-color 150ms ease,
+      color 150ms ease,
+      background-color 150ms ease,
+      box-shadow 150ms ease;
+  }
+  [data-selkind]:hover {
+    border-color: oklch(var(--foreground) / 0.25);
+    color: oklch(var(--foreground));
+  }
+  [data-selkind][data-on="true"] {
+    border-color: oklch(var(--foreground));
+    background: oklch(var(--foreground));
+    color: oklch(var(--background));
+    box-shadow: 0 4px 12px -4px oklch(var(--foreground) / 0.4);
+  }
+  [data-selkind] [data-count] {
+    border-radius: 9999px;
+    background: oklch(var(--surface-2));
+    padding: 1px 7px;
+    font-family: var(--font-mono);
+    /* 12px is the floor; `--copy` because muted-foreground measures 4.2:1 on
+       this tinted fill rather than on the page ground. */
+    font-size: 12px;
+    color: oklch(var(--copy));
+  }
+  [data-selkind][data-on="true"] [data-count] {
+    background: oklch(var(--background) / 0.16);
+    color: oklch(var(--background));
+  }
+
+  /* The composer's mode switch — a segmented control inside an inset track. */
+  [data-mode-btn] {
+    border: none;
+    border-radius: 9999px;
+    background: transparent;
+    padding: 5px 13px;
+    font-family: inherit;
+    font-size: 12.5px;
+    font-weight: 600;
+    color: oklch(var(--copy));
+    white-space: nowrap;
+    cursor: pointer;
+    transition:
+      background-color 180ms ease,
+      color 180ms ease,
+      box-shadow 180ms ease;
+  }
+  [data-mode-btn]:hover {
+    color: oklch(var(--foreground));
+  }
+  [data-mode-btn][data-on="true"] {
+    background: oklch(var(--foreground));
+    color: oklch(var(--background));
+    box-shadow: 0 2px 8px -2px oklch(var(--foreground) / 0.5);
+  }
+}
+
+@layer utilities {
+  /* ── The conversation measure ──────────────────────────────────────
+     One column for every surface you talk to an agent on: the Workspace Agent
+     thread, the task-agent session head, and the transcript demo. A turn has
+     to be the same width wherever you meet it, so the measure is ONE rule here
+     rather than a `max-w-*` repeated at five call sites that then drift apart
+     (they had already: the thread and the session head each carried their own
+     copy, twice each).
+
+     It grows with the window rather than holding one fixed ribbon. A chat is
+     not a document — it carries tables, diffs and tool output as often as it
+     carries prose — and on a 1600px display a 768px column left the answer
+     boxed into the middle third of an empty screen. The base step holds the
+     comfortable ~95-character prose measure at the transcript's 16px; the two
+     wider ones trade a few characters of line length for the payload a chat
+     actually carries, and stop at ~105 because past that a line costs more to
+     track back to than the extra table column is worth.
+
+     PIXELS, deliberately, not rem: `html` is typeset at 14px here (see the base
+     layer), so a rem measure resolves to 87.5% of what it reads as — `48rem`
+     is 672px on this page, not 768px. The reading column is not a thing that
+     should quietly shrink because the console's UI voice was tuned. */
+  .chat-column {
+    width: 100%;
+    margin-inline: auto;
+    max-width: 768px;
+  }
+  @media (min-width: 1280px) {
+    .chat-column {
+      max-width: 820px;
+    }
+  }
+  @media (min-width: 1600px) {
+    .chat-column {
+      max-width: 864px;
+    }
+  }
+
+  /* The band a docked composer sits in: the transcript dissolves into the page
+     rather than sliding under a hard edge. Masked (not overlaid) so the dot
+     lattice fades with the content and the composer keeps its own card. */
+  .composer-veil {
+    -webkit-mask-image: linear-gradient(to bottom, transparent, #000 55%);
+    mask-image: linear-gradient(to bottom, transparent, #000 55%);
+  }
+
+  /* The agent panel's ground.
+
+     A dot lattice rather than a flat fill, and it is doing one job: the panel
+     is a column of the console's own colour standing beside a page of the same
+     colour, and without a texture the seam between them is a 1px border and
+     nothing else. The dots read as "this is a surface of its own" at a glance
+     and disappear at reading distance — they are one 1px dot every 16px at 55%
+     of the border token, which is under the contrast of the text sitting on
+     them by an order of magnitude.
+
+     Painted with a radial gradient rather than an image so it costs no request
+     and follows the theme through `--border`. */
+  .assist-canvas {
+    background-image: radial-gradient(circle at 1px 1px, oklch(var(--border) / 0.55) 1px, transparent 0);
+    background-size: 16px 16px;
+  }
+
+  /* Display serif for page titles, greetings, and stat numerals. */
+  .font-serif-display {
+    font-family: var(--font-serif);
+    font-weight: 500;
+  }
+
+  /* The uppercase section label — WORKSPACE, MILESTONES, a column header.
+     Machine text, so it is set in the mono face at the bottom rung of the
+     ladder and leans on uppercase + letterspacing rather than on weight. Was
+     11px/600 sans at 85% muted-foreground, which is both under the 12px floor
+     and a 3.4:1 ink. */
+  .kicker {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    font-weight: 400;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: oklch(var(--faint));
+  }
+
+  /* ── Catalog v2 (Orunbase Console v2) ────────────────────────────────
+     The interaction motifs the catalog index and the service page share.
+     They live here rather than as utility soups on each element because the
+     design expresses them as attribute selectors with hover/active states
+     (`[data-tile]`, `[data-listrow]`, …) — one place to read, one place to
+     keep honest against the design file. Durations, easings and offsets are
+     the design's, unchanged. */
+
+  /* The raised plate: index entity cards and the service page's stat tiles. */
+  .cat-tile {
+    box-shadow:
+      0 1px 2px oklch(var(--foreground) / 0.04),
+      0 10px 30px -24px oklch(var(--foreground) / 0.3);
+    transition:
+      transform 0.25s cubic-bezier(0.2, 0.7, 0.2, 1),
+      box-shadow 0.25s ease,
+      border-color 0.25s ease;
+  }
+  .cat-tile:hover {
+    transform: translateY(-2px);
+    border-color: oklch(var(--border-hover));
+    box-shadow:
+      0 1px 2px oklch(var(--foreground) / 0.05),
+      0 22px 44px -26px oklch(var(--foreground) / 0.35);
+  }
+
+  /* The flat panel: the service page's content cards. Lifts a hair on hover. */
+  .cat-card {
+    transition:
+      border-color 0.25s ease,
+      box-shadow 0.3s ease,
+      transform 0.3s cubic-bezier(0.2, 0.7, 0.2, 1);
+  }
+  .cat-card:hover {
+    border-color: oklch(var(--border-hover));
+    box-shadow: 0 10px 26px -18px oklch(var(--foreground) / 0.18);
+    transform: translateY(-1px);
+  }
+
+  /* A navigable row inside a card. The trailing chevron is absent until the
+     row is hovered, and the leading glyph tips toward the reader. */
+  .cat-listrow {
+    transition: background-color 0.14s ease;
+  }
+  .cat-listrow:hover {
+    background: oklch(var(--muted));
+  }
+  .cat-listrow .cat-arrow {
+    opacity: 0;
+    transform: translateX(-4px);
+    transition:
+      opacity 0.18s ease,
+      transform 0.18s cubic-bezier(0.2, 0.7, 0.2, 1);
+  }
+  .cat-listrow:hover .cat-arrow {
+    opacity: 1;
+    transform: none;
+  }
+  .cat-listrow .cat-glyph {
+    transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+  .cat-listrow:hover .cat-glyph {
+    transform: rotate(-6deg) scale(1.08);
+  }
+
+  /* Filter pill with a count — inverts to ink when it is the active filter. */
+  .cat-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    border-radius: 9999px;
+    border: 1px solid oklch(var(--border));
+    background: oklch(var(--card));
+    padding: 6px 14px;
+    font-family: inherit;
+    font-size: 12.5px;
+    font-weight: 500;
+    color: oklch(var(--copy));
+    white-space: nowrap;
+    cursor: pointer;
+    transition:
+      border-color 0.15s ease,
+      color 0.15s ease,
+      background-color 0.15s ease,
+      box-shadow 0.15s ease;
+  }
+  .cat-chip:hover {
+    border-color: oklch(var(--foreground) / 0.25);
+    color: oklch(var(--foreground));
+  }
+  .cat-chip[data-on="true"] {
+    border-color: oklch(var(--primary));
+    background: oklch(var(--primary));
+    color: oklch(var(--primary-foreground));
+    box-shadow: 0 4px 12px -4px oklch(var(--foreground) / 0.4);
+  }
+  .cat-chip .cat-count {
+    border-radius: 9999px;
+    background: oklch(var(--surface-2));
+    padding: 1px 7px;
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: oklch(var(--copy));
+  }
+  .cat-chip[data-on="true"] .cat-count {
+    background: oklch(var(--primary-foreground) / 0.16);
+    color: oklch(var(--primary-foreground));
+  }
+
+  /* Quiet pill button ("Browse all N entities →", "Investigate with an agent"). */
+  .cat-pill {
+    transition:
+      transform 0.16s cubic-bezier(0.2, 0.7, 0.2, 1),
+      border-color 0.16s,
+      box-shadow 0.16s;
+  }
+  .cat-pill:hover {
+    transform: translateY(-1px);
+    border-color: oklch(var(--foreground) / 0.28);
+    box-shadow: 0 2px 8px oklch(var(--foreground) / 0.05);
+  }
+
+  /* Rail nav row — the service page's "On this page". The active row carries a
+     2px ink marker on its leading edge. */
+  .cat-navrow {
+    position: relative;
+    transition: background-color 0.15s ease;
+  }
+  .cat-navrow[data-active="1"] {
+    background: oklch(var(--foreground) / 0.07);
+    font-weight: 600;
+    color: oklch(var(--foreground));
+  }
+  .cat-navrow[data-active="1"]::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 50%;
+    height: 16px;
+    width: 2px;
+    border-radius: 2px;
+    background: oklch(var(--foreground));
+    transform: translateY(-50%);
+  }
+  .cat-navrow:hover {
+    background: oklch(var(--foreground) / 0.06);
+    color: oklch(var(--foreground));
+  }
+
+  /* Nested doc row under the rail's Docs entry. */
+  .cat-docrow {
+    transition: background-color 0.14s ease;
+  }
+  .cat-docrow:hover {
+    background: oklch(var(--muted));
+  }
+  .cat-docrow[data-on="true"] {
+    background: oklch(var(--foreground) / 0.05);
+  }
+  .cat-docrow[data-on="true"] .cat-doctitle {
+    font-weight: 600;
+    color: oklch(var(--foreground));
+  }
+
+  /* ── Activity v2 (Orunbase Console v2, the `Activities` screens) ─────
+     The change feed's row and its filter pill. Both are hover-only motifs,
+     so they live here rather than as utility soups on every row. */
+
+  /* A change row in the feed card. */
+  .act-row {
+    transition:
+      border-color 0.15s ease,
+      background-color 0.14s ease;
+  }
+  .act-row:hover {
+    background: oklch(var(--muted));
+  }
+  .act-row .cat-arrow {
+    opacity: 0;
+    transform: translateX(-4px);
+    transition:
+      opacity 0.18s ease,
+      transform 0.18s cubic-bezier(0.2, 0.7, 0.2, 1);
+  }
+  .act-row:hover .cat-arrow {
+    opacity: 1;
+    transform: none;
+  }
+
+  /* The feed's facet pill — quieter than `.cat-chip`, no count bubble. */
+  .act-fchip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    border-radius: 9999px;
+    border: 1px solid oklch(var(--border-strong) / 0.75);
+    background: oklch(var(--card));
+    padding: 6px 15px;
+    font-family: inherit;
+    font-size: 12.5px;
+    font-weight: 500;
+    color: oklch(var(--copy));
+    white-space: nowrap;
+    cursor: pointer;
+    transition:
+      border-color 0.15s ease,
+      color 0.15s ease,
+      background-color 0.15s ease;
+  }
+  .act-fchip:hover {
+    border-color: oklch(var(--foreground) / 0.3);
+    color: oklch(var(--foreground));
+  }
+  .act-fchip[data-on="true"] {
+    border-color: oklch(var(--primary));
+    background: oklch(var(--primary));
+    color: oklch(var(--primary-foreground));
+    font-weight: 600;
+  }
+
+  /* The index's search composer: the ring deepens as it takes focus. */
+  .cat-composer {
+    transition:
+      box-shadow 0.28s cubic-bezier(0.2, 0.7, 0.2, 1),
+      border-color 0.28s;
+  }
+  .cat-composer:focus-within {
+    border-color: oklch(var(--foreground) / 0.24);
+    box-shadow:
+      0 1px 2px oklch(var(--foreground) / 0.03),
+      0 16px 40px -22px oklch(var(--foreground) / 0.28);
+  }
+
+  /* Prose link: no underline, a quiet blue baseline border. */
+  .link-prose {
+    cursor: pointer;
+    border-bottom: 1px solid oklch(var(--link) / 0.35);
+    text-decoration: none;
+  }
+
+  /* Quiet full-bleed entry surfaces (login, onboarding): plain paper with a
+     faint grid, no glow — Northwind keeps entry pages quiet too. */
+  .bg-grid-glow {
+    position: relative;
+    isolation: isolate;
+  }
+  .bg-grid-glow::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    background:
+      linear-gradient(oklch(var(--foreground) / 0.02) 1px, transparent 1px),
+      linear-gradient(
+        90deg,
+        oklch(var(--foreground) / 0.02) 1px,
+        transparent 1px
+      );
+    background-size:
+      56px 56px,
+      56px 56px;
+    -webkit-mask-image: linear-gradient(#000 0%, #000 52%, transparent 100%);
+    mask-image: linear-gradient(#000 0%, #000 52%, transparent 100%);
+  }
+
+  /* Uppercase mono section label, retained for legacy call sites. */
+  .eyebrow {
+    font-family: var(--font-mono);
+    /* Was 0.6875rem, which is 9.6px against this document's 14px root. */
+    font-size: 12px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: oklch(var(--muted-foreground));
+  }
+
+  .scrollbar-thin::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    background: oklch(var(--border));
+    border-radius: 4px;
+  }
+  .scrollbar-none::-webkit-scrollbar {
+    display: none;
+  }
+  .scrollbar-none {
+    scrollbar-width: none;
+  }
+
+  /* Animated striped fill for a running job's progress segment. */
+  .runbar {
+    background-image: linear-gradient(
+      115deg,
+      oklch(var(--info) / 0.45) 25%,
+      transparent 25%,
+      transparent 50%,
+      oklch(var(--info) / 0.45) 50%,
+      oklch(var(--info) / 0.45) 75%,
+      transparent 75%
+    );
+    background-size: 20px 20px;
+    animation: runflow 1s linear infinite;
+  }
+
+  /* MX4 — grid tables that become cards on a phone.
+     See components/ui/card-table.tsx for why the projection lives in CSS
+     rather than in a column model. Above the boundary the desktop grid is
+     untouched; it only gets its `min-width` back, which the wrapper no longer
+     carries as a Tailwind class (a hard min-w below `md` is exactly the
+     sideways-scrolling wall this replaces). */
+  [data-cardtable] {
+    min-width: 0;
+  }
+  @media (min-width: 768px) {
+    [data-cardtable] {
+      min-width: var(--cardtable-min, 0);
+    }
+  }
+  @media (max-width: 767.98px) {
+    [data-cardtable-head] {
+      display: none;
+    }
+    /* The row stops being a grid and becomes a card. `display: flex` beats the
+       `grid` utility on the element because this rule is in the components
+       layer and utilities that set `display` are only applied at the same
+       specificity — surfaces pair it with `md:grid` so the two never fight. */
+    [data-cardtable-row] {
+      display: flex;
+      flex-direction: column;
+      align-items: stretch;
+      gap: 7px;
+    }
+    [data-cardtable-cell] {
+      display: flex;
+      min-width: 0;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+    /* The column header, restated per line — a value with no label is a number
+       floating in a card. */
+    [data-cardtable-cell][data-label]:not([data-primary])::before {
+      content: attr(data-label);
+      flex: none;
+      /* A restated column header is the same uppercase machine label as the
+         header row it stands in for — same face, same rung, same ink. */
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 400;
+      letter-spacing: 0.09em;
+      text-transform: uppercase;
+      color: oklch(var(--faint));
+    }
+    /* The identifying field is the card's title: full width, no label, and
+       FIRST — whatever its column position was. A flags table puts its toggle
+       in column one, which is right for a grid and wrong for a card, where it
+       would introduce a row before naming it. `order` only applies inside this
+       mobile block, so the desktop column order is untouched. */
+    [data-cardtable-cell][data-primary] {
+      order: -1;
+      justify-content: flex-start;
+    }
+    [data-cardtable-cell][data-hide-mobile] {
+      display: none;
+    }
+  }
+
+  /* MV2 — the action sheet. Radix positions a menu by writing an inline
+     transform onto its Popper wrapper; below the boundary the wrapper of any
+     `data-action-sheet` menu is pinned to the bottom edge instead, and the
+     content styles itself as a sheet (ui/dropdown-menu.tsx). `!important` is
+     load-bearing against those inline styles — and scoped to the wrapper of
+     this one primitive, at this one breakpoint, which is the entire blast
+     radius. Popper keeps rewriting the transform on scroll/resize; a class
+     cannot outrank an inline style without it. */
+  @media (max-width: 767.98px) {
+    [data-radix-popper-content-wrapper]:has(> [data-action-sheet]) {
+      position: fixed !important;
+      inset: auto 0 0 0 !important;
+      transform: none !important;
+      min-width: 0 !important;
+      z-index: 50 !important;
+    }
+  }
+
+  /* MX4 — content that is irreducibly wide (logs, code, permission matrices,
+     dependency graphs). It scrolls inside its own container with the same
+     edge-fade language the nav strips use, so "there is more this way" reads
+     the same everywhere. The page itself still never scrolls sideways. */
+  [data-wide] {
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+  }
+
+  /* MX3 — horizontal navigation strips (tabs, segmented controls, chip rows).
+     The fade is a mask rather than a gradient overlay, so it works over any
+     background (card, rail, page) without a stacking element, and it appears
+     only on the side that actually has more content — `useScrollStrip` sets
+     the attributes. A fade over nothing would be a promise of content that
+     isn't there. */
+  [data-strip][data-fade-start][data-fade-end],
+  [data-wide][data-fade-start][data-fade-end] {
+    mask-image: linear-gradient(to right, transparent, #000 24px, #000 calc(100% - 24px), transparent);
+  }
+  [data-strip][data-fade-start]:not([data-fade-end]),
+  [data-wide][data-fade-start]:not([data-fade-end]) {
+    mask-image: linear-gradient(to right, transparent, #000 24px);
+  }
+  [data-strip][data-fade-end]:not([data-fade-start]),
+  [data-wide][data-fade-end]:not([data-fade-start]) {
+    mask-image: linear-gradient(to right, #000 calc(100% - 24px), transparent);
+  }
+
+  /* MX0: size against the VISIBLE viewport — the one that shrinks when the
+     software keyboard opens. Use these (not `dvh`) for anything that holds a
+     focusable input near its bottom edge: bottom sheets, full-screen wizards,
+     the palette takeover, the agent composer. `dvh` stays correct for surfaces
+     with no input, and is the declared fallback here anyway. */
+  .h-vvh {
+    height: var(--app-vvh);
+  }
+  .max-h-vvh {
+    max-height: var(--app-vvh);
+  }
+  .min-h-vvh {
+    min-height: var(--app-vvh);
+  }
+
+  /* iOS safe-area helpers (notch / home indicator). Used by the sticky topbar,
+     the bottom tab bar, and the slide-out drawer. */
+  .pt-safe {
+    padding-top: env(safe-area-inset-top);
+  }
+  .pb-safe {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  .pl-safe {
+    padding-left: env(safe-area-inset-left);
+  }
+  .pr-safe {
+    padding-right: env(safe-area-inset-right);
+  }
+
+
+  /* saas-people PP2 — the person mark.
+     `<Person>` sets four custom properties per subject (a tint and an ink for
+     each theme); these two rules pick the pair. Doing it in CSS rather than in
+     JS means the mark is correct on the server render and never flashes the
+     wrong theme's ink on hydration.
+
+     Why two inks at all: the shipped `lib/teams/avatar.ts` used ONE foreground
+     lightness for both themes, which measures 1.62:1 against its own
+     light-mode tint at hue 168 — four of the nine hues are under 3:1 today.
+     Split per theme, every hue clears 4.5:1 in both. */
+  [data-person-avatar="identity"] {
+    background: var(--person-bg);
+    color: var(--person-fg);
+  }
+
+  /* orun-initiatives A+ slice C — the plane's keyboard focus ring.
+     :focus-visible only, so pointer clicks stay clean while every tab stop
+     reads in the plane's working amber. Scoped to .ini-plane roots; the
+     rest of the console keeps its own focus conventions. */
+  .ini-plane :is(a, button, input, textarea, select, [role="link"], [role="menuitem"]):focus-visible {
+    outline: 2px solid #b08a28;
+    outline-offset: 2px;
+  }
+
+  /* THE ACCOUNT CONTROL'S TWO BRANCHES, AND CSS PICKS ONE.
+
+     Both are in the document, always, for everybody — which is exactly what
+     I6 requires and what makes this safe: the HTML does not vary, so the page
+     is still the one cached document OPC-1 describes and the edge still
+     serves it to signed-in and signed-out visitors alike. The only thing that
+     differs between two people looking at the same bytes is a class on
+     <html>, added before the first paint by SESSION_BOOT (app/layout.tsx)
+     from a cookie that carries the character `1` and nothing else.
+
+     `visibility` AND NOT `display`, AND THE ORIGINAL REASONING FOR `display`
+     WAS HALF RIGHT. The requirement it named is real: the hidden branch has
+     to leave the ACCESSIBILITY TREE and the TAB ORDER, or a screen reader
+     announces both a Sign in button and an account menu and a keyboard
+     visitor tabs through a control they cannot see. What it got wrong is
+     lumping `visibility` in with `opacity`. Only `opacity: 0` has that
+     defect; `visibility: hidden` removes an element from the accessibility
+     tree, from the tab order and from hit-testing exactly as `display: none`
+     does. The one thing it keeps is the BOX — and the box is the point.
+
+     THE BOX IS THE POINT because these two branches are different widths: a
+     `Sign in` pill is about 84px and the account disc is 36px. Under
+     `display: none` the bar reserved whichever one was showing, so the moment
+     SESSION_BOOT stamped the class the whole right-hand side of the panel —
+     the section pills included — jumped sideways by ~48px, on every load, for
+     every signed-in visitor. The chip stacks both branches in ONE grid cell
+     (`shell/account-chip.tsx`), so with the boxes kept the cell is the width
+     of the wider one in both states and nothing moves.
+
+     THE DEFAULT IS ANONYMOUS. No script, no cookie, no class — and the branch
+     that shows is the real anchor to the platform's door, which is the
+     fallback AC2c kept the anchor for.
+
+     `:root` on the base rule only to out-specify a utility should the branch
+     ever carry one. */
+  :root [data-auth-branch="signed-in"] {
+    visibility: hidden;
+  }
+  :root.op-signed-in [data-auth-branch="anonymous"] {
+    visibility: hidden;
+  }
+  :root.op-signed-in [data-auth-branch="signed-in"] {
+    visibility: visible;
+  }
+}

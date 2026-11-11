@@ -1,0 +1,34 @@
+{
+  "extends": "../tooling/tsconfig/base.json",
+  "compilerOptions": {
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "jsx": "preserve",
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "allowJs": true,
+    "noEmit": true,
+    "esModuleInterop": true,
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "composite": false,
+    "declaration": false,
+    "declarationMap": false,
+    "incremental": true,
+    "plugins": [{ "name": "next" }],
+    // One copy of the React types for every file in the program. Other
+    // workspaces still alias @types/react to the 19.0 RC typings and pnpm
+    // hoists that copy, so a package that imports React types without
+    // declaring them (next) would read the RC's ReactNode and reject this
+    // app's. Drop the four react entries once nothing in the workspace pins
+    // types-react@19.0.0-rc.1.
+    "paths": {
+      "@/*": ["./src/*"],
+      "react": ["./node_modules/@types/react"],
+      "react/*": ["./node_modules/@types/react/*"],
+      "react-dom": ["./node_modules/@types/react-dom"],
+      "react-dom/*": ["./node_modules/@types/react-dom/*"]
+    }
+  },
+  "include": ["next-env.d.ts", "src/**/*.ts", "src/**/*.tsx", ".next/types/**/*.ts"],
+  "exclude": ["node_modules", ".next", "out"]
+}

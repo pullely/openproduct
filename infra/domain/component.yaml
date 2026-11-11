@@ -1,0 +1,67 @@
+apiVersion: sourceplane.io/v1
+kind: Component
+
+metadata:
+  name: openproduct-domain
+  title: openproduct apex domain
+  description: Terraform that attaches the openproduct.live apex to the openproduct-web Worker as a Workers Custom Domain, prod only.
+  labels:
+    domain: infra
+    scope: dns-and-custom-domains
+
+spec:
+  type: terraform
+  lifecycle: production
+  owner: platform
+  domain: infra
+  system: openproduct
+  docs:
+    overview: README.md
+  links:
+    - title: Production
+      url: https://openproduct.live
+      icon: web
+
+  parameters:
+    orgName: sourceplane
+    stackName: openproduct-domain
+    terraformDir: terraform
+    terraformVersion: "1.15.3"
+    workerNamePrefix: openproduct-web
+    # NOTE: `OPENPRODUCT_CUSTOM_DOMAIN` is intentionally NOT declared here —
+    # it arrives per-environment from intent.yaml's
+    # `parameterDefaults.terraform.OPENPRODUCT_CUSTOM_DOMAIN` (prod:
+    # openproduct.live; everywhere else unset → the component plans to
+    # nothing). Declaring a default here would shadow the parameterDefault —
+    # the silent-empty failure cloudflare-domain documents from Task 0083.
+
+  dependsOn:
+    # The worker the hostname attaches to must exist first.
+    - component: openproduct-web
+    # (The gateway edge left with the `api.` Route — see openproduct-api-domain.)
+    # (The platform's `cloudflare-domain` edge, which ordered the OX2 cutover
+    # off the console worker, converged long ago and stayed in orun-cloud.)
+
+  subscribe:
+    environments:
+      - name: stage
+        dependencyRules: # PRs don't wait on other lanes (intent.yaml, environments)
+          - mode: advisory
+            when:
+              triggerRef: github-pull-request
+        profile: plan-only
+        profileRules:
+          - profile: apply
+            when:
+              triggerRef: github-push-main
+
+      - name: prod
+        dependencyRules: # PRs don't wait on other lanes (intent.yaml, environments)
+          - mode: advisory
+            when:
+              triggerRef: github-pull-request
+        profile: plan-only
+        profileRules:
+          - profile: apply
+            when:
+              triggerRef: github-push-main

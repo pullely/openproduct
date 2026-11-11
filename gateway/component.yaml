@@ -1,0 +1,124 @@
+apiVersion: sourceplane.io/v1
+kind: Component
+metadata:
+  name: openproduct-gateway
+  title: openproduct Gateway
+  description: openproduct's public API front door — CORS, rate limits, sign-in and token-to-subject, media, MCP and the scheduled sweeps, forwarding to the core worker.
+spec:
+  type: cloudflare-worker-turbo
+  lifecycle: production
+  owner: platform
+  domain: starter-runtime
+  system: openproduct
+  docs:
+    overview: README.md
+  links:
+    - title: Production
+      url: https://api.openproduct.live
+      icon: web
+    - title: Stage
+      url: https://openproduct-gateway-stage.oruncloud.workers.dev
+      icon: web
+    - title: API docs
+      url: https://openproduct.live/docs/api
+      icon: docs
+  path: gateway
+  dependsOn:
+    # Runtime edge: the one service binding, inside the product boundary.
+    # The platform is reached only over public HTTPS (seam edges S2/S8) —
+    # deliberately NOT a dependsOn, because it is deliberately not a binding.
+    - component: openproduct-worker
+      mode: advisory
+    # MD1 — the media bucket, bound by name as `MEDIA` in stage and prod. THE
+    # EDGE IS REAL for the reason `openproduct-api-domain` gave for its own:
+    # a deploy that binds a bucket which does not exist yet is a deploy that
+    # fails. It is NOT declared in OPN1: `openproduct-media` (infra/media) is
+    # not discovered until OPN2, nothing deploys before then, and orun drops an
+    # edge to an undiscovered component with a warning. OPN2 discovers the
+    # bucket and restores `- component: openproduct-media` here, before the
+    # first deploy that binds it.
+    - component: openproduct-contracts
+      input: true
+  # VERIFY-ONLY IN EVERY ENVIRONMENT UNTIL OPN2 (openproduct-standalone
+  # design §2). No trigger reaches a deploy profile: a merge to main verifies
+  # stage and prod, it does not converge them. The monorepo's `skip` rules
+  # (main does not re-verify what its PR verified, CIS17; a PR does not plan
+  # stage or prod) went with the profile, which stack-tectonic 0.21.0 does not
+  # define. OPN2 brings the deploy rules back.
+  subscribe:
+    environments:
+      - name: dev
+        dependencyRules: # dev lanes never wait on other lanes (intent.yaml, DEPENDENCY MODES)
+          - mode: advisory
+            when:
+              triggerRef: github-pull-request
+          - mode: advisory
+            when:
+              triggerRef: github-push-main
+        profile: verify
+      - name: stage
+        profile: verify
+      - name: prod
+        profile: verify
+  parameters:
+    nodeVersion: "22"
+    pnpmVersion: "10.12.1"
+    workspaceDir: ..
+    appDir: .
+    orgName: sourceplane
+    owner: pullely
+    repo: openproduct
+
+    # The runtime keys (LISTING_SEAM_SECRET, OPENPRODUCT_AUTH_SEAM_SECRET,
+    # GITHUB_TOKEN, SCREENSHOT_CAPTURE_TOKEN, OPENPRODUCT_OPERATORS) arrive in
+    # OPN2 as `runtimeSecrets`, resolved from this component's secretEnv
+    # (design §4). A verify lane never resolves one.
+    turboFilter: "@openproduct/gateway"
+    # No wrangler template and no wiring: this worker holds no wired resource,
+    # so wrangler.jsonc is committed directly (the composition's template steps
+    # are conditional on wranglerTemplate and simply skip).
+    wranglerConfig: wrangler.jsonc
+    installCommand: pnpm install --frozen-lockfile
+    # ─── THE SUITE RUNS HERE BECAUSE NOTHING ELSE SCHEDULES IT ──────────────
+    #
+    # `orun plan --changed` selects a component when ITS OWN files change, and a
+    # `dependsOn` edge does not pull a dependent INTO a plan — the note in
+    # `tests/web-perf/component.yaml` measured that, and `openproduct-gateway-tests`
+    # declares the edge and is planned anyway only when its own files move. So a
+    # change under `apps/openproduct/gateway/` planned exactly three jobs — this
+    # component in dev, stage and prod — and the 248 tests in `@openproduct/gateway-tests` did not
+    # run. Across openproduct's three source components that was 2,046 tests
+    # that a source change never reached.
+    #
+    # MEASURED, NOT ASSUMED. `orun plan --changed --files
+    # apps/openproduct/gateway/src/x.ts` lists this component's three jobs and
+    # nothing else. In CI, PR #1358 touched `apps/openproduct/web/component.yaml`
+    # and `apps/openproduct/web/src/lib/platform.ts` and ran four jobs — `plan`
+    # plus `openproduct-web` in three environments. `openproduct-web-tests` was
+    # not among them, and the change merged.
+    #
+    # WHY IT IS IN `buildCommand` AND NOT ITS OWN STEP. This composition's verify
+    # profile has a FIXED capability list — setup-node, setup-pnpm, install,
+    # verify-structure, wire-fixture, build, typecheck, deploy-dry-run —
+    # with no pre-build hook to hang a lane on. `buildCommand` is the one
+    # free-form slot that runs before the deploy, and `onFailure: stop` on that
+    # step is what makes a red suite block the deploy rather than merely report.
+    #
+    # THE TESTS RUN FIRST, so a failure costs seconds rather than a whole build.
+    buildCommand: pnpm exec turbo run test --filter=@openproduct/gateway-tests && pnpm exec turbo run build --filter=@openproduct/gateway
+    typecheckCommand: pnpm exec turbo run typecheck --filter=@openproduct/gateway
+    # NO `dryRunCommand` AND NO `deployCommand`, and that is a fact about the
+    # composition rather than an omission (openproduct-operations OO3, found
+    # on the way): `cloudflare-worker-turbo`'s verify-deploy job runs
+    # `wrangler deploy --dry-run` and `wrangler deploy` itself, substituting
+    # the environment, and never reads either parameter. The two lines that
+    # stood here hardcoded `--env prod` and were dead text — which is also the
+    # answer to RS4's third "worth a look".
+    preDeployCommand: "echo 'No pre-deploy step configured.'"
+    migrationCommand: "echo 'No migrations configured.'"
+    smokeCommand: "echo 'No smoke test configured.'"
+  labels:
+    team: platform
+    layer: runtime
+    surface: openproduct
+    runtime: cloudflare

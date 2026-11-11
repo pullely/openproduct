@@ -1,0 +1,99 @@
+apiVersion: sourceplane.io/v1
+kind: Component
+metadata:
+  name: openproduct-d1-probe
+  title: openproduct D1 probe
+  description: Stage-only Worker that measures the catalogue and search slice on remote D1 from inside Cloudflare, at 5,000 listings, and proves the limits local workerd skips (OPN-2, milestone OPN1 "D1 proven on one slice").
+spec:
+  type: cloudflare-worker-turbo
+  lifecycle: experimental
+  owner: platform
+  domain: infra
+  system: openproduct
+  path: infra/d1-probe
+  dependsOn:
+    # ORDERING ONLY, NOT A TRIGGER. The slice repository, its migration and
+    # the corpus loader are bundled into this Worker, but a full run writes
+    # about 8M D1 rows and takes about 10 minutes, so a change under
+    # packages/db must not re-run it. It deploys and runs when its own files
+    # change: the first merge, and later only when someone bumps ./RUN on
+    # purpose (design §5.2, "run on demand").
+    - component: openproduct-db
+    # Runtime/order: the probe database and the wiring secret it publishes.
+    - component: cloudflare-d1-probe
+
+  # Resolved by orun into every job of this component (fail-closed). Only the
+  # deploy lane uses it: secrets-live pushes it to the Worker as its runtime
+  # secret, and the smoke sends it as the bearer. It is seeded by the owner
+  # before the first merge.
+  secretEnv:
+    PROBE_TOKEN: "secret://ws_VTNEQKAP/openproduct/{{ .environment }}/PROBE_TOKEN"
+  # The wiring document is BEST-EFFORT here on purpose: it exists only after
+  # cloudflare-d1-probe's first apply (on the merge), and a required reference
+  # would fail this component's pull-request verify lane before that apply
+  # can ever run. It is not optional where it matters: wire-live refuses to
+  # render the deploy config without it ("WIRING_CLOUDFLARE_D1_PROBE_STAGE is
+  # empty"), and `dependsOn` orders the deploy after the apply that publishes it.
+  #
+  # NO workers.dev subdomain reference, on purpose. The `workers-subdomain`
+  # brokered fact answers `fact_unavailable` on an account that has not
+  # registered a subdomain, and orun then fails the whole job at secret
+  # resolution, optional reference or not. The first two OPN-2 CI runs died
+  # that way, on a verify lane that never uses it. The smoke asks Cloudflare
+  # itself, with the CLOUDFLARE_API_TOKEN / CLOUDFLARE_ACCOUNT_ID the deploy
+  # profile already binds, and fails in words when no subdomain exists.
+  optionalSecretEnv:
+    WIRING_CLOUDFLARE_D1_PROBE_STAGE: "secret://ws_VTNEQKAP/openproduct/stage/WIRING_CLOUDFLARE_D1_PROBE"
+
+  # STAGE ONLY. No dev, no prod: the probe database exists only in stage, and
+  # the wrangler template has no other environment. Verify on pull requests,
+  # deploy + smoke (the remote probe itself) on the merge to main.
+  subscribe:
+    environments:
+      - name: stage
+        profile: verify
+        profileRules:
+          - profile: deploy
+            when:
+              triggerRef: github-push-main
+  parameters:
+    nodeVersion: "22"
+    pnpmVersion: "10.12.1"
+    workspaceDir: ../..
+    appDir: .
+    orgName: sourceplane
+    owner: pullely
+    repo: openproduct
+    turboFilter: "@openproduct/d1-probe"
+    # BF6 deploy-time wiring — wrangler.jsonc is rendered, never committed.
+    wranglerConfig: wrangler.jsonc
+    wranglerTemplate: wrangler.template.jsonc
+    wiringComponents: "cloudflare-d1-probe"
+    # stage only: wire-live reads WIRING_CLOUDFLARE_D1_PROBE_<ENV> for every env listed here.
+    wiringEnvs: "stage"
+    wiringFixture: wiring.fixture.json
+    # Terraform owns the database; wrangler need not look it up over the API.
+    skipResourceProvisioning: true
+    # Pushed by secrets-live after the deploy (wrangler secret bulk).
+    runtimeSecrets: "PROBE_TOKEN"
+    installCommand: pnpm install --frozen-lockfile
+    # The Worker's own tests (the built bundle on miniflare + local D1: routes,
+    # refusals, idempotence, the smoke's verdict logic, the committed
+    # snapshot) run first, so a red suite blocks the deploy.
+    buildCommand: pnpm exec turbo run test --filter=@openproduct/d1-probe && pnpm exec turbo run build --filter=@openproduct/d1-probe
+    typecheckCommand: pnpm exec turbo run typecheck lint --filter=@openproduct/d1-probe
+    preDeployCommand: "echo 'No pre-deploy step configured.'"
+    # The probe applies its schema itself (POST /schema) — the database is throwaway.
+    migrationCommand: "echo 'No migrations configured: the probe applies 0001_slice.sql through POST /schema.'"
+    # THE REMOTE PROBE. PROBE_TOKEN comes from secretEnv. The workers.dev
+    # subdomain is asked of Cloudflare with the deploy profile's own
+    # credentials. PROBE_SIZE defaults to full (5,000 listings, 365 days). One
+    # JSON report on stdout; non-zero on a differing result, an accepted
+    # negative probe or a refused replace batch. The §5.3 budgets are reported,
+    # never enforced.
+    smokeCommand: node scripts/probe-run.mjs
+  labels:
+    team: platform
+    layer: probe
+    surface: openproduct
+    runtime: cloudflare

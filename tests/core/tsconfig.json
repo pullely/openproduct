@@ -1,0 +1,19 @@
+{
+  "extends": "../../tooling/tsconfig/base.json",
+  "compilerOptions": {
+    "types": ["jest", "node", "@cloudflare/workers-types"],
+    "allowSyntheticDefaultImports": true,
+    "composite": false,
+    "incremental": false,
+    "declaration": false,
+    "declarationMap": false,
+    "baseUrl": ".",
+    "paths": {
+      "@openproduct-worker/*": ["../../core/src/*.ts"],
+      "@openproduct/contracts": ["../../packages/contracts/src/index.ts"],
+      "@openproduct/db": ["../../packages/db/src/index.ts"]
+    }
+  },
+  "include": ["src/**/*.ts", "../../core/src/**/*.ts"],
+  "exclude": ["node_modules", "dist"]
+}

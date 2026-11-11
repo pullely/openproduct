@@ -1,0 +1,69 @@
+apiVersion: sourceplane.io/v1
+kind: Component
+
+metadata:
+  name: openproduct-media
+  title: openproduct media bucket
+  description: Terraform for openproduct's own R2 bucket per environment (stage, prod) holding listing media, bound to the gateway as MEDIA.
+  labels:
+    domain: infra
+    scope: media-object-store
+    surface: openproduct
+
+spec:
+  type: terraform
+  lifecycle: production
+  owner: platform
+  domain: infra
+  system: openproduct
+  docs:
+    overview: README.md
+
+  # THE FIRST DATA RESOURCE OPENPRODUCT HAS TAKEN SINCE OX5 gave it its own
+  # data plane, and the binding allowlist test on the gateway exists precisely
+  # so that taking one is a deliberate, reviewed act rather than a line in a
+  # config nobody read — which is how RS0's missing cron happened (MD-4).
+  #
+  # It is openproduct's bucket, never a platform binding (OPX-4). The
+  # gateway binds it by NAME (R2 binds by name, not id); this component's
+  # wiring manifest publishes that name so deploy-time resolution has one
+  # source for it.
+  parameters:
+    orgName: sourceplane
+    stackName: openproduct-media
+    terraformDir: terraform
+    terraformVersion: "1.15.3"
+
+  subscribe:
+    # STAGE AND PROD ONLY, like `cloudflare-r2`'s orun-state buckets: the
+    # gateway's dev environment binds no bucket (a binding to a bucket that
+    # does not exist is a deploy that fails), so no dev bucket is made.
+    environments:
+      - name: stage
+        dependencyRules: # PRs don't wait on other lanes (intent.yaml, environments)
+          - mode: advisory
+            when:
+              triggerRef: github-pull-request
+        profile: plan-only
+        profileRules:
+          - profile: apply
+            when:
+              triggerRef: github-push-main
+
+      - name: prod
+        dependencyRules: # PRs don't wait on other lanes (intent.yaml, environments)
+          - mode: advisory
+            when:
+              triggerRef: github-pull-request
+        profile: plan-only
+        profileRules:
+          - profile: apply
+            when:
+              triggerRef: github-push-main
+
+# Prerequisite: R2 is enabled on the Cloudflare account (it has been since
+# 2026-06-15 — see `infra/terraform/cloudflare-r2/component.yaml`). Image
+# Resizing, which MD1's derivatives use, is a ZONE feature this component does
+# not touch: it is enabled in the dashboard for the zone that serves the
+# gateway, and the gateway's `MEDIA_RESIZING` var is flipped to "true" there
+# once it is. Until then the original serves at every width.

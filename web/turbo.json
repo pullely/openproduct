@@ -1,0 +1,11 @@
+{
+  "$schema": "https://turbo.build/schema.json",
+  "//": "The web build is never cached. OpenNext's .open-next bundle is not relocatable: handler.mjs imports @vercel/og's wasm by the absolute path of the run that built it, so a replay into another run's work dir fails wrangler with ENOENT, and a replay that restores nothing fails verify-build-output. The build always runs.",
+  "extends": ["//"],
+  "tasks": {
+    "build": {
+      "dependsOn": ["^build"],
+      "cache": false
+    }
+  }
+}

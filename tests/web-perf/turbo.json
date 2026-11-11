@@ -1,0 +1,23 @@
+{
+  "$schema": "https://turbo.build/schema.json",
+  "extends": ["//"],
+  "tasks": {
+    "test": {
+      "dependsOn": [],
+      "passThroughEnv": [
+        "PLAYWRIGHT_BROWSERS_PATH",
+        "PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD",
+        "NODE_EXTRA_CA_CERTS",
+        "HTTP_PROXY",
+        "HTTPS_PROXY",
+        "NO_PROXY",
+        "XP4_PORT",
+        "XP4_CHROMIUM",
+        "XP4_SKIP_BUILD",
+        "XP4_BAND",
+        "XP4_RUNS",
+        "XP4_UPDATE_SNAPSHOTS"
+      ]
+    }
+  }
+}

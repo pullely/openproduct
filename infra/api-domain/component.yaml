@@ -1,0 +1,79 @@
+apiVersion: sourceplane.io/v1
+kind: Component
+
+metadata:
+  name: openproduct-api-domain
+  title: openproduct API domain
+  description: Terraform that routes api.openproduct.live to the openproduct-gateway Worker (a zone Worker Route plus a proxied placeholder record), prod only.
+  labels:
+    domain: infra
+    scope: dns-and-custom-domains
+
+spec:
+  type: terraform
+  lifecycle: production
+  owner: platform
+  domain: infra
+  system: openproduct
+  docs:
+    overview: README.md
+  links:
+    - title: Production
+      url: https://api.openproduct.live
+      icon: web
+
+  parameters:
+    orgName: sourceplane
+    stackName: openproduct-api-domain
+    terraformDir: terraform
+    terraformVersion: "1.15.3"
+    gatewayNamePrefix: openproduct-gateway
+    # NOTE: `OPENPRODUCT_CUSTOM_DOMAIN` is intentionally NOT declared here — it
+    # arrives per-environment from intent.yaml's
+    # `parameterDefaults.terraform.OPENPRODUCT_CUSTOM_DOMAIN` (prod:
+    # openproduct.live; everywhere else unset → this component plans to
+    # nothing). Declaring a default here would shadow the parameterDefault —
+    # the silent-empty failure cloudflare-domain documents from Task 0083.
+
+  dependsOn:
+    # THE GATEWAY, AND NOTHING ELSE. That is the whole point of this component
+    # existing separately from `openproduct-domain`.
+    #
+    # A Route naming a script that does not exist is an apply that fails, so
+    # this edge is real. What is NOT here is `openproduct-web` — and its absence
+    # is the fix. While these resources lived in `openproduct-domain`, they
+    # inherited that component's (correct) dependency on the web worker, so the
+    # hostname could only be created after a site deploy that was itself baking
+    # the hostname into its bundle. openproduct.live served a 404 for ~50
+    # minutes on 2026-09-09 because of it.
+    #
+    # Do not add a dependency on `openproduct-domain` here to "fix" zone
+    # ordering. That reintroduces the cycle transitively — `openproduct-domain`
+    # waits on `openproduct-web` — and trades a transient, self-healing failure
+    # for the deadlock this split exists to remove. The zone is read through a
+    # data source for the same reason; see the module.
+    - component: openproduct-gateway
+
+  subscribe:
+    environments:
+      - name: stage
+        dependencyRules: # PRs don't wait on other lanes (intent.yaml, environments)
+          - mode: advisory
+            when:
+              triggerRef: github-pull-request
+        profile: plan-only
+        profileRules:
+          - profile: apply
+            when:
+              triggerRef: github-push-main
+
+      - name: prod
+        dependencyRules: # PRs don't wait on other lanes (intent.yaml, environments)
+          - mode: advisory
+            when:
+              triggerRef: github-pull-request
+        profile: plan-only
+        profileRules:
+          - profile: apply
+            when:
+              triggerRef: github-push-main

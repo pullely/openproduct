@@ -1,0 +1,17 @@
+{
+  "extends": "../../tooling/tsconfig/base.json",
+  "compilerOptions": {
+    "types": ["jest", "node", "@cloudflare/workers-types"],
+    "allowSyntheticDefaultImports": true,
+    "composite": false,
+    "incremental": false,
+    "declaration": false,
+    "declarationMap": false,
+    "baseUrl": ".",
+    "paths": {
+      "@openproduct-gateway/*": ["../../gateway/src/*.ts"]
+    }
+  },
+  "include": ["src/**/*.ts", "../../gateway/src/**/*.ts"],
+  "exclude": ["node_modules", "dist"]
+}

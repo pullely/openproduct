@@ -1,0 +1,113 @@
+{
+  "//": "Expected /export sections for PROBE_SIZE=smoke, generated on LOCAL D1 (miniflare/workerd) by scripts/expected.mjs. Regenerate with: pnpm --filter @openproduct/d1-probe expected -- --size smoke",
+  "size": "smoke",
+  "sections": {
+    "catalogue": {
+      "pages": 1,
+      "cards": 120,
+      "firstSlug": "product-00077",
+      "lastSlug": "product-00095",
+      "digest": "493e6453137e10bc25cc5a6d2892ff7b2a93a818b216f10d64ddace89e874a5e",
+      "pageDigests": [
+        "d531a36c2f51364de3363d747e35b5c3f0b3c522edce73a124b886c78a8cf722"
+      ]
+    },
+    "census": {
+      "computedAt": "2026-09-09T12:00:00.000Z",
+      "cardCount": 120,
+      "windows": {
+        "today": 6,
+        "week": 42,
+        "month": 120,
+        "total": 120
+      }
+    },
+    "searchIndex": {
+      "rows": 120,
+      "digest": "f29714b6b81c4495bda1b3efd3aeaa335df55e3351f2b1a543c3c803f7205bda",
+      "bytes": 37933
+    },
+    "searchIndexTerms": {
+      "rows": 720,
+      "digest": "e5807bf0ff12c3b15daddfdead7ff7f73f32c51eca8e71007bd578c0f6913e19",
+      "bytes": 27871
+    },
+    "searchIndexState": {
+      "builtAt": "2026-09-09T12:00:00.000Z",
+      "dirtyAt": null
+    },
+    "candidates": {
+      "common": {
+        "terms": [
+          "product"
+        ],
+        "count": 120,
+        "digest": "b28a0755a45d0cfe46415b51d657be747732390246a1f947fdf2942e5fddd40b"
+      },
+      "rare": {
+        "terms": [
+          "00060"
+        ],
+        "count": 1,
+        "digest": "ddce6f12c931643fddc08c6691bfd45cc0499b67d692fbb945b32c2b1f161562",
+        "ids": [
+          "listing/product-00060"
+        ]
+      },
+      "multi": {
+        "terms": [
+          "00060",
+          "rust",
+          "nope"
+        ],
+        "count": 31,
+        "digest": "2b5c7763399fa08499b6fe312299f71e3880679feb44aed05e6d2ff3585db979"
+      },
+      "fourTerms": {
+        "terms": [
+          "00060",
+          "00061",
+          "00062",
+          "zzz"
+        ],
+        "count": 3,
+        "digest": "3b4722c3636d25b5ab7e99ad351c578a8587bbca34f116b2a02be460ec25a86d",
+        "ids": [
+          "listing/product-00060",
+          "listing/product-00061",
+          "listing/product-00062"
+        ]
+      },
+      "category": {
+        "terms": [
+          "design"
+        ],
+        "count": 30,
+        "digest": "f949078bfbe0a64d406b34da3f60e0428da0babda268b8f878654226b3942b3a"
+      },
+      "absent": {
+        "terms": [
+          "nope"
+        ],
+        "count": 0,
+        "digest": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "ids": []
+      },
+      "none": {
+        "terms": [],
+        "count": 0,
+        "digest": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "ids": []
+      },
+      "truncated": {
+        "terms": [
+          "product"
+        ],
+        "limit": 50,
+        "count": 50,
+        "allMatch": true,
+        "distinct": true
+      }
+    }
+  }
+}
