@@ -85,8 +85,9 @@ spec:
     preDeployCommand: "echo 'No pre-deploy step configured.'"
     # The probe applies its schema itself (POST /schema) — the database is throwaway.
     migrationCommand: "echo 'No migrations configured: the probe applies 0001_slice.sql through POST /schema.'"
-    # THE REMOTE PROBE. PROBE_TOKEN and CLOUDFLARE_WORKERS_SUBDOMAIN come from
-    # secretEnv; PROBE_SIZE defaults to full (5,000 listings, 365 days). One
+    # THE REMOTE PROBE. PROBE_TOKEN comes from secretEnv. The workers.dev
+    # subdomain is asked of Cloudflare with the deploy profile's own
+    # credentials. PROBE_SIZE defaults to full (5,000 listings, 365 days). One
     # JSON report on stdout; non-zero on a differing result, an accepted
     # negative probe or a refused replace batch. The §5.3 budgets are reported,
     # never enforced.
