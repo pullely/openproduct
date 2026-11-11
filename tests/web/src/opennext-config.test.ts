@@ -88,19 +88,22 @@ describe("the one streamed public route has a skeleton", () => {
 });
 
 describe("the database-facing worker runs near the database", () => {
-  it("openproduct-worker declares Smart Placement with an APAC hint", () => {
+  it("openproduct-worker's placement names the database's AWS region", () => {
     const template = readFileSync(resolve(CORE, "wrangler.template.jsonc"), "utf-8");
     const parsed = jsonc(template.replace(/@@wiring\([^)]*\)@@/g, "x")) as {
-      placement?: { mode?: string; hint?: string };
+      placement?: { mode?: string; hint?: string; region?: string };
     };
-    expect(parsed.placement).toEqual({ mode: "smart", hint: "apac" });
-    // `infra/supabase/component.yaml` pins the database to ap-southeast-1;
-    // the hint names that region and nothing else.
+    // `infra/supabase/component.yaml` pins the database's region, and the
+    // placement names that region and nothing else. It is the documented
+    // `region` form: the openproduct account refuses the monorepo's
+    // `{ mode: "smart", hint: "apac" }` (code 10023, OPN-8's first deploy).
     const supabase = readFileSync(
       resolve(__dirname, "../../../infra/supabase/component.yaml"),
       "utf-8",
     );
-    expect(supabase).toContain("supabaseRegion: ap-southeast-1");
+    const region = /supabaseRegion:\s*([a-z0-9-]+)/.exec(supabase)?.[1];
+    expect(region).toBe("ap-southeast-1");
+    expect(parsed.placement).toEqual({ region: `aws:${region}` });
   });
 });
 
