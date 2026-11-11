@@ -78,8 +78,10 @@ spec:
             when:
               triggerRef: github-dispatch
 
-# Prerequisite: R2 is enabled on the openproduct Cloudflare account (OPN2
-# checks it on the first plan). Image
+# Prerequisite: R2 is enabled on the openproduct Cloudflare account. THE PLAN
+# CANNOT SEE IT: OPN-8's first apply planned cleanly, then failed at create
+# with "Please enable R2 through the Cloudflare Dashboard" (10042). It is a
+# dashboard step for the owner, done on 2026-11-12. Image
 # Resizing, which MD1's derivatives use, is a ZONE feature this component does
 # not touch: it is enabled in the dashboard for the zone that serves the
 # gateway, and the gateway's `MEDIA_RESIZING` var is flipped to "true" there
