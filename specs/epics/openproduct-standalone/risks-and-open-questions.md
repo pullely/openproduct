@@ -235,7 +235,7 @@ used, so brokered Supabase secrets name the connection by id. OPN2's
 database task checks that the organization's plan holds two projects that
 never pause.
 
-## OPN-U — stack-tectonic's migration job builds only lumen's package (RISK)
+## OPN-U — stack-tectonic's migration job builds only lumen's package (RESOLVED upstream)
 
 The `db-migrate` composition in stack-tectonic 0.21.0 runs
 `turbo run build --filter=@saas/db` and closes its parameters, so it cannot
@@ -246,3 +246,8 @@ build `@openproduct/db`. orun-cloud's own copy of the composition grew a
 `@saas/db`, so lumen is unchanged), released as a new minor version. This
 repository's pin then moves to it, in OPN2's database task. It is a change
 in another repository, so it is its own pull request there.
+
+**Resolved upstream (2026-11-11):** stack-tectonic 0.22.0
+(sourceplane/stack-tectonic#23) adds `buildFilter`, default `@saas/db`. The
+pin here moves to 0.22.0 in the Hyperdrive and migration task, the one that
+adds `db-migrate`.

@@ -55,19 +55,24 @@ each, in this order, because each needs the one before it:
    - The probe database is destroyed through its own component, applied with the resource switched off, and the probe Worker is deleted.
    - Then `packages/db/src/d1/`, the D1 harness, differential and D1 scale suites, miniflare, `infra/d1-probe` and `infra/cloudflare-d1-probe` go.
    - Every Postgres suite still passes.
-2. **The database comes up.**
-   - `infra/supabase`, `infra/hyperdrive` and `infra/db-migrate` arrive from orun-cloud `ffb71be69` as they are, with state on the platform and credentials as workspace secrets (design §11).
-   - The runner reads `SUPABASE_PROJECT_REF`.
-   - A merge applies stage, then prod: two Supabase projects, two Hyperdrive configs, and the 52-step ladder on both.
-   - Needs: a stack-tectonic release whose `db-migrate` takes a build filter (OPN-U).
-3. **Going live.**
+2. **The Supabase projects come up.**
+   - `infra/supabase` arrives from orun-cloud `ffb71be69` as it is, with state on the platform and credentials as workspace secrets (design §11).
+   - Its Management API token and org id are brokered from the `openproduct` Supabase connection.
+   - A merge applies stage, then prod: two Supabase projects, each publishing `SUPABASE_PROJECT_REF`, `SUPABASE_DB_PASSWORD` and `SUPABASE_DB_URL`.
+   - The emptied D1 probe component leaves the tree.
+3. **Hyperdrive and the migration ladder.**
+   - `infra/hyperdrive` and `infra/db-migrate` arrive from the same commit, reading the secrets step 2 published. That is why they are a separate pull request: their plans need those keys to exist.
+   - The runner reads `SUPABASE_PROJECT_REF`, and `@aws-sdk/client-secrets-manager` goes.
+   - A merge applies stage, then prod: two Hyperdrive configs, and the 52-step ladder on both.
+   - Needs: a stack-tectonic release whose `db-migrate` takes a build filter (OPN-U, released as 0.22.0).
+4. **Going live.**
    - `core` renders its Hyperdrive id from `WIRING_OPENPRODUCT_HYPERDRIVE_<ENV>`.
    - Deploy profiles are switched on for stage and prod, and `openproduct-media` is discovered.
    - The operator-set secrets are created (design §4), with fresh seam keys **not yet** known to the platform.
    - `web` gets its build values back (IMPLEMENTATION-STATUS, departure 3).
    - `openproduct-domain` and `openproduct-api-domain` stay unapplied until OPN3.
 
-The website's first real deploy happens in step 3. If the Worker fails at
+The website's first real deploy happens in step 4. If the Worker fails at
 startup with `ChunkLoadError … instrumentation`, the standalone trace is
 incomplete: follow `nextjs-on-workers` §10 (copy the build's server
 directory over the standalone one before OpenNext bundles it).

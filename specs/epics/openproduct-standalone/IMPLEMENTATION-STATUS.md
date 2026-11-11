@@ -27,7 +27,7 @@ the code departed from `design.md`.
 | Cloudflare connection | `openproduct` (`int_7fbdaafa…`), inherited from the account |
 | Epic in Orunbase | `openproduct-standalone`, EP-1 (`epc_0TXVHJ8Z`) |
 | Milestones | OPN0 `mls_VEMWNC1J` · OPN1 `mls_GPBDDEE7` · OPN2 `mls_GQ855EQV` · OPN3 `mls_QJP277KN` · OPN4 `mls_GFTKS4Q0` |
-| Tasks | OPN-1 `tsk_N14BB1XD` (OPN0, done: merged as `1fc8305`, PR #1) · OPN-2 `tsk_85D0P8WW` (OPN1, done: PR #2) · OPN-4 `tsk_DEKB9MPX` (OPN1, done: PR #3) · OPN-3 `tsk_DQTEWGM3` (OPN1, done: PR #4) · OPN-5 `tsk_KSEVSQNN` (OPN2: the D1 trial retires) |
+| Tasks | OPN-1 `tsk_N14BB1XD` (OPN0, done: merged as `1fc8305`, PR #1) · OPN-2 `tsk_85D0P8WW` (OPN1, done: PR #2) · OPN-4 `tsk_DEKB9MPX` (OPN1, done: PR #3) · OPN-3 `tsk_DQTEWGM3` (OPN1, done: PR #4) · OPN-5 `tsk_KSEVSQNN` (OPN2, done: merged as `b8d55d3`, PR #5) · OPN-6 `tsk_8417K5E5` (OPN2: the Supabase projects come up) |
 | Project environments | `dev`, `stage`, `prod`, created through `POST …/projects/{prj}/environments` on 2026-11-09. A baseline bootstrap creates them; this repository never had one, and secret authoring refused until they existed |
 | Stage secrets | `CLOUDFLARE_API_TOKEN` (`workers-deploy`), `CLOUDFLARE_ACCOUNT_ID` (`account-id`), `CLOUDFLARE_D1_TOKEN` (`d1-edit`), `CLOUDFLARE_WORKERS_SUBDOMAIN` (`workers-subdomain`): all brokered from connection `int_7fbdaafa…`. `PROBE_TOKEN`: static, random, set from stdin. None has a prod counterpart yet |
 | Supabase connection | **`openproduct`** (`int_cc19cfd5…`), created by the owner on 2026-11-11 for this product and inherited from the account (OPN-T). The account's older `arca-orun` (`int_d9116c21…`) is not used, so every brokered Supabase secret names `openproduct` explicitly |
@@ -245,10 +245,30 @@ Design §8 lists the Orunbase account's limits; this is the Cloudflare side of t
 - **Lockfile:** drops the `infra/d1-probe` importer and miniflare. The website's wrangler (4.151.3, unchanged) no longer resolves the optional `@cloudflare/workers-types` peer that only the probe brought.
 - **Plans:** a pull request plans `cloudflare-d1-probe · stage` as `terraform.plan-only`, so the destroy shows and nothing happens. The merge applies it. Every other job is verify.
 - **Local checks:** typecheck and lint pass, 22 of 22. `@openproduct/db` alone: 23 files pass, 1 skipped; 571 tests pass, 1 skipped. `terraform validate` passes. `orun validate` passes, and `orun task check OPN-5` reports 3 changed components, all inside the contract.
+- **Applied (main run 43023059866, 2026-11-11):** `cloudflare-d1-probe · stage` destroyed `openproduct-probe-stage`, and the provisioner deleted `openproduct-d1-probe-stage` (HTTP 200). Every other job passed.
 - **Left for the next task:**
-  - deleting `infra/cloudflare-d1-probe` itself, after this apply;
-  - the stale stage secrets `WIRING_CLOUDFLARE_D1_PROBE`, `PROBE_TOKEN`, `CLOUDFLARE_D1_TOKEN` and the unused `CLOUDFLARE_WORKERS_SUBDOMAIN`;
-  - `tests/web/src/opennext-config.test.ts`'s TODO, whose region cross-check returns against `infra/supabase`'s region instead of `infra/cloudflare-d1`'s.
+  - deleting `infra/cloudflare-d1-probe` itself, after this apply (done in OPN-6);
+  - the stale stage secrets `WIRING_CLOUDFLARE_D1_PROBE`, `PROBE_TOKEN`, `CLOUDFLARE_D1_TOKEN` and the unused `CLOUDFLARE_WORKERS_SUBDOMAIN` (still open: revoking them is the owner's call);
+  - `tests/web/src/opennext-config.test.ts`'s TODO, whose region cross-check returns against `infra/supabase`'s region instead of `infra/cloudflare-d1`'s (done in OPN-6).
+
+### OPN-6: the Supabase projects come up
+
+The database step of the plan is split in two pull requests. This one brings
+up the Supabase projects. The next brings Hyperdrive and the migration
+ladder, whose pull-request plans then read the secrets this merge publishes
+instead of failing on keys that do not exist yet.
+
+- **`infra/supabase`** (`openproduct-supabase`, terraform, stage and prod) is orun-cloud `ffb71be69`'s `apps/openproduct/infra/supabase`, with only the changes design §11 names, made the way lumen's supabase stack makes them:
+  - the `s3` backend becomes `backend "http" {}`, so state is on the platform;
+  - the AWS provider, the Secrets Manager secret and its version, `secret_arn`, `awsRegion` and the `bootstrap` dependency are gone;
+  - the credentials leave as `secretOutputs`: `SUPABASE_PROJECT_REF`, `SUPABASE_DB_PASSWORD` and `SUPABASE_DB_URL` (a new sensitive `connection_uri` output, as lumen has);
+  - the org id is no longer committed: it arrives as `TF_VAR_supabaseOrgId` from `SUPABASE_ORG_ID`, brokered from the `openproduct` Supabase connection (`int_cc19cfd5…`, `org-id`). `SUPABASE_ACCESS_TOKEN` is brokered from the same connection (`management-access`). Both are on the stage and prod rungs;
+  - the project name `openproduct-{env}`, the region `ap-southeast-1`, the password and `random ~> 3.0` are unchanged.
+- **Departure: the provider pin.** The monorepo pins `supabase ~> 1.0`; this pins `~> 1.5.1`, as lumen does. From 1.6.0 the provider reads `/billing/addons` on every project read, and Supabase refuses billing endpoints to OAuth tokens, which is what the connection brokers. The monorepo ran with a personal access token.
+- **Not taken from lumen:** its `adopt.tf`. It imports a project that exists outside state, which was lumen's move off S3. This organization is new and holds no `openproduct-*` project.
+- **`infra/cloudflare-d1-probe` is deleted**, and `intent.yaml` discovers `infra/supabase/` in its place. Its platform state, which holds only the provisioner's `terraform_data`, stays behind harmlessly.
+- **`tests/web/src/opennext-config.test.ts`** reads `infra/supabase/component.yaml` again and asserts `supabaseRegion: ap-southeast-1`, as it did in the monorepo.
+- **Plans:** a pull request plans `openproduct-supabase · stage` and `· prod` as `terraform.plan-only`. The merge applies stage, then prod (prod's job depends on stage's).
 
 ## Departures from the design
 

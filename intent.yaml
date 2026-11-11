@@ -3,7 +3,7 @@ kind: Intent
 
 metadata:
   name: openproduct
-  description: "openproduct.live: a public directory of open builds. Standalone on Cloudflare (Workers, D1, R2, Durable Objects), deployed through Orunbase."
+  description: "openproduct.live: a public directory of open builds. Standalone on Cloudflare (Workers, R2, Durable Objects) and Supabase Postgres through Hyperdrive, deployed through Orunbase."
   namespace: sourceplane
 
 execution:
@@ -33,10 +33,9 @@ compositions:
       db-migrate: stack-tectonic
 
 # The roots that hold the components. Every product component subscribes
-# verify-only in every environment until OPN2 switches deploys on. The one
-# exception is the emptied D1 probe database component (stage only): OPN1
-# ended in a no-go for D1, and its apply on this merge destroys the probe
-# database and deletes the probe Worker. The next task deletes it.
+# verify-only in every environment until OPN2 switches deploys on. The
+# exception is openproduct's own database: infra/supabase plans on pull
+# requests and applies stage, then prod, on the merge to main.
 discovery:
   roots:
     - core/
@@ -45,7 +44,7 @@ discovery:
     - packages/
     - tests/
     - infra/synthetic/
-    - infra/cloudflare-d1-probe/
+    - infra/supabase/
     # NOT DISCOVERED YET, ON PURPOSE: infra/media, infra/api-domain and
     # infra/domain. They are terraform components that need the Cloudflare
     # credentials even to plan, so they join when their environments do:
