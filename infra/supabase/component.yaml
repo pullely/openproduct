@@ -1,0 +1,67 @@
+apiVersion: sourceplane.io/v1
+kind: Component
+
+metadata:
+  name: openproduct-supabase
+  title: openproduct Supabase projects
+  description: Terraform for openproduct's own Supabase projects (stage, prod). The database credentials leave through job outputs into the environment's workspace secrets.
+  labels:
+    domain: infra
+    scope: database
+    surface: openproduct
+
+spec:
+  type: terraform
+  lifecycle: production
+  owner: platform
+  domain: infra
+  system: openproduct
+  docs:
+    overview: README.md
+
+  # Taken from orun-cloud ffb71be69 (apps/openproduct/infra/supabase) as it
+  # is, except for what this repository forces (design §11): state lives on
+  # the platform, not in S3, and the credentials go to workspace secrets, not
+  # to Secrets Manager. So there is no `bootstrap` dependency and no AWS.
+  parameters:
+    orgName: sourceplane
+    owner: pullely
+    repo: openproduct
+    stackName: openproduct-supabase
+    terraformDir: terraform
+    terraformVersion: "1.15.3"
+    # Passed to Terraform as TF_VAR_supabaseRegion. The org id is not
+    # committed: it is a fact of the Supabase connection (secretEnv below).
+    supabaseRegion: ap-southeast-1
+    # After apply, these outputs are published to this environment's secrets
+    # over the job's lease. Hyperdrive and db-migrate read them back.
+    secretOutputs: "SUPABASE_PROJECT_REF=project_ref,SUPABASE_DB_PASSWORD=database_password,SUPABASE_DB_URL=connection_uri"
+
+  # Both resolve from the project/<env> rung, brokered from the openproduct
+  # Supabase connection (int_cc19cfd5…) by id, because the workspace also
+  # inherits the arca-orun connection. SUPABASE_ACCESS_TOKEN is a short-lived
+  # Management API token minted per run (management-access); the provider
+  # reads it from the environment. The org id is a non-secret connection fact
+  # (org-id). Component-level, because plan-only refreshes against the live
+  # API too.
+  secretEnv:
+    SUPABASE_ACCESS_TOKEN: "secret://ws_VTNEQKAP/openproduct/{{ .environment }}/SUPABASE_ACCESS_TOKEN"
+    TF_VAR_supabaseOrgId: "secret://ws_VTNEQKAP/openproduct/{{ .environment }}/SUPABASE_ORG_ID"
+
+  # Plan on pull requests, apply on the merge to main: stage, then prod
+  # (prod's promotion depends on stage, intent.yaml).
+  subscribe:
+    environments:
+      - name: stage
+        profile: plan-only
+        profileRules:
+          - profile: apply
+            when:
+              triggerRef: github-push-main
+
+      - name: prod
+        profile: plan-only
+        profileRules:
+          - profile: apply
+            when:
+              triggerRef: github-push-main

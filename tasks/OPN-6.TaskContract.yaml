@@ -1,0 +1,34 @@
+# The second task of milestone OPN2: openproduct's own Supabase projects.
+# The monorepo's supabase component arrives as it is, with its state on the
+# platform and its credentials brokered from the openproduct Supabase
+# connection instead of AWS (design §11). Hyperdrive and the migration ladder
+# follow in the next task, whose pull-request plans then read the secrets this
+# merge publishes. The emptied D1 probe component, whose apply ran on the last
+# merge, leaves the tree too. The file is the contract; the task lives in
+# Orunbase.
+apiVersion: orun.io/v1
+kind: TaskContract
+metadata:
+  name: OPN-6
+  title: "OPN2: the Supabase projects come up"
+spec:
+  goal: openproduct-stage and openproduct-prod exist as Supabase projects in the openproduct organization, created by this repository's supabase component, and each environment holds its database credentials as workspace secrets.
+  affects:
+    - infra/supabase/**
+    - infra/cloudflare-d1-probe/**
+    - intent.yaml
+    - tests/web/src/opennext-config.test.ts
+    - specs/epics/openproduct-standalone/**
+    - tasks/OPN-6.TaskContract.yaml
+    - default/openproduct/openproduct-supabase
+    - default/openproduct/cloudflare-d1-probe
+    - default/openproduct/openproduct-web-tests
+  doneWhen:
+    - infra/cloudflare-d1-probe is gone and intent.yaml no longer discovers it
+    - infra/supabase arrives from orun-cloud ffb71be69 with its state on the platform and nothing in AWS
+    - its Management API token and org id are brokered from the openproduct Supabase connection, by id, on stage and prod
+    - the merge applies stage, then prod, creating openproduct-stage and openproduct-prod
+    - each apply publishes SUPABASE_PROJECT_REF, SUPABASE_DB_PASSWORD and SUPABASE_DB_URL to its environment
+    - the opennext-config test checks infra/supabase's region again
+    - IMPLEMENTATION-STATUS.md records it, and the plan splits the database step in two
+  gates: []
