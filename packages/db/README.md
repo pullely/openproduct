@@ -39,11 +39,10 @@ Other contents:
 
 - Runtime: `@openproduct/contracts` (workspace), `postgres`, and
   `@aws-sdk/client-secrets-manager` (runner only).
-- Dev: `@electric-sql/pglite` (an in-process Postgres for the pg suite) and
-  `miniflare` (local D1 through workerd, for `src/d1/`).
+- Dev: `@electric-sql/pglite` (an in-process Postgres for the pg suite).
 - Depended on by [`openproduct-worker`](../../core/README.md) (`input: true`).
-  The Postgres `openproduct-db-migrate` component stayed in orun-cloud; the D1
-  migration path arrives in OPN2 (openproduct-standalone design §3.5).
+  The Postgres `openproduct-db-migrate` component comes back from orun-cloud
+  in OPN2, rewired to workspace secrets (openproduct-standalone design §11).
 
 ## Develop
 
@@ -62,15 +61,18 @@ The suite includes:
 - Scale tests in `src/scale/`.
 - `migrations-lock.test.ts`, which checks every ladder entry hashes to its
   recorded checksum.
-- The D1 slice in `src/d1/`: its executor, schema, engine tests and the
-  differential suite against Postgres (`d1-slice-proof.md` in the epic).
+- `pg-driver-counts.test.ts`, which pins what the production postgres.js
+  executor reports for write counts. The D1 trial's differential suite found
+  it, and the trial itself retired at OPN1's no-go (`d1-slice-proof.md` in the
+  epic).
 
 ### Adding a migration
 
 1. Add `src/migrations/<id>/up.sql` and a manifest entry with its checksum.
 
-The Postgres ladder is frozen at the cut: OPN2 replaces it with a single D1
-`0001_baseline` (openproduct-standalone design §3.5).
+The Postgres ladder stays: OPN1 ended in a no-go for D1, so OPN2 applies
+this ladder to openproduct's own Supabase projects (openproduct-standalone
+design §11).
 
 ## Deploy
 

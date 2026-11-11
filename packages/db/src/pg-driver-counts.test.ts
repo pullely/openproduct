@@ -1,4 +1,4 @@
-// A FINDING the differential surfaced, pinned (OPN D1 slice): through the
+// A FINDING the D1 differential surfaced, pinned (OPN D1 slice): through the
 // PRODUCTION Postgres executor, the slice's write counts are always zero.
 //
 // `createSqlExecutor` reports `rowCount: result.length` (postgres.js), and a
@@ -6,11 +6,11 @@
 // `written` and `removed`, and `replaceSearchIndex([])`'s cleared count, are 0
 // in production whatever happened. The pglite harness reports
 // `affectedRows`, so every Postgres test sees the real counts and none
-// notices. This is factory RUNBOOK trap 22 in Postgres form. The D1 port
-// counts with RETURNING and reports what pglite reports (the differential
-// suite proves that); this file proves what production Postgres reports,
-// through the same driver lane as search-index-driver.test.ts. When the
-// Postgres side is fixed (RETURNING 1), these expectations flip.
+// notices. This is factory RUNBOOK trap 22 in Postgres form. The D1 trial
+// counted with RETURNING and matched pglite, but D1 was not adopted (OPN-3),
+// so Postgres stays and so does this pin: it proves what production Postgres
+// reports, through the same driver lane as search-index-driver.test.ts. When
+// the Postgres side is fixed (RETURNING 1), these expectations flip.
 
 import { PGlite } from "@electric-sql/pglite";
 import { PGLiteSocketServer } from "@electric-sql/pglite-socket";
@@ -18,10 +18,10 @@ import { readFileSync } from "node:fs";
 import postgres from "postgres";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
-import { createSqlExecutor } from "../executor.js";
-import { ladder } from "../pg/global-setup.js";
-import { createOpenproductRepository } from "../repository.js";
-import type { OpenproductRepository } from "../types.js";
+import { createSqlExecutor } from "./executor.js";
+import { ladder } from "./pg/global-setup.js";
+import { createOpenproductRepository } from "./repository.js";
+import type { OpenproductRepository } from "./types.js";
 
 let db: PGlite;
 let server: PGLiteSocketServer;

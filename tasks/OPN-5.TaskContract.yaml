@@ -1,0 +1,37 @@
+# OPN-5: the first task of milestone OPN2. OPN1 ended in a no-go for D1
+# (OPN-3), so the D1 trial leaves the tree, and this merge's stage apply
+# destroys what it left running: the probe database and the probe Worker.
+# The emptied database component is deleted by the next task, after this
+# apply has run, so its state is never orphaned with live resources behind
+# it. The file is the contract; the task lives in Orunbase.
+apiVersion: orun.io/v1
+kind: TaskContract
+metadata:
+  name: OPN-5
+  title: "OPN2: the D1 trial retires"
+spec:
+  goal: The D1 slice and the probe Worker leave the tree, and the merge's stage apply destroys the probe database and deletes the probe Worker, so nothing of the D1 trial is left running.
+  affects:
+    - packages/db/**
+    - infra/d1-probe/**
+    - infra/cloudflare-d1-probe/**
+    - intent.yaml
+    - pnpm-lock.yaml
+    - .gitignore
+    - .github/workflows/ci.yml
+    - specs/epics/openproduct-standalone/**
+    - tasks/OPN-5.TaskContract.yaml
+    - default/openproduct/openproduct-db
+    - default/openproduct/openproduct-d1-probe
+    - default/openproduct/cloudflare-d1-probe
+    # Changed as a dependent only: core builds from openproduct-db (input: true).
+    - default/openproduct/openproduct-worker
+  doneWhen:
+    - packages/db/src/d1/, the ./d1 exports, the test:d1 scripts and miniflare are gone
+    - the Postgres driver-counts test stays, moved to packages/db/src
+    - infra/d1-probe is gone and intent.yaml no longer discovers it
+    - infra/cloudflare-d1-probe declares no database and deletes the probe Worker at apply
+    - the merge's stage apply destroys openproduct-probe-stage and deletes openproduct-d1-probe-stage
+    - every remaining suite passes, and typecheck and lint are clean
+    - IMPLEMENTATION-STATUS.md records the retirement
+  gates: []

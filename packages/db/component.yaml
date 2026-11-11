@@ -39,9 +39,6 @@ spec:
   # does — `preBuildCommand` runs the package's turbo `test` task before the
   # build, exactly as `packages/cli` and `packages/sdk` do.
   #
-  # THE D1 SLICE RUNS HERE TOO: src/d1/** starts local D1 through miniflare
-  # (workerd), offline, inside the same `turbo run test`.
-  #
   # DEV ONLY: a package deploys nowhere, and its dev lane is the check (CIS1).
   # (In the monorepo stage and prod subscribed with `profile: skip`;
   # stack-tectonic 0.21.0 has no such profile, and not subscribing is what

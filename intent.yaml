@@ -32,11 +32,11 @@ compositions:
       cloudflare-domain: stack-tectonic
       db-migrate: stack-tectonic
 
-# The roots that hold this milestone's components (OPN1). Every product
-# component subscribes verify-only in every environment until OPN2 switches
-# deploys on. The two D1 probe components are the exception, stage only
-# (design §5.2): the throwaway probe database applies, and the probe Worker
-# deploys and runs its smoke, on a merge that changes them.
+# The roots that hold the components. Every product component subscribes
+# verify-only in every environment until OPN2 switches deploys on. The one
+# exception is the emptied D1 probe database component (stage only): OPN1
+# ended in a no-go for D1, and its apply on this merge destroys the probe
+# database and deletes the probe Worker. The next task deletes it.
 discovery:
   roots:
     - core/
@@ -46,7 +46,6 @@ discovery:
     - tests/
     - infra/synthetic/
     - infra/cloudflare-d1-probe/
-    - infra/d1-probe/
     # NOT DISCOVERED YET, ON PURPOSE: infra/media, infra/api-domain and
     # infra/domain. They are terraform components that need the Cloudflare
     # credentials even to plan, so they join when their environments do:

@@ -1,6 +1,0 @@
-# Bumping a line here re-ran the stage D1 probe on the next merge (design §5.2),
-# until OPN-3 stood the probe down (component.yaml: verify only).
-# Each run loads the full corpus (about 8M D1 rows written, about 10 minutes).
-run 1 — 2026-11-09, OPN1 first measurement (stopped: Workers Free refused the deploy; then D1 overloaded the load at step 10)
-run 2 — 2026-11-11, OPN-4: the probe paces itself (overload waits, write cool-downs, row2mb)
-stood down — 2026-11-11, OPN-3: the owner's no-go for D1; run 2 was the last run
