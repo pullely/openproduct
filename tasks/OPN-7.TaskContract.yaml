@@ -1,0 +1,37 @@
+# The third task of milestone OPN2: Hyperdrive over openproduct's Supabase
+# projects, and the 52-step migration ladder applied to both. The monorepo's
+# hyperdrive and db-migrate components arrive as they are, reading the
+# SUPABASE_* secrets the last merge published instead of AWS Secrets Manager
+# (design §11). The runner reads the project from SUPABASE_PROJECT_REF and
+# drops its AWS SDK, and the stack-tectonic pin moves to 0.22.0 for
+# db-migrate's build filter. The file is the contract; the task lives in
+# Orunbase.
+apiVersion: orun.io/v1
+kind: TaskContract
+metadata:
+  name: OPN-7
+  title: "OPN2: Hyperdrive and the migration ladder"
+spec:
+  goal: Stage and prod each have a Hyperdrive config over their own Supabase project, publishing WIRING_OPENPRODUCT_HYPERDRIVE, and the full migration ladder applied, all by this repository's components with nothing in AWS.
+  affects:
+    - infra/hyperdrive/**
+    - infra/db-migrate/**
+    - packages/db/**
+    - intent.yaml
+    - pnpm-lock.yaml
+    - tests/core/src/hyperdrive-eligibility.test.ts
+    - specs/epics/openproduct-standalone/**
+    - tasks/OPN-7.TaskContract.yaml
+    - default/openproduct/openproduct-hyperdrive
+    - default/openproduct/openproduct-db-migrate
+    - default/openproduct/openproduct-db
+    # Changed as a dependent only: core builds from openproduct-db (input: true).
+    - default/openproduct/openproduct-worker
+  doneWhen:
+    - infra/hyperdrive and infra/db-migrate arrive from orun-cloud ffb71be69 with state on the platform and nothing in AWS
+    - hyperdrive reads SUPABASE_PROJECT_REF and SUPABASE_DB_PASSWORD and publishes WIRING_OPENPRODUCT_HYPERDRIVE
+    - the runner reads SUPABASE_PROJECT_REF, and @aws-sdk/client-secrets-manager is gone
+    - intent.yaml pins stack-tectonic 0.22.0, and db-migrate builds @openproduct/db
+    - the merge applies stage, then prod - two Hyperdrive configs and the 52-step ladder on both
+    - every suite passes, and IMPLEMENTATION-STATUS.md records it
+  gates: []

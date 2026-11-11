@@ -23,7 +23,7 @@ compositions:
     # the deliberate upgrade step.
     - name: stack-tectonic
       kind: oci
-      ref: oci://ghcr.io/sourceplane/stack-tectonic:0.21.0
+      ref: oci://ghcr.io/sourceplane/stack-tectonic:0.22.0
   resolution:
     precedence:
       - stack-tectonic
@@ -34,8 +34,9 @@ compositions:
 
 # The roots that hold the components. Every product component subscribes
 # verify-only in every environment until OPN2 switches deploys on. The
-# exception is openproduct's own database: infra/supabase plans on pull
-# requests and applies stage, then prod, on the merge to main.
+# exception is openproduct's own data plane: infra/supabase, infra/hyperdrive
+# and infra/db-migrate plan on pull requests and apply stage, then prod, on
+# the merge to main.
 discovery:
   roots:
     - core/
@@ -45,6 +46,8 @@ discovery:
     - tests/
     - infra/synthetic/
     - infra/supabase/
+    - infra/hyperdrive/
+    - infra/db-migrate/
     # NOT DISCOVERED YET, ON PURPOSE: infra/media, infra/api-domain and
     # infra/domain. They are terraform components that need the Cloudflare
     # credentials even to plan, so they join when their environments do:
