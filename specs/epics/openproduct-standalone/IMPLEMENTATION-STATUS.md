@@ -312,6 +312,10 @@ instead of failing on keys that do not exist yet.
   - `CLOUDFLARE_R2_TOKEN` on stage and prod (`r2-data`);
   - fresh `LISTING_SEAM_SECRET` and `OPENPRODUCT_AUTH_SEAM_SECRET` per environment (OPN-K).
 - **Left for the owner:** `OPENPRODUCT_OPERATORS`, `GITHUB_TOKEN` and the screenshot-capture pair. Each is optional per request.
+- **The secrets were stored on 2026-11-11 (#8). The first deploy (run 43110234860) met two account limits that the monorepo's account never had:**
+  - **core's placement.** `{ "mode": "smart", "hint": "apac" }` is refused ("placement hint not allowed", 10023). It is now `{ "region": "aws:ap-southeast-1" }`, the documented Placement Hints form, naming the Supabase projects' region.
+  - **R2 was not enabled** on the openproduct account ("Please enable R2 through the Cloudflare Dashboard", 10042), so `openproduct-media` could not create its buckets. The gateway and the website wait on it. This is the owner's step in the dashboard.
+  - What did deploy: `openproduct-synthetic` on stage and prod.
 - **Departure from OPN2's "done when": password sign-up.** The gateway's password sign-in asks the platform's identity-worker for the account, over the auth seam, and the platform holds one `OPENPRODUCT_AUTH_SEAM_SECRET`: the monorepo deploy's. Until the platform holds this repository's key, the new site's password sign-in is refused. Giving the platform the new key cuts the old deploy off, which is the switch, so it moves to OPN3 with the listing seam. Browsing, `/health` and the sweeps do not need it.
 
 ## Departures from the design

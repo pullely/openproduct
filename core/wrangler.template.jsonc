@@ -50,12 +50,10 @@
   // and the structured error lines this worker prints are worth nothing if
   // nobody can read them after the fact. Enabled at the default sampling.
   "observability": { "enabled": true },
-  // ─── SMART PLACEMENT (openproduct-performance OPP13, answering D4/OPP11) ──
+  // ─── PLACEMENT (openproduct-performance OPP13, answering D4/OPP11) ───────
   //
-  // Postgres is in ap-southeast-1 (the Supabase projects the old deployment's
-  // `infra/supabase` provisions; D1 keeps the `apac` hint, openproduct-
-  // standalone design §3.1) and this
-  // worker ran wherever the visitor was. `Server-Timing` on 2026-09-09 read
+  // Postgres is in ap-southeast-1 (the Supabase projects `infra/supabase`
+  // provisions) and this worker ran wherever the visitor was. `Server-Timing` on 2026-09-09 read
   // 500–760 ms PER STATEMENT from IAD — a listing page's seven statements
   // spanned 1.5 s, the sidebar's six 1.0 s, the contributors read 3.0 s — and
   // `/v1/facets`, which asks the database nothing, cost 37 ms on the same
@@ -67,13 +65,20 @@
   // per gateway miss instead of one per statement. The gateway stays where
   // the reader is, and its cache with it (D4's concern, kept).
   //
-  // `hint` names the region so placement does not wait on traffic analysis;
-  // Cloudflare falls back to default placement when it cannot honour it, so
-  // the worst case is today's behaviour. Inherited by every `env` below.
+  // `region` names the database's cloud region, so placement does not wait
+  // on traffic analysis: Cloudflare runs the worker in the data center with
+  // the lowest latency to it. Inherited by every `env` below.
+  //
+  // It was `{ "mode": "smart", "hint": "apac" }` on the monorepo's account.
+  // The openproduct account refuses that `hint` form ("placement hint not
+  // allowed", code 10023, OPN-8's first deploy); `region` is the documented
+  // Placement Hints form (developers.cloudflare.com/workers/configuration/
+  // placement), and the Supabase projects are in AWS ap-southeast-1
+  // (infra/supabase, supabaseRegion).
   //
   // Verified by the same instrument that found it — `dbspan` on the gateway's
   // `Server-Timing` before and after the deploy — and recorded in the epic.
-  "placement": { "mode": "smart", "hint": "apac" },
+  "placement": { "region": "aws:ap-southeast-1" },
   "main": "src/index.ts",
   "minify": false,
   "vars": {
