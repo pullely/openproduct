@@ -35,16 +35,15 @@ spec:
   # render the deploy config without it ("WIRING_CLOUDFLARE_D1_PROBE_STAGE is
   # empty"), and `dependsOn` orders the deploy after the apply that publishes it.
   #
-  # The workers.dev subdomain is best-effort for the same reason. The broker
-  # reads it from the Cloudflare account, and on an account that has not yet
-  # registered a workers.dev subdomain it answers `fact_unavailable`. A
-  # required reference turned that into a failed verify lane on the first CI
-  # run. Only the smoke needs it, and probe-run.mjs refuses to start without
-  # it, naming the variable. The deploy itself cannot publish to workers.dev
-  # until the subdomain exists either.
+  # NO workers.dev subdomain reference, on purpose. The `workers-subdomain`
+  # brokered fact answers `fact_unavailable` on an account that has not
+  # registered a subdomain, and orun then fails the whole job at secret
+  # resolution, optional reference or not. The first two OPN-2 CI runs died
+  # that way, on a verify lane that never uses it. The smoke asks Cloudflare
+  # itself, with the CLOUDFLARE_API_TOKEN / CLOUDFLARE_ACCOUNT_ID the deploy
+  # profile already binds, and fails in words when no subdomain exists.
   optionalSecretEnv:
     WIRING_CLOUDFLARE_D1_PROBE_STAGE: "secret://ws_VTNEQKAP/openproduct/stage/WIRING_CLOUDFLARE_D1_PROBE"
-    CLOUDFLARE_WORKERS_SUBDOMAIN: "secret://ws_VTNEQKAP/openproduct/stage/CLOUDFLARE_WORKERS_SUBDOMAIN"
 
   # STAGE ONLY. No dev, no prod: the probe database exists only in stage, and
   # the wrangler template has no other environment. Verify on pull requests,

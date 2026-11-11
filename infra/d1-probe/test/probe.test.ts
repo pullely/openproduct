@@ -9,6 +9,8 @@
 // local D1 produces.
 
 import { spawn } from "node:child_process";
+import { createServer } from "node:http";
+import type { AddressInfo } from "node:net";
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -248,6 +250,37 @@ describe("the smoke script (scripts/probe-run.mjs) against local D1", () => {
     expect(noTarget.code).toBe(2);
     expect(JSON.parse(noTarget.stdout).failures[0]).toMatch(/CLOUDFLARE_WORKERS_SUBDOMAIN/);
     expect(noTarget.stdout).not.toContain(TOKEN);
+  });
+
+  it("asks Cloudflare for the workers.dev subdomain with the deploy credentials, and says plainly when there is none", async () => {
+    // A stand-in for api.cloudflare.com: one account with no subdomain
+    // registered (Cloudflare answers 404 with an error code), so the probe
+    // never reaches for a workers.dev host at all.
+    const seen: { path?: string | undefined; auth?: string | undefined } = {};
+    const api = createServer((req, res) => {
+      seen.path = req.url;
+      seen.auth = req.headers.authorization;
+      res.writeHead(404, { "content-type": "application/json" });
+      res.end(JSON.stringify({ success: false, errors: [{ code: 10007, message: "workers.api.error.subdomain_not_found" }], result: null }));
+    });
+    await new Promise<void>((done) => api.listen(0, "127.0.0.1", () => done()));
+    try {
+      const { port } = api.address() as AddressInfo;
+      const out = await runSmoke({
+        PROBE_TOKEN: TOKEN,
+        CLOUDFLARE_API_TOKEN: "cf-test-token",
+        CLOUDFLARE_ACCOUNT_ID: "acct123",
+        CLOUDFLARE_API_BASE: `http://127.0.0.1:${port}`,
+      });
+      expect(out.code).toBe(2);
+      expect(seen.path).toBe("/accounts/acct123/workers/subdomain");
+      expect(seen.auth).toBe("Bearer cf-test-token");
+      expect(JSON.parse(out.stdout).failures[0]).toMatch(/no workers\.dev subdomain registered.*10007/);
+      expect(out.stdout).not.toContain("cf-test-token");
+      expect(out.stdout).not.toContain(TOKEN);
+    } finally {
+      await new Promise<void>((done) => api.close(() => done()));
+    }
   });
 
   it("on the composition's retry, re-prints a reached verdict instead of loading again", async () => {

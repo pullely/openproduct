@@ -20,9 +20,12 @@
 //
 // ENVIRONMENT
 //   PROBE_TOKEN                   the Worker's bearer (secretEnv). Required. Never printed.
-//   CLOUDFLARE_WORKERS_SUBDOMAIN  the account's workers.dev subdomain (secretEnv) — the target is
-//                                 https://<PROBE_WORKER_NAME>.<subdomain>.workers.dev
-//   PROBE_URL                     a base URL instead (a local miniflare / wrangler dev)
+//   PROBE_URL                     the base URL, when given (a local miniflare / wrangler dev)
+//   CLOUDFLARE_WORKERS_SUBDOMAIN  otherwise, the account's workers.dev subdomain, when set — the
+//                                 target is https://<PROBE_WORKER_NAME>.<subdomain>.workers.dev
+//   CLOUDFLARE_API_TOKEN,         otherwise, the deploy lane's own credentials (bound by the
+//   CLOUDFLARE_ACCOUNT_ID         deploy profile) ask Cloudflare for that subdomain
+//   CLOUDFLARE_API_BASE           default https://api.cloudflare.com/client/v4 (tests point it local)
 //   PROBE_WORKER_NAME             default openproduct-d1-probe-stage
 //   PROBE_SIZE                    full (default: 5,000 listings, 365 days) | suite | smoke
 //   PROBE_RUNS                    timed runs per op, default 50
@@ -133,7 +136,44 @@ class WorkerAnswer extends Error {
 /** No answer from the Worker (network, timeout, an edge error page): worth a retry. */
 class Transport extends Error {}
 
-function config(env) {
+/**
+ * The account's workers.dev subdomain, asked of Cloudflare with the deploy
+ * lane's own credentials (the deploy profile binds CLOUDFLARE_API_TOKEN and
+ * CLOUDFLARE_ACCOUNT_ID for every step of the job, this smoke included).
+ *
+ * This is the fallback that keeps the probe off the `workers-subdomain`
+ * brokered fact: on an account that has not registered a workers.dev
+ * subdomain, the broker answers `fact_unavailable` and orun fails the WHOLE
+ * job at secret resolution, before a single step runs. The first OPN-2 CI run
+ * died exactly that way, on a verify lane that never needs the subdomain.
+ * Asking here means only the smoke needs the subdomain, and it can say what
+ * is wrong in words.
+ */
+async function subdomainFromCloudflare(env) {
+  const apiToken = (env.CLOUDFLARE_API_TOKEN ?? "").trim();
+  const accountId = (env.CLOUDFLARE_ACCOUNT_ID ?? "").trim();
+  if (apiToken.length === 0 || accountId.length === 0) return null;
+  const apiBase = (env.CLOUDFLARE_API_BASE || "https://api.cloudflare.com/client/v4").replace(/\/+$/, "");
+  let res;
+  try {
+    res = await fetch(`${apiBase}/accounts/${encodeURIComponent(accountId)}/workers/subdomain`, {
+      headers: { authorization: `Bearer ${apiToken}` },
+      signal: AbortSignal.timeout(15_000),
+    });
+  } catch (error) {
+    throw new ConfigError(`could not ask Cloudflare for the account's workers.dev subdomain: ${error?.message ?? error}`);
+  }
+  const body = await res.json().catch(() => null);
+  const subdomain = body?.result?.subdomain;
+  if (res.ok && typeof subdomain === "string" && subdomain.length > 0) return subdomain;
+  const codes = (body?.errors ?? []).map((e) => e?.code).filter((c) => c !== undefined).join(", ");
+  throw new ConfigError(
+    `the Cloudflare account has no workers.dev subdomain registered (HTTP ${res.status}${codes ? `, codes ${codes}` : ""}): ` +
+      "register one under Workers & Pages in the dashboard, then bump infra/d1-probe/RUN",
+  );
+}
+
+async function config(env) {
   const token = env.PROBE_TOKEN ?? "";
   if (token.length === 0) throw new ConfigError("PROBE_TOKEN is not set (secret://ws_VTNEQKAP/openproduct/stage/PROBE_TOKEN)");
   const size = env.PROBE_SIZE || "full";
@@ -149,14 +189,18 @@ function config(env) {
     base = env.PROBE_URL.replace(/\/+$/, "");
     target = base;
   } else {
-    const subdomain = (env.CLOUDFLARE_WORKERS_SUBDOMAIN ?? "")
-      .trim()
+    const fromEnv = (env.CLOUDFLARE_WORKERS_SUBDOMAIN ?? "").trim();
+    const raw = fromEnv.length > 0 ? fromEnv : ((await subdomainFromCloudflare(env)) ?? "");
+    const subdomain = raw
       .replace(/^https?:\/\//, "")
       .replace(/\/.*$/, "")
       .replace(/\.workers\.dev$/, "")
       .replace(/^\.+|\.+$/g, "");
     if (!/^[a-z0-9-]+$/i.test(subdomain)) {
-      throw new ConfigError("CLOUDFLARE_WORKERS_SUBDOMAIN is not set to a workers.dev subdomain (secret://ws_VTNEQKAP/openproduct/stage/CLOUDFLARE_WORKERS_SUBDOMAIN), and PROBE_URL is not set");
+      throw new ConfigError(
+        "no probe target: PROBE_URL is not set, CLOUDFLARE_WORKERS_SUBDOMAIN is not set to a workers.dev subdomain, " +
+          "and CLOUDFLARE_API_TOKEN / CLOUDFLARE_ACCOUNT_ID (the deploy lane's own credentials) are not there to ask Cloudflare for it",
+      );
     }
     base = `https://${workerName}.${subdomain}.workers.dev`;
     // The subdomain is an orun secret: the report names the shape, not the value.
@@ -506,7 +550,7 @@ export async function main(env = process.env) {
   const failures = [];
   let cfg;
   try {
-    cfg = config(env);
+    cfg = await config(env);
   } catch (error) {
     if (!(error instanceof ConfigError)) throw error;
     // A missing secret will be missing on every retry: a verdict.
