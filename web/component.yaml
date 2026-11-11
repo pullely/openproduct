@@ -22,12 +22,16 @@ spec:
       url: https://openproduct.live
       icon: web
     - title: Stage
-      url: https://openproduct-web-stage.oruncloud.workers.dev
+      url: https://openproduct-web-stage.openproduct.workers.dev
       icon: web
   path: web
   dependsOn:
     - component: openproduct-contracts
       input: true
+    # Ordering only (OPN2): the site reads through the gateway's workers.dev
+    # host, so on a merge that deploys both, the gateway goes first and the
+    # site's smoke never meets an estate without its API.
+    - component: openproduct-gateway
     # THE HOSTNAME MUST EXIST BEFORE THIS BUILD BAKES IT IN.
     #
     # This edge is the other half of the 2026-09-09 fix. `openproduct-api-domain`
@@ -48,12 +52,17 @@ spec:
     # (see buildEnv below), so there is nothing to order and orun would drop
     # the edge with a warning. The edge comes back with the variable, and the
     # ordering test fails if the variable comes back without it.
-  # VERIFY-ONLY IN EVERY ENVIRONMENT UNTIL OPN2 (openproduct-standalone
-  # design §2). No trigger reaches a deploy profile: a merge to main verifies
-  # stage and prod, it does not converge them. The monorepo's `skip` rules
-  # (main does not re-verify what its PR verified, CIS17; a PR does not plan
-  # stage or prod) went with the profile, which stack-tectonic 0.21.0 does not
-  # define. OPN2 brings the deploy rules back.
+  # DEPLOYS ON (OPN2). Pull requests verify stage and prod; the merge to main,
+  # and a dispatch from Orunbase, deploys them. stack-tectonic defines no
+  # `skip` profile (IMPLEMENTATION-STATUS, departure 2).
+  #
+  # The build values ride on each subscription's `env`, which orun merges into
+  # the job's environment, so the build step sees them (departure 3: the
+  # composition has no `buildEnv`). Only the console origin is set before the
+  # prod switch. NEXT_PUBLIC_SITE_ORIGIN and NEXT_PUBLIC_OPENPRODUCT_API_URL
+  # name openproduct.live and api.openproduct.live, which still serve the
+  # monorepo's deployment until OPN3; baked now, this site would advertise and
+  # read the old one. See the comment under `installCommand`.
   subscribe:
     environments:
       - name: dev
@@ -67,8 +76,26 @@ spec:
         profile: verify
       - name: stage
         profile: verify
+        env:
+          NEXT_PUBLIC_CONSOLE_ORIGIN: https://stage.orunbase.com
+        profileRules:
+          - profile: deploy
+            when:
+              triggerRef: github-push-main
+          - profile: deploy # manual runs from Orunbase
+            when:
+              triggerRef: github-dispatch
       - name: prod
         profile: verify
+        env:
+          NEXT_PUBLIC_CONSOLE_ORIGIN: https://app.orunbase.com
+        profileRules:
+          - profile: deploy
+            when:
+              triggerRef: github-push-main
+          - profile: deploy # manual runs from Orunbase
+            when:
+              triggerRef: github-dispatch
   parameters:
     nodeVersion: "22"
     pnpmVersion: "10.12.1"
@@ -88,9 +115,9 @@ spec:
     workerName: openproduct-web
     environmentAwareWorkerName: true
 
-    # The old account's workers.dev subdomain; only the deploy's smoke reads it.
-    # TODO(OPN2): the openproduct Cloudflare account's subdomain (design §4).
-    workersDevSubdomain: oruncloud
+    # The openproduct Cloudflare account's workers.dev subdomain (design §4);
+    # the deploy's smoke reads it. Hosts: openproduct-web-<env>.openproduct.workers.dev.
+    workersDevSubdomain: openproduct
 
     environmentBuildVar: NEXT_PUBLIC_DEPLOY_ENV
 
@@ -163,16 +190,16 @@ spec:
     # a stage zone exists. That is recorded in the epic rather than papered
     # over with a hostname on the prod zone answering for stage traffic.
     #
-    # ─── AND IN THIS REPOSITORY, NOT DECLARED AT ALL (OPN1) ─────────────
+    # ─── IN THIS REPOSITORY: SUBSCRIPTION `env`, ONE AT A TIME (OPN2) ───
     #
     # The monorepo set these through the composition's `buildEnv` parameter.
-    # stack-tectonic 0.21.0's cloudflare-workers-assets-turbo has no
-    # `buildEnv` (its parameters are closed, so orun refuses the component),
-    # and in this milestone the website only verifies: every one of the three
-    # reads in `src/lib/platform.ts` degrades on its own when unset (the
-    # gateway's workers.dev host, a relative console link, no canonical). The
-    # values the deploys used are kept here so OPN2 restores exactly them,
-    # by whatever the pinned stack then offers:
+    # stack-tectonic's cloudflare-workers-assets-turbo has no `buildEnv` (its
+    # parameters are closed), so they ride on each subscription's `env` above.
+    # Every one of the three reads in `src/lib/platform.ts` degrades on its
+    # own when unset (the gateway's workers.dev host on the openproduct
+    # account, a relative console link, no canonical). OPN2 sets the console
+    # origin; the other two come back at the prod switch (OPN3), when
+    # openproduct.live serves this repository's deploy. The monorepo's values:
     #
     #   dev:   NEXT_PUBLIC_CONSOLE_ORIGIN       https://orun-web-console-next-dev.oruncloud.workers.dev
     #   stage: NEXT_PUBLIC_CONSOLE_ORIGIN       https://stage.orunbase.com

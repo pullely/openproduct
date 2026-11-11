@@ -18,9 +18,8 @@ uploads to it and serves them from it.
 | Resource | What |
 |---|---|
 | `cloudflare_r2_bucket.media` | `openproduct-media-<env>`, location hint `ENAM` by default (`r2_location_hint`, fixed at creation) |
-| `aws_secretsmanager_secret.wiring` + version | Wiring manifest at `sourceplane/openproduct/openproduct-media/<env>` holding `openproduct_media_bucket_name`. The secret container has `prevent_destroy` |
 
-Outputs: `openproduct_media_bucket_name`, `wiring_secret_arn`.
+Outputs: `openproduct_media_bucket_name`. Nothing is published: the gateway binds the bucket by its committed name.
 
 ### Object layout
 
@@ -54,7 +53,9 @@ deletes an object.
 ## Deploy
 
 `terraform` composition, stack `openproduct-media`, Terraform 1.15.3, providers
-`cloudflare ~> 4.52` and `aws ~> 5.0`. State is in the orun-managed S3 backend.
+`cloudflare ~> 4.52`. State is on the platform (http backend). The token is
+`CLOUDFLARE_R2_TOKEN`, brokered from the `openproduct` Cloudflare connection
+(`r2-data`), on stage and prod.
 
 ## Related
 

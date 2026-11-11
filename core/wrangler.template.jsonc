@@ -1,6 +1,6 @@
 // Rendered to wrangler.jsonc by tooling/wire/render.mjs (BF6 deploy-time wiring).
 // Resource IDs are NEVER committed: @@wiring(<component>/<env>:<key>)@@ tokens are
-// resolved from AWS Secrets Manager at deploy time (wire-live) or from the
+// resolved from WIRING_<COMPONENT>_<ENV> workspace secrets at deploy time (wire-live) or from the
 // committed wiring.fixture.json for offline dry-runs (wire-fixture).
 //
 // ────────────────────────────────────────────────────────────────────────────
@@ -99,7 +99,7 @@
       "hyperdrive": [
         {
           "binding": "PLATFORM_DB",
-          "id": "@@wiring(cloudflare-hyperdrive/stage:hyperdrive_id)@@"
+          "id": "@@wiring(openproduct-hyperdrive/stage:hyperdrive_id)@@"
         }
       ]
     },
@@ -114,7 +114,7 @@
       "hyperdrive": [
         {
           "binding": "PLATFORM_DB",
-          "id": "@@wiring(cloudflare-hyperdrive/prod:hyperdrive_id)@@"
+          "id": "@@wiring(openproduct-hyperdrive/prod:hyperdrive_id)@@"
         }
       ]
     }

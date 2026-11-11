@@ -121,7 +121,7 @@
       "vars": {
         "ENVIRONMENT": "dev",
         "PLATFORM_API_URL": "https://api-edge-dev.oruncloud.workers.dev",
-        "SITE_ORIGIN": "https://openproduct-web-dev.oruncloud.workers.dev",
+        "SITE_ORIGIN": "https://openproduct-web-dev.openproduct.workers.dev",
         // MD1 — "true" only where Cloudflare Image Resizing is enabled on
         // the zone. A zone feature this file cannot see, so it is stated
         // rather than assumed; "false" serves the original at every width.
@@ -197,7 +197,7 @@
       "vars": {
         "ENVIRONMENT": "stage",
         "PLATFORM_API_URL": "https://api-edge-stage.oruncloud.workers.dev",
-        "SITE_ORIGIN": "https://openproduct-web-stage.oruncloud.workers.dev",
+        "SITE_ORIGIN": "https://openproduct-web-stage.openproduct.workers.dev",
         // MD1 — "true" only where Cloudflare Image Resizing is enabled on
         // the zone. A zone feature this file cannot see, so it is stated
         // rather than assumed; "false" serves the original at every width.
@@ -285,7 +285,10 @@
       "vars": {
         "ENVIRONMENT": "prod",
         "PLATFORM_API_URL": "https://api-edge-prod.oruncloud.workers.dev",
-        "SITE_ORIGIN": "https://openproduct.live",
+        // The new prod site's workers.dev host until the switch (OPN3), when
+        // openproduct.live serves this repository's deploy and this returns
+        // to "https://openproduct.live". It is the only CORS origin (cors.ts).
+        "SITE_ORIGIN": "https://openproduct-web-prod.openproduct.workers.dev",
         // MD1 — "true" only where Cloudflare Image Resizing is enabled on
         // the zone. A zone feature this file cannot see, so it is stated
         // rather than assumed; "false" serves the original at every width.

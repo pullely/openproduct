@@ -17,7 +17,7 @@ spec:
       url: https://api.openproduct.live
       icon: web
     - title: Stage
-      url: https://openproduct-gateway-stage.oruncloud.workers.dev
+      url: https://openproduct-gateway-stage.openproduct.workers.dev
       icon: web
     - title: API docs
       url: https://openproduct.live/docs/api
@@ -27,24 +27,38 @@ spec:
     # Runtime edge: the one service binding, inside the product boundary.
     # The platform is reached only over public HTTPS (seam edges S2/S8) —
     # deliberately NOT a dependsOn, because it is deliberately not a binding.
+    # Enforced since OPN2 (it was advisory while nothing deployed): on an
+    # estate built from nothing, the CORE binding's target must exist before
+    # this Worker deploys, so on a merge that deploys both, core goes first.
     - component: openproduct-worker
-      mode: advisory
     # MD1 — the media bucket, bound by name as `MEDIA` in stage and prod. THE
     # EDGE IS REAL for the reason `openproduct-api-domain` gave for its own:
     # a deploy that binds a bucket which does not exist yet is a deploy that
-    # fails. It is NOT declared in OPN1: `openproduct-media` (infra/media) is
-    # not discovered until OPN2, nothing deploys before then, and orun drops an
-    # edge to an undiscovered component with a warning. OPN2 discovers the
-    # bucket and restores `- component: openproduct-media` here, before the
-    # first deploy that binds it.
+    # fails. Restored in OPN2, with infra/media discovered.
+    - component: openproduct-media
     - component: openproduct-contracts
       input: true
-  # VERIFY-ONLY IN EVERY ENVIRONMENT UNTIL OPN2 (openproduct-standalone
-  # design §2). No trigger reaches a deploy profile: a merge to main verifies
-  # stage and prod, it does not converge them. The monorepo's `skip` rules
-  # (main does not re-verify what its PR verified, CIS17; a PR does not plan
-  # stage or prod) went with the profile, which stack-tectonic 0.21.0 does not
-  # define. OPN2 brings the deploy rules back.
+  # Runtime Worker secrets, best-effort: a key not yet stored is skipped, so
+  # the Worker deploys and the paths that need it answer 503 or degrade.
+  # runtimeSecrets (below) names them for the composition's secrets-live step.
+  #   LISTING_SEAM_SECRET          generated per environment (OPN-K)
+  #   OPENPRODUCT_AUTH_SEAM_SECRET generated per environment (OPN-K); password
+  #                                sign-in works once the platform's
+  #                                identity-worker holds the same value (OPN3)
+  #   SCREENSHOT_CAPTURE_URL/TOKEN the capture service, set by the owner
+  # GITHUB_TOKEN (the repository reads, OX-D) is NOT listed yet, on purpose:
+  # secrets-live reads each name from the job's environment, and CI's
+  # `orun run` step exports the workflow's own short-lived GITHUB_TOKEN, so an
+  # unseeded workspace key would push that token into the Worker. Add it to
+  # both lists in the change that stores it.
+  optionalSecretEnv:
+    LISTING_SEAM_SECRET: "secret://ws_VTNEQKAP/openproduct/{{ .environment }}/LISTING_SEAM_SECRET"
+    OPENPRODUCT_AUTH_SEAM_SECRET: "secret://ws_VTNEQKAP/openproduct/{{ .environment }}/OPENPRODUCT_AUTH_SEAM_SECRET"
+    SCREENSHOT_CAPTURE_URL: "secret://ws_VTNEQKAP/openproduct/{{ .environment }}/SCREENSHOT_CAPTURE_URL"
+    SCREENSHOT_CAPTURE_TOKEN: "secret://ws_VTNEQKAP/openproduct/{{ .environment }}/SCREENSHOT_CAPTURE_TOKEN"
+  # DEPLOYS ON (OPN2). Pull requests verify stage and prod; the merge to main,
+  # and a dispatch from Orunbase, deploys them. stack-tectonic defines no
+  # `skip` profile (IMPLEMENTATION-STATUS, departure 2).
   subscribe:
     environments:
       - name: dev
@@ -58,8 +72,22 @@ spec:
         profile: verify
       - name: stage
         profile: verify
+        profileRules:
+          - profile: deploy
+            when:
+              triggerRef: github-push-main
+          - profile: deploy # manual runs from Orunbase
+            when:
+              triggerRef: github-dispatch
       - name: prod
         profile: verify
+        profileRules:
+          - profile: deploy
+            when:
+              triggerRef: github-push-main
+          - profile: deploy # manual runs from Orunbase
+            when:
+              triggerRef: github-dispatch
   parameters:
     nodeVersion: "22"
     pnpmVersion: "10.12.1"
@@ -69,10 +97,13 @@ spec:
     owner: pullely
     repo: openproduct
 
-    # The runtime keys (LISTING_SEAM_SECRET, OPENPRODUCT_AUTH_SEAM_SECRET,
-    # GITHUB_TOKEN, SCREENSHOT_CAPTURE_TOKEN, OPENPRODUCT_OPERATORS) arrive in
-    # OPN2 as `runtimeSecrets`, resolved from this component's secretEnv
-    # (design §4). A verify lane never resolves one.
+    # The runtime keys, pushed after deploy from optionalSecretEnv (above).
+    # A verify lane never pushes one.
+    runtimeSecrets: "LISTING_SEAM_SECRET,OPENPRODUCT_AUTH_SEAM_SECRET,SCREENSHOT_CAPTURE_URL,SCREENSHOT_CAPTURE_TOKEN"
+    # infra/media owns the R2 buckets, and the brokered workers-deploy token
+    # has no R2 permission, so wrangler must not read the MEDIA binding's
+    # bucket over the API before the upload (--x-provision=false).
+    skipResourceProvisioning: true
     turboFilter: "@openproduct/gateway"
     # No wrangler template and no wiring: this worker holds no wired resource,
     # so wrangler.jsonc is committed directly (the composition's template steps

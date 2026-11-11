@@ -72,8 +72,10 @@ describe("the watcher is not the watched", () => {
       expect([name, vars.SITE_ORIGIN]).toEqual([name, expect.stringMatching(/^https:\/\//)]);
       expect(vars.ENVIRONMENT).toBe(name);
     }
-    expect(config.env!.prod!.vars!.API_ORIGIN).toBe("https://api.openproduct.live");
-    expect(config.env!.prod!.vars!.SITE_ORIGIN).toBe("https://openproduct.live");
+    // The openproduct account's workers.dev hosts until the prod switch
+    // (OPN3) returns them to api.openproduct.live and openproduct.live.
+    expect(config.env!.prod!.vars!.API_ORIGIN).toBe("https://openproduct-gateway-prod.openproduct.workers.dev");
+    expect(config.env!.prod!.vars!.SITE_ORIGIN).toBe("https://openproduct-web-prod.openproduct.workers.dev");
     expect(config.compatibility_flags).toContain("global_fetch_strictly_public");
   });
 });

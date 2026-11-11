@@ -25,14 +25,25 @@ spec:
   # config nobody read — which is how RS0's missing cron happened (MD-4).
   #
   # It is openproduct's bucket, never a platform binding (OPX-4). The
-  # gateway binds it by NAME (R2 binds by name, not id); this component's
-  # wiring manifest publishes that name so deploy-time resolution has one
-  # source for it.
+  # gateway binds it by NAME (R2 binds by name, not id), committed in its
+  # wrangler.jsonc, so this component publishes nothing (the monorepo's
+  # Secrets Manager wiring manifest had no reader and is gone, design §11).
   parameters:
     orgName: sourceplane
+    owner: pullely
+    repo: openproduct
     stackName: openproduct-media
     terraformDir: terraform
     terraformVersion: "1.15.3"
+
+  # From the project/<env> rung, brokered from the openproduct Cloudflare
+  # connection (int_7fbdaafa…). CLOUDFLARE_R2_TOKEN is the r2-data template
+  # (Workers R2 Storage Write); the workers-deploy token has no R2 permission.
+  # Component-level, because plan-only refreshes against the live API too.
+  secretEnv:
+    CLOUDFLARE_API_TOKEN: "secret://ws_VTNEQKAP/openproduct/{{ .environment }}/CLOUDFLARE_R2_TOKEN"
+    CLOUDFLARE_ACCOUNT_ID: "secret://ws_VTNEQKAP/openproduct/{{ .environment }}/CLOUDFLARE_ACCOUNT_ID"
+    TF_VAR_cloudflare_account_id: "secret://ws_VTNEQKAP/openproduct/{{ .environment }}/CLOUDFLARE_ACCOUNT_ID"
 
   subscribe:
     # STAGE AND PROD ONLY, like `cloudflare-r2`'s orun-state buckets: the
@@ -49,6 +60,9 @@ spec:
           - profile: apply
             when:
               triggerRef: github-push-main
+          - profile: apply # manual runs from Orunbase
+            when:
+              triggerRef: github-dispatch
 
       - name: prod
         dependencyRules: # PRs don't wait on other lanes (intent.yaml, environments)
@@ -60,9 +74,12 @@ spec:
           - profile: apply
             when:
               triggerRef: github-push-main
+          - profile: apply # manual runs from Orunbase
+            when:
+              triggerRef: github-dispatch
 
-# Prerequisite: R2 is enabled on the Cloudflare account (it has been since
-# 2026-06-15 — see `infra/terraform/cloudflare-r2/component.yaml`). Image
+# Prerequisite: R2 is enabled on the openproduct Cloudflare account (OPN2
+# checks it on the first plan). Image
 # Resizing, which MD1's derivatives use, is a ZONE feature this component does
 # not touch: it is enabled in the dashboard for the zone that serves the
 # gateway, and the gateway's `MEDIA_RESIZING` var is flipped to "true" there

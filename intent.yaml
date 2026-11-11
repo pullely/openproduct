@@ -32,11 +32,10 @@ compositions:
       cloudflare-domain: stack-tectonic
       db-migrate: stack-tectonic
 
-# The roots that hold the components. Every product component subscribes
-# verify-only in every environment until OPN2 switches deploys on. The
-# exception is openproduct's own data plane: infra/supabase, infra/hyperdrive
-# and infra/db-migrate plan on pull requests and apply stage, then prod, on
-# the merge to main.
+# The roots that hold the components. Pull requests verify and plan; the
+# merge to main applies the data plane (infra/supabase, infra/hyperdrive,
+# infra/db-migrate, infra/media) and deploys the four Workers and the website
+# to stage, then prod (OPN2).
 discovery:
   roots:
     - core/
@@ -48,10 +47,11 @@ discovery:
     - infra/supabase/
     - infra/hyperdrive/
     - infra/db-migrate/
-    # NOT DISCOVERED YET, ON PURPOSE: infra/media, infra/api-domain and
-    # infra/domain. They are terraform components that need the Cloudflare
-    # credentials even to plan, so they join when their environments do:
-    # media at OPN2, the two domain components at the prod switch (OPN3).
+    - infra/media/
+    # NOT DISCOVERED YET, ON PURPOSE: infra/api-domain and infra/domain.
+    # They are terraform components that need the Cloudflare credentials even
+    # to plan, and they attach openproduct.live, which still serves the
+    # monorepo's deploy, so they join at the prod switch (OPN3).
     # Their files stay in the tree because tests/web/src/deploy-ordering.test.ts
     # reads their component.yaml and terraform to hold the deploy order.
 

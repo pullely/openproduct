@@ -14,7 +14,7 @@ the [openproduct Gateway](../gateway/README.md) over HTTPS.
 | **System** | openproduct (sourceplane/orun-cloud `docs/systems/openproduct.md`) |
 | **Owner** | platform |
 | **Environments** | dev (verify on pull requests) · stage · prod (deploy on push to `main`) |
-| **URL** | prod: <https://openproduct.live> (Custom Domain owned by [`openproduct-domain`](../infra/domain/README.md)) · stage: <https://openproduct-web-stage.oruncloud.workers.dev> |
+| **URL** | prod: <https://openproduct.live> (Custom Domain owned by [`openproduct-domain`](../infra/domain/README.md)) · stage: <https://openproduct-web-stage.openproduct.workers.dev> |
 
 ## What it does
 
@@ -68,7 +68,7 @@ Route handlers (`route.ts`) include `/auth/{start,callback,password,session,sign
 
 - **openproduct Gateway** at `NEXT_PUBLIC_OPENPRODUCT_API_URL`. That is
   `https://api.openproduct.live` in prod. Elsewhere `openproductApiBase()` falls
-  back to `https://openproduct-gateway-{env}.oruncloud.workers.dev`.
+  back to `https://openproduct-gateway-{env}.openproduct.workers.dev`.
 - **Orunbase platform** (api-edge) for OAuth endpoint discovery, defaulting to
   `https://api-edge-{env}.oruncloud.workers.dev`, and the **Orunbase console**
   for hand-offs.
@@ -117,7 +117,7 @@ not relocatable between runs.
   `.open-next` output, dry-run deploy).
 - **Push to `main`:** stage and prod run `deploy`, which needs approval. The
   composition deploys `.open-next/worker.js` plus `.open-next/assets` under the
-  per-environment name `openproduct-web-{env}` on the `oruncloud` workers.dev
+  per-environment name `openproduct-web-{env}` on the `openproduct` workers.dev
   subdomain.
 - The `buildCommand` runs [`@openproduct/web-tests`](../tests/web/README.md)
   before `next build`.
