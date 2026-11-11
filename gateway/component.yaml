@@ -34,7 +34,9 @@ spec:
     # MD1 — the media bucket, bound by name as `MEDIA` in stage and prod. THE
     # EDGE IS REAL for the reason `openproduct-api-domain` gave for its own:
     # a deploy that binds a bucket which does not exist yet is a deploy that
-    # fails. Restored in OPN2, with infra/media discovered.
+    # fails. Restored in OPN2, with infra/media discovered. It held this
+    # Worker back on OPN-8's first deploy, while R2 was not yet enabled on the
+    # account, which is the failure it exists to contain.
     - component: openproduct-media
     - component: openproduct-contracts
       input: true

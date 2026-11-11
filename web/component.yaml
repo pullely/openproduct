@@ -30,7 +30,9 @@ spec:
       input: true
     # Ordering only (OPN2): the site reads through the gateway's workers.dev
     # host, so on a merge that deploys both, the gateway goes first and the
-    # site's smoke never meets an estate without its API.
+    # site's smoke never meets an estate without its API. A plain edge orders
+    # but never schedules: a merge that changes only the gateway does not
+    # redeploy this site.
     - component: openproduct-gateway
     # THE HOSTNAME MUST EXIST BEFORE THIS BUILD BAKES IT IN.
     #
