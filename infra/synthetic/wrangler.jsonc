@@ -41,8 +41,8 @@
     "dev": {
       "vars": {
         "ENVIRONMENT": "dev",
-        "API_ORIGIN": "https://openproduct-gateway-dev.oruncloud.workers.dev",
-        "SITE_ORIGIN": "https://openproduct-web-dev.oruncloud.workers.dev"
+        "API_ORIGIN": "https://openproduct-gateway-dev.openproduct.workers.dev",
+        "SITE_ORIGIN": "https://openproduct-web-dev.openproduct.workers.dev"
       },
       // OO1 — every five minutes, the contract's expression (SYNTHETIC_CRON).
       "triggers": { "crons": ["*/5 * * * *"] },
@@ -56,8 +56,8 @@
       "workers_dev": true,
       "vars": {
         "ENVIRONMENT": "stage",
-        "API_ORIGIN": "https://openproduct-gateway-stage.oruncloud.workers.dev",
-        "SITE_ORIGIN": "https://openproduct-web-stage.oruncloud.workers.dev"
+        "API_ORIGIN": "https://openproduct-gateway-stage.openproduct.workers.dev",
+        "SITE_ORIGIN": "https://openproduct-web-stage.openproduct.workers.dev"
       },
       // OO1 — every five minutes, the contract's expression (SYNTHETIC_CRON).
       "triggers": { "crons": ["*/5 * * * *"] },
@@ -71,10 +71,12 @@
       "workers_dev": true,
       "vars": {
         "ENVIRONMENT": "prod",
-        // The canonical hostnames: the Route `openproduct-api-domain` owns,
-        // and the apex. The synthetic reads what a visitor reads.
-        "API_ORIGIN": "https://api.openproduct.live",
-        "SITE_ORIGIN": "https://openproduct.live"
+        // The new prod hosts on the openproduct account until the switch
+        // (OPN3). Then the canonical hostnames come back: the Route
+        // `openproduct-api-domain` owns, and the apex. Until then those still
+        // serve the monorepo's deploy, and this would watch the wrong product.
+        "API_ORIGIN": "https://openproduct-gateway-prod.openproduct.workers.dev",
+        "SITE_ORIGIN": "https://openproduct-web-prod.openproduct.workers.dev"
       },
       // OO1 — every five minutes, the contract's expression (SYNTHETIC_CRON).
       "triggers": { "crons": ["*/5 * * * *"] },

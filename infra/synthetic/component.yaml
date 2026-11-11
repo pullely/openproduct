@@ -18,12 +18,10 @@ spec:
   # way a visitor does, and holds no binding to either — a synthetic that
   # shared a binding with the thing it watches would share the failure. The
   # only resource it owns is its own Durable Object.
-  # VERIFY-ONLY IN EVERY ENVIRONMENT UNTIL OPN2 (openproduct-standalone
-  # design §2). No trigger reaches a deploy profile: a merge to main verifies
-  # stage and prod, it does not converge them. The monorepo's `skip` rules
-  # (main does not re-verify what its PR verified, CIS17; a PR does not plan
-  # stage or prod) went with the profile, which stack-tectonic 0.21.0 does not
-  # define. OPN2 brings the deploy rules back.
+  # DEPLOYS ON (OPN2). Pull requests verify stage and prod; the merge to main,
+  # and a dispatch from Orunbase, deploys them. stack-tectonic defines no
+  # `skip` profile (IMPLEMENTATION-STATUS, departure 2). It holds no runtime
+  # secret yet: its alert channel (ALERT_*) is optional and unset.
   subscribe:
     environments:
       - name: dev
@@ -37,8 +35,22 @@ spec:
         profile: verify
       - name: stage
         profile: verify
+        profileRules:
+          - profile: deploy
+            when:
+              triggerRef: github-push-main
+          - profile: deploy # manual runs from Orunbase
+            when:
+              triggerRef: github-dispatch
       - name: prod
         profile: verify
+        profileRules:
+          - profile: deploy
+            when:
+              triggerRef: github-push-main
+          - profile: deploy # manual runs from Orunbase
+            when:
+              triggerRef: github-dispatch
   parameters:
     nodeVersion: "22"
     pnpmVersion: "10.12.1"

@@ -1,0 +1,42 @@
+# The last task of milestone OPN2: openproduct deploys on its own URLs. The
+# Workers and the website switch deploy profiles on for stage and prod on the
+# merge to main. core binds the Hyperdrive config this repository now owns,
+# the media bucket comes up on the platform's state, and every host the
+# product calls itself by moves to the openproduct account's workers.dev
+# subdomain. Fresh seam keys are seeded here and are not yet known to the
+# platform, so the platform-side switch stays in OPN3. The file is the
+# contract; the task lives in Orunbase.
+apiVersion: orun.io/v1
+kind: TaskContract
+metadata:
+  name: OPN-8
+  title: "OPN2: openproduct goes live on its own URLs"
+spec:
+  goal: A merge to main deploys core, the gateway, the website and the synthetic monitor to stage and prod on the openproduct workers.dev hosts, over this repository's Hyperdrive and R2, with health green and the catalogue browsable.
+  affects:
+    - core/**
+    - gateway/**
+    - web/**
+    - infra/synthetic/**
+    - infra/media/**
+    - tests/**
+    - intent.yaml
+    - specs/epics/openproduct-standalone/**
+    - tasks/OPN-8.TaskContract.yaml
+    - default/openproduct/openproduct-worker
+    - default/openproduct/openproduct-gateway
+    - default/openproduct/openproduct-web
+    - default/openproduct/openproduct-synthetic
+    - default/openproduct/openproduct-media
+    - default/openproduct/openproduct-worker-tests
+    - default/openproduct/openproduct-gateway-tests
+    - default/openproduct/openproduct-web-tests
+    - default/openproduct/openproduct-web-perf
+  doneWhen:
+    - core, gateway, web and synthetic deploy stage and prod on a merge to main and stay verify-only on pull requests
+    - core renders PLATFORM_DB from WIRING_OPENPRODUCT_HYPERDRIVE_<ENV>
+    - infra/media keeps its state on the platform, with no AWS, and is discovered
+    - every self-reference names the openproduct workers.dev hosts, never oruncloud's or openproduct.live
+    - stage and prod answer on the new hosts with /health green
+    - IMPLEMENTATION-STATUS.md records it, with what is left for OPN3
+  gates: []

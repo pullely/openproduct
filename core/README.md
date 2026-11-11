@@ -75,13 +75,12 @@ schedule.
 ## Dependencies
 
 - **Database:** a Hyperdrive binding, `PLATFORM_DB`, wired at deploy time from
-  the `cloudflare-hyperdrive` wiring manifest. Today it points at the platform's
-  Postgres, where openproduct has its own `openproduct` schema. The worker never
-  reads any other schema. openproduct's own database
-  ([`openproduct-supabase`](../infra/supabase/README.md) +
-  [`openproduct-hyperdrive`](../infra/hyperdrive/README.md)) is provisioned and
-  migrated. Moving this binding to it is step 4 of the deferred
-  cutover runbook (sourceplane/orun-cloud `specs/epics/openproduct-independence/CUTOVER-RUNBOOK.md`).
+  `WIRING_OPENPRODUCT_HYPERDRIVE_<ENV>`, which
+  [`openproduct-hyperdrive`](../infra/hyperdrive/README.md) publishes. It is
+  openproduct's own Supabase project per environment
+  ([`openproduct-supabase`](../infra/supabase/README.md)), migrated by
+  [`openproduct-db-migrate`](../infra/db-migrate/README.md); the worker reads
+  only its `openproduct` schema. On a merge, core deploys after both.
 - **Build inputs:** [`openproduct-db`](../packages/db/README.md) (`input: true`)
   and, through it, [`openproduct-contracts`](../packages/contracts/README.md).
   Nothing under `apps/openproduct` imports a `@saas/*` package.
@@ -93,9 +92,9 @@ From `wrangler.template.jsonc` and `src/env.ts`:
 
 | Name | Kind | Notes |
 |---|---|---|
-| `PLATFORM_DB` | Hyperdrive binding | stage and prod only; the ID is resolved at deploy time from `@@wiring(cloudflare-hyperdrive/<env>:hyperdrive_id)@@` |
+| `PLATFORM_DB` | Hyperdrive binding | stage and prod only; the ID is resolved at deploy time from `@@wiring(openproduct-hyperdrive/<env>:hyperdrive_id)@@` |
 | `ENVIRONMENT` | var | `dev` / `stage` / `prod` (`local` by default) |
-| `LISTING_SEAM_SECRET` | secret | Shared seam HMAC key; delivered by the deploy's `secrets-live` step from the `integrations/listing-seam/<env>` escrow doc |
+| `LISTING_SEAM_SECRET` | secret | Shared seam HMAC key; the workspace secret of that name, pushed by the deploy's `secrets-live` step |
 | `OPENPRODUCT_OPERATORS` | var/secret, not templated | Comma-separated operator subject IDs; unset means nobody can review |
 | `OPENPRODUCT_LAUNCH_POLICY` | var, optional | Launch policy JSON, for example the cooldown in days |
 | `OPENPRODUCT_FRESHNESS_THRESHOLD` | var, optional | How many listings make a window worth naming |

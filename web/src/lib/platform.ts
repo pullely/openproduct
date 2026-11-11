@@ -14,7 +14,12 @@
 //   - this site's own canonical origin, for `<link rel="canonical">` and the
 //     sitemap.
 
-const WORKERS_DEV_SUBDOMAIN = "oruncloud";
+// Two workers.dev subdomains, because two Cloudflare accounts. The platform
+// (api-edge) is on the platform's account; openproduct's own Workers deploy to
+// the openproduct account (openproduct-standalone OPN-F), so its gateway
+// fallback names that account's subdomain.
+const PLATFORM_SUBDOMAIN = "oruncloud";
+const PRODUCT_SUBDOMAIN = "openproduct";
 
 export const DEPLOY_ENV: string | undefined =
   typeof process !== "undefined" ? process.env.NEXT_PUBLIC_DEPLOY_ENV || undefined : undefined;
@@ -24,7 +29,7 @@ export function platformApiBase(): string {
   const explicit = (process.env.NEXT_PUBLIC_PLATFORM_API_URL ?? "").trim();
   if (explicit.length > 0) return explicit;
   const env = DEPLOY_ENV ?? "stage";
-  return `https://api-edge-${env}.${WORKERS_DEV_SUBDOMAIN}.workers.dev`;
+  return `https://api-edge-${env}.${PLATFORM_SUBDOMAIN}.workers.dev`;
 }
 
 /**
@@ -58,7 +63,7 @@ export function openproductApiBase(): string {
   const explicit = (process.env.NEXT_PUBLIC_OPENPRODUCT_API_URL ?? "").trim();
   if (explicit.length > 0) return explicit;
   const env = DEPLOY_ENV ?? "stage";
-  return `https://openproduct-gateway-${env}.${WORKERS_DEV_SUBDOMAIN}.workers.dev`;
+  return `https://openproduct-gateway-${env}.${PRODUCT_SUBDOMAIN}.workers.dev`;
 }
 
 /**

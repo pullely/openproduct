@@ -27,7 +27,7 @@ the code departed from `design.md`.
 | Cloudflare connection | `openproduct` (`int_7fbdaafa…`), inherited from the account |
 | Epic in Orunbase | `openproduct-standalone`, EP-1 (`epc_0TXVHJ8Z`) |
 | Milestones | OPN0 `mls_VEMWNC1J` · OPN1 `mls_GPBDDEE7` · OPN2 `mls_GQ855EQV` · OPN3 `mls_QJP277KN` · OPN4 `mls_GFTKS4Q0` |
-| Tasks | OPN-1 `tsk_N14BB1XD` (OPN0, done: merged as `1fc8305`, PR #1) · OPN-2 `tsk_85D0P8WW` (OPN1, done: PR #2) · OPN-4 `tsk_DEKB9MPX` (OPN1, done: PR #3) · OPN-3 `tsk_DQTEWGM3` (OPN1, done: PR #4) · OPN-5 `tsk_KSEVSQNN` (OPN2, done: merged as `b8d55d3`, PR #5) · OPN-6 `tsk_8417K5E5` (OPN2, done: merged as `2b7b101`, PR #6) · OPN-7 `tsk_WFT2NPB0` (OPN2: Hyperdrive and the migration ladder) |
+| Tasks | OPN-1 `tsk_N14BB1XD` (OPN0, done: merged as `1fc8305`, PR #1) · OPN-2 `tsk_85D0P8WW` (OPN1, done: PR #2) · OPN-4 `tsk_DEKB9MPX` (OPN1, done: PR #3) · OPN-3 `tsk_DQTEWGM3` (OPN1, done: PR #4) · OPN-5 `tsk_KSEVSQNN` (OPN2, done: merged as `b8d55d3`, PR #5) · OPN-6 `tsk_8417K5E5` (OPN2, done: merged as `2b7b101`, PR #6) · OPN-7 `tsk_WFT2NPB0` (OPN2, done: merged as `0aeb50a`, PR #7) · OPN-8 `tsk_GXBYVA6W` (OPN2: openproduct goes live on its own URLs) |
 | Project environments | `dev`, `stage`, `prod`, created through `POST …/projects/{prj}/environments` on 2026-11-09. A baseline bootstrap creates them; this repository never had one, and secret authoring refused until they existed |
 | Stage secrets | `CLOUDFLARE_API_TOKEN` (`workers-deploy`), `CLOUDFLARE_ACCOUNT_ID` (`account-id`), `CLOUDFLARE_D1_TOKEN` (`d1-edit`), `CLOUDFLARE_WORKERS_SUBDOMAIN` (`workers-subdomain`): all brokered from connection `int_7fbdaafa…`. `PROBE_TOKEN`: static, random, set from stdin. None has a prod counterpart yet |
 | Supabase connection | **`openproduct`** (`int_cc19cfd5…`), created by the owner on 2026-11-11 for this product and inherited from the account (OPN-T). The account's older `arca-orun` (`int_d9116c21…`) is not used, so every brokered Supabase secret names `openproduct` explicitly |
@@ -285,6 +285,34 @@ instead of failing on keys that do not exist yet.
 - **The pin** moves to stack-tectonic 0.22.0, whose only change is db-migrate's `buildFilter` (OPN-U).
 - **Plans:** a pull request plans `openproduct-hyperdrive` as `terraform.plan-only` and `openproduct-db-migrate` as `db-migrate.plan` (offline), stage then prod. The merge applies both. Hyperdrive and the ladder do not depend on each other.
 - **Local checks:** `@openproduct/db` typecheck and lint pass; 24 files and 574 tests pass, 1 skipped. The build reports `Packages in scope: @openproduct/db`. The built CLI's `plan` lists the ladder offline, and `apply` without `SUPABASE_PROJECT_REF` fails naming it. `terraform validate` passes, and so does `orun validate`.
+- **Applied (main run 43036235549, 2026-11-11):** Hyperdrive `stg-openproduct-stage` (`78460d8c…`) and `prod-openproduct-prod` (`d2cc9163…`), each publishing `WIRING_OPENPRODUCT_HYPERDRIVE`. The ladder applied in full on both databases: `applied=52 skipped=0`, in 2 min 39 s on stage and 3 min 25 s on prod.
+
+### OPN-8: openproduct goes live on its own URLs
+
+- **Deploys on.** `openproduct-worker`, `openproduct-gateway`, `openproduct-web` and `openproduct-synthetic` verify stage and prod on pull requests and deploy them on the merge to main and on a dispatch from Orunbase. dev stays verify-only. Without a `skip` profile, pull requests still plan the stage and prod verify lanes (departure 2 stands).
+- **core binds this repository's Hyperdrive.** `wiringComponents: "openproduct-hyperdrive"`. The template's tokens are `@@wiring(openproduct-hyperdrive/<env>:hyperdrive_id)@@`, the fixture's keys match, and each stage and prod subscription resolves both environments' `WIRING_OPENPRODUCT_HYPERDRIVE`, because the template carries both sections. `PLATFORM_DB` keeps its name. core now orders after `openproduct-hyperdrive` and `openproduct-db-migrate`.
+- **Runtime secrets** use `optionalSecretEnv` plus `runtimeSecrets`, lumen's pattern. The composition's `secrets-live` pushes the stored ones after deploy and skips the rest by name:
+  - core: `LISTING_SEAM_SECRET`, `OPENPRODUCT_OPERATORS`;
+  - gateway: `LISTING_SEAM_SECRET`, `OPENPRODUCT_AUTH_SEAM_SECRET`, `SCREENSHOT_CAPTURE_URL`, `SCREENSHOT_CAPTURE_TOKEN`. `SCREENSHOT_CAPTURE_URL` was missing from design §4.
+- **`GITHUB_TOKEN` is deliberately left out** of the gateway's lists. `secrets-live` reads each name from the job's environment, and CI's `orun run` step exports the workflow's own short-lived `GITHUB_TOKEN`, so an unseeded key would push that token into the Worker. It joins both lists in the change that stores the owner's token.
+- **The gateway** orders after core (enforced now, so a fresh estate's `CORE` binding has a target) and after `openproduct-media` (restored). `skipResourceProvisioning: true`: wrangler must not read the `MEDIA` bucket with a token that has no R2 permission.
+- **The website** sets `workersDevSubdomain: openproduct`. It gets `NEXT_PUBLIC_CONSOLE_ORIGIN` per environment through each subscription's `env`, which orun merges into the build's environment (departure 3: the composition has no `buildEnv`). It orders after the gateway, whose workers.dev host it reads.
+  - `NEXT_PUBLIC_SITE_ORIGIN` and `NEXT_PUBLIC_OPENPRODUCT_API_URL` stay unset until OPN3, because `openproduct.live` and `api.openproduct.live` still serve the monorepo's deploy.
+  - `src/lib/platform.ts` splits the platform's `oruncloud` subdomain, still right for api-edge, from the product's `openproduct` subdomain. Unchanged, the gateway fallback would have named the old account's gateway.
+- **`infra/media`** is discovered:
+  - its state is on the platform;
+  - the AWS provider and the Secrets Manager wiring manifest, which had no reader, are gone;
+  - `CLOUDFLARE_R2_TOKEN` is brokered (`r2-data`);
+  - the bucket `openproduct-media-<env>` is unchanged, with `ENAM` as the monorepo had it.
+- **Hosts.** Every self-reference names `openproduct-{web,gateway}-<env>.openproduct.workers.dev`:
+  - the gateway's `SITE_ORIGIN`, its only CORS origin, in dev, stage and prod;
+  - the synthetic monitor's `API_ORIGIN` and `SITE_ORIGIN`, in all three. Its prod values return to the canonical names at OPN3, and `config.test.ts` pins the interim ones.
+- **Secrets this needs before its merge:**
+  - `CLOUDFLARE_API_TOKEN` on prod (`workers-deploy`);
+  - `CLOUDFLARE_R2_TOKEN` on stage and prod (`r2-data`);
+  - fresh `LISTING_SEAM_SECRET` and `OPENPRODUCT_AUTH_SEAM_SECRET` per environment (OPN-K).
+- **Left for the owner:** `OPENPRODUCT_OPERATORS`, `GITHUB_TOKEN` and the screenshot-capture pair. Each is optional per request.
+- **Departure from OPN2's "done when": password sign-up.** The gateway's password sign-in asks the platform's identity-worker for the account, over the auth seam, and the platform holds one `OPENPRODUCT_AUTH_SEAM_SECRET`: the monorepo deploy's. Until the platform holds this repository's key, the new site's password sign-in is refused. Giving the platform the new key cuts the old deploy off, which is the switch, so it moves to OPN3 with the listing seam. Browsing, `/health` and the sweeps do not need it.
 
 ## Departures from the design
 

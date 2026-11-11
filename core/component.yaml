@@ -28,6 +28,12 @@ spec:
     # see src/authorize.ts.)
     - component: openproduct-db
       input: true
+    # Data-plane edges (OPN2): on a merge that holds them, core deploys after
+    # its Hyperdrive config exists and after the ladder is applied, so a fresh
+    # estate never serves a binding that points nowhere or a schema that is
+    # not there yet. Ordering only.
+    - component: openproduct-hyperdrive
+    - component: openproduct-db-migrate
     # Runtime edges: NONE, since OX5. The membership-worker edge left with the
     # binding it declared — the link grant and the S6/S7 seam webhooks carry
     # what the binding carried, over HTTP (19-openproduct-seam.md). CI asserts
@@ -35,12 +41,22 @@ spec:
     # (apps/openproduct/tests/core): the platform planes are not guarded from
     # this isolate, they are unreachable from it. See design.md §3 before
     # adding anything here.
-  # VERIFY-ONLY IN EVERY ENVIRONMENT UNTIL OPN2 (openproduct-standalone
-  # design §2). No trigger reaches a deploy profile: a merge to main verifies
-  # stage and prod, it does not converge them. The monorepo's `skip` rules
-  # (main does not re-verify what its PR verified, CIS17; a PR does not plan
-  # stage or prod) went with the profile, which stack-tectonic 0.21.0 does not
-  # define. OPN2 brings the deploy rules back.
+  # Runtime Worker secrets, best-effort: a key not yet stored is skipped, so
+  # the Worker deploys and answers 503 on the paths that need it.
+  # runtimeSecrets (below) names them for the composition's secrets-live step,
+  # which pushes the stored ones with `wrangler secret bulk` after deploy.
+  #   LISTING_SEAM_SECRET   generated per environment (OPN-K); the platform
+  #                         learns it at that environment's switch (OPN3)
+  #   OPENPRODUCT_OPERATORS the operators' platform subject ids, set by the owner
+  optionalSecretEnv:
+    LISTING_SEAM_SECRET: "secret://ws_VTNEQKAP/openproduct/{{ .environment }}/LISTING_SEAM_SECRET"
+    OPENPRODUCT_OPERATORS: "secret://ws_VTNEQKAP/openproduct/{{ .environment }}/OPENPRODUCT_OPERATORS"
+  # DEPLOYS ON (OPN2). Pull requests verify stage and prod; the merge to main,
+  # and a dispatch from Orunbase, deploys them. stack-tectonic defines no
+  # `skip` profile, so a pull request still plans the stage and prod verify
+  # lanes and main re-verifies dev (IMPLEMENTATION-STATUS, departure 2).
+  # Every stage and prod lane renders BOTH environments' wiring, because the
+  # template carries both sections, so each resolves both documents.
   subscribe:
     environments:
       - name: dev
@@ -54,8 +70,28 @@ spec:
         profile: verify
       - name: stage
         profile: verify
+        secretEnv:
+          WIRING_OPENPRODUCT_HYPERDRIVE_STAGE: "secret://ws_VTNEQKAP/openproduct/stage/WIRING_OPENPRODUCT_HYPERDRIVE"
+          WIRING_OPENPRODUCT_HYPERDRIVE_PROD: "secret://ws_VTNEQKAP/openproduct/prod/WIRING_OPENPRODUCT_HYPERDRIVE"
+        profileRules:
+          - profile: deploy
+            when:
+              triggerRef: github-push-main
+          - profile: deploy # manual runs from Orunbase
+            when:
+              triggerRef: github-dispatch
       - name: prod
         profile: verify
+        secretEnv:
+          WIRING_OPENPRODUCT_HYPERDRIVE_STAGE: "secret://ws_VTNEQKAP/openproduct/stage/WIRING_OPENPRODUCT_HYPERDRIVE"
+          WIRING_OPENPRODUCT_HYPERDRIVE_PROD: "secret://ws_VTNEQKAP/openproduct/prod/WIRING_OPENPRODUCT_HYPERDRIVE"
+        profileRules:
+          - profile: deploy
+            when:
+              triggerRef: github-push-main
+          - profile: deploy # manual runs from Orunbase
+            when:
+              triggerRef: github-dispatch
   parameters:
     nodeVersion: "22"
     pnpmVersion: "10.12.1"
@@ -66,16 +102,15 @@ spec:
     repo: openproduct
 
     # Deploy-time wiring — wrangler.jsonc is rendered, never committed
-    # (.gitignore). Verify lanes render it OFFLINE from wiring.fixture.json; no
-    # verify lane resolves a secret. The template still binds PLATFORM_DB
-    # (Hyperdrive) in this milestone. OPN2 moves it to D1 `DB`, wired from
-    # `secretEnv` WIRING_CLOUDFLARE_D1_<ENV> (the infra component's
-    # secretOutputs), and names the runtime keys (LISTING_SEAM_SECRET,
-    # OPENPRODUCT_AUTH_SEAM_SECRET) in `runtimeSecrets`, cirrus's pattern.
+    # (.gitignore). Verify lanes render it OFFLINE from wiring.fixture.json;
+    # deploy lanes render it from WIRING_OPENPRODUCT_HYPERDRIVE_<ENV>, which
+    # infra/hyperdrive publishes (design §11). The binding keeps its name,
+    # PLATFORM_DB.
     turboFilter: "@openproduct/core"
     wranglerConfig: wrangler.jsonc
     wranglerTemplate: wrangler.template.jsonc
-    wiringComponents: "cloudflare-hyperdrive"
+    wiringComponents: "openproduct-hyperdrive"
+    runtimeSecrets: "LISTING_SEAM_SECRET,OPENPRODUCT_OPERATORS"
     wiringEnvs: "stage,prod"
     wiringFixture: wiring.fixture.json
     installCommand: pnpm install --frozen-lockfile

@@ -1,17 +1,19 @@
+# openproduct's media bucket, one per environment (stage, prod).
+#
+# Taken from the monorepo as it is, with the changes this repository forces
+# (openproduct-standalone design §4, §11), as infra/hyperdrive made them:
+# state is on the platform (http backend), the provider reads
+# CLOUDFLARE_API_TOKEN from the environment, and the Secrets Manager wiring
+# manifest is gone. The gateway binds the bucket by its name, which is
+# committed in its wrangler.jsonc, so nothing reads a published wiring.
+
 terraform {
   required_version = ">= 1.15.0"
 
-  backend "s3" {
-    encrypt              = true
-    use_lockfile         = true
-    workspace_key_prefix = "env"
-  }
+  # State lives on the platform: the runner exports TF_HTTP_* per job.
+  backend "http" {}
 
   required_providers {
-    aws = {
-      source  = "hashicorp/aws"
-      version = "~> 5.0"
-    }
     cloudflare = {
       source  = "cloudflare/cloudflare"
       version = "~> 4.52"
@@ -21,36 +23,11 @@ terraform {
 
 # --- Providers ---
 
-provider "aws" {
-  region = var.awsRegion
-
-  default_tags {
-    tags = {
-      ManagedBy   = "terraform"
-      Repository  = "${var.owner}/${var.repo}"
-      Component   = var.component
-      Environment = var.environment
-    }
-  }
-}
-
-provider "cloudflare" {
-  api_token = var.cloudflare_api_token
-}
+# Authenticates via the CLOUDFLARE_API_TOKEN env var (provider-native): an
+# r2-data token brokered from the openproduct Cloudflare connection.
+provider "cloudflare" {}
 
 # --- Variables (standard Orun parameters) ---
-
-variable "awsRegion" {
-  type    = string
-  default = "us-east-1"
-}
-
-variable "cloudflare_api_token" {
-  type        = string
-  sensitive   = true
-  default     = ""
-  description = "Cloudflare API token with Workers R2 Storage permissions (from CLOUDFLARE_API_TOKEN env var)"
-}
 
 variable "cloudflare_account_id" {
   type        = string
@@ -66,7 +43,7 @@ variable "orgName" {
 
 variable "owner" {
   type    = string
-  default = "sourceplane"
+  default = "pullely"
 }
 
 variable "repo" {
@@ -148,32 +125,7 @@ resource "cloudflare_r2_bucket" "media" {
   location   = upper(var.r2_location_hint)
 }
 
-# --- Wiring manifest (BF5) ---
-# The bucket name is the consumable value (R2 binds by name). Published at the
-# conventional `<org>/<repo>/<component>/<env>` path, mirroring cloudflare-r2.
-
-resource "aws_secretsmanager_secret" "wiring" {
-  name        = "${var.orgName}/${var.repo}/${var.component}/${var.environment}"
-  description = "Wiring outputs of the openproduct-media component (the gateway's MEDIA binding resolves the bucket name from here)"
-
-  lifecycle {
-    prevent_destroy = true
-  }
-}
-
-resource "aws_secretsmanager_secret_version" "wiring" {
-  secret_id = aws_secretsmanager_secret.wiring.id
-  secret_string = jsonencode({
-    openproduct_media_bucket_name = cloudflare_r2_bucket.media.name
-  })
-}
-
 # --- Outputs (non-secret) ---
-
-output "wiring_secret_arn" {
-  description = "ARN of the wiring-manifest secret for this component/environment"
-  value       = aws_secretsmanager_secret.wiring.arn
-}
 
 output "openproduct_media_bucket_name" {
   description = "Cloudflare R2 bucket name bound to openproduct-gateway as MEDIA"
