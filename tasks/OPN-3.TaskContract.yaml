@@ -25,5 +25,5 @@ spec:
     - the go/no-go for OPN2 is written, with the rule, the reading, the recommendation and the owner's decision
     - the OPN1 row reads done and links PRs #2, #3 and this PR
     - the probe is verify-only, so a merge to main no longer deploys it or runs its smoke
-    - design §11, the plan's OPN2 and the risks (OPN-T, OPN-U) describe OPN2 on Supabase, with the existing code taken as it is
+    - design §11, the plan's OPN2 and the risks (OPN-T decided, OPN-U) describe OPN2 on Supabase, with the existing code taken as it is
   gates: []

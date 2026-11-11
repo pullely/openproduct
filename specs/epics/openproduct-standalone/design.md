@@ -310,7 +310,7 @@ stack-tectonic, so each change copies a working pattern:
   - `openproduct-supabase` publishes `SUPABASE_PROJECT_REF`, `SUPABASE_DB_PASSWORD` and `SUPABASE_DB_URL` as workspace secrets (`secretOutputs`);
   - `openproduct-hyperdrive` reads them and publishes `WIRING_OPENPRODUCT_HYPERDRIVE`;
   - `openproduct-db-migrate` reads them too.
-- The Supabase access token and organization id are brokered from a Supabase connection (templates `management-access` and `org-id`). Which connection is open question OPN-T.
+- The Supabase access token and organization id are brokered from a new `openproduct` Supabase connection (templates `management-access` and `org-id`), as the Cloudflare side has its own (OPN-T).
 - The runner reads the project from `SUPABASE_PROJECT_REF`, not from Secrets Manager, and loses its AWS SDK dependency.
 - stack-tectonic's `db-migrate` composition (0.21.0) builds only `@saas/db`, lumen's package name, and accepts no override. It needs a build-filter parameter upstream, then a new pin here (risk OPN-U).
 

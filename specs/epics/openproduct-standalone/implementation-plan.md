@@ -59,7 +59,7 @@ each, in this order, because each needs the one before it:
    - `infra/supabase`, `infra/hyperdrive` and `infra/db-migrate` arrive from orun-cloud `ffb71be69` as they are, with state on the platform and credentials as workspace secrets (design §11).
    - The runner reads `SUPABASE_PROJECT_REF`.
    - A merge applies stage, then prod: two Supabase projects, two Hyperdrive configs, and the 52-step ladder on both.
-   - Needs: the Supabase connection (OPN-T), and a stack-tectonic release whose `db-migrate` takes a build filter (OPN-U).
+   - Needs: the new `openproduct` Supabase connection (OPN-T), and a stack-tectonic release whose `db-migrate` takes a build filter (OPN-U).
 3. **Going live.**
    - `core` renders its Hyperdrive id from `WIRING_OPENPRODUCT_HYPERDRIVE_<ENV>`.
    - Deploy profiles are switched on for stage and prod, and `openproduct-media` is discovered.

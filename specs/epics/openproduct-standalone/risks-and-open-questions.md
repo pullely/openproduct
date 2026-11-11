@@ -217,7 +217,7 @@ Free plan", code `100328`). The Free plan cannot carry the product either:
 It is a standing prerequisite: design §8 names it beside the Orunbase
 account's limits.
 
-## OPN-T — which Supabase connection (OPEN)
+## OPN-T — which Supabase connection (RESOLVED)
 
 The account shares one Supabase connection with every workspace: `arca-orun`
 (`int_d9116c21…`, connected 2026-10-25). openproduct's two projects can go
@@ -229,7 +229,10 @@ projects per organization, caps each database at 500 MB and pauses a project
 after a week without activity. The monorepo's openproduct projects needed a
 paid organization.
 
-**Needed before** OPN2's database task. The owner chooses.
+**Decided (2026-11-11):** a new `openproduct` Supabase connection for an
+`openproduct` organization, created by the owner. `arca-orun` is not used.
+OPN2's database task waits for it, and for an organization plan that holds
+two projects that never pause.
 
 ## OPN-U — stack-tectonic's migration job builds only lumen's package (RISK)
 
