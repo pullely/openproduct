@@ -9,7 +9,7 @@
 | Workspace | `ws_VTNEQKAP`, named `openproduct`, slug `openproduct-live`, **public**, in the openproduct account `ws_SMS84Q22`; project `openproduct` | Created 2026-11-09 through `POST /v1/organizations` with `accountId` set to the openproduct account; visibility was derived as public. The slug `openproduct` is reserved by the platform. Public from day one: a workspace can never change accounts, a private one can never become public, and terraform state is keyed per (workspace, project), so "private first, move later" would mean building it twice. Public means eligible to list, never readable: runs, logs, secrets and members stay private. |
 | Work tracker | Orunbase (no tracker connected) | The epic, its milestones and its tasks are created in Orunbase. This directory is their design and the contracts are under `tasks/`; the repository never creates, moves or closes work. |
 | Cloudflare | the account connection **`openproduct`** (`int_7fbdaafa…`), shared to the workspace by the account | Created 2026-11-09 for this product (OPN-F). The workspace also inherits two other Cloudflare connections from the account (`Nexo@sourceplane.ai's Account`, `Rahulvarghesepullely@gmail.com's Account`), so every brokered Cloudflare secret names the `openproduct` connection explicitly (§4). Every Cloudflare resource is new, so nothing is adopted or imported. |
-| Database | Cloudflare D1, one per environment | §3. No Supabase, no Hyperdrive. |
+| Database | Supabase Postgres, a new project per environment, reached through Hyperdrive | §11. Decided at OPN1's no-go for D1 (2026-11-11). §3 and §5 are the D1 plan it replaced, kept as the record of what was built and proven. |
 | Environments | `dev` (verify only, on pull requests), `stage`, `prod` | As today. stage and prod converge on push to `main`, with approval. |
 | Hosts before the switch | `openproduct-web-{env}.<subdomain>.workers.dev`, `openproduct-gateway-{env}.<subdomain>.workers.dev` | Worker names are unchanged. Names are per Cloudflare account, so they do not collide with the old deployment. |
 | Hosts after the switch | `openproduct.live`, `api.openproduct.live` (prod); stage stays on workers.dev | §6 |
@@ -59,6 +59,8 @@ CI, not by the script's say-so.
 - gitleaks in CI. `.gitleaksignore` lists the one fixture token (`tests/core/src/sessions.test.ts`), or the token is renamed `ops_test_…`.
 
 ## 3. The data plane on D1
+
+> **Superseded on 2026-11-11** by OPN1's no-go (§11). The D1 slice was built and proven to this section, and it retires in OPN2.
 
 ### 3.1 Topology
 
@@ -179,6 +181,8 @@ None of these is stored in GitHub, and none appears in a committed file.
 
 ## 5. The D1 proof (OPN1)
 
+> **Done.** The proof ran on stage on 2026-11-11. Its numbers and the decision, a no-go, are in IMPLEMENTATION-STATUS; what replaces D1 is §11.
+
 ### 5.1 The slice
 
 The catalogue and search slice of the 10-minute sweep and its public reads. It exercises most of the hard translation rules in §3.3:
@@ -262,6 +266,8 @@ plans (OPA2). Its limits bind this product:
 - **`limit.brokered_secrets` is 30.** §4 lists fewer than that per workspace.
 - **`limit.repo_links` is 3.** One is used.
 
+The Cloudflare side has a plan requirement of its own: the `openproduct` Cloudflare account must be on **Workers Paid** (risk OPN-S). The Free plan refuses Worker CPU limits outright, caps D1 at 100,000 rows written a day, and caps a Worker at 10 ms of CPU and a 3 MB bundle.
+
 ## 9. Out of scope
 
 - **Feature work of any kind.** Product behaviour is identical before and after; the tests are the proof.
@@ -279,5 +285,43 @@ plans (OPA2). Its limits bind this product:
 | **Cut as-is**: `openproduct-cut.mjs` onto a public repo, still on Supabase + Hyperdrive, AWS Secrets Manager and the monorepo's CI. This was the parked OX6 plan. | It ships the platform's private plumbing into a public repository, including a workflow that targets self-hosted runners. It needs the OX-E data move and a terraform-state migration (the state key embeds the repo name). And it still isn't an openproduct: nothing would deploy the way the products it lists deploy. |
 | **A private workspace in a standard account first, moved to an openproduct workspace later** | Nothing can move it. A workspace never changes accounts, a private one never becomes public, and its terraform state and secrets are keyed to it. "Later" means building the deployment a second time, on a live product. |
 | **Stay in the monorepo** (OX6's deferred "independence in place") | The repository can't be public, every change fans out the platform's CI, and openproduct can't list itself. |
-| **Switch first on a new Supabase connection, port to D1 afterwards** | By then there would be data to migrate, and there is none now. The D1 port is cheapest exactly now, while the old deployment keeps serving openproduct.live. It stays the fallback if OPN1 says no-go (§5.3). |
+| **Switch first on a new Supabase connection, port to D1 afterwards** | By then there would be data to migrate, and there is none now. The D1 port is cheapest exactly now, while the old deployment keeps serving openproduct.live. It stays the fallback if OPN1 says no-go (§5.3). OPN1 did, so this is the path taken, without the later port (§11). |
 | **Port to D1 in place inside orun-cloud, then cut** | It changes the engine under the live product and the platform's CI at the same time, and the cut would still need everything in §2. The parallel product is the cheaper way to make both changes safely. |
+
+## 11. The data plane on Supabase (OPN2, after the no-go)
+
+OPN1 ended in a no-go for D1, the owner's call on 2026-11-11
+(IMPLEMENTATION-STATUS has the numbers). OPN2 runs openproduct on the data
+plane it already had: Supabase Postgres, one new project per environment
+(`openproduct-stage`, `openproduct-prod`), reached from the Workers through
+Hyperdrive.
+
+**Taken as it is.** The owner's rule is to use the existing code wherever the
+new repository needs it.
+- Already in the tree, unchanged: `packages/db`'s Postgres repository and executor, the 52-step migration ladder, its runner, and every Postgres test.
+- From orun-cloud `ffb71be69` (`apps/openproduct/infra/`): `supabase` (the project, its generated password, `prevent_destroy`), `hyperdrive` (the config over that project) and `db-migrate` (the ladder and `migrations.lock`). Same resources, provider pins and region (`ap-southeast-1`).
+- `core`'s Hyperdrive binding, `PLATFORM_DB`, keeps its name. Only the wiring it is rendered from changes, from the platform's `cloudflare-hyperdrive` to this repository's `openproduct-hyperdrive`.
+
+**Changed only where the new home forces it** (decision 4: no AWS, every
+credential a workspace secret). Lumen already runs this shape on
+stack-tectonic, so each change copies a working pattern:
+- Terraform state moves from S3 to the platform (`backend "http"`), as for every other component here.
+- AWS Secrets Manager goes:
+  - `openproduct-supabase` publishes `SUPABASE_PROJECT_REF`, `SUPABASE_DB_PASSWORD` and `SUPABASE_DB_URL` as workspace secrets (`secretOutputs`);
+  - `openproduct-hyperdrive` reads them and publishes `WIRING_OPENPRODUCT_HYPERDRIVE`;
+  - `openproduct-db-migrate` reads them too.
+- The Supabase access token and organization id are brokered from a new `openproduct` Supabase connection (templates `management-access` and `org-id`), as the Cloudflare side has its own (OPN-T).
+- The runner reads the project from `SUPABASE_PROJECT_REF`, not from Secrets Manager, and loses its AWS SDK dependency.
+- stack-tectonic's `db-migrate` composition (0.21.0) builds only `@saas/db`, lumen's package name, and accepts no override. It needs a build-filter parameter upstream, then a new pin here (risk OPN-U).
+
+**Retired in OPN2:**
+- `packages/db/src/d1/`, with its harness, differential and D1 scale suites, and the miniflare devDependency;
+- `infra/d1-probe` and `infra/cloudflare-d1-probe`.
+
+The probe's database and Worker are destroyed before their components are
+deleted, so no state is orphaned. stack-tectonic's terraform composition has
+no destroy profile, so the database goes by applying its component with the
+resource switched off, and the Worker with `wrangler delete`.
+
+**Budgets.** §5.3 measured D1 and does not carry over. OPN2 is judged by its
+"done when": the product live and green on its own URLs.
