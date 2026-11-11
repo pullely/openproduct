@@ -126,10 +126,21 @@ jobs:
           # Every run reports to the platform, a pull request's included: a
           # verify lane still resolves the wiring its fixture stands in for.
           # Fork PRs get no OIDC token from GitHub and fail closed here.
+          #
+          # --isolation none: this runner runs exactly one job, so there is
+          # nothing to isolate it from. Without the flag orun stages a private
+          # copy under .orun/runs/…/work and LINKS node_modules back to this
+          # checkout. Every package's real path then sits outside the copy,
+          # so Next's outputFileTracingRoot drops them from the standalone
+          # output, and OpenNext reaches out to the real node_modules and
+          # fails bundling sharp's native .node files (first CI run on
+          # OPN-2). orun-cloud's pipeline runs with the same flag for the
+          # same reason.
           orun run \
             --plan plan.json \
             --runner github-actions \
             --remote-state \
+            --isolation none \
             --job "${{ matrix.job-id }}" \
             --exec-id "${{ github.run_id }}" \
             $retry_flag

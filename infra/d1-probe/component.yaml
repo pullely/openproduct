@@ -22,21 +22,29 @@ spec:
     # Runtime/order: the probe database and the wiring secret it publishes.
     - component: cloudflare-d1-probe
 
-  # Resolved by orun into every job of this component (fail-closed). Both are
-  # needed only by the deploy lane — PROBE_TOKEN by secrets-live (pushed to
-  # the Worker as its runtime secret) and by the smoke, the subdomain by the
-  # smoke — and are seeded by the owner before the first merge.
+  # Resolved by orun into every job of this component (fail-closed). Only the
+  # deploy lane uses it: secrets-live pushes it to the Worker as its runtime
+  # secret, and the smoke sends it as the bearer. It is seeded by the owner
+  # before the first merge.
   secretEnv:
     PROBE_TOKEN: "secret://ws_VTNEQKAP/openproduct/{{ .environment }}/PROBE_TOKEN"
-    CLOUDFLARE_WORKERS_SUBDOMAIN: "secret://ws_VTNEQKAP/openproduct/{{ .environment }}/CLOUDFLARE_WORKERS_SUBDOMAIN"
   # The wiring document is BEST-EFFORT here on purpose: it exists only after
   # cloudflare-d1-probe's first apply (on the merge), and a required reference
   # would fail this component's pull-request verify lane before that apply
   # can ever run. It is not optional where it matters: wire-live refuses to
   # render the deploy config without it ("WIRING_CLOUDFLARE_D1_PROBE_STAGE is
   # empty"), and `dependsOn` orders the deploy after the apply that publishes it.
+  #
+  # The workers.dev subdomain is best-effort for the same reason. The broker
+  # reads it from the Cloudflare account, and on an account that has not yet
+  # registered a workers.dev subdomain it answers `fact_unavailable`. A
+  # required reference turned that into a failed verify lane on the first CI
+  # run. Only the smoke needs it, and probe-run.mjs refuses to start without
+  # it, naming the variable. The deploy itself cannot publish to workers.dev
+  # until the subdomain exists either.
   optionalSecretEnv:
     WIRING_CLOUDFLARE_D1_PROBE_STAGE: "secret://ws_VTNEQKAP/openproduct/stage/WIRING_CLOUDFLARE_D1_PROBE"
+    CLOUDFLARE_WORKERS_SUBDOMAIN: "secret://ws_VTNEQKAP/openproduct/stage/CLOUDFLARE_WORKERS_SUBDOMAIN"
 
   # STAGE ONLY. No dev, no prod: the probe database exists only in stage, and
   # the wrangler template has no other environment. Verify on pull requests,

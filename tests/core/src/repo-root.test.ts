@@ -43,30 +43,46 @@ const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "../../..");
 const SKIP_DIRS = new Set([".git", "node_modules", "dist", ".next", ".open-next", ".turbo", ".wrangler", "coverage", ".orun"]);
 const TEXT = /\.(ts|tsx|mts|cts|js|jsx|mjs|cjs|json|jsonc|ya?ml|md|tf|css|sh|toml|txt|html)$/;
 
-/** Every file git would commit: tracked, or untracked and not ignored. */
+/** Every file on disk under ROOT, skipping build and dependency output. */
+function walkFiles(): string[] {
+  const out: string[] = [];
+  const walk = (dir: string) => {
+    for (const entry of readdirSync(dir)) {
+      if (SKIP_DIRS.has(entry)) continue;
+      const full = resolve(dir, entry);
+      if (statSync(full).isDirectory()) walk(full);
+      else out.push(relative(ROOT, full).split(sep).join("/"));
+    }
+  };
+  walk(ROOT);
+  return out;
+}
+
+/**
+ * Every file git would commit (tracked, or untracked and not ignored) when
+ * ROOT is a checkout's own top level. Otherwise, walk the tree. That covers
+ * a tarball with no git, and also CI's per-job copy, which orun places
+ * under the checkout's ignored `.orun/runs/…/work/`: there git answers
+ * successfully with NO files, because everything under an ignored directory
+ * is ignored. Trusting that empty answer is how this guard once read zero
+ * files in CI.
+ */
 function repoFiles(): string[] {
+  let topLevel: string | null = null;
   try {
-    return execFileSync("git", ["ls-files", "-z", "--cached", "--others", "--exclude-standard"], {
-      cwd: ROOT,
-      encoding: "utf-8",
-      maxBuffer: 64 * 1024 * 1024,
-    })
-      .split("\0")
-      .filter((f) => f.length > 0 && existsSync(resolve(ROOT, f)));
+    topLevel = execFileSync("git", ["rev-parse", "--show-toplevel"], { cwd: ROOT, encoding: "utf-8" }).trim();
   } catch {
-    // No git (a tarball of the tree): walk it instead.
-    const out: string[] = [];
-    const walk = (dir: string) => {
-      for (const entry of readdirSync(dir)) {
-        if (SKIP_DIRS.has(entry)) continue;
-        const full = resolve(dir, entry);
-        if (statSync(full).isDirectory()) walk(full);
-        else out.push(relative(ROOT, full).split(sep).join("/"));
-      }
-    };
-    walk(ROOT);
-    return out;
+    return walkFiles();
   }
+  if (resolve(topLevel) !== ROOT) return walkFiles();
+  const listed = execFileSync("git", ["ls-files", "-z", "--cached", "--others", "--exclude-standard"], {
+    cwd: ROOT,
+    encoding: "utf-8",
+    maxBuffer: 64 * 1024 * 1024,
+  })
+    .split("\0")
+    .filter((f) => f.length > 0 && existsSync(resolve(ROOT, f)));
+  return listed.length > 0 ? listed : walkFiles();
 }
 
 type Reach = { file: string; line: number; path: string; resolved: string };
