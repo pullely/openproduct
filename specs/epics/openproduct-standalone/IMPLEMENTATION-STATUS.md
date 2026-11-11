@@ -7,7 +7,7 @@ the code departed from `design.md`.
 |---|---|---|
 | OPN0 — the spec | ✅ done | [#1](https://github.com/pullely/openproduct/pull/1) |
 | OPN1 — the tree, with D1 proven on one slice | ✅ done: **no-go for D1**, the owner's call (2026-11-11) | [#2](https://github.com/pullely/openproduct/pull/2), [#3](https://github.com/pullely/openproduct/pull/3), [#4](https://github.com/pullely/openproduct/pull/4) |
-| OPN2 — live on its own URLs, on Supabase | | |
+| OPN2 — live on its own URLs, on Supabase | 🚧 in progress | |
 | OPN3 — openproduct.live served from here | | |
 | OPN4 — openproduct, listed on openproduct.live | | |
 
@@ -27,7 +27,7 @@ the code departed from `design.md`.
 | Cloudflare connection | `openproduct` (`int_7fbdaafa…`), inherited from the account |
 | Epic in Orunbase | `openproduct-standalone`, EP-1 (`epc_0TXVHJ8Z`) |
 | Milestones | OPN0 `mls_VEMWNC1J` · OPN1 `mls_GPBDDEE7` · OPN2 `mls_GQ855EQV` · OPN3 `mls_QJP277KN` · OPN4 `mls_GFTKS4Q0` |
-| Tasks | OPN-1 `tsk_N14BB1XD` (OPN0, done: merged as `1fc8305`, PR #1) · OPN-2 `tsk_85D0P8WW` (OPN1, done: PR #2) · OPN-4 `tsk_DEKB9MPX` (OPN1, done: PR #3) · OPN-3 `tsk_DQTEWGM3` (OPN1, this record: PR #4) |
+| Tasks | OPN-1 `tsk_N14BB1XD` (OPN0, done: merged as `1fc8305`, PR #1) · OPN-2 `tsk_85D0P8WW` (OPN1, done: PR #2) · OPN-4 `tsk_DEKB9MPX` (OPN1, done: PR #3) · OPN-3 `tsk_DQTEWGM3` (OPN1, done: PR #4) · OPN-5 `tsk_KSEVSQNN` (OPN2: the D1 trial retires) |
 | Project environments | `dev`, `stage`, `prod`, created through `POST …/projects/{prj}/environments` on 2026-11-09. A baseline bootstrap creates them; this repository never had one, and secret authoring refused until they existed |
 | Stage secrets | `CLOUDFLARE_API_TOKEN` (`workers-deploy`), `CLOUDFLARE_ACCOUNT_ID` (`account-id`), `CLOUDFLARE_D1_TOKEN` (`d1-edit`), `CLOUDFLARE_WORKERS_SUBDOMAIN` (`workers-subdomain`): all brokered from connection `int_7fbdaafa…`. `PROBE_TOKEN`: static, random, set from stdin. None has a prod counterpart yet |
 | Supabase connection | **`openproduct`** (`int_cc19cfd5…`), created by the owner on 2026-11-11 for this product and inherited from the account (OPN-T). The account's older `arca-orun` (`int_d9116c21…`) is not used, so every brokered Supabase secret names `openproduct` explicitly |
@@ -234,6 +234,21 @@ The owner upgraded the `openproduct` Cloudflare account to Workers Paid on 2026-
 - 50 queries per invocation.
 
 Design §8 lists the Orunbase account's limits; this is the Cloudflare side of the same question.
+
+## OPN2 — as built (so far)
+
+### OPN-5: the D1 trial retires
+
+- **Deleted:** `packages/db/src/d1/` (executor, slice repository, schema, harness, engine, remote-limits, differential and D1 scale suites), the package's `./d1` exports and `test:d1` scripts, the miniflare devDependency, and `infra/d1-probe` (the probe Worker's component). `intent.yaml` no longer discovers `infra/d1-probe/`.
+- **Kept:** `pg-driver-counts.test.ts`, moved to `packages/db/src/`. It tests Postgres, not D1. It pins that the production postgres.js executor reports 0 for writes without `RETURNING`, which matters more now that Postgres stays.
+- **`infra/cloudflare-d1-probe` declares no database.** The database is in state and no longer in config, so the merge's stage `terraform.apply` destroys `openproduct-probe-stage`. A `terraform_data` provisioner, run at apply only, deletes the probe Worker `openproduct-d1-probe-stage` through the Cloudflare API with the workers-deploy token, because no component manages that script and stack-tectonic's Worker composition has no delete path. `secretOutputs` is gone, along with the adoption lookup.
+- **Lockfile:** drops the `infra/d1-probe` importer and miniflare. The website's wrangler (4.151.3, unchanged) no longer resolves the optional `@cloudflare/workers-types` peer that only the probe brought.
+- **Plans:** a pull request plans `cloudflare-d1-probe · stage` as `terraform.plan-only`, so the destroy shows and nothing happens. The merge applies it. Every other job is verify.
+- **Local checks:** typecheck and lint pass, 22 of 22. `@openproduct/db` alone: 23 files pass, 1 skipped; 571 tests pass, 1 skipped. `terraform validate` passes. `orun validate` passes, and `orun task check OPN-5` reports 3 changed components, all inside the contract.
+- **Left for the next task:**
+  - deleting `infra/cloudflare-d1-probe` itself, after this apply;
+  - the stale stage secrets `WIRING_CLOUDFLARE_D1_PROBE`, `PROBE_TOKEN`, `CLOUDFLARE_D1_TOKEN` and the unused `CLOUDFLARE_WORKERS_SUBDOMAIN`;
+  - `tests/web/src/opennext-config.test.ts`'s TODO, whose region cross-check returns against `infra/supabase`'s region instead of `infra/cloudflare-d1`'s.
 
 ## Departures from the design
 

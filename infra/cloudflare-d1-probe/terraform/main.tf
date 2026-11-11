@@ -1,19 +1,19 @@
-# The D1 probe database (openproduct-standalone OPN, task OPN-2, milestone
-# OPN1 "D1 proven on one slice").
+# The D1 probe database, RETIRED (openproduct-standalone OPN, task OPN-5,
+# milestone OPN2).
 #
-# ONE throwaway D1 database, in STAGE ONLY, that the `openproduct-d1-probe`
-# Worker (infra/d1-probe) binds as `DB` and loads with the slice's 5,000-
-# listing corpus, so the slice's catalogue and search methods can be measured
-# on REMOTE D1 from inside Cloudflare, and the limits local workerd does not
-# enforce (32 arguments per function, 2 MB per value, 50 MB per result) can be
-# shown to be enforced. It holds nothing but generated data; it is not the
-# product's database and nothing else binds it.
+# OPN1 ended in a no-go for D1 (OPN-3, 2026-11-11), so this component now
+# declares no database. Its apply on the merge that retires the trial does two
+# things, both in stage, the only environment it ever existed in:
 #
-# State lives on the platform (SB1): the runner exports TF_HTTP_* per job, so
-# the backend block stays empty — no S3 bucket, no AWS role, no workspaces.
-# The pattern is cirrus's proven `infra/terraform/cloudflare-d1` (pullely/
-# ackstack), with two additions the v5 provider makes possible: the location
-# hint and the read-replication mode.
+#   - destroys `openproduct-probe-stage`: the database is in state and no
+#     longer in config, so terraform plans its destroy;
+#   - deletes the probe Worker, `openproduct-d1-probe-stage`, through the
+#     Cloudflare API, because no component manages that script and
+#     stack-tectonic's Worker composition has no delete path.
+#
+# The next task deletes this component, once this apply has run, so its state
+# is never orphaned with live resources behind it. State lives on the platform
+# (SB1); the runner exports TF_HTTP_* per job.
 
 terraform {
   required_version = ">= 1.15.0"
@@ -21,16 +21,11 @@ terraform {
   backend "http" {}
 
   required_providers {
-    # v5, not cirrus's ~> 4.30: `primary_location_hint` and `read_replication`
-    # exist on `cloudflare_d1_database` only in v5 (checked against the
-    # provider schema, 5.28.1).
+    # v5, the provider that created the database: its destroy reads the
+    # state written with v5's schema.
     cloudflare = {
       source  = "cloudflare/cloudflare"
       version = "~> 5.28"
-    }
-    external = {
-      source  = "hashicorp/external"
-      version = "~> 2.3"
     }
   }
 }
@@ -115,82 +110,39 @@ variable "terraformVersion" {
   default = "1.15.3"
 }
 
-variable "primaryLocationHint" {
-  type        = string
-  default     = "apac"
-  description = "D1 primary location hint. apac: beside the product's Supabase (ap-southeast-1) and core's placement hint, so the probe measures the region the product would run in."
-
-  validation {
-    condition     = contains(["wnam", "enam", "weur", "eeur", "apac", "oc"], var.primaryLocationHint)
-    error_message = "primaryLocationHint must be one of D1's location hints: wnam, enam, weur, eeur, apac, oc."
-  }
-}
-
-variable "readReplicationMode" {
-  type        = string
-  default     = "auto"
-  description = <<-EOT
-    D1 read replication. "auto" so the probe's Sessions API reads can reach a
-    replica (and report served_by_region / served_by_primary and lag), while
-    its plain-binding reads are, by D1's rules, always the primary — the
-    "without replication" baseline, from the same database.
-  EOT
-
-  validation {
-    condition     = contains(["auto", "disabled"], var.readReplicationMode)
-    error_message = "readReplicationMode must be auto or disabled."
-  }
-}
-
-# --- The probe database ---
-
 locals {
-  # Fixed, not namespaced: the brief names it, D1 names are unique per
-  # account, and the Worker resolves the database by ID through the wiring
-  # secret anyway.
-  database_name = "openproduct-probe-${var.environment}"
+  # The script wrangler deployed for the probe's `stage` environment
+  # (infra/d1-probe/wrangler.template.jsonc, name `openproduct-d1-probe`).
+  probe_worker_name = "openproduct-d1-probe-${var.environment}"
 }
 
-resource "cloudflare_d1_database" "probe" {
-  account_id            = var.cloudflare_account_id
-  name                  = local.database_name
-  primary_location_hint = var.primaryLocationHint
+# Runs once, at apply, never at plan: a pull request's plan-only lane shows it
+# as "will be created" and deletes nothing. The token is the deploy profile's
+# workers-deploy token (CLOUDFLARE_WORKERS_TOKEN in component.yaml), since the
+# job's CLOUDFLARE_API_TOKEN is the D1-only token. A 404 means the script is
+# already gone, which is the state this wants.
+resource "terraform_data" "retire_probe_worker" {
+  input = local.probe_worker_name
 
-  read_replication = {
-    mode = var.readReplicationMode
+  provisioner "local-exec" {
+    interpreter = ["bash", "-c"]
+    command     = <<-EOT
+      set -euo pipefail
+      out="$(mktemp)"
+      trap 'rm -f "$out"' EXIT
+      url="https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/workers/scripts/${local.probe_worker_name}?force=true"
+      code="$(curl -sS --retry 3 -o "$out" -w '%%{http_code}' -X DELETE \
+        -H "Authorization: Bearer $CLOUDFLARE_WORKERS_TOKEN" "$url")"
+      case "$code" in
+        200) echo "retired: deleted Worker ${local.probe_worker_name}" ;;
+        404) echo "retired: Worker ${local.probe_worker_name} was already gone" ;;
+        *) echo "deleting Worker ${local.probe_worker_name} failed: HTTP $code"; jq -c '.errors // .' "$out" || true; exit 1 ;;
+      esac
+    EOT
   }
-
-  lifecycle {
-    # The location hint is honoured at creation only; a later change must not
-    # read as a reason to replace a database with data in it.
-    ignore_changes = [primary_location_hint]
-  }
 }
 
-# --- Wiring manifest (BF5, via orun secrets) ---
-#
-# Published by the composition's apply step as the WIRING_CLOUDFLARE_D1_PROBE
-# secret on the project/stage rung (secretOutputs in component.yaml); the
-# probe Worker's deploy reads it back as WIRING_CLOUDFLARE_D1_PROBE_STAGE and
-# renders the committed @@wiring(cloudflare-d1-probe/stage:d1_database_id)@@
-# token from it (BF6). Same shape as cirrus's cloudflare-d1 wiring.
-
-output "wiring" {
-  description = "Wiring document for downstream deploy-time binding resolution (pushed to orun secrets)"
-  value = jsonencode({
-    d1_database_id   = cloudflare_d1_database.probe.uuid
-    d1_database_name = cloudflare_d1_database.probe.name
-  })
-}
-
-# --- Outputs (non-secret) ---
-
-output "d1_database_id" {
-  description = "Cloudflare D1 database ID (the probe Worker's database_id)"
-  value       = cloudflare_d1_database.probe.uuid
-}
-
-output "d1_database_name" {
-  description = "Cloudflare D1 database name"
-  value       = cloudflare_d1_database.probe.name
+output "retired_worker" {
+  description = "The probe Worker this apply deleted (or found already gone)"
+  value       = terraform_data.retire_probe_worker.output
 }

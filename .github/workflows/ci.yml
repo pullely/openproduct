@@ -177,8 +177,7 @@ jobs:
       - name: Test, every package but the database's and the browser lanes
         run: pnpm exec turbo run test --filter='!@openproduct/db' --filter='!@openproduct/web-perf'
       # Alone, because its suites time out under the parallel load above: the
-      # pg suite restores a migrated PGlite for every test, and the D1 slice
-      # starts local D1 (workerd, through miniflare) for its own.
+      # pg suite restores a migrated PGlite for every test.
       - name: Test the database package, alone
         run: pnpm exec turbo run test --filter=@openproduct/db
       - name: Build the website (Next.js, then the OpenNext bundle)

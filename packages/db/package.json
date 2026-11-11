@@ -9,19 +9,14 @@
     "./executor": "./src/executor.ts",
     "./ids": "./src/ids.ts",
     "./content": "./src/content.ts",
-    "./purge": "./src/purge.ts",
-    "./d1": "./src/d1/index.ts",
-    "./d1/corpus": "./src/d1/scale/corpus.ts",
-    "./d1/slice.sql": "./src/d1/migrations/0001_slice.sql"
+    "./purge": "./src/purge.ts"
   },
   "scripts": {
     "build": "tsc --project tsconfig.build.json && cp -r src/migrations dist/",
     "typecheck": "tsc --noEmit",
     "lint": "eslint src",
     "test": "vitest run",
-    "baseline": "OS0_BASELINE=1 vitest run src/scale/baseline.test.ts",
-    "test:d1": "vitest run src/d1",
-    "test:d1:scale": "D1_SCALE=1 vitest run src/d1/scale"
+    "baseline": "OS0_BASELINE=1 vitest run src/scale/baseline.test.ts"
   },
   "dependencies": {
     "@aws-sdk/client-secrets-manager": "^3.1067.0",
@@ -35,7 +30,6 @@
     "@saas/tsconfig": "workspace:*",
     "@types/node": "^22.15.3",
     "typescript": "^5.9.3",
-    "vitest": "^3.2.6",
-    "miniflare": "5.20261104.0-beta"
+    "vitest": "^3.2.6"
   }
 }

@@ -3,8 +3,8 @@ kind: Component
 
 metadata:
   name: cloudflare-d1-probe
-  title: openproduct D1 probe database
-  description: Stage-only throwaway Cloudflare D1 database the openproduct-d1-probe Worker measures the slice on (OPN-2, milestone OPN1 "D1 proven on one slice").
+  title: openproduct D1 probe database (retired)
+  description: Retires the D1 trial on stage. It declares no database, so its apply destroys openproduct-probe-stage and deletes the openproduct-d1-probe-stage Worker (OPN-5, after OPN1's no-go for D1).
   labels:
     domain: infra
     scope: probe-database
@@ -24,29 +24,24 @@ spec:
     stackName: cloudflare-d1-probe
     terraformDir: terraform
     terraformVersion: "1.15.3"
-    # SEC-JOB: the wiring document (database id/name) is lease-published
-    # post-apply onto the project/stage rung as WIRING_CLOUDFLARE_D1_PROBE;
-    # the probe Worker's deploy reads it back as WIRING_CLOUDFLARE_D1_PROBE_STAGE.
-    secretOutputs: "WIRING_CLOUDFLARE_D1_PROBE=wiring"
-    # Exported as TF_VAR_primaryLocationHint / TF_VAR_readReplicationMode
-    # (the composition exports every parameter as TF_VAR_<name>).
-    primaryLocationHint: apac
-    readReplicationMode: auto
+    # No secretOutputs: there is no database left to publish wiring for.
 
   # The Cloudflare provider authenticates via CLOUDFLARE_API_TOKEN, resolved by
   # orun from the project/stage secret CLOUDFLARE_D1_TOKEN (Cloudflare D1
-  # Edit). Declared at component level because the plan-only lane refreshes
-  # against the live Cloudflare API too, not just apply.
+  # Edit): it destroys the database. Declared at component level because the
+  # plan-only lane refreshes against the live Cloudflare API too, not just
+  # apply. CLOUDFLARE_WORKERS_TOKEN is the workers-deploy token, used only by
+  # the apply-time call that deletes the probe Worker.
   secretEnv:
     CLOUDFLARE_API_TOKEN: "secret://ws_VTNEQKAP/openproduct/{{ .environment }}/CLOUDFLARE_D1_TOKEN"
+    CLOUDFLARE_WORKERS_TOKEN: "secret://ws_VTNEQKAP/openproduct/{{ .environment }}/CLOUDFLARE_API_TOKEN"
     # Non-secret connection fact.
     CLOUDFLARE_ACCOUNT_ID: "secret://ws_VTNEQKAP/openproduct/{{ .environment }}/CLOUDFLARE_ACCOUNT_ID"
     TF_VAR_cloudflare_account_id: "secret://ws_VTNEQKAP/openproduct/{{ .environment }}/CLOUDFLARE_ACCOUNT_ID"
 
-  # STAGE ONLY. There is deliberately no prod (or dev) subscription: the probe
-  # database must not exist anywhere but stage, and terraform/main.tf refuses
-  # any environment other than stage as a second guard. Plan on pull requests,
-  # apply on the merge to main.
+  # STAGE ONLY, as the probe always was: terraform/main.tf refuses any other
+  # environment. Plan on pull requests (it shows the destroy), apply on the
+  # merge to main (it does it).
   subscribe:
     environments:
       - name: stage
