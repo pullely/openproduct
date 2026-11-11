@@ -262,6 +262,8 @@ plans (OPA2). Its limits bind this product:
 - **`limit.brokered_secrets` is 30.** §4 lists fewer than that per workspace.
 - **`limit.repo_links` is 3.** One is used.
 
+The Cloudflare side has a plan requirement of its own: the `openproduct` Cloudflare account must be on **Workers Paid** (risk OPN-S). The Free plan refuses Worker CPU limits outright, caps D1 at 100,000 rows written a day, and caps a Worker at 10 ms of CPU and a 3 MB bundle.
+
 ## 9. Out of scope
 
 - **Feature work of any kind.** Product behaviour is identical before and after; the tests are the proof.

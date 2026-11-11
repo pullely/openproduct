@@ -198,3 +198,16 @@ The repository's first commit (`7475226`) carries the personal address
 `pullely@sourceplane.ai`, as the portfolio repositories do. Replacing that
 commit means force-pushing `main`, which is the owner's call. The default is
 to leave it.
+
+## OPN-S — the Cloudflare account's plan (RESOLVED)
+
+The `openproduct` Cloudflare account was on the Free plan. The probe
+Worker's first deploy was refused ("CPU limits are not supported for the
+Free plan", code `100328`). The Free plan cannot carry the product either:
+- D1 allows 100,000 rows written a day, where one full probe load writes about 8 M;
+- a Worker gets 10 ms of CPU and a 3 MB bundle, too little for the OpenNext website and the sweep;
+- an invocation allows 50 queries.
+
+**Decided (2026-11-11):** the owner upgraded the account to Workers Paid.
+It is a standing prerequisite: design §8 names it beside the Orunbase
+account's limits.

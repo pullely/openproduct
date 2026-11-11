@@ -28,7 +28,7 @@ The epic, its milestones and its tasks live in Orunbase, in workspace
 
 | Field | Value |
 |-------|-------|
-| Status | Draft |
+| Status | In progress: OPN0 shipped; OPN1 (the tree, with D1 proven on one slice) is closing on the remote probe run |
 | Cluster | **OPN** (OPN0–OPN4) |
 | Owner(s) | `core` (data and rules, moving to D1) · `packages/db` (the repository, executor and schema) · `gateway` · `web` · `infra/*` (D1, R2, domains) · `.github/workflows` + `intent.yaml` (the deploy path) |
 | Builds on | `sourceplane/orun-cloud` at a named commit: `apps/openproduct/` (openproduct-independence OX0–OX7: the product boundary, the gateway, the HTTP seam, a cut-ready tree). It is **not** a baseline bootstrap. The D1 executor and the D1 migration path come from the `cirrus` baseline. |

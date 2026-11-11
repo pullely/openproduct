@@ -5,7 +5,7 @@ the code departed from `design.md`.
 
 | Milestone | State | PR |
 |---|---|---|
-| OPN0 — the spec | | |
+| OPN0 — the spec | ✅ done | [#1](https://github.com/pullely/openproduct/pull/1) |
 | OPN1 — the tree, with D1 proven on one slice | | |
 | OPN2 — live on its own URLs, all on D1 | | |
 | OPN3 — openproduct.live served from here | | |
@@ -151,6 +151,27 @@ timings, the go/no-go, and a green CI on `main`.
 16. **OPN1 is two tasks, not one.** The remote numbers exist only after this branch's merge deploys the probe. So OPN-2's contract ends at "the probe runs and prints its report", and **OPN-3** records the numbers and the go/no-go in this file. That follows the milestone rule for a part that must be live before the next. Later milestones' tasks shift by one: OPN2 is OPN-4, OPN3 is OPN-5, OPN4 is OPN-6.
 
 The orun catalog (`autopushCatalog: true`) indexes all 13 `component.yaml` files, the three undiscovered infra components included, though plans see 10.
+
+### What CI taught on its first runs (PR #2 and its merge)
+
+Three failures surfaced only in GitHub Actions; none showed locally:
+
+1. **`orun run` needs `--isolation none` here.** By default orun stages each job in a private copy under `.orun/runs/…/work` and links `node_modules` back to the checkout. Next's `outputFileTracingRoot` then sees every package as outside the root and drops it from the standalone output ("27 traced files were not included"). OpenNext reaches for the real `node_modules` and fails to bundle `sharp`'s native `.node` files. One runner runs one job, so there is nothing to isolate. orun-cloud's pipeline passes the same flag for the same reason.
+2. **`repo-root.test.ts` walks the tree** whenever git is not rooted exactly at it, or lists nothing. Inside an ignored directory git answers with zero files, and the guard's own sanity checks failed on that.
+3. **The `workers-subdomain` brokered fact fails a whole job** while the Cloudflare account has no workers.dev subdomain (`fact_unavailable`), even as an optional reference. The probe no longer references it. Its smoke asks Cloudflare for the subdomain with the deploy profile's own credentials.
+
+The 34 browser checks that failed on macOS (snapshot widths, one axe `target-size`) **pass on Linux Chromium**. They were environmental, as recorded above.
+
+### The Cloudflare account needs Workers Paid
+
+The first deploy of the probe Worker was refused: "CPU limits are not supported for the Free plan" (code `100328`). The terraform apply of the probe database had already succeeded.
+
+The owner upgraded the `openproduct` Cloudflare account to Workers Paid on 2026-11-11, and the failed job was re-run in place. It is a prerequisite for the product, not only for the probe. The Free plan's limits do not fit:
+- 100,000 D1 rows written a day, where one full probe load writes about 8 M;
+- 10 ms of CPU and a 3 MB bundle per Worker, where the OpenNext website and the sweep need more;
+- 50 queries per invocation.
+
+Design §8 lists the Orunbase account's limits; this is the Cloudflare side of the same question.
 
 ## Departures from the design
 
