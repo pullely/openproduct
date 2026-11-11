@@ -180,12 +180,14 @@ describe("the flow on a small corpus", () => {
 });
 
 describe("POST /negative on LOCAL D1", () => {
-  it("shows what the static guard is for: local workerd ACCEPTS the 34-argument call, the 2.1 MB value and the 56 MB result", async () => {
+  it("shows what the static guard is for: local workerd ACCEPTS the 34-argument call, the 2.1 MB stored value and the 56 MB result", async () => {
     const res = await post("/negative");
     expect(res.status).toBe(200);
     const by = Object.fromEntries((res.json!.probes as Json[]).map((p) => [p.probe, p]));
     expect(by.args34).toMatchObject({ outcome: "accepted", detail: { keys: 17 } });
-    expect(by.string2mb).toMatchObject({ outcome: "accepted", detail: { boundLength: 2_100_000 } });
+    expect(by.row2mb).toMatchObject({ expected: "refused", outcome: "accepted", detail: { storedLength: 2_100_000 } });
+    // An observation, not a test: a bound value is not a stored one (remote D1 accepted this, 2026-11-11).
+    expect(by.bound2mb).toMatchObject({ expected: "observed", outcome: "accepted", detail: { boundLength: 2_100_000 } });
     expect(by.result50mb).toMatchObject({ outcome: "accepted", detail: { rows: 56, bytes: 56_000_000 } });
     // Local workerd DOES enforce the pattern limit (PROOF.md: caught locally on the first run).
     expect(by.like51).toMatchObject({ outcome: "refused" });
@@ -194,7 +196,7 @@ describe("POST /negative on LOCAL D1", () => {
 });
 
 describe("the smoke script (scripts/probe-run.mjs) against local D1", () => {
-  const base = () => ({ PROBE_URL: probe.url, PROBE_TOKEN: TOKEN, PROBE_SIZE: "smoke", PROBE_RUNS: "2" });
+  const base = () => ({ PROBE_URL: probe.url, PROBE_TOKEN: TOKEN, PROBE_SIZE: "smoke", PROBE_RUNS: "2", PROBE_WRITE_COOLDOWN_MS: "0" });
 
   it("runs the whole flow, matches the snapshot, and fails ONLY on the probes local D1 accepts — never printing the token", async () => {
     const { code, stdout, stderr } = await runSmoke(base());
@@ -204,7 +206,7 @@ describe("the smoke script (scripts/probe-run.mjs) against local D1", () => {
     expect(code).toBe(1);
     expect(report.verdict).toBe("fail");
     expect(report.failures).toHaveLength(3);
-    for (const [i, probeName] of ["args34", "string2mb", "result50mb"].entries()) {
+    for (const [i, probeName] of ["args34", "row2mb", "result50mb"].entries()) {
       expect(report.failures[i]).toMatch(new RegExp(`^negative ${probeName}: ACCEPTED`));
     }
     expect(report.schema.idempotent).toBe(true);
@@ -251,6 +253,36 @@ describe("the smoke script (scripts/probe-run.mjs) against local D1", () => {
     expect(JSON.parse(noTarget.stdout).failures[0]).toMatch(/CLOUDFLARE_WORKERS_SUBDOMAIN/);
     expect(noTarget.stdout).not.toContain(TOKEN);
   });
+
+  it("waits out \"D1 DB is overloaded\" and asks again, counting it, instead of taking it as a verdict", async () => {
+    // A proxy in front of the local probe that answers the FIRST /schema with
+    // the error remote D1 gave on 2026-11-11 (load step 10), then passes
+    // everything through.
+    let injected = 0;
+    const proxy = createServer(async (req, res) => {
+      if (req.url?.startsWith("/schema") && injected === 0) {
+        injected += 1;
+        res.writeHead(500, { "content-type": "application/json" });
+        res.end(JSON.stringify({ error: "D1_ERROR: D1 DB is overloaded. Too many resources consumed within a 10 second window." }));
+        return;
+      }
+      const upstream = await fetch(`${probe.url}${req.url ?? "/"}`, { method: req.method ?? "POST", headers: { authorization: String(req.headers.authorization ?? "") } });
+      res.writeHead(upstream.status, { "content-type": upstream.headers.get("content-type") ?? "application/json" });
+      res.end(await upstream.text());
+    });
+    await new Promise<void>((done) => proxy.listen(0, "127.0.0.1", () => done()));
+    try {
+      const { port } = proxy.address() as AddressInfo;
+      const out = await runSmoke({ ...base(), PROBE_URL: `http://127.0.0.1:${port}`, PROBE_PHASES: "schema", PROBE_OVERLOAD_WAIT_MS: "10", PROBE_MARKER: "off" });
+      const report = JSON.parse(out.stdout);
+      expect(injected).toBe(1);
+      expect(report.verdict).toBe("pass");
+      expect(report.schema.idempotent).toBe(true);
+      expect(report.throttle).toMatchObject({ events: 1, byPath: { "/schema": 1 } });
+    } finally {
+      await new Promise<void>((done) => proxy.close(() => done()));
+    }
+  }, 60_000);
 
   it("asks Cloudflare for the workers.dev subdomain with the deploy credentials, and says plainly when there is none", async () => {
     // A stand-in for api.cloudflare.com: one account with no subdomain
@@ -318,7 +350,7 @@ describe("the smoke script (scripts/probe-run.mjs) against local D1", () => {
 // Opt-in: the scale target, as the stage smoke runs it (minus the run count).
 describe.skipIf(process.env.D1_PROBE_FULL !== "1")("the smoke at the scale target (D1_PROBE_FULL=1)", () => {
   it("matches expected/full.json on local D1 after the whole bench", async () => {
-    const { stdout } = await runSmoke({ PROBE_URL: probe.url, PROBE_TOKEN: TOKEN, PROBE_SIZE: "full", PROBE_RUNS: "3", PROBE_PHASES: "schema,reset,load,bench,export,cleanup" });
+    const { stdout } = await runSmoke({ PROBE_URL: probe.url, PROBE_TOKEN: TOKEN, PROBE_SIZE: "full", PROBE_RUNS: "3", PROBE_WRITE_COOLDOWN_MS: "0", PROBE_PHASES: "schema,reset,load,bench,export,cleanup" });
     const report = JSON.parse(stdout);
     expect(report.failures).toEqual([]);
     expect(report.export).toMatchObject({ matched: true, catalogue: { cards: 5000, pages: 25 } });
