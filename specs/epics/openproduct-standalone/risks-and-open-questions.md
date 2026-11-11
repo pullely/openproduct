@@ -229,10 +229,11 @@ projects per organization, caps each database at 500 MB and pauses a project
 after a week without activity. The monorepo's openproduct projects needed a
 paid organization.
 
-**Decided (2026-11-11):** a new `openproduct` Supabase connection for an
-`openproduct` organization, created by the owner. `arca-orun` is not used.
-OPN2's database task waits for it, and for an organization plan that holds
-two projects that never pause.
+**Decided (2026-11-11):** a new `openproduct` Supabase connection
+(`int_cc19cfd5…`), created by the owner the same day. `arca-orun` is not
+used, so brokered Supabase secrets name the connection by id. OPN2's
+database task checks that the organization's plan holds two projects that
+never pause.
 
 ## OPN-U — stack-tectonic's migration job builds only lumen's package (RISK)
 

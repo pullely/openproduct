@@ -30,7 +30,7 @@ the code departed from `design.md`.
 | Tasks | OPN-1 `tsk_N14BB1XD` (OPN0, done: merged as `1fc8305`, PR #1) · OPN-2 `tsk_85D0P8WW` (OPN1, done: PR #2) · OPN-4 `tsk_DEKB9MPX` (OPN1, done: PR #3) · OPN-3 `tsk_DQTEWGM3` (OPN1, this record: PR #4) |
 | Project environments | `dev`, `stage`, `prod`, created through `POST …/projects/{prj}/environments` on 2026-11-09. A baseline bootstrap creates them; this repository never had one, and secret authoring refused until they existed |
 | Stage secrets | `CLOUDFLARE_API_TOKEN` (`workers-deploy`), `CLOUDFLARE_ACCOUNT_ID` (`account-id`), `CLOUDFLARE_D1_TOKEN` (`d1-edit`), `CLOUDFLARE_WORKERS_SUBDOMAIN` (`workers-subdomain`): all brokered from connection `int_7fbdaafa…`. `PROBE_TOKEN`: static, random, set from stdin. None has a prod counterpart yet |
-| Supabase connection | **a new `openproduct` connection**, the owner's choice (2026-11-11, OPN-T), not created yet. The account's existing one, `arca-orun` (`int_d9116c21…`), is not used |
+| Supabase connection | **`openproduct`** (`int_cc19cfd5…`), created by the owner on 2026-11-11 for this product and inherited from the account (OPN-T). The account's older `arca-orun` (`int_d9116c21…`) is not used, so every brokered Supabase secret names `openproduct` explicitly |
 
 ## D1 slice proof
 
