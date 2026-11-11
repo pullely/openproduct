@@ -249,5 +249,5 @@ in another repository, so it is its own pull request there.
 
 **Resolved upstream (2026-11-11):** stack-tectonic 0.22.0
 (sourceplane/stack-tectonic#23) adds `buildFilter`, default `@saas/db`. The
-pin here moves to 0.22.0 in the Hyperdrive and migration task, the one that
-adds `db-migrate`.
+pin here moves to 0.22.0 in the Hyperdrive and migration task (OPN-7), the
+one that adds `db-migrate`.

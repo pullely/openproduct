@@ -1,0 +1,83 @@
+apiVersion: sourceplane.io/v1
+kind: Component
+metadata:
+  name: openproduct-db-migrate
+  title: openproduct database migrations
+  description: Applies openproduct's migration ladder (from openproduct-db) to its stage and prod Supabase databases. Plan on pull requests, apply on main.
+  labels:
+    domain: infra
+    scope: database
+    team: platform
+    layer: data
+    surface: openproduct
+
+spec:
+  type: db-migrate
+  lifecycle: production
+  owner: platform
+  domain: infra
+  system: openproduct
+  docs:
+    overview: README.md
+
+  # Taken from orun-cloud ffb71be69 (apps/openproduct/infra/db-migrate) as it
+  # is, except for what this repository forces (design §11): the runner reads
+  # its project from the SUPABASE_PROJECT_REF secret, not from Secrets
+  # Manager, so the AWS parameters are gone (stack-tectonic's db-migrate
+  # schema also refuses them).
+  dependsOn:
+    # The ladder and the runner. An input edge, so a change under packages/db,
+    # a new migration among them, schedules this component in --changed. In
+    # the monorepo a mirrored migrations.lock did that; its generator and
+    # lock-sync test retired at the cut (IMPLEMENTATION-STATUS, departure 5).
+    - component: openproduct-db
+      input: true
+    # Ordering: the databases and the secrets the runner reads.
+    - component: openproduct-supabase
+
+  path: packages/db/src/migrations
+
+  parameters:
+    nodeVersion: "20"
+    pnpmVersion: "10.12.1"
+    # The composition's runner build: openproduct's db package, whose dist
+    # carries a self-contained (vendored) twin of the platform runner CLI.
+    #
+    # THIS PARAMETER FAILS SILENTLY WHEN IT FAILS. The build step reports the
+    # package it built and goes green either way; the mismatch only surfaces
+    # two steps later, as MODULE_NOT_FOUND from the apply step. If a migration
+    # run ever reports `Packages in scope: @saas/db`, this line is not reaching
+    # the template (stack-tectonic 0.22.0 is the first release that reads it).
+    buildFilter: "@openproduct/db"
+    owner: pullely
+    repo: openproduct
+
+  # The runner's Management API token is brokered per run from the openproduct
+  # Supabase connection (management-access). Its project is the ref
+  # openproduct-supabase publishes after its apply. Both are needed only by
+  # apply; plan runs offline but resolves them all the same.
+  secretEnv:
+    SUPABASE_ACCESS_TOKEN: "secret://ws_VTNEQKAP/openproduct/{{ .environment }}/SUPABASE_ACCESS_TOKEN"
+    SUPABASE_PROJECT_REF: "secret://ws_VTNEQKAP/openproduct/{{ .environment }}/SUPABASE_PROJECT_REF"
+
+  subscribe:
+    environments:
+      - name: stage
+        profile: plan
+        profileRules:
+          - profile: apply
+            when:
+              triggerRef: github-push-main
+          - profile: apply # manual runs from Orunbase
+            when:
+              triggerRef: github-dispatch
+
+      - name: prod
+        profile: plan
+        profileRules:
+          - profile: apply
+            when:
+              triggerRef: github-push-main
+          - profile: apply # manual runs from Orunbase
+            when:
+              triggerRef: github-dispatch

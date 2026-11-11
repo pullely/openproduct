@@ -1,68 +1,21 @@
-export interface SupabaseSecret {
-  project_ref: string;
-  project_url: string;
-  database_host: string;
-  database_port: string;
-  database_name: string;
-  database_user: string;
-  database_password: string;
-  connection_uri: string;
-}
+// The runner's database identity, from the ENVIRONMENT (openproduct-standalone
+// design §11). infra/supabase publishes its project ref to the environment's
+// workspace secrets after apply, and infra/db-migrate declares
+// SUPABASE_PROJECT_REF in its secretEnv, so orun resolves it into the job env.
+// No Secrets Manager, no AWS SDK (lumen's runner made the same move).
+//
+// The project ref is all the runner needs: it applies migrations through the
+// Supabase Management API (supabase-api-adapter.ts), authenticated by
+// SUPABASE_ACCESS_TOKEN, never over a direct Postgres connection.
 
-async function fetchSecret(
-  secretName: string,
-  region: string,
-): Promise<SupabaseSecret> {
-  const {
-    SecretsManagerClient,
-    GetSecretValueCommand,
-  } = await import("@aws-sdk/client-secrets-manager");
-
-  const client = new SecretsManagerClient({ region });
-  const response = await client.send(
-    new GetSecretValueCommand({ SecretId: secretName }),
-  );
-
-  if (!response.SecretString) {
-    throw new Error(`Secret ${secretName} has no string value`);
-  }
-
-  return JSON.parse(response.SecretString) as SupabaseSecret;
-}
-
-export async function loadSecret(
-  secretName: string,
-  region: string,
-): Promise<SupabaseSecret> {
-  const parsed = await fetchSecret(secretName, region);
-  if (!parsed.project_ref) {
-    throw new Error(`Secret ${secretName} missing project_ref field`);
-  }
-  return parsed;
-}
-
-export async function loadConnectionUri(
-  secretName: string,
-  region: string,
-  poolerRegion?: string,
-): Promise<string> {
-  const parsed = await fetchSecret(secretName, region);
-
-  if (!parsed.connection_uri) {
+/** The Supabase project ref from SUPABASE_PROJECT_REF. Throws when it is unset
+ * or blank, so a missing wiring fails the apply loudly. */
+export function loadProjectRef(env: NodeJS.ProcessEnv = process.env): string {
+  const value = env["SUPABASE_PROJECT_REF"]?.trim();
+  if (!value) {
     throw new Error(
-      `Secret ${secretName} missing connection_uri field`,
+      "SUPABASE_PROJECT_REF is not set — declare it in infra/db-migrate's secretEnv (published by openproduct-supabase)",
     );
   }
-
-  // When a pooler region is provided, use the Supabase session pooler to avoid
-  // IPv6 connectivity issues with the direct database host. The pooler has IPv4
-  // addresses and supports session-level advisory locks and transactions.
-  if (poolerRegion && parsed.project_ref && parsed.database_password) {
-    const poolerHost = `aws-0-${poolerRegion}.pooler.supabase.com`;
-    const user = `postgres.${parsed.project_ref}`;
-    const db = parsed.database_name ?? "postgres";
-    return `postgresql://${encodeURIComponent(user)}:${encodeURIComponent(parsed.database_password)}@${poolerHost}:6543/${db}`;
-  }
-
-  return parsed.connection_uri;
+  return value;
 }

@@ -27,7 +27,7 @@ the code departed from `design.md`.
 | Cloudflare connection | `openproduct` (`int_7fbdaafa…`), inherited from the account |
 | Epic in Orunbase | `openproduct-standalone`, EP-1 (`epc_0TXVHJ8Z`) |
 | Milestones | OPN0 `mls_VEMWNC1J` · OPN1 `mls_GPBDDEE7` · OPN2 `mls_GQ855EQV` · OPN3 `mls_QJP277KN` · OPN4 `mls_GFTKS4Q0` |
-| Tasks | OPN-1 `tsk_N14BB1XD` (OPN0, done: merged as `1fc8305`, PR #1) · OPN-2 `tsk_85D0P8WW` (OPN1, done: PR #2) · OPN-4 `tsk_DEKB9MPX` (OPN1, done: PR #3) · OPN-3 `tsk_DQTEWGM3` (OPN1, done: PR #4) · OPN-5 `tsk_KSEVSQNN` (OPN2, done: merged as `b8d55d3`, PR #5) · OPN-6 `tsk_8417K5E5` (OPN2: the Supabase projects come up) |
+| Tasks | OPN-1 `tsk_N14BB1XD` (OPN0, done: merged as `1fc8305`, PR #1) · OPN-2 `tsk_85D0P8WW` (OPN1, done: PR #2) · OPN-4 `tsk_DEKB9MPX` (OPN1, done: PR #3) · OPN-3 `tsk_DQTEWGM3` (OPN1, done: PR #4) · OPN-5 `tsk_KSEVSQNN` (OPN2, done: merged as `b8d55d3`, PR #5) · OPN-6 `tsk_8417K5E5` (OPN2, done: merged as `2b7b101`, PR #6) · OPN-7 `tsk_WFT2NPB0` (OPN2: Hyperdrive and the migration ladder) |
 | Project environments | `dev`, `stage`, `prod`, created through `POST …/projects/{prj}/environments` on 2026-11-09. A baseline bootstrap creates them; this repository never had one, and secret authoring refused until they existed |
 | Stage secrets | `CLOUDFLARE_API_TOKEN` (`workers-deploy`), `CLOUDFLARE_ACCOUNT_ID` (`account-id`), `CLOUDFLARE_D1_TOKEN` (`d1-edit`), `CLOUDFLARE_WORKERS_SUBDOMAIN` (`workers-subdomain`): all brokered from connection `int_7fbdaafa…`. `PROBE_TOKEN`: static, random, set from stdin. None has a prod counterpart yet |
 | Supabase connection | **`openproduct`** (`int_cc19cfd5…`), created by the owner on 2026-11-11 for this product and inherited from the account (OPN-T). The account's older `arca-orun` (`int_d9116c21…`) is not used, so every brokered Supabase secret names `openproduct` explicitly |
@@ -269,6 +269,22 @@ instead of failing on keys that do not exist yet.
 - **`infra/cloudflare-d1-probe` is deleted**, and `intent.yaml` discovers `infra/supabase/` in its place. Its platform state, which holds only the provisioner's `terraform_data`, stays behind harmlessly.
 - **`tests/web/src/opennext-config.test.ts`** reads `infra/supabase/component.yaml` again and asserts `supabaseRegion: ap-southeast-1`, as it did in the monorepo.
 - **Plans:** a pull request plans `openproduct-supabase · stage` and `· prod` as `terraform.plan-only`. The merge applies stage, then prod (prod's job depends on stage's).
+- **Applied (main run 43033427753, 2026-11-11):** `openproduct-stage` (`itccpiqtwkqtwrdnubgo`) and `openproduct-prod` (`hxmcxvosifxzqsxqsveg`) were created in `ap-southeast-1`, about 10 s each. Each apply published `SUPABASE_PROJECT_REF`, `SUPABASE_DB_PASSWORD` and `SUPABASE_DB_URL` to its environment.
+
+### OPN-7: Hyperdrive and the migration ladder
+
+- **`infra/hyperdrive`** (`openproduct-hyperdrive`, terraform, stage and prod) is orun-cloud `ffb71be69`'s, with the changes design §11 names, made as lumen's `cloudflare-hyperdrive` makes them:
+  - `backend "http" {}`; the AWS provider, the Secrets Manager read of the Supabase payload and the Secrets Manager wiring secret are gone;
+  - the origin derives from `SUPABASE_PROJECT_REF` and `SUPABASE_DB_PASSWORD` (`TF_VAR_supabase_*`), the same derivation the old payload carried (`db.<ref>.supabase.co:5432`, user and database `postgres`);
+  - the wiring document `{hyperdrive_id, hyperdrive_name}` leaves as the `wiring` output, published as `WIRING_OPENPRODUCT_HYPERDRIVE`;
+  - the provider reads `CLOUDFLARE_API_TOKEN` from the environment: `CLOUDFLARE_HYPERDRIVE_TOKEN`, brokered from the `openproduct` Cloudflare connection (`hyperdrive-edit`) on stage and prod. Prod also gained `CLOUDFLARE_ACCOUNT_ID` (`account-id`);
+  - unchanged: the resource, its name `<prefix>openproduct-<env>`, `cloudflare ~> 4.30` and caching on.
+- **`infra/db-migrate`** (`openproduct-db-migrate`, stage and prod) is the monorepo's, without `awsRegion`, `awsAccountId` and `secretName` (stack-tectonic's schema closes its parameters, and nothing reads them now). `buildFilter: "@openproduct/db"` stays. It reads `SUPABASE_ACCESS_TOKEN` (brokered) and `SUPABASE_PROJECT_REF` (published).
+- **Departure: no `migrations.lock`.** Design §11 lists it with db-migrate. In the monorepo it mirrored the manifest so that a new migration changed a file in the component's directory. Here `openproduct-db` is an `input: true` edge instead, which schedules the component on any `packages/db` change. Apply is idempotent, and the lock's generator and lock-sync test retired at the cut (departure 5).
+- **The runner** reads its project from `SUPABASE_PROJECT_REF` (`runner/secrets.ts`, `loadProjectRef`, with a new test) and lost `@aws-sdk/client-secrets-manager`. The lockfile drops only that package. The other AWS packages in it belong to OpenNext.
+- **The pin** moves to stack-tectonic 0.22.0, whose only change is db-migrate's `buildFilter` (OPN-U).
+- **Plans:** a pull request plans `openproduct-hyperdrive` as `terraform.plan-only` and `openproduct-db-migrate` as `db-migrate.plan` (offline), stage then prod. The merge applies both. Hyperdrive and the ladder do not depend on each other.
+- **Local checks:** `@openproduct/db` typecheck and lint pass; 24 files and 574 tests pass, 1 skipped. The build reports `Packages in scope: @openproduct/db`. The built CLI's `plan` lists the ladder offline, and `apply` without `SUPABASE_PROJECT_REF` fails naming it. `terraform validate` passes, and so does `orun validate`.
 
 ## Departures from the design
 

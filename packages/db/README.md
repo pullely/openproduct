@@ -33,16 +33,17 @@ Other contents:
   checksum) to its twin in orun-cloud's `packages/db-migrations` manifest as of
   the repository cut; the twin-sync guard did not come along.
 - `src/runner/` is the vendored migration runner. `cli.ts` is used as
-  `openproduct-db-migrate <plan|apply> --env <stage|prod>`.
+  `openproduct-db-migrate <plan|apply> --env <stage|prod>`. `apply` reads the
+  project from `SUPABASE_PROJECT_REF` and authenticates with
+  `SUPABASE_ACCESS_TOKEN`, both resolved by orun from workspace secrets.
 
 ## Dependencies
 
-- Runtime: `@openproduct/contracts` (workspace), `postgres`, and
-  `@aws-sdk/client-secrets-manager` (runner only).
+- Runtime: `@openproduct/contracts` (workspace) and `postgres`.
 - Dev: `@electric-sql/pglite` (an in-process Postgres for the pg suite).
-- Depended on by [`openproduct-worker`](../../core/README.md) (`input: true`).
-  The Postgres `openproduct-db-migrate` component comes back from orun-cloud
-  in OPN2, rewired to workspace secrets (openproduct-standalone design §11).
+- Depended on by [`openproduct-worker`](../../core/README.md) and
+  [`openproduct-db-migrate`](../../infra/db-migrate/README.md), both
+  `input: true`, so a change here schedules the migration job too.
 
 ## Develop
 

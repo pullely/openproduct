@@ -19,7 +19,6 @@
     "baseline": "OS0_BASELINE=1 vitest run src/scale/baseline.test.ts"
   },
   "dependencies": {
-    "@aws-sdk/client-secrets-manager": "^3.1067.0",
     "@openproduct/contracts": "workspace:*",
     "postgres": "^3.4.9"
   },
