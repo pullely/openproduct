@@ -2861,6 +2861,13 @@ export interface OpenproductRepository {
   getSearchIndexState(): Promise<SearchIndexState>;
   /** Mark the index stale. Called by every write that can change the document. */
   markSearchIndexDirty(at: string): Promise<void>;
+  /**
+   * Record that the sweep found the index clean (OPN-11): current without a
+   * rebuild. Stamps `checked_at` only while the index is still clean, and
+   * never touches `built_at`, which stays the rebuild floor. The phase's
+   * last run, as `/health` reads it, is the later of the two.
+   */
+  markSearchIndexChecked(at: string): Promise<void>;
 
   // ─── the handle namespace (openproduct-commons CG0) ───
 

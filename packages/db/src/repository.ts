@@ -334,13 +334,26 @@ type ProfileRow = {
  */
 const SWEEP_STATE_TABLES: Record<
   SweepLedgerPhase,
-  { table: string; ranAt: "built_at" | "swept_at" | "computed_at"; ownsRunAt: boolean }
+  {
+    table: string;
+    ranAt: "GREATEST(built_at, checked_at)" | "swept_at" | "computed_at";
+    ownsRunAt: boolean;
+  }
 > = {
   // OS5 — the catalogue phase stamps its own moment (`rebuildCatalogue`), so
   // the ledger only says whether its last failure is over. Created by 1925
   // with LI0's error columns from birth.
   catalogue: { table: "openproduct.catalog_state", ranAt: "computed_at", ownsRunAt: false },
-  searchIndex: { table: "openproduct.search_index_state", ranAt: "built_at", ownsRunAt: false },
+  // OPN-11 — the index's last run is the later of its last BUILD and its last
+  // CLEAN CHECK. `built_at` alone moves only when something changed, so on a
+  // quiet catalogue it froze and `/health` called a phase stale that ran on
+  // every tick. GREATEST skips a NULL, so a never-checked index reads as
+  // built and a never-built one as never run.
+  searchIndex: {
+    table: "openproduct.search_index_state",
+    ranAt: "GREATEST(built_at, checked_at)",
+    ownsRunAt: false,
+  },
   integrity: { table: "openproduct.integrity_sweep_state", ranAt: "swept_at", ownsRunAt: false },
   defence: { table: "openproduct.defence_sweep_state", ranAt: "swept_at", ownsRunAt: false },
   board: { table: "openproduct.board_sweep_state", ranAt: "swept_at", ownsRunAt: true },
@@ -4056,6 +4069,19 @@ export function createOpenproductRepository(sql: SqlExecutor): OpenproductReposi
       // "just dirtied" — which is exactly the busy minute this must survive.
       await sql.execute(
         `UPDATE openproduct.search_index_state SET dirty_at = COALESCE(dirty_at, $1)`,
+        [at],
+      );
+    },
+
+    async markSearchIndexChecked(at) {
+      // OPN-11 — only while the index is STILL clean. A write that dirtied it
+      // between the handler's read and this stamp means the index is no
+      // longer current, and recording a check would say it was; the next
+      // tick rebuilds and `built_at` moves instead. `built_at` is untouched:
+      // it is the floor, and a check is not a build.
+      await sql.execute(
+        `UPDATE openproduct.search_index_state SET checked_at = $1
+          WHERE singleton AND dirty_at IS NULL`,
         [at],
       );
     },

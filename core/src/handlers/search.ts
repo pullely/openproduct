@@ -61,6 +61,8 @@ export interface SearchHandlerDeps {
     | "searchCandidates"
     | "getSearchIndexState"
     | "markSearchIndexDirty"
+    // OPN-11 — a clean decline is recorded, so `/health` can see it ran.
+    | "markSearchIndexChecked"
     // SR0 — makers, read LIVE rather than from the index.
     | "searchPublicContributors"
   >;
@@ -213,7 +215,42 @@ export async function handleRebuildSearchIndex(
   const state = await deps.repo.getSearchIndexState();
 
   if (!options.force && !isDue(state, now)) {
-    return successResponse({ rebuilt: false, reason: reasonNotDue(state), indexed: null }, requestId, 200);
+    const reason = reasonNotDue(state);
+    if (reason === "clean") {
+      // A CLEAN DECLINE IS A RUN, AND IT LEAVES A MARK (OPN-11). Without one,
+      // the phase's only timestamp was `built_at`, which moves only when
+      // something changed: on a quiet catalogue it froze, and `/health`
+      // called a phase stale that answered on every tick. The standalone
+      // deploy shipped with an empty catalogue and read degraded from its
+      // first half hour.
+      //
+      // `within-floor` is not marked: that index is dirty, so it is not
+      // current, and it was built under a minute ago, so `built_at` is
+      // already fresh.
+      try {
+        await deps.repo.markSearchIndexChecked(new Date(now).toISOString());
+      } catch (error) {
+        // An unrecorded check is the phase failing to report, and it says so
+        // in the same shape as a failed rebuild (LI1a): the class, never the
+        // message. The index itself is untouched and keeps serving.
+        console.warn(
+          JSON.stringify({
+            level: "warn",
+            msg: "search_check_unrecorded",
+            reason:
+              error instanceof Error ? `${error.name}: ${error.message}`.slice(0, 200) : "non_error_thrown",
+            requestId,
+          }),
+        );
+        return errorResponse(
+          "internal_error",
+          `Search index check failed (${failureClass(error)})`,
+          503,
+          requestId,
+        );
+      }
+    }
+    return successResponse({ rebuilt: false, reason, indexed: null }, requestId, 200);
   }
 
   let indexed: number;

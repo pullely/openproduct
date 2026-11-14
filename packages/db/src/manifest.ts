@@ -485,5 +485,14 @@ export const manifest: MigrationManifest = {
       description:
         "openproduct: logo joins the authored media kinds — product_media's kind and provenance CHECKs widened under their own names (openproduct-studio OSD2)",
     },
+    {
+      id: "2260_openproduct_search_index_checked",
+      context: "openproduct",
+      path: "2260_openproduct_search_index_checked/up.sql",
+      checksum:
+        "251aca780644579d7c9da580f4c02398c8ce9041c28ee634346de205744ca904",
+      description:
+        "openproduct: search_index_state.checked_at — a clean index the sweep checked is a run, so /health stops calling a quiet index stale (OPN-11)",
+    },
   ],
 };
