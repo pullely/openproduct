@@ -18,12 +18,16 @@ spec:
   goal: openproduct.live and api.openproduct.live are served by this repository's prod workers on the openproduct Cloudflare account, and the platform's prod seam points at api.openproduct.live with a fresh key shared by both sides.
   affects:
     - gateway/wrangler.jsonc
+    # A note only: it puts core in the merge's plan, so the redeploy delivers
+    # the rotated prod LISTING_SEAM_SECRET (the link grants' key).
+    - core/component.yaml
     - web/component.yaml
     - infra/synthetic/wrangler.jsonc
     - infra/synthetic/src/config.test.ts
     - intent.yaml
     - specs/epics/openproduct-standalone/**
     - tasks/OPN-10.TaskContract.yaml
+    - default/openproduct/openproduct-worker
     - default/openproduct/openproduct-gateway
     - default/openproduct/openproduct-web
     - default/openproduct/openproduct-synthetic
