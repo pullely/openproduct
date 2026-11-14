@@ -45,21 +45,46 @@ export function isProductSort(value: unknown): value is ProductSort {
 }
 
 /**
- * The sort a `?sort=` value names.
+ * The path segment the other orders live under: `/products/by/<order>`.
  *
- * ANYTHING ELSE IS THE DEFAULT, never a 404 and never an error: a query
- * string is typed by hand and shared half-remembered, and the page a reader
- * meant is the list. A repeated parameter reads as its first value.
+ * IT SITS BESIDE `/products/[cursor]`, and the two cannot be confused. A
+ * cursor is one segment and is base64url of a JSON array (`encodeCursor`),
+ * so it always begins with `W` and `by` never decodes to one; an order's
+ * address is two segments, which a cursor's never is. The continuation page
+ * refuses this word outright rather than asking the directory about it.
  */
-export function productSortOf(raw: string | readonly string[] | null | undefined): ProductSort {
-  const value = typeof raw === "string" ? raw : Array.isArray(raw) ? raw[0] : undefined;
-  return isProductSort(value) ? value : DEFAULT_PRODUCT_SORT;
+export const PRODUCTS_ORDER_SEGMENT = "by";
+
+/** The orders that have an address under `/products/by/`: every sort but
+ *  the default, whose one address is `/products`. */
+export const PRODUCT_ORDER_SEGMENTS = PRODUCT_SORTS.filter(
+  (sort): sort is Exclude<ProductSort, typeof DEFAULT_PRODUCT_SORT> => sort !== DEFAULT_PRODUCT_SORT,
+);
+
+/**
+ * The sort a `/products/by/<segment>` address names, or null.
+ *
+ * NULL IS A 404. A path is an address a page was published at, and an order
+ * that was never published has no page — unlike a query string, there is no
+ * "the list they meant" to fall back to without serving one document under
+ * unbounded addresses. The default order is null here too: it lives at
+ * `/products` and nowhere else, so it has exactly one address.
+ */
+export function productSortOfSegment(segment: unknown): ProductSort | null {
+  return isProductSort(segment) && segment !== DEFAULT_PRODUCT_SORT ? segment : null;
 }
 
-/** Where a sort lives: the default is the page itself, with no query string,
- *  so the default order has exactly one address. */
+/**
+ * Where a sort lives: the default is the page itself, the others are a path
+ * under it.
+ *
+ * A PATH, NEVER A QUERY STRING. A page that reads `?sort=` is rendered per
+ * request and goes out `no-store`; a path is one static, revalidated
+ * document the edge can keep (design.md §4, I6 — the rule the old
+ * `/builds/{order}` pages recorded).
+ */
 export function productsPath(sort: ProductSort = DEFAULT_PRODUCT_SORT): string {
-  return sort === DEFAULT_PRODUCT_SORT ? "/products" : `/products?sort=${sort}`;
+  return sort === DEFAULT_PRODUCT_SORT ? "/products" : `/products/${PRODUCTS_ORDER_SEGMENT}/${sort}`;
 }
 
 const plural = (count: number, one: string, many: string) => `${count.toLocaleString("en-US")} ${count === 1 ? one : many}`;

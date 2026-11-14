@@ -2,19 +2,19 @@
   "header": {
     "top": 0,
     "left": 0,
-    "width": 375,
+    "width": 365,
     "height": 68
   },
   "sectionBar": {
     "top": 736,
     "left": 10,
-    "width": 355,
+    "width": 345,
     "height": 62
   },
   "main": {
     "top": 68,
     "left": 0,
-    "width": 375
+    "width": 365
   },
   "h1": {
     "top": 91,
@@ -24,12 +24,12 @@
   },
   "firstRow": {
     "left": 11,
-    "width": 354,
+    "width": 344,
     "height": 464
   },
   "footer": {
     "left": 0,
-    "width": 375,
+    "width": 365,
     "height": 300
   },
   "themeControl": {

@@ -4,8 +4,8 @@
 // What is pinned here is what the web layer is responsible for:
 //
 //   - `/` lists the products under the title Products (it becomes the feed
-//     of posts in OPR2); `/products` is the same view with its sorts in
-//     `?sort=`; `/launches` redirects to `/` from next.config.mjs
+//     of posts in OPR2); `/products` is the same view, with its other sorts at
+//     `/products/by/<order>`; `/launches` redirects to `/` from next.config.mjs
 //   - nothing on the page decides an order (OL-2a)
 //   - the row is the design's fourteen measurements, and a fact it does not
 //     have renders absent rather than as a zero (OPC-C)
@@ -141,27 +141,46 @@ describe("`/` lists the products, and says so (openproduct-redesign OPR1)", () =
     expect(existsSync(resolve(APP_DIR, "launches/[day]/page.tsx"))).toBe(true);
   });
 
-  it("`/products` is the same view in the sort its query string names", () => {
+  it("`/products` is the same view in the default sort, and each other sort is the same view at its own path", () => {
     const products = read("products/page.tsx");
-    expect(products).toContain("const sort = productSortOf((await searchParams).sort);");
-    expect(products).toContain("<ProductsView sort={sort} returnTo={productsPath(sort)} retryHref={productsPath(sort)} />");
-    // A page that reads `searchParams` is dynamic: a `revalidate` beside it
-    // would be accepted and ignored, so none is declared (the census's QUERY
-    // class) — and it still resolves no actor (I6).
-    expect(products).not.toMatch(/export const revalidate/);
-    expect(products).not.toMatch(/cookies\(|headers\(|readSession/);
+    expect(products).toContain(
+      "<ProductsView sort={DEFAULT_PRODUCT_SORT} returnTo={productsPath()} retryHref={productsPath()} />",
+    );
+    const sorted = read("products/by/[order]/page.tsx");
+    expect(sorted).toContain("const sort = productSortOfSegment((await params).order);");
+    expect(sorted).toContain("<ProductsView sort={sort} returnTo={productsPath(sort)} retryHref={productsPath(sort)} />");
+    // No page of the list reads `searchParams` — one that did would be
+    // dynamic, and the `revalidate` beside it accepted and ignored. Each is
+    // a static document on the site's minute (the census's STATIC and ISR
+    // classes), and still resolves no actor (I6).
+    for (const page of [products, sorted]) {
+      const source = page.replace(/\/\*[\s\S]*?\*\//g, "");
+      expect(source).toMatch(/^export const revalidate = 60;$/m);
+      expect(source).not.toContain("searchParams");
+      expect(source).not.toMatch(/cookies\(|headers\(|readSession/);
+    }
     // Not a redirect — a redirect and a page at one address would be the
-    // redirect winning, and the pill landing on `/`.
+    // redirect winning, and the pill landing on `/`. The ONE entry that
+    // names `/products` as a source is conditional on `?sort=`: the query
+    // form the sort had for a few hours, sent on to the path.
     const config = readFileSync(resolve(APP_DIR, "../../next.config.mjs"), "utf-8");
-    expect(config).not.toContain('source: "/products"');
+    const sources = config.match(/source: "\/products",[\s\S]*?permanent: true,?\s*\}/g) ?? [];
+    expect(sources).toHaveLength(1);
+    expect(sources[0]).toContain('has: [{ type: "query", key: "sort", value: "(?<order>newest|upvoted)" }]');
+    expect(sources[0]).toContain('destination: "/products/by/:order"');
+    expect(sources[0]).toContain("permanent: true");
   });
 
   it("each list address is canonical at itself, and the sitemap names both", () => {
     expect(read("page.tsx")).toContain("${publicApexOrigin()}/`");
-    // A sort's canonical is its own address; an unknown `?sort=` is the
-    // default list and says `/products`.
-    expect(read("products/page.tsx")).toContain("alternates: { canonical: `${origin}${productsPath(sort)}` }");
+    // The default list says `/products`; a sort's canonical is its own
+    // address, and being a page of its own it is in the sitemap too.
+    expect(read("products/page.tsx")).toContain("alternates: { canonical: `${origin}${productsPath()}` }");
+    expect(read("products/by/[order]/page.tsx")).toContain("alternates: { canonical: `${origin}${productsPath(sort)}` }");
     expect(read("sitemap.xml/route.ts")).toContain('{ path: "products", lastmod: null }');
+    expect(read("sitemap.xml/route.ts")).toContain(
+      "...PRODUCT_ORDER_SEGMENTS.map((order) => ({ path: productsPath(order).slice(1), lastmod: null })),",
+    );
   });
 
   it("Help wanted is its own page of seats, and the old address redirects", () => {

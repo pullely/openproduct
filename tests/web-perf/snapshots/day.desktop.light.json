@@ -2,28 +2,28 @@
   "header": {
     "top": 0,
     "left": 0,
-    "width": 1280,
+    "width": 1270,
     "height": 60
   },
   "sectionBar": null,
   "main": {
     "top": 60,
-    "left": 140,
+    "left": 135,
     "width": 1000
   },
   "h1": {
     "top": 174,
-    "left": 184,
+    "left": 179,
     "width": 912,
     "height": 44
   },
   "firstRow": {
-    "left": 184,
+    "left": 179,
     "width": 912,
     "height": 108
   },
   "footer": {
-    "left": 50,
+    "left": 45,
     "width": 1180,
     "height": 130
   },

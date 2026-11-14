@@ -1,51 +1,46 @@
 import type { Metadata } from "next";
 
 import { ProductsView } from "../feed/products-view";
-import { DEFAULT_PRODUCT_SORT, PRODUCT_SORT_LABEL, productSortOf, productsPath } from "../feed/products";
+import { DEFAULT_PRODUCT_SORT, productsPath } from "../feed/products";
 import { publicApexOrigin } from "../public-api";
 
 /**
  * Products (openproduct-redesign OPR1; boards `Products`, `PhoneProducts`) —
  * the address the header's second pill goes to.
  *
- * THE LIST OF PRODUCTS, IN ONE OF ITS SORTS: `/products` is today's default
- * order (Most active) and `/products?sort=newest` and `?sort=upvoted` are the
- * other two (`feed/products.ts`). The old `/builds/{order}` addresses
- * redirect here. The body is `ProductsView`, which `/` also draws for this
- * milestone.
+ * THE LIST OF PRODUCTS, IN THE DEFAULT ORDER. `/products` is today's default
+ * order (Most active) and nothing else; the other two sorts are pages of
+ * their own at `/products/by/newest` and `/products/by/upvoted`
+ * (`by/[order]/page.tsx`, `feed/products.ts`). The old `/builds/{order}`
+ * addresses redirect to those. The body is `ProductsView`, which `/` also
+ * draws for this milestone.
  *
- * A QUERY STRING, SO THIS DOCUMENT IS RENDERED PER REQUEST. The design of
- * record puts the sort in `?sort=` (design.md §5), and a page that reads
- * `searchParams` is dynamic in Next: `revalidate` does not apply to it and
- * it is not prerendered — the trade `build-orders.ts` records, taken here on
- * purpose. What keeps that cheap is underneath: every read this page makes
- * is the cached public read (`PUBLIC_REVALIDATE_SECONDS`), so a request
- * costs a render and no gateway call inside the minute. `/`, which reads no
- * query string, stays one static, revalidated document.
+ * STATIC, AND IT READS NO QUERY STRING. For a few hours on this milestone's
+ * branch the sort lived in `?sort=`, and the price was recorded here: a page
+ * that reads `searchParams` is dynamic in Next, so `revalidate` did not
+ * apply, nothing was prerendered and the document went out `no-store` — one
+ * render per request for a page that is the same bytes for everyone. That
+ * trade was taken back. The sort is a path segment, as it was under
+ * `/builds/{order}` (the trade `build-orders.ts` records), so this page and
+ * each sorted one is a single document the edge keeps for a minute (design.md
+ * §4, OPC-1). `/products?sort=<order>` still arrives: `next.config.mjs`
+ * redirects it to the path, from the edge.
  *
- * STILL THE SAME BYTES FOR EVERY VISITOR (I6). No session is read and no
- * actor is resolved; a visitor's own Follow state arrives after paint from
- * the overlay.
- *
- * AN UNKNOWN SORT IS THE DEFAULT LIST, and its canonical address says so:
- * `?sort=anything-else` renders `/products` and names `/products` as
- * canonical, so a mistyped link is not a second copy of the page.
+ * THE SAME BYTES FOR EVERY VISITOR (I6). No session is read and no actor is
+ * resolved; a visitor's own Follow state arrives after paint from the
+ * overlay.
  */
-interface PageProps {
-  searchParams: Promise<{ sort?: string | string[] }>;
-}
+export const revalidate = 60;
 
-export async function generateMetadata({ searchParams }: PageProps): Promise<Metadata> {
-  const sort = productSortOf((await searchParams).sort);
+export function generateMetadata(): Metadata {
   const origin = publicApexOrigin();
   return {
-    title: sort === DEFAULT_PRODUCT_SORT ? "Products" : `Products — ${PRODUCT_SORT_LABEL[sort].toLowerCase()}`,
+    title: "Products",
     description: "Products built in the open: what each one is, what moved this week, and the seats it has open.",
-    ...(origin ? { alternates: { canonical: `${origin}${productsPath(sort)}` } } : {}),
+    ...(origin ? { alternates: { canonical: `${origin}${productsPath()}` } } : {}),
   };
 }
 
-export default async function ProductsPage({ searchParams }: PageProps) {
-  const sort = productSortOf((await searchParams).sort);
-  return <ProductsView sort={sort} returnTo={productsPath(sort)} retryHref={productsPath(sort)} />;
+export default function ProductsPage() {
+  return <ProductsView sort={DEFAULT_PRODUCT_SORT} returnTo={productsPath()} retryHref={productsPath()} />;
 }

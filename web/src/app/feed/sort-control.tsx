@@ -9,7 +9,7 @@ import { PRODUCT_SORTS, PRODUCT_SORT_LABEL, productsPath, type ProductSort } fro
  * `PhoneProducts`).
  *
  * LINKS, NOT A WIDGET. Each sort is an address — `/products` for the default,
- * `/products?sort=<order>` for the others (`products.ts`) — so the control is
+ * `/products/by/<order>` for the others (`products.ts`) — so the control is
  * a row of plain links that work with no JavaScript, and the current one
  * carries `aria-current`. A client-side re-sort would order only the cards
  * the page happens to hold, which is not the order the site publishes.

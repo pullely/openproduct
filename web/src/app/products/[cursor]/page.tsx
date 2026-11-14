@@ -4,7 +4,7 @@ import { notFound } from "next/navigation";
 import { breadcrumbJsonLd, catalogueMomentCopy, cataloguePagePath, frontPageEligible } from "@openproduct/contracts";
 
 import { PRODUCT_GRID, ProductCard } from "../../feed/product-card";
-import { PRODUCTS_MORE_LABEL, productsShownLine } from "../../feed/products";
+import { PRODUCTS_MORE_LABEL, PRODUCTS_ORDER_SEGMENT, productsShownLine } from "../../feed/products";
 import { fetchDirectoryPage, publicApexOrigin } from "../../public-api";
 import { BOARD_PAGE, BTN_SOFT, EMPTY_NOTE, FOCUS, PAGE_TITLE } from "../../ui/design";
 import { JsonLd } from "../../ui/json-ld";
@@ -46,6 +46,11 @@ export async function generateMetadata({ params }: { params: Promise<{ cursor: s
 
 export default async function CataloguePage({ params }: { params: Promise<{ cursor: string }> }) {
   const { cursor } = await params;
+  // `/products/by` is the stem of the sorted pages (`by/[order]/page.tsx`),
+  // not a position in the list: it is refused here, by name, before the
+  // directory is asked — the one word this page knows, and it is not a
+  // cursor (`PRODUCTS_ORDER_SEGMENT` says why it never can be).
+  if (cursor === PRODUCTS_ORDER_SEGMENT) notFound();
   const page = await fetchDirectoryPage(cursor);
   // A cursor the directory did not issue is refused (422), and a refused
   // address is a 404 — the same answer `/{slug}` gives an unknown listing,

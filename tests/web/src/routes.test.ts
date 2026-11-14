@@ -2415,9 +2415,14 @@ describe("LC3 — the launch board, ranked separately from the directory", () =>
     const redirects = /async redirects\(\)[\s\S]*?^  \},/m.exec(config())?.[0] ?? "";
     expect(redirects).toContain('{ source: "/launches", destination: "/", permanent: true }');
     // `/products` redirected here too until openproduct-redesign OPR1 made
-    // it a page (`feed.test.ts`); no entry for it may remain, or the pill
-    // would land on `/`.
-    expect(redirects).not.toContain('source: "/products"');
+    // it a page (`feed.test.ts`); no entry that moves the PAGE may remain,
+    // or the pill would land somewhere else. The one entry that names it is
+    // conditional on `?sort=` (the query form the sort briefly had, sent to
+    // `/products/by/<order>`), so a plain `/products` is never redirected.
+    const fromProducts = redirects.match(/source: "\/products",\s*\S+/g) ?? [];
+    expect(fromProducts).toHaveLength(1);
+    expect(fromProducts[0]).toMatch(/^source: "\/products",\s*has:$/);
+    expect(redirects).toContain('has: [{ type: "query", key: "sort", value: "(?<order>newest|upvoted)" }],');
     // The two addresses OPR1 moved arrive the same way: from the edge, each
     // at a stable destination.
     expect(redirects).toContain('{ source: "/builds/roles", destination: "/help-wanted", permanent: true }');

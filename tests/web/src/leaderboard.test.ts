@@ -7,7 +7,7 @@
 //
 // What is pinned here:
 //
-//   - every leaderboard address redirects to `/products?sort=upvoted` FROM THE
+//   - every leaderboard address redirects to `/products/by/upvoted` FROM THE
 //     EDGE, never from a route module (SB0: a module whose body is one
 //     redirect prerenders as a 200 with an empty body)
 //   - no leaderboard route module is left to render
@@ -35,9 +35,9 @@ describe("the leaderboard is the Upvoted order now", () => {
     // order a sort of the Products page; that address redirects too, and a
     // redirect to a redirect is two round trips for one answer.
     const config = readFileSync(resolve(APP_DIR, "../../next.config.mjs"), "utf-8");
-    expect(productsPath("upvoted")).toBe("/products?sort=upvoted");
-    expect(config).toContain('{ source: "/leaderboard", destination: "/products?sort=upvoted", permanent: true }');
-    expect(config).toContain('{ source: "/leaderboard/:range", destination: "/products?sort=upvoted", permanent: true }');
+    expect(productsPath("upvoted")).toBe("/products/by/upvoted");
+    expect(config).toContain('{ source: "/leaderboard", destination: "/products/by/upvoted", permanent: true }');
+    expect(config).toContain('{ source: "/leaderboard/:range", destination: "/products/by/upvoted", permanent: true }');
     expect(config).not.toContain('destination: "/builds/upvoted"');
   });
 

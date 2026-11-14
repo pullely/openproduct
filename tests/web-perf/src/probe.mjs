@@ -331,8 +331,8 @@ const SURFACES = [
   ["Discover", `/${SAMPLE_SLUG}`, "Product listing"],
   ["Discover", "/topics", "Topics index"],
   ["Discover", "/topics/developer-tools", "One topic"],
-  ["Discover", "/products?sort=upvoted", "Products (upvoted)"],
-  ["Discover", "/products?sort=newest", "Products (newest)"],
+  ["Discover", "/products/by/upvoted", "Products (upvoted)"],
+  ["Discover", "/products/by/newest", "Products (newest)"],
   ["Discover", "/launches/2026-05-20", "One day's board"],
   ["Discover", "/collections", "Collections index"],
   ["Discover", "/collections/worth-a-look", "One collection"],
@@ -372,7 +372,7 @@ const ACTS = [
 const HOPS = [
   ["/", `/${SAMPLE_SLUG}`, "feed → listing"],
   ["/", "/collections", "feed → collections"],
-  ["/", "/products?sort=upvoted", "feed → upvoted"],
+  ["/", "/products/by/upvoted", "feed → upvoted"],
   ["/", "/topics", "feed → topics"],
   [`/${SAMPLE_SLUG}`, "/", "listing → feed"],
   // The maker page is reached by its PRETTY form (`/@ada`), which the router

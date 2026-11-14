@@ -20,14 +20,13 @@ import { SITE_CARD_ALT, cardMeta } from "./ui/og";
  * WHAT KEEPS IT DISTINCT FROM `/products`: the address and its canonical
  * (`/`, as it has always declared), the brand in the title, and the site's
  * share card. The list is the same list; the sort's links go to
- * `/products?sort=…`, where a sort is an address.
+ * `/products/by/…`, where a sort is an address.
  *
  * A SERVER COMPONENT, STATIC, ONE READ — the catalogue's first page. OPC-1
  * requires one cacheable document that resolves no actor; the visitor's own
  * Follow state arrives after paint from the XP2 overlay, so the anonymous
  * and signed-in renders are byte-identical (I6). It reads no query string,
- * which is why it stays static while `/products` (which reads `?sort=`) is
- * rendered per request.
+ * as no page of the list does: a sort is a path (`/products/by/<order>`).
  *
  * NOTHING ON THIS PAGE DECIDES AN ORDER. `ProductsView` reads the catalogue
  * in the published order and `orderBuilds` (the contract) applies the floor

@@ -931,28 +931,24 @@ export const ROUTES = [
   // failure panel names a product.
   { path: `/stack/${SAMPLE_STACK}`, name: "one stack", expect: CARDS[0].slug },
   { path: `/topics/${SAMPLE_TOPIC}`, name: "one topic", expect: topicCard(SAMPLE_TOPIC).label },
-  // OPR1 — the list's other orders are the Products page's sorts, in
-  // `?sort=`; their old addresses under `/builds/` are `MOVED` below (as the
-  // leaderboard's ranges are, since OB7). `CARDS[0]` is on all of them.
+  // OPR1 — the list's other orders are the Products page's sorts, each a
+  // page at `/products/by/<order>`; their old addresses under `/builds/` are
+  // `MOVED` below (as the leaderboard's ranges are, since OB7). `CARDS[0]` is
+  // on all of them.
   //
-  // `cacheable: false`, AND IT IS THE INVERSION `/search` USES BELOW, not an
-  // opt-out. The orders were three prerendered pages (`/builds/{order}`) and
-  // this lane held each as one cached document. The design of record puts
-  // the sort in `?sort=` (design.md §5), and a page that reads
-  // `searchParams` is rendered per request — `products/page.tsx` records
-  // the trade and what keeps it cheap (every read under it is the cached
-  // public read). So the fact held here is the new one: the Products page,
-  // in any sort, goes out `no-store`, and a `revalidate` added to it later —
-  // accepted, ignored, meaning nothing — fails here rather than passing
-  // quietly. `/`, which draws the same list and reads no query, is still
-  // held as a cached document above.
-  { path: "/products?sort=upvoted", name: "products · upvoted", expect: CARDS[0].slug, cacheable: false },
-  { path: "/products?sort=newest", name: "products · newest", expect: CARDS[0].slug, cacheable: false },
+  // CACHEABLE, as `/builds/{order}` was. For a few hours on the OPR1 branch
+  // the sort was `?sort=`, the page read `searchParams`, and these rows (and
+  // `/products`) were marked `cacheable: false` — the lane holding the fact
+  // that the Products page went out `no-store`. The sort is a path now, so
+  // each is one static, revalidated document again and the lane holds THAT:
+  // a `no-store` on any of them fails here.
+  { path: "/products/by/upvoted", name: "products · upvoted", expect: CARDS[0].slug },
+  { path: "/products/by/newest", name: "products · newest", expect: CARDS[0].slug },
   // OPR1 — the header's other two sections. Help wanted is the page of open
   // seats (`/builds/roles` is in `MOVED` below): `CARDS[0]` has open roles,
   // so its name is on a ticket. Products is the board's list of cards.
   { path: "/help-wanted", name: "help wanted", expect: CARDS[0].slug },
-  { path: "/products", name: "products", expect: SAMPLE_SLUG, cacheable: false },
+  { path: "/products", name: "products", expect: SAMPLE_SLUG },
   // QE2 — every public address is walked. These had none of the three lanes
   // over them: HB2's year, PP3's pricing pages, FO1's forum and its two
   // variants, FO2's listing forum. A public route the axe pass does not
@@ -1025,14 +1021,24 @@ export const MOVED = [
   { from: "/launches", to: "/", status: 308 },
   // OB7 (#1875) — the leaderboard and every range of it are Upvoted now;
   // OPR1 — and Upvoted is a sort of the Products page, reached in ONE hop.
-  { from: "/leaderboard", to: "/products?sort=upvoted", status: 308 },
-  { from: "/leaderboard/month", to: "/products?sort=upvoted", status: 308 },
+  { from: "/leaderboard", to: "/products/by/upvoted", status: 308 },
+  { from: "/leaderboard/month", to: "/products/by/upvoted", status: 308 },
   // openproduct-redesign OPR1 — the list's orders: Roles is the Help wanted
   // section, the other two are sorts of the Products page. All three are
   // `redirects()` entries; no route is left under `/builds/`.
   { from: "/builds/roles", to: "/help-wanted", status: 308 },
-  { from: "/builds/upvoted", to: "/products?sort=upvoted", status: 308 },
-  { from: "/builds/newest", to: "/products?sort=newest", status: 308 },
+  { from: "/builds/upvoted", to: "/products/by/upvoted", status: 308 },
+  { from: "/builds/newest", to: "/products/by/newest", status: 308 },
+  // OPR1 — the sort was `?sort=` for a few hours (and design.md was written
+  // with that form); the query form arrives at the path, from the edge.
+  //
+  // THE QUERY RIDES ALONG, and that is Next, not a choice: a `redirects()`
+  // entry carries the request's query string onto its destination and offers
+  // no way to drop it. It is harmless — the page at the path is static and
+  // reads no query, and its canonical is the bare path — and it is pinned
+  // here as it is, so the day Next stops doing it this row says so.
+  { from: "/products?sort=upvoted", to: "/products/by/upvoted?sort=upvoted", status: 308 },
+  { from: "/products?sort=newest", to: "/products/by/newest?sort=newest", status: 308 },
   { from: "/me/notifications", to: "/activity", status: 308 },
   // …and the two lists under `/me` that became sections of it.
   { from: "/me/saved", to: "/me?section=saved", status: 308 },
@@ -1075,6 +1081,9 @@ export const ABSENT = [
   { path: "/products/zzz-not-a-route", why: "OS1 — a cursor the directory did not issue: refused, and refused is 404" },
   { path: "/zzz-no-such-route/zzz", why: "THE CONTROL — no route at all, so Next's own router answers" },
   { path: "/builds/zzz-not-an-order", why: "OPR1 — a segment under /builds/ that was never an order: the site's own 404, not a handler's plain text" },
+  { path: "/products/by/zzz-not-an-order", why: "OPR1 — an order the Products page never published: no page, rather than the default list under a second address" },
+  { path: "/products/by/most-active", why: "OPR1 — the default order lives at /products and nowhere else" },
+  { path: "/products/by", why: "OPR1 — the stem of the sorted pages is not a cursor: refused by name" },
 ];
 
 /** The reads, keyed by the path the web app asks for. */

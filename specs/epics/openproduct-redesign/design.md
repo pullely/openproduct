@@ -129,7 +129,9 @@ keeps the switch and derives a dark ramp from the palette above (risks R3).
 | Post templates (`Templates`) | `/docs/posting` | none | OPR2 |
 
 **Addresses that move redirect** (`/builds/roles` → `/help-wanted`,
-`/builds/[order]` → `/products?sort=`, `/me/notifications` → `/activity`).
+`/builds/[order]` → `/products/by/[order]`, `/me/notifications` →
+`/activity`). The sorts are paths, not a query string, so the pages stay
+cacheable (§4).
 
 **Sections with no board stay reachable and take the new shell and
 tokens, and leave the navigation:** topics, stack, pricing, collections,

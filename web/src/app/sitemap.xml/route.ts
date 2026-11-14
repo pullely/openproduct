@@ -15,6 +15,8 @@ import {
   weekWindow,
 } from "@openproduct/contracts";
 
+import { PRODUCT_ORDER_SEGMENTS, productsPath } from "../feed/products";
+
 /**
  * The sitemap (launch polish, widened at openproduct-commons DS4).
  *
@@ -86,15 +88,15 @@ export async function GET(request: Request): Promise<Response> {
     // No `lastmod` on either: they are indexes over a catalogue that changes
     // constantly, and a date stamped from the moment this document was built
     // would ask a crawler to re-fetch them on every publish anywhere.
-    // OPR1 — THE LIST'S ORDERS LEFT THIS DOCUMENT. `/builds/newest` and
-    // `/builds/upvoted` were pages of their own and were listed here; they
-    // are sorts of the Products page now (`/products?sort=…`) and their old
-    // addresses redirect, as `/builds/roles` does to the Help wanted section
-    // and the leaderboard's ranges did before them (OB7). A sitemap lists the
-    // address a page lives at, never one that redirects — and a sort is a
-    // view of one document whose canonical address is `/products`, which is
-    // the one entry it gets.
+    // OPR1 — THE LIST'S ORDERS MOVED UNDER THE PRODUCTS PAGE. `/builds/newest`
+    // and `/builds/upvoted` were pages of their own and were listed here;
+    // each is `/products/by/<order>` now — still a page of its own, static
+    // and canonical to itself, so still an entry — and the old addresses
+    // redirect, as `/builds/roles` does to the Help wanted section and the
+    // leaderboard's ranges did before them (OB7). A sitemap lists the address
+    // a page lives at, never one that redirects.
     { path: "products", lastmod: null },
+    ...PRODUCT_ORDER_SEGMENTS.map((order) => ({ path: productsPath(order).slice(1), lastmod: null })),
     { path: "help-wanted", lastmod: null },
     // QE1 — every day that holds a board, at its own address (LC3): a
     // settled day is a document that never changes, which is the best kind

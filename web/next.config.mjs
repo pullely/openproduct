@@ -103,14 +103,16 @@ const nextConfig = {
       { source: "/launches", destination: "/", permanent: true },
       // openproduct-redesign OPR1 (design.md §5) — THE LIST'S ORDERS MOVED.
       // `/builds/newest` and `/builds/upvoted` were two of the list's orders,
-      // each its own page; they are sorts of the Products page now. The
-      // builds asking for people were the Roles order; they are the Help
-      // wanted section, at an address of its own. Every order is named here,
-      // and HERE ONLY: there is no route under `/builds/` any more, so a
-      // segment that was never an order falls through to the site's own 404
-      // page rather than to a handler's plain-text one.
-      { source: "/builds/newest", destination: "/products?sort=newest", permanent: true },
-      { source: "/builds/upvoted", destination: "/products?sort=upvoted", permanent: true },
+      // each its own page; they are sorts of the Products page now, each
+      // still its own page at `/products/by/<order>` — a PATH, so the
+      // document is static and cacheable as the old one was. The builds
+      // asking for people were the Roles order; they are the Help wanted
+      // section, at an address of its own. Every order is named here, and
+      // HERE ONLY: there is no route under `/builds/` any more, so a segment
+      // that was never an order falls through to the site's own 404 page
+      // rather than to a handler's plain-text one.
+      { source: "/builds/newest", destination: "/products/by/newest", permanent: true },
+      { source: "/builds/upvoted", destination: "/products/by/upvoted", permanent: true },
       { source: "/builds/roles", destination: "/help-wanted", permanent: true },
       // OB7 (openproduct-open-builds D5) — THE LEADERBOARD FOLDED INTO THE
       // UPVOTED ORDER. It ranked launches by the upvotes each day's board
@@ -119,8 +121,20 @@ const nextConfig = {
       // each range) arrive at that sort in ONE hop — straight to where the
       // order lives now, never through the `/builds/upvoted` it used to
       // name, which would be a redirect to a redirect.
-      { source: "/leaderboard", destination: "/products?sort=upvoted", permanent: true },
-      { source: "/leaderboard/:range", destination: "/products?sort=upvoted", permanent: true },
+      { source: "/leaderboard", destination: "/products/by/upvoted", permanent: true },
+      { source: "/leaderboard/:range", destination: "/products/by/upvoted", permanent: true },
+      // OPR1 — THE SORT WAS A QUERY STRING FOR A FEW HOURS, and design.md was
+      // written with that form, so links to `/products?sort=<order>` exist.
+      // They arrive at the path. Matched HERE, at the edge, so the page
+      // itself never reads a query string and stays one static document; the
+      // order is captured by name and only the two published ones match, so
+      // `?sort=anything-else` is simply `/products` (which ignores it).
+      {
+        source: "/products",
+        has: [{ type: "query", key: "sort", value: "(?<order>newest|upvoted)" }],
+        destination: "/products/by/:order",
+        permanent: true,
+      },
       // OPR1 — THE INBOX AND THE TWO LISTS UNDER `/me` MOVED. The inbox is
       // Activity, where the header's bell goes; the saved list and the
       // applications are sections of `/me` (board `Me`). Each source is the

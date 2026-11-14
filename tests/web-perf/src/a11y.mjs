@@ -744,10 +744,11 @@ export async function runA11y(base) {
     // would pass the generic sweep above and leave the order unlinkable.
     {
       // openproduct-redesign OPR1 — the switch is the Products page's sort:
-      // the default at `/products`, the others at `/products?sort=<order>`.
+      // the default at `/products`, the others at `/products/by/<order>` — a
+      // path, never a query string, so each order is one cacheable document.
       // `[data-product-sort]` is the track drawn from `sm` up; a phone draws
       // the same links inside a `<details>`.
-      await page.goto(base + "/products?sort=upvoted", { waitUntil: "load" });
+      await page.goto(base + "/products/by/upvoted", { waitUntil: "load" });
       await page.waitForTimeout(1200);
       const orderNav = await page.evaluate(() => {
         const nav = document.querySelector("nav[data-product-sort]");
@@ -776,15 +777,15 @@ export async function runA11y(base) {
       );
       check(
         "order switch: exactly one order is announced as current, and it is this page's",
-        orderNav !== null && orderNav.current.length === 1 && orderNav.current[0] === "/products?sort=upvoted",
+        orderNav !== null && orderNav.current.length === 1 && orderNav.current[0] === "/products/by/upvoted",
         orderNav ? `marked aria-current=page: ${orderNav.current.join(" | ") || "none"}` : "no switch",
       );
       check(
-        "order switch: every order is a real address — the default at /products, the rest in ?sort=",
+        "order switch: every order is a real address — the default at /products, the rest at /products/by/<order>, none in a query string",
         orderNav !== null &&
           orderNav.hrefs.includes("/products") &&
-          orderNav.hrefs.includes("/products?sort=upvoted") &&
-          orderNav.hrefs.every((h) => /^\/products(\?sort=[a-z-]+)?$/.test(h)),
+          orderNav.hrefs.includes("/products/by/upvoted") &&
+          orderNav.hrefs.every((h) => /^\/products(\/by\/[a-z-]+)?$/.test(h)),
         orderNav ? orderNav.hrefs.join(" | ") : "no switch",
       );
 

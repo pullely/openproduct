@@ -2,34 +2,34 @@
   "header": {
     "top": 0,
     "left": 0,
-    "width": 375,
+    "width": 365,
     "height": 68
   },
   "sectionBar": {
     "top": 736,
     "left": 10,
-    "width": 355,
+    "width": 345,
     "height": 62
   },
   "main": {
     "top": 68,
     "left": 0,
-    "width": 375
+    "width": 365
   },
   "h1": {
     "top": 198,
     "left": 25,
-    "width": 326,
+    "width": 316,
     "height": 31
   },
   "firstRow": {
     "left": 18,
-    "width": 340,
+    "width": 330,
     "height": 56
   },
   "footer": {
     "left": 0,
-    "width": 375,
+    "width": 365,
     "height": 300
   },
   "themeControl": {

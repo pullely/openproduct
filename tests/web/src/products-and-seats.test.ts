@@ -6,8 +6,9 @@
 // `floor.test.ts`, `target-size.test.ts`). This file holds the three rules
 // the milestone added:
 //
-//   - a sort is an address: which `?sort=` values name which published
-//     order, and what an unknown one is
+//   - a sort is an address: `/products` for the default, a PATH
+//     (`/products/by/<order>`) for the others, what an unknown one is, and
+//     why a cursor's address can never be one of them
 //   - the old `/builds/{order}` addresses redirect, each to the right place,
 //     with a status a crawler can read
 //   - a seat's ticket: what it says, and the three states its button has
@@ -16,13 +17,22 @@ import { existsSync, readFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { BUILD_ORDERS, BUILD_ORDER_SEGMENTS, type PublicRoleOpening } from "@openproduct/contracts";
+import {
+  BUILD_ORDERS,
+  BUILD_ORDER_SEGMENTS,
+  cataloguePagePath,
+  decodeCursor,
+  encodeCursor,
+  type PublicRoleOpening,
+} from "@openproduct/contracts";
 import {
   DEFAULT_PRODUCT_SORT,
   PRODUCT_SORTS,
   PRODUCT_SORT_LABEL,
   isProductSort,
-  productSortOf,
+  PRODUCTS_ORDER_SEGMENT,
+  PRODUCT_ORDER_SEGMENTS,
+  productSortOfSegment,
   productsPath,
 } from "@openproduct-web/app/feed/products";
 import {
@@ -66,28 +76,92 @@ describe("a sort is an address", () => {
     expect(DEFAULT_PRODUCT_SORT).toBe("most-active");
     expect(productsPath()).toBe("/products");
     expect(productsPath("most-active")).toBe("/products");
-    expect(productsPath("newest")).toBe("/products?sort=newest");
-    expect(productsPath("upvoted")).toBe("/products?sort=upvoted");
+    expect(productsPath("newest")).toBe("/products/by/newest");
+    expect(productsPath("upvoted")).toBe("/products/by/upvoted");
+    // A PATH, never a query string: a page that reads `?sort=` is rendered
+    // per request and goes out `no-store` (design.md §4).
+    for (const sort of PRODUCT_SORTS) expect(productsPath(sort)).not.toMatch(/[?=&#]/);
   });
 
-  it("reads `?sort=`, and anything it does not know is the default list", () => {
-    expect(productSortOf("newest")).toBe("newest");
-    expect(productSortOf("upvoted")).toBe("upvoted");
-    expect(productSortOf("most-active")).toBe("most-active");
-    for (const unknown of [undefined, null, "", "roles", "NEWEST", "az", "seats", "new", "__proto__"]) {
-      expect([unknown, productSortOf(unknown)]).toEqual([unknown, "most-active"]);
+  it("reads the order from the path, and anything it does not know is no page at all", () => {
+    expect([...PRODUCT_ORDER_SEGMENTS]).toEqual(["newest", "upvoted"]);
+    expect(productSortOfSegment("newest")).toBe("newest");
+    expect(productSortOfSegment("upvoted")).toBe("upvoted");
+    // The default order's one address is `/products`: it is not ALSO a page
+    // under `/products/by/`.
+    expect(productSortOfSegment("most-active")).toBeNull();
+    for (const unknown of [undefined, null, "", "roles", "NEWEST", "az", "seats", "new", "nope", "__proto__", ["newest"]]) {
+      expect([unknown, productSortOfSegment(unknown)]).toEqual([unknown, null]);
     }
-    // A repeated parameter reads as its first value.
-    expect(productSortOf(["upvoted", "newest"])).toBe("upvoted");
-    expect(productSortOf(["nonsense", "newest"])).toBe("most-active");
-    expect(productSortOf([])).toBe("most-active");
   });
 
   it("every sort's address round-trips through the reader", () => {
-    for (const sort of PRODUCT_SORTS) {
-      const query = new URL(productsPath(sort), "https://example.test").searchParams.get("sort");
-      expect(productSortOf(query)).toBe(sort);
+    for (const sort of PRODUCT_ORDER_SEGMENTS) {
+      const segments = productsPath(sort).split("/");
+      expect(segments).toEqual(["", "products", PRODUCTS_ORDER_SEGMENT, sort]);
+      expect(productSortOfSegment(segments[3])).toBe(sort);
     }
+  });
+
+  it("the sorted pages and `/products` are static, revalidated, and read no query string", () => {
+    for (const file of ["products/page.tsx", "products/by/[order]/page.tsx"]) {
+      const page = code(file);
+      expect(page).toMatch(/^export const revalidate = 60;$/m);
+      expect(page).not.toContain("searchParams");
+      expect(page).not.toMatch(/cookies\(|headers\(|readSession|force-dynamic/);
+    }
+    const sorted = code("products/by/[order]/page.tsx");
+    // Registered for ISR by naming its orders (XP4), and still open to a
+    // cold cache: `dynamicParams` is not turned off.
+    expect(sorted).toContain("return PRODUCT_ORDER_SEGMENTS.map((order) => ({ order }));");
+    expect(sorted).not.toContain("dynamicParams");
+    // An order that was never published is a 404, and each order is
+    // canonical to itself.
+    expect(sorted).toContain("if (sort === null) notFound();");
+    expect(sorted).toContain("alternates: { canonical: `${origin}${productsPath(sort)}` }");
+  });
+});
+
+describe("`by` beside `[cursor]`: a cursor is never an order, and an order is never a cursor", () => {
+  const cursors = [
+    { activity: 0, publishedAt: null, slug: "a" },
+    { activity: 12, publishedAt: "2026-05-01T09:00:00.000Z", slug: "kettleworks" },
+    { activity: null, publishedAt: null, slug: "by" },
+    { activity: 9007199254740991, publishedAt: "2026-11-14T00:00:00.000Z", slug: "z".repeat(64) },
+  ];
+
+  it("the word `by` is not a cursor, and neither is any order's name", () => {
+    expect(PRODUCTS_ORDER_SEGMENT).toBe("by");
+    for (const word of [PRODUCTS_ORDER_SEGMENT, ...PRODUCT_SORTS]) expect([word, decodeCursor(word)]).toEqual([word, null]);
+  });
+
+  it("no cursor the directory issues is the word `by`, and its address is one segment", () => {
+    for (const cursor of cursors) {
+      const text = encodeCursor(cursor);
+      // base64url of a JSON array: it begins with `W` (`[`), so it cannot be
+      // `by` whatever the keys are.
+      expect(text.startsWith("W")).toBe(true);
+      expect(text).not.toBe(PRODUCTS_ORDER_SEGMENT);
+      const path = cataloguePagePath(text);
+      expect(path.split("/")).toHaveLength(3);
+      expect(path.startsWith(`/products/${PRODUCTS_ORDER_SEGMENT}/`)).toBe(false);
+    }
+  });
+
+  it("an order's address is two segments under /products, which a cursor's never is", () => {
+    for (const sort of PRODUCT_ORDER_SEGMENTS) {
+      expect(productsPath(sort).split("/")).toHaveLength(4);
+      // Even a hostile cursor cannot reach the sorted pages: the path
+      // builder escapes a slash rather than emitting a second segment.
+      expect(cataloguePagePath(`${PRODUCTS_ORDER_SEGMENT}/${sort}`)).toBe(`/products/by%2F${sort}`);
+    }
+  });
+
+  it("the continuation page refuses the stem by name, before the directory is asked", () => {
+    const page = code("products/[cursor]/page.tsx");
+    const refuse = page.indexOf("if (cursor === PRODUCTS_ORDER_SEGMENT) notFound();");
+    expect(refuse).toBeGreaterThan(-1);
+    expect(refuse).toBeLessThan(page.indexOf("fetchDirectoryPage(cursor)"));
   });
 });
 
@@ -98,12 +172,12 @@ describe("the old order addresses redirect", () => {
     // Every segment the contract ever published under `/builds/` is named,
     // so a new order cannot be added there without deciding where it goes.
     expect([...BUILD_ORDER_SEGMENTS]).toEqual(["newest", "upvoted", "roles"]);
-    expect(config).toContain('{ source: "/builds/newest", destination: "/products?sort=newest", permanent: true }');
-    expect(config).toContain('{ source: "/builds/upvoted", destination: "/products?sort=upvoted", permanent: true }');
+    expect(config).toContain('{ source: "/builds/newest", destination: "/products/by/newest", permanent: true }');
+    expect(config).toContain('{ source: "/builds/upvoted", destination: "/products/by/upvoted", permanent: true }');
     expect(config).toContain('{ source: "/builds/roles", destination: "/help-wanted", permanent: true }');
     // The destinations are the addresses the page itself gives its sorts.
-    expect(productsPath("newest")).toBe("/products?sort=newest");
-    expect(productsPath("upvoted")).toBe("/products?sort=upvoted");
+    expect(productsPath("newest")).toBe("/products/by/newest");
+    expect(productsPath("upvoted")).toBe("/products/by/upvoted");
     // No redirect lands on another redirect: nothing points INTO `/builds/`.
     expect(config).not.toMatch(/destination: "\/builds\//);
   });

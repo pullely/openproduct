@@ -92,7 +92,7 @@ import { CARDS, SAMPLE_SLUG } from "./fixture.mjs";
  *   / (home)                  258,141           261,811          +3,670
  *   /product-00               272,320           276,145          +3,825
  *   /products?sort=upvoted    259,287           262,461          +3,174
- *     (was /builds/upvoted)
+ *     (was /builds/upvoted; it is /products/by/upvoted now)
  *
  * Every archetype is under 276 KB (282,624 B): the listing, the heaviest,
  * keeps 6,479 bytes. So the number WC2-8 holds did not move, and there is no
@@ -116,8 +116,8 @@ const ROUTES = [
   { path: "/", name: "home", expect: SAMPLE_SLUG },
   { path: `/${SAMPLE_SLUG}`, name: "listing", expect: "Frontend contributor" },
   // OB7 (#1875) — the leaderboard is the Upvoted order; OPR1 — and that
-  // order is the Products page's `?sort=upvoted`.
-  { path: "/products?sort=upvoted", name: "upvoted", expect: CARDS[0].slug },
+  // order is the Products page's, at `/products/by/upvoted`.
+  { path: "/products/by/upvoted", name: "upvoted", expect: CARDS[0].slug },
 ];
 
 /** How long after `load` the lane keeps counting. The budget lane's value. */

@@ -148,7 +148,8 @@ describe("sectionFor — which cell is lit", () => {
     // Boards `Products`, `Product` and `ProductIdea` all light Products.
     expect(sectionFor("/products")).toBe("products");
     expect(sectionFor("/products/abc123")).toBe("products");
-    expect(sectionFor("/products?sort=upvoted")).toBe("products");
+    expect(sectionFor("/products/by/upvoted")).toBe("products");
+    expect(sectionFor("/products/by/newest")).toBe("products");
     expect(sectionFor("/my-product")).toBe("products");
   });
 

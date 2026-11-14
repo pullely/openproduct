@@ -51,8 +51,8 @@ export const ROUTES = [
   { key: "home", path: "/" },
   { key: "listing", path: `/${SAMPLE_SLUG}` },
   // OB7 (#1875) — the leaderboard is the Upvoted order; OPR1 — and that
-  // order is the Products page's `?sort=upvoted`.
-  { key: "upvoted", path: "/products?sort=upvoted" },
+  // order is the Products page's, at `/products/by/upvoted`.
+  { key: "upvoted", path: "/products/by/upvoted" },
   { key: "topic", path: `/topics/${SAMPLE_TOPIC}` },
   { key: "maker", path: `/people/${SAMPLE_HANDLE}` },
   { key: "day", path: `/launches/${SAMPLE_DAY}` },
