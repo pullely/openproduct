@@ -36,15 +36,6 @@ export const PAGE_SUBTITLE =
 /** The title row: the title on the left, an action on the right, wrapping. */
 export const PAGE_HEAD = "flex flex-wrap items-end justify-between gap-5";
 
-/** The two-column grid: the page beside a 320px rail, 32px between, 48px below
- *  the title (CL-R2's room). */
-export const TWO_COL =
-  "mt-[48px] grid grid-cols-[minmax(0,1fr)_320px] items-start gap-x-8 gap-y-4 max-lg:grid-cols-[minmax(0,1fr)] max-lg:gap-8 max-sm:mt-8";
-
-/** The rail: sticky 24px from the top (the bar scrolls away from `sm` up,
- *  CL1), its panels 16px apart. */
-export const RAIL = "sticky top-[24px] grid gap-4 max-lg:static";
-
 /** A card (OPR1): flat white on the page colour — 16px radius, no border, no
  *  shadow. The page is #F6F4EE and the card #FFFFFF, and that step is the
  *  whole of its edge. Rows inside it clip. */
@@ -79,9 +70,6 @@ export const HEAD_META = "text-[13px] text-muted-foreground";
 export const ROW =
   "relative flex items-center gap-4 border-t border-line px-5 py-4 transition-colors hover:bg-accent";
 
-/** A rail row: a `--line` rule above, `8px 0`. */
-export const RAIL_ROW = "flex items-center justify-between gap-2.5 border-t border-line py-2";
-
 /** The act (CP-R1): the one thing a page asks for — offer, post, publish,
  *  sign in, start a thread: a 40px pill in `--primary`, which is ink
  *  (#141413) under #FAF9F5 on any page (OPR1). Never the accent: the endorse
@@ -103,10 +91,6 @@ export const BTN_QUIET =
 export const BTN_SMALL =
   "inline-flex h-[30px] shrink-0 items-center justify-center whitespace-nowrap rounded-full border border-input bg-card px-3.5 text-[13px] font-medium text-foreground transition-colors hover:border-faint";
 
-/** The compact button: a 28px pill, 13px/500 — a rail row's action. */
-export const BTN_COMPACT =
-  "inline-flex h-[28px] shrink-0 items-center justify-center whitespace-nowrap rounded-full border border-border-strong bg-card px-3 text-[13px] font-medium text-foreground transition-colors hover:border-faint";
-
 /** A 32px chip: a filter, a tab that is a pill — and a pill it is (OPR1). */
 export const CHIP_BTN =
   "inline-flex h-[32px] shrink-0 items-center rounded-full px-3.5 text-[13px] font-medium transition-colors";
@@ -120,16 +104,6 @@ export const CHIP_OFF = "text-muted-foreground hover:bg-accent";
  *  `--foreground`, not the accent (CL-R8: the accent is the upvote's). */
 export const TAB =
   "-mb-px inline-flex h-[44px] items-center border-b-2 px-2.5 text-[15px] font-medium transition-colors";
-export const TAB_ON = "border-foreground text-foreground";
-export const TAB_OFF = "border-transparent text-muted-foreground hover:text-foreground";
-
-/** The 20px badge in the accent — `#1 today`. A pill, like every chip. */
-export const BADGE_ACCENT =
-  "inline-flex h-[20px] items-center rounded-full bg-endorse-soft px-2 text-[11px] font-medium text-endorse-ink";
-
-/** The 20px pill in green — `N contributors wanted`. */
-export const BADGE_WANTED =
-  "inline-flex h-[20px] items-center rounded-full bg-success-soft px-2 text-[11px] font-medium text-success";
 
 /** A field (OPR1): 44px, 14px radius, white under the hairline, 16px type —
  *  the boards' text field, and 16px is also what stops a phone zooming on
@@ -191,14 +165,6 @@ export const NOTICE_WARN =
  *  red is danger only). */
 export const NOTICE_ERROR =
   "rounded-[14px] bg-destructive-soft px-3.5 py-2.5 text-[13px] leading-[1.5] text-destructive";
-
-/** A notice that something worked: the success tint. */
-export const NOTICE_OK =
-  "rounded-[14px] bg-success-soft px-3.5 py-2.5 text-[13px] leading-[1.5] text-success";
-
-/** A small pill button that is 44px tall on a phone (OPR1: every target
- *  ≥44px there) — `BTN_SMALL` for a row's action on a page with no board. */
-export const BTN_SMALL_TAP = `${BTN_SMALL} max-sm:h-[44px] max-sm:px-4`;
 
 /** The 20px pill in teal (OPR1: teal is help wanted / seats) — `N
  *  contributors wanted` wherever a page names open roles. */
@@ -266,20 +232,6 @@ export const BTN_INK =
 /** The teal button, a seat's own action (design §3): "Take the seat". */
 export const BTN_SEAT =
   "inline-flex h-[40px] shrink-0 items-center justify-center whitespace-nowrap rounded-full bg-seat px-[18px] text-[15px] font-semibold text-card no-underline transition-opacity hover:opacity-90 max-sm:h-[44px]";
-
-/** The header card's Follow, sized from outside: wraps `FollowButton` and
- *  gives its button the boards' 40px pill at 15px/600 (44px, and the cell's
- *  full width, on a phone); once followed it is the soft pill. */
-const FOLLOW_PILL =
-  "[&_button]:h-[40px] [&_button]:justify-center [&_button]:px-5 [&_button]:text-[15px] [&_button]:font-semibold max-sm:[&_button]:h-[44px] max-sm:[&_button]:w-full max-sm:[&_form]:w-full [&_button[aria-pressed=true]]:border-transparent [&_button[aria-pressed=true]]:bg-foreground/[0.06] [&_button[aria-pressed=true]]:text-copy";
-
-/** Follow on a PRODUCT's header (board `Product`): white under a 1.5px ink
- *  ring — "Try it" is that card's ink button. */
-export const FOLLOW_PILL_OUTLINE = `${FOLLOW_PILL} [&_button[aria-pressed=false]]:border-[1.5px] [&_button[aria-pressed=false]]:border-foreground [&_button[aria-pressed=false]]:bg-card [&_button[aria-pressed=false]]:text-foreground`;
-
-/** Follow on a PERSON's header (board `Person`): the ink button — it is that
- *  card's one action. */
-export const FOLLOW_PILL_INK = `${FOLLOW_PILL} [&_button[aria-pressed=false]]:border-primary [&_button[aria-pressed=false]]:bg-primary [&_button[aria-pressed=false]]:text-primary-foreground`;
 
 /** A pill in a header card's row of sections: 36px, 15px; 44px on a phone.
  *  The current one is ink. */

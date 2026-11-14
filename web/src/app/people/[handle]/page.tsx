@@ -13,7 +13,6 @@ import { StatInline } from "../../ui/bits";
 import { BOARD_PAGE, EMPTY_NOTE, HEAD_META, SIDE_CARD, SIDE_TITLE } from "../../ui/design";
 import { ReportControl } from "../../ui/report-control";
 import { JsonLd } from "../../ui/json-ld";
-import { ThemeToggle } from "../../ui/theme-toggle";
 import { CopyLink } from "./copy-link";
 import { MakerView, loadMaker, makerMetadata } from "./maker-view";
 import { ProductRows } from "./product-rows";
@@ -164,24 +163,25 @@ export default async function ContributorProfilePage({ params }: PageProps) {
             </>
           }
         />
-      </main>
+        {/* THE SENTENCE — OPC-2 and OPC-5 in one line, and the reason CG can
+            build a social graph on the most exposed surface in the estate
+            without inheriting the platform's identity model. The line prints
+            its short form; the whole of it rides as the title and reaches a
+            screen reader in full. Beside it, the report door (TS3): last,
+            quietest, opened by intent.
 
-      {/* THE SENTENCE — OPC-2 and OPC-5 in one line, and the reason CG can
-          build a social graph on the most exposed surface in the estate
-          without inheriting the platform's identity model. The footer prints
-          its short form; the whole of it rides as the title and reaches a
-          screen reader in full. Beside it, the report door (TS3): last,
-          quietest, opened by intent. */}
-      <footer className="mx-auto box-border flex w-full max-w-[1180px] flex-wrap items-baseline gap-5 px-6 pb-9 pt-2 text-[13px] text-muted-foreground max-sm:px-3">
-        <span title={PROFILE_PROVENANCE_NOTE}>
-          Profile authored on openproduct
-          <span className="sr-only"> — {PROFILE_PROVENANCE_NOTE}</span>
-        </span>
-        <ReportControl subjectKind="profile" subjectRef={profile.handle} returnTo={`/@${profile.handle}`} bare />
-        {/* FR1 — this page carries its own footer instead of the site's, so
-            it carries the theme control too. */}
-        <ThemeToggle className="ml-auto" />
-      </footer>
+            THE PAGE'S LAST LINE, NOT A FOOTER OF ITS OWN. It was one, with a
+            theme control, while the site's footer stepped aside here; the
+            site's footer is on this page now (OPR1), so this is two facts
+            about the profile at the end of its column and nothing more. */}
+        <div className="flex flex-wrap items-baseline gap-5 px-1 pt-2 text-[13px] text-muted-foreground">
+          <span title={PROFILE_PROVENANCE_NOTE}>
+            Profile authored on openproduct
+            <span className="sr-only"> — {PROFILE_PROVENANCE_NOTE}</span>
+          </span>
+          <ReportControl subjectKind="profile" subjectRef={profile.handle} returnTo={`/@${profile.handle}`} bare />
+        </div>
+      </main>
     </>
   );
 }

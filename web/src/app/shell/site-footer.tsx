@@ -1,8 +1,3 @@
-"use client";
-
-import { usePathname } from "next/navigation";
-
-import { hasOwnFooter } from "./section-for";
 import { FOOTER_LINKS } from "./shell";
 
 import { AppLink } from "../ui/link";
@@ -24,15 +19,14 @@ import { ThemeToggle } from "../ui/theme-toggle";
  * `--muted`; the links are a wrapping row of plain words, each a 44px target
  * on a phone (`tap`).
  *
- * A client component for `usePathname` only — the path resolves during the
- * server render too, so the output is static for every visitor (I6). A
- * product page and a person page carry footers of their OWN (what was
- * observed at publish, the report door, the page's short address), so this
- * one steps aside on those routes and the page renders its own.
+ * ON EVERY PAGE, AND A SERVER COMPONENT. It used to step aside on a product
+ * page and a person page, which drew small footers of their own, and was a
+ * client component only to read the path for that. The boards draw one
+ * footer; those two pages take it like every other, so there is no path to
+ * read and nothing here ships script but the theme control. The same bytes
+ * for every visitor (I6).
  */
 export function SiteFooter() {
-  const pathname = usePathname() ?? "/";
-  if (hasOwnFooter(pathname)) return null;
   const link = "tap text-muted-foreground no-underline hover:text-foreground hover:underline hover:underline-offset-[3px]";
   return (
     <footer className="mx-auto box-border w-full max-w-[1180px] px-6 max-sm:px-4">

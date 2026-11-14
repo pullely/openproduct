@@ -298,8 +298,14 @@ describe("the profile card is the board's", () => {
     // …and nothing on the page follows a product: the rows link to them.
     expect(view).not.toContain('kind="listing"');
     // The board's ink button; the product page's Follow is the outlined one.
-    expect(card).toContain("${FOLLOW_PILL_INK}");
-    expect(markupOf("[slug]/page.tsx")).toContain("className={FOLLOW_PILL_OUTLINE}");
+    // Both are variants of the control itself (`size="hero"` and a `tone`),
+    // not selectors wrapped round it from outside.
+    expect(follows[0]).toMatch(/size="hero"\s+tone="ink"/);
+    expect(markupOf("[slug]/page.tsx")).toMatch(/size="hero"\s+tone="outline"/);
+    expect(read("ui/design.ts")).not.toContain("FOLLOW_PILL");
+    const control = markupOf("ui/follow-button.tsx");
+    expect(control).toContain('"h-[40px] justify-center px-5 text-[15px] font-semibold max-sm:h-[44px] max-sm:w-full"');
+    expect(control).toContain('tone?: "plain" | "outline" | "ink";');
     expect(markupOf("[slug]/page.tsx")).toMatch(/<FollowButton\s+kind="listing"\s+value=\{profile\.slug\}/);
   });
 
@@ -352,7 +358,7 @@ describe("nothing personal is in a profile's server render (I6)", () => {
   it("hands Follow only what every visitor shares", () => {
     const view = markupOf(VIEW);
     expect(view).toMatch(
-      /<FollowButton\s+kind="person"\s+value=\{person\.handle\}\s+followers=\{person\.followers\}\s+returnTo=\{`\/@\$\{person\.handle\}`\}\s+size="hero"\s+countHidden\s+\/>/,
+      /<FollowButton\s+kind="person"\s+value=\{person\.handle\}\s+followers=\{person\.followers\}\s+returnTo=\{`\/@\$\{person\.handle\}`\}\s+size="hero"\s+tone="ink"\s+countHidden\s+\/>/,
     );
     for (const file of [BARE, TAB, VIEW, "people/[handle]/maker-tabs.tsx", "people/[handle]/product-rows.tsx"]) {
       const source = markupOf(file);

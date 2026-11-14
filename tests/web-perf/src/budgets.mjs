@@ -94,22 +94,40 @@ const RUNS = Number(process.env.XP4_RUNS ?? 3);
  * file from its upright (page titles), and IBM Plex Mono's 500 (the small
  * uppercase labels) is a separate file from its 400. Each of the five is
  * named by a use in the design; there is no fourth family and no third weight
- * of any of them. The layout declares all five, so `next/font` preloads all
- * five on every route — counted as fetched, as this budget always has.
+ * of any of them.
+ *
+ * ─── 5 FILES / 105,800 → 4 FILES / 82,000, MEASURED 2026-11-14 (OPR1) ──────
+ *
+ * The figure above was set by arithmetic, before this lane had run on the
+ * redesign: the layout declared all five files in three `next/font` calls,
+ * and `next/font` preloads every file a call names, so every route fetched
+ * all five whether or not it set a word in Lora's italic. None of the walked
+ * routes does. The italic is declared on its own now, with `preload: false`
+ * (`web/src/app/layout.tsx`), so the browser takes it only on a page that
+ * draws a quote in it. Measured by this lane, on every route it walks:
+ *
+ *   as first built   5 files   98,664 B   (arithmetic; never measured)
+ *   now              4 files   75,924 B   hanken 34,664 · lora-400 21,188 ·
+ *                                         plex-mono-400 10,016 · -500 10,056
+ *
+ * So the budget is what a page FETCHES, as it always was: four files, and
+ * 82,000 bytes — the number this budget held before the redesign, which is
+ * 75,924 plus 6,076 (8%). A fifth file on a walked route is now a failure,
+ * which is exactly the regression to catch: the italic preloaded again.
  *
  * TWO NUMBERS, AND THE COUNT IS THE SHARPER ONE.
  *
- *   `files` catches a SIXTH FILE the moment it appears, whatever it weighs —
+ *   `files` catches a FIFTH FILE the moment it appears, whatever it weighs —
  *   including a weight added as a separate file, which is the easy accident:
  *   one more entry in a `src` array is one line of diff and a whole extra
  *   download.
  *
- *   `bytes` catches an UNSUBSETTED one, which keeps the count at five and
+ *   `bytes` catches an UNSUBSETTED one, which keeps the count at four and
  *   multiplies the payload. A full Hanken Grotesk is several times its latin
  *   subset.
  *
- * Headroom is deliberately thin — 7,136 bytes, under 8% — because the
- * measurement is deterministic. The same five files are fetched on every
+ * Headroom is deliberately thin — 6,076 bytes, 8% — because the
+ * measurement is deterministic. The same four files are fetched on every
  * route on every run; there is no busy-runner variance to absorb here, and a
  * loose budget on a stable number is a budget that admits a face. (The old
  * budget held the same ~7,100 bytes over its 74,900.)
@@ -118,7 +136,7 @@ const RUNS = Number(process.env.XP4_RUNS ?? 3);
  * visitor takes; budgeting the build directory would guard a number nobody
  * experiences.
  */
-const FONTS = { bytes: 105_800, files: 5 };
+const FONTS = { bytes: 82_000, files: 4 };
 
 /**
  * OPP11 — THE JS BUDGETS CAME DOWN BY 1,107 BYTES, ON EVERY ROUTE.
@@ -1078,7 +1096,7 @@ export async function runBudgets(base, gateway) {
       check(
         `${path}: font files ≤ ${FONTS.files}`,
         m.fontCount <= FONTS.files,
-        `${m.fontCount} file(s): ${m.fontFiles.join(", ")} — a sixth file: a fourth face, or another weight of an existing one`,
+        `${m.fontCount} file(s): ${m.fontFiles.join(", ")} — one file more: a fourth face, another weight, or the italic preloaded again`,
       );
       check(
         `${path}: font bytes ≤ ${kb(FONTS.bytes)}`,

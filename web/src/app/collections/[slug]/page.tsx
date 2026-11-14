@@ -198,7 +198,7 @@ export default async function CollectionPage({
  * row rather than an 18px line of 15px text sitting 2px above a second link
  * to the same place — which is what axe's target-size rule measured once the
  * design shrank the name. The tagline is plain text for the reason
- * `build-tile.tsx` gives: under the stretch it was a second tab stop to the
+ * `product-card.tsx` gives: under the stretch it was a second tab stop to the
  * same address that nothing could press. The topic sits above the stretch.
  */
 function Row({ item }: { item: CollectionItem }) {

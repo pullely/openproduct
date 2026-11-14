@@ -171,6 +171,9 @@ describe("the header card is the board's", () => {
 
   it("offers Follow, Take a seat and Try it — and Try it only with a live address", () => {
     const actions = header.slice(header.indexOf("data-hero-actions"));
+    // Two to a row on a phone (board `PhoneProduct`), and a third action
+    // takes the whole row rather than half of one beside a hole.
+    expect(actions).toContain("max-sm:grid max-sm:grid-cols-2 max-sm:[&>*:last-child:nth-child(odd)]:col-span-2");
     // Follow follows the PRODUCT (owner rule 3).
     expect(actions).toMatch(/<FollowButton\s+kind="listing"\s+value=\{profile\.slug\}/);
     expect(page).not.toContain('kind="person"');
@@ -257,7 +260,7 @@ describe("nothing personal is in the product page's server render (I6)", () => {
     // The page hands each control only what every visitor shares: the slug,
     // the public count, the address to come back to.
     expect(page).toMatch(
-      /<FollowButton\s+kind="listing"\s+value=\{profile\.slug\}\s+followers=\{profile\.followers\}\s+returnTo=\{`\/\$\{profile\.slug\}`\}\s+size="hero"\s+countHidden\s+\/>/,
+      /<FollowButton\s+kind="listing"\s+value=\{profile\.slug\}\s+followers=\{profile\.followers\}\s+returnTo=\{`\/\$\{profile\.slug\}`\}\s+size="hero"\s+tone="outline"\s+countHidden\s+\/>/,
     );
     expect(page).toContain("<SaveControl slug={profile.slug} />");
     for (const personal of ["isFollowing", "useOverlay", "following=", "saved=", "voted="]) {

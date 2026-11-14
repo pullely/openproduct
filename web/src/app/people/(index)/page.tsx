@@ -4,9 +4,7 @@ import {
   collectionPageJsonLd,
   ASKING_HEADING,
   DIRECTORY_ELIGIBILITY_NOTE,
-  askingAllLabel,
   askingPreview,
-  buildOrderPath,
   listingsAsking,
 } from "@openproduct/contracts";
 
@@ -146,8 +144,12 @@ export default async function ContributorsPage() {
                 {asking.length} {asking.length === 1 ? "listing" : "listings"} with a role open
               </span>
             </div>
-            <AppLink href={buildOrderPath("roles")} className="tap text-[13px] font-semibold text-link no-underline hover:underline hover:underline-offset-[3px]">
-              {askingAllLabel(asking.length)} →
+            {/* OPR1 — the builds asking for people are the Help wanted
+                section, at its own address; the link says where it goes in
+                the site's word for it (the contract's label still says
+                "Roles", the order's old name). */}
+            <AppLink href="/help-wanted" className="tap text-[13px] font-semibold text-link no-underline hover:underline hover:underline-offset-[3px]">
+              {asking.length === 1 ? "See it in Help wanted" : `See all ${asking.length} in Help wanted`} →
             </AppLink>
           </div>
           <ul className={`m-0 list-none p-0 ${CARD}`}>

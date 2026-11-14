@@ -2,44 +2,44 @@
   "header": {
     "top": 0,
     "left": 0,
-    "width": 365,
-    "height": 56
+    "width": 375,
+    "height": 68
   },
   "sectionBar": {
-    "top": 755,
-    "left": 0,
-    "width": 365,
-    "height": 57
+    "top": 736,
+    "left": 10,
+    "width": 355,
+    "height": 62
   },
   "main": {
-    "top": 56,
+    "top": 68,
     "left": 0,
-    "width": 365
+    "width": 375
   },
   "h1": {
-    "top": 160,
-    "left": 116,
-    "width": 142,
-    "height": 69
+    "top": 198,
+    "left": 25,
+    "width": 326,
+    "height": 31
   },
   "firstRow": {
-    "left": 14,
-    "width": 337,
-    "height": 112
+    "left": 18,
+    "width": 340,
+    "height": 56
   },
   "footer": {
     "left": 0,
-    "width": 365,
-    "height": 201
+    "width": 375,
+    "height": 300
   },
   "themeControl": {
-    "width": 111,
+    "width": 62,
     "height": 44
   },
   "colours": {
-    "body": "oklch(0.165 0.004 80)",
-    "text": "oklch(0.935 0.006 80)",
-    "header": "oklch(0.205 0.005 80 / 0.92)",
-    "h1": "oklch(0.935 0.006 80)"
+    "body": "oklch(0.18 0.004 95)",
+    "text": "oklch(0.96 0.005 95)",
+    "header": "oklch(0.225 0.005 95 / 0.62)",
+    "h1": "oklch(0.96 0.005 95)"
   }
 }

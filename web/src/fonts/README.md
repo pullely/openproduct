@@ -4,8 +4,10 @@ Committed so `next build` never reaches Google Fonts and no visitor's browser
 reaches a third-party host (`next/font/local` in `src/app/layout.tsx`; the wire
 budget allows none). These are the three families of the redesign
 (`specs/epics/openproduct-redesign/design.md` §3), as unmodified **latin**
-subsets: five files, 98,664 bytes, which is what `tests/web-perf` budgets
-(`FONTS` in `src/budgets.mjs`).
+subsets: five files, 98,664 bytes. A page fetches four of them, 75,924 bytes,
+which is what `tests/web-perf` budgets (`FONTS` in `src/budgets.mjs`): Lora's
+italic is declared without a preload and is fetched only by a page that sets
+a quote in it.
 
 | File | Family | Axes / weight | Bytes | Used for | Licence |
 | --- | --- | --- | --- | --- | --- |

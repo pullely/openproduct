@@ -97,11 +97,10 @@ const ROUTE_SOURCES = [
   "page.tsx",
   // OPR1 — the Products view, its sort, its card and its list replaced the
   // builds list; `/products` and `/help-wanted` are pages of their own, and
-  // `/builds/{order}` is a redirecting handler.
+  // `/builds/{order}` is redirected from the edge (no route module).
   "feed/products-view.tsx",
   "feed/sort-control.tsx",
   "products/page.tsx",
-  "builds/[order]/route.ts",
   "feed/feed-row.tsx",
   "feed/product-card.tsx",
   "feed/product-list.tsx",
@@ -2637,16 +2636,16 @@ describe("LC4 — collections, signed and curator-attributed", () => {
   it("the footer is its door since OB1, and the route is reserved rather than a product", () => {
     // Collections left the bar with openproduct-open-builds OB1. The index is
     // still live and still reachable from every page that takes the footer.
-    // Since OPR1 the footer maps `FOOTER_LINKS` and shares ONE list of
-    // reserved heads with `sectionFor` (they were two, and had drifted).
+    // Since OPR1 the footer maps `FOOTER_LINKS` and is on every page, so it
+    // keeps no list of heads of its own; `sectionFor` holds the one there is.
     const footer = readFileSync(resolve(APP_DIR, "shell/site-footer.tsx"), "utf-8");
     expect(footer).toContain("FOOTER_LINKS.map");
-    expect(footer).toContain('import { hasOwnFooter } from "./section-for";');
+    expect(footer).not.toContain("hasOwnFooter");
     expect(footer).not.toContain("new Set(");
     expect(FOOTER_LINKS.some((link) => link.href === "/collections")).toBe(true);
     const sectionFor = readFileSync(resolve(APP_DIR, "shell/section-for.ts"), "utf-8");
     expect(sectionFor).toMatch(/RESERVED_HEADS: ReadonlySet<string> = new Set\(\[[\s\S]*"collections"/);
-    expect(sectionFor).toMatch(/if \(RESERVED_HEADS\.has\(head\)\) return false;/);
+    expect(sectionFor).toMatch(/if \(RESERVED_HEADS\.has\(head\)\) return "";/);
   });
 });
 

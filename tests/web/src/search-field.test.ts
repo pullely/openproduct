@@ -347,9 +347,12 @@ describe("one search, and the shortcut focuses it", () => {
 });
 
 describe("the box becomes the card: one surface, not a dropdown", () => {
-  it("widens from 260px to 380px, eased, and holds still for reduced motion", () => {
+  it("widens from 268px to 380px, eased, and holds still for reduced motion", () => {
+    // 268px, not the board's 260px: the board's own placeholder is one
+    // letter wider than a 260px box at 16px (seen in a browser, cut at the
+    // last "e"), so the box is the 8px wider that shows the whole of it.
     const box = code("shell/palette.tsx");
-    expect(box).toMatch(/open \? "basis-\[380px\]" : "basis-\[260px\]"/);
+    expect(box).toMatch(/open \? "basis-\[380px\]" : "basis-\[268px\]"/);
     expect(box).toContain("transition-[flex-basis]");
     expect(box).toContain("duration-300");
     expect(box).toContain("ease-[cubic-bezier(0.2,0.8,0.2,1)]");

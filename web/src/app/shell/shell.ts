@@ -232,11 +232,14 @@ export const ACCOUNT_MENU_ITEMS: readonly AccountMenuItem[] = [
   // Profile section (account-chip.tsx) once CG1 gave it a public address to
   // show; what is left here is what you HOLD on this surface, counted.
   { id: "listings", label: "Your listings", href: "/studio", countKey: "listings" },
-  { id: "saved", label: "Saved products", href: "/me/saved", countKey: "saved" },
+  // OPR1 — the saved list and the requests are SECTIONS of `/me` (board
+  // `Me`), and the menu names the section's own address rather than the old
+  // page's, which only redirects there.
+  { id: "saved", label: "Saved products", href: "/me?section=saved", countKey: "saved" },
   {
     id: "applications",
     label: "Your requests",
-    href: "/me/applications",
+    href: "/me?section=seats",
     countKey: "applications",
   },
   // NF0 — the inbox, and the only count here that means "waiting for you"
@@ -244,10 +247,15 @@ export const ACCOUNT_MENU_ITEMS: readonly AccountMenuItem[] = [
   // question — what is mine on this surface. OPR1 moved its address to
   // `/activity` (the old one redirects) and the header's bell goes there too.
   { id: "notifications", label: "Notifications", href: ACTIVITY_PATH, countKey: "unread" },
-  // LC5 — the digest's standing lives on the profile page; the menu only
-  // points at it. No count: a subscription is not a number.
-  { id: "digest", label: "Weekly digest", href: "/me#digest" },
+  // LC5 — the digest's standing is a switch on the settings page, in its
+  // Notifications card; the menu only points at it. No count: a subscription
+  // is not a number.
+  { id: "digest", label: "Weekly digest", href: "/me/settings#notifications" },
 ] as const;
+
+/** The sign-in door's address. The header reads it too: on the door it
+ *  draws the mark and the word and nothing else (`top-panel.tsx`). */
+export const SIGN_IN_PATH = "/signin";
 
 /**
  * Where the sign-in round trip starts, returning to where it began.
@@ -257,7 +265,7 @@ export const ACCOUNT_MENU_ITEMS: readonly AccountMenuItem[] = [
  * where this used to point. Choosing Orunbase is a control ON the door.
  */
 export function signInHref(returnTo: string | null): string {
-  if (!returnTo || returnTo === "/") return "/signin";
+  if (!returnTo || returnTo === "/") return SIGN_IN_PATH;
   // The server-side `sanitizeReturnTo` is the authority and refuses anything
   // that is not a same-host path; this only has to avoid sending a loop —
   // through the handshake's own routes, or through the door itself.

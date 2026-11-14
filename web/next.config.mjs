@@ -101,23 +101,36 @@ const nextConfig = {
       // again since openproduct-redesign OPR1 (`app/products/page.tsx`): the
       // header's Products pill needs an address, and `/` becomes the feed.
       { source: "/launches", destination: "/", permanent: true },
+      // openproduct-redesign OPR1 (design.md §5) — THE LIST'S ORDERS MOVED.
+      // `/builds/newest` and `/builds/upvoted` were two of the list's orders,
+      // each its own page; they are sorts of the Products page now. The
+      // builds asking for people were the Roles order; they are the Help
+      // wanted section, at an address of its own. Every order is named here,
+      // and HERE ONLY: there is no route under `/builds/` any more, so a
+      // segment that was never an order falls through to the site's own 404
+      // page rather than to a handler's plain-text one.
+      { source: "/builds/newest", destination: "/products?sort=newest", permanent: true },
+      { source: "/builds/upvoted", destination: "/products?sort=upvoted", permanent: true },
+      { source: "/builds/roles", destination: "/help-wanted", permanent: true },
       // OB7 (openproduct-open-builds D5) — THE LEADERBOARD FOLDED INTO THE
       // UPVOTED ORDER. It ranked launches by the upvotes each day's board
-      // had published; the front page's Upvoted order is the builds by their
-      // counted upvotes, one sentence at /docs/formulas. Both of its
-      // addresses (the week, and each range) arrive there from the edge, for
-      // the reason above.
-      { source: "/leaderboard", destination: "/builds/upvoted", permanent: true },
-      { source: "/leaderboard/:range", destination: "/builds/upvoted", permanent: true },
-      // openproduct-redesign OPR1 (design.md §5) — TWO ADDRESSES MOVED.
-      // The builds asking for people were the list's Roles order; they are
-      // the Help wanted section now, at an address of its own. The inbox was
-      // one of the `/me` pages; it is Activity, where the header's bell
-      // goes. Both old addresses arrive from the edge, for the reason above.
-      // Each source is the exact path: `/me/notifications/read`, the form's
-      // POST target, is a different path and is not redirected.
-      { source: "/builds/roles", destination: "/help-wanted", permanent: true },
+      // had published; Upvoted is the builds by their counted upvotes, one
+      // sentence at /docs/formulas. Both of its addresses (the week, and
+      // each range) arrive at that sort in ONE hop — straight to where the
+      // order lives now, never through the `/builds/upvoted` it used to
+      // name, which would be a redirect to a redirect.
+      { source: "/leaderboard", destination: "/products?sort=upvoted", permanent: true },
+      { source: "/leaderboard/:range", destination: "/products?sort=upvoted", permanent: true },
+      // OPR1 — THE INBOX AND THE TWO LISTS UNDER `/me` MOVED. The inbox is
+      // Activity, where the header's bell goes; the saved list and the
+      // applications are sections of `/me` (board `Me`). Each source is the
+      // exact path: `/me/notifications/read`, the form's POST target, is a
+      // different path and is not redirected. The two sections are reached
+      // through `/me`, which reads the session itself and sends a signed-out
+      // visitor to sign in and back to the section they asked for.
       { source: "/me/notifications", destination: "/activity", permanent: true },
+      { source: "/me/saved", destination: "/me?section=saved", permanent: true },
+      { source: "/me/applications", destination: "/me?section=seats", permanent: true },
     ];
   },
   // `output: "standalone"` is required by the @opennextjs/cloudflare adapter,

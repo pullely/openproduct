@@ -62,20 +62,6 @@ export function productsPath(sort: ProductSort = DEFAULT_PRODUCT_SORT): string {
   return sort === DEFAULT_PRODUCT_SORT ? "/products" : `/products?sort=${sort}`;
 }
 
-/**
- * Where an old `/builds/{order}` address went, or null for a segment that
- * was never an order (a 404, as it always was).
- *
- * `roles` is Help wanted; the other orders are the Products page's sorts.
- * `most-active` never had an address under `/builds/` — it was `/` — and is
- * answered anyway, because the segment is a real order's name and the
- * honest answer to it is the default list.
- */
-export function buildOrderRedirect(order: string): string | null {
-  if (order === "roles") return "/help-wanted";
-  return isProductSort(order) ? productsPath(order) : null;
-}
-
 const plural = (count: number, one: string, many: string) => `${count.toLocaleString("en-US")} ${count === 1 ? one : many}`;
 
 /**

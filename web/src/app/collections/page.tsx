@@ -56,7 +56,7 @@ export default async function CollectionsPage() {
         what="Collections could not be loaded. It is not something you did, and trying again in a moment usually works."
         actions={[
           { label: "Try again", href: "/collections" },
-          { label: "Browse the directory", href: "/" },
+          { label: "Products", href: "/products" },
         ]}
       />
     );

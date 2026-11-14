@@ -28,7 +28,6 @@ import {
   BOARD_STACK,
   CARD,
   COVER_PERSON,
-  FOLLOW_PILL_INK,
   PAGE_TITLE,
   SIDE_CARD,
   SIDE_TITLE,
@@ -166,13 +165,14 @@ export function MakerView({
               the XP2 overlay, so the anonymous and signed-in renders are
               byte-identical (I6). At the card's bottom right on a wide
               screen; beside the mark on a phone, as the phone board has it. */}
-          <div className={`col-start-2 row-span-2 row-start-1 self-end max-sm:row-span-1 ${FOLLOW_PILL_INK}`}>
+          <div className="col-start-2 row-span-2 row-start-1 self-end max-sm:row-span-1">
             <FollowButton
               kind="person"
               value={person.handle}
               followers={person.followers}
               returnTo={`/@${person.handle}`}
               size="hero"
+              tone="ink"
               countHidden
             />
           </div>

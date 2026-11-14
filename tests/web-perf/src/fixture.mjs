@@ -934,13 +934,25 @@ export const ROUTES = [
   // OPR1 — the list's other orders are the Products page's sorts, in
   // `?sort=`; their old addresses under `/builds/` are `MOVED` below (as the
   // leaderboard's ranges are, since OB7). `CARDS[0]` is on all of them.
-  { path: "/products?sort=upvoted", name: "products · upvoted", expect: CARDS[0].slug },
-  { path: "/products?sort=newest", name: "products · newest", expect: CARDS[0].slug },
+  //
+  // `cacheable: false`, AND IT IS THE INVERSION `/search` USES BELOW, not an
+  // opt-out. The orders were three prerendered pages (`/builds/{order}`) and
+  // this lane held each as one cached document. The design of record puts
+  // the sort in `?sort=` (design.md §5), and a page that reads
+  // `searchParams` is rendered per request — `products/page.tsx` records
+  // the trade and what keeps it cheap (every read under it is the cached
+  // public read). So the fact held here is the new one: the Products page,
+  // in any sort, goes out `no-store`, and a `revalidate` added to it later —
+  // accepted, ignored, meaning nothing — fails here rather than passing
+  // quietly. `/`, which draws the same list and reads no query, is still
+  // held as a cached document above.
+  { path: "/products?sort=upvoted", name: "products · upvoted", expect: CARDS[0].slug, cacheable: false },
+  { path: "/products?sort=newest", name: "products · newest", expect: CARDS[0].slug, cacheable: false },
   // OPR1 — the header's other two sections. Help wanted is the page of open
   // seats (`/builds/roles` is in `MOVED` below): `CARDS[0]` has open roles,
   // so its name is on a ticket. Products is the board's list of cards.
   { path: "/help-wanted", name: "help wanted", expect: CARDS[0].slug },
-  { path: "/products", name: "products", expect: SAMPLE_SLUG },
+  { path: "/products", name: "products", expect: SAMPLE_SLUG, cacheable: false },
   // QE2 — every public address is walked. These had none of the three lanes
   // over them: HB2's year, PP3's pricing pages, FO1's forum and its two
   // variants, FO2's listing forum. A public route the axe pass does not
@@ -1011,16 +1023,20 @@ export const MOVED = [
   // `redirects()` entry to `/`, issued at the edge for the reason `/create`
   // is. (`/products` was the other; it is a page again since OPR1.)
   { from: "/launches", to: "/", status: 308 },
-  // OB7 (#1875) — the leaderboard and every range of it are Upvoted now.
-  { from: "/leaderboard", to: "/builds/upvoted", status: 308 },
-  { from: "/leaderboard/month", to: "/builds/upvoted", status: 308 },
-  // openproduct-redesign OPR1 — the two addresses the new chrome moved.
+  // OB7 (#1875) — the leaderboard and every range of it are Upvoted now;
+  // OPR1 — and Upvoted is a sort of the Products page, reached in ONE hop.
+  { from: "/leaderboard", to: "/products?sort=upvoted", status: 308 },
+  { from: "/leaderboard/month", to: "/products?sort=upvoted", status: 308 },
+  // openproduct-redesign OPR1 — the list's orders: Roles is the Help wanted
+  // section, the other two are sorts of the Products page. All three are
+  // `redirects()` entries; no route is left under `/builds/`.
   { from: "/builds/roles", to: "/help-wanted", status: 308 },
-  // …and the two orders that became sorts of the Products page. Answered by
-  // a route handler (`builds/[order]/route.ts`), not the edge config.
   { from: "/builds/upvoted", to: "/products?sort=upvoted", status: 308 },
   { from: "/builds/newest", to: "/products?sort=newest", status: 308 },
   { from: "/me/notifications", to: "/activity", status: 308 },
+  // …and the two lists under `/me` that became sections of it.
+  { from: "/me/saved", to: "/me?section=saved", status: 308 },
+  { from: "/me/applications", to: "/me?section=seats", status: 308 },
 ];
 
 /**
@@ -1058,6 +1074,7 @@ export const ABSENT = [
   { path: "/digest/1999-w01", why: "a week the product did not exist" },
   { path: "/products/zzz-not-a-route", why: "OS1 — a cursor the directory did not issue: refused, and refused is 404" },
   { path: "/zzz-no-such-route/zzz", why: "THE CONTROL — no route at all, so Next's own router answers" },
+  { path: "/builds/zzz-not-an-order", why: "OPR1 — a segment under /builds/ that was never an order: the site's own 404, not a handler's plain text" },
 ];
 
 /** The reads, keyed by the path the web app asks for. */
@@ -1112,11 +1129,11 @@ export const AUTHED_ROUTES = [
   // used to be is `/me/settings`. `expect` is the section the page drew — an
   // attribute the "temporarily unavailable" state does not have.
   { path: "/me", name: "me · profile", expect: 'data-me-section="products"' },
-  // The saved list and the applications are SECTIONS of `/me` now. Their old
-  // addresses are still pages (they read the session and send the visitor
-  // on), so they are still walked: each must arrive at its section.
-  { path: "/me/saved", name: "me · saved (arrives at the section)", expect: 'data-me-section="saved"' },
-  { path: "/me/applications", name: "me · applications (arrives at the section)", expect: 'data-me-section="seats"' },
+  // The saved list and the applications are SECTIONS of `/me` now, each at
+  // an address of its own. (Their old addresses, `/me/saved` and
+  // `/me/applications`, are redirects and live in `MOVED` above.)
+  { path: "/me?section=saved", name: "me · saved", expect: 'data-me-section="saved"' },
+  { path: "/me?section=seats", name: "me · seats", expect: 'data-me-section="seats"' },
   { path: "/me/settings", name: "me · settings", expect: "Download your data" },
   // OPR1 — the inbox's address is `/activity` (the old one is in `MOVED`).
   { path: "/activity", name: "activity", expect: "Mark all read" },

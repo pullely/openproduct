@@ -22,16 +22,29 @@ import { useToggle } from "./use-toggle";
  * button because they mean the same act — the contract's own argument for one
  * table, one route and one overlay key, carried through to the surface.
  *
- * FOUR SIZES, ALL THE DESIGN'S OWN:
+ * FOUR SIZES, every one a pill (openproduct-redesign OPR1):
  *
- *   compact  26px tall, radius 7, 12.5px  — the sidebar's rows
- *   card     30px tall, radius 8, 13px    — a topic card
- *   regular  38px tall, radius 10, 14px   — a topic page's header
- *   hero     40px tall, radius 11, 14.5px — a maker's profile header
+ *   compact  28px, 13px/500        — a rail's rows
+ *   card     30px, 13px/500        — a topic card
+ *   regular  36px, 14px/500        — a topic page's header
+ *   hero     40px, 15px/600        — a header card's action (boards
+ *            `Product`, `Person`); 44px and the cell's full width on a phone
  *
- * THE FOLLOWED STATE IS THE ACCENT'S SOFT WASH — `--accent-soft` inside
- * `--accent-line` in `--accent-ink`, reading `Following` — exactly as the
- * prototype's `followBtn` draws it. At rest it is the card on a hairline.
+ * THREE TONES FOR THE UNFOLLOWED BUTTON, and they are the boards' too:
+ *
+ *   plain    the card on a hairline — everywhere a Follow is one of many
+ *   outline  white under a 1.5px ink ring — a product's header, where
+ *            "Try it" is the card's ink button
+ *   ink      the ink button — a person's header, where Follow is the card's
+ *            one action
+ *
+ * The hero size and the two header tones were descendant selectors wrapped
+ * round this component from outside (`FOLLOW_PILL_*` in `design.ts`), which
+ * restyled a button they could not see; they are variants here, so the
+ * control's whole look is in the one place that draws it.
+ *
+ * THE FOLLOWED STATE IS THE QUIET ONE, reading `Following`: the sunken fill
+ * on a hairline, and on a header card the soft pill (6% of ink, no ring).
  *
  * THE SERVER RENDER IS THE ANONYMOUS ONE (I6). A plain form that says `Follow`
  * with the public count beside it, byte-identical in every visitor's HTML.
@@ -55,6 +68,7 @@ export function FollowButton({
   followers,
   returnTo,
   size = "regular",
+  tone = "plain",
   countHidden = false,
 }: {
   kind: FollowKind;
@@ -65,6 +79,8 @@ export function FollowButton({
   /** Where sign-in returns to — the page the button is on. */
   returnTo: string;
   size?: "compact" | "card" | "regular" | "hero";
+  /** How the UNFOLLOWED button is drawn; the followed one is always quiet. */
+  tone?: "plain" | "outline" | "ink";
   /** The sidebar's rows draw the button alone; the count is on the page. */
   countHidden?: boolean;
 }) {
@@ -77,22 +93,29 @@ export function FollowButton({
   const { delta, pending, onSubmit } = useToggle("follows", key, !following);
   const target = `${returnTo}#follow-${kind}-${value}`;
 
-  // THE DESIGN'S FOUR SIZES: 28px at a 6px radius in a rail row, 30px in
-  // a card, 36px at 8px beside a title — the hero and the regular button
-  // are the same 36px button.
+  const hero = size === "hero";
   const geometry =
     size === "compact"
-      ? "h-[28px] rounded-full px-3 text-[13px]"
+      ? "h-[28px] px-3 text-[13px] font-medium"
       : size === "card"
-        ? "h-[30px] rounded-full px-3.5 text-[13px]"
-        : "h-[36px] rounded-full px-4 text-[14px]";
+        ? "h-[30px] px-3.5 text-[13px] font-medium"
+        : hero
+          ? "h-[40px] justify-center px-5 text-[15px] font-semibold max-sm:h-[44px] max-sm:w-full"
+          : "h-[36px] px-4 text-[14px] font-medium";
+  const resting =
+    tone === "ink"
+      ? "border-primary bg-primary text-primary-foreground hover:opacity-90"
+      : tone === "outline"
+        ? "border-[1.5px] border-foreground bg-card text-foreground hover:bg-foreground/[0.04]"
+        : "border-border-strong bg-card text-foreground hover:border-faint";
+  const followed = hero ? "border-transparent bg-foreground/[0.06] text-copy" : "border-border-strong bg-secondary text-foreground";
 
   return (
     <form
       onSubmit={onSubmit}
       id={`follow-${kind}-${value}`}
       method="post"
-      className="flex shrink-0 items-center gap-2.5"
+      className={`flex shrink-0 items-center gap-2.5 ${hero ? "max-sm:w-full" : ""}`}
       action={`/me/follow?kind=${encodeURIComponent(kind)}&value=${encodeURIComponent(value)}&on=${
         following ? "0" : "1"
       }&return_to=${encodeURIComponent(target)}`}
@@ -102,10 +125,8 @@ export function FollowButton({
         disabled={pending}
         aria-pressed={following}
         title={FOLLOW_MEANING}
-        className={`inline-flex items-center border font-medium transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring ${geometry} ${
-          following
-            ? "border-border-strong bg-secondary text-foreground"
-            : "border-border-strong bg-card text-foreground hover:border-faint"
+        className={`inline-flex items-center rounded-full border transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring ${geometry} ${
+          following ? followed : resting
         }`}
       >
         {following ? FOLLOWING_LABEL : FOLLOW_LABEL}

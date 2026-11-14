@@ -15,11 +15,10 @@ import { ACTIVITY_PATH, SECTIONS } from "./shell";
  * THE ANSWERS ARE THE BOARDS' (openproduct-redesign OPR1):
  *
  *   feed         `/` and nothing else
- *   products     `/products`, the page after it, the list's other orders
- *                under `/builds/`, and a product's own page (boards
- *                `Products`, `Product`, `ProductIdea` all light Products)
- *   help-wanted  `/help-wanted` — and `/builds/roles`, its old address,
- *                for the one hop before the edge redirect lands
+ *   products     `/products`, the page after it, and a product's own page
+ *                (boards `Products`, `Product`, `ProductIdea` all light
+ *                Products)
+ *   help-wanted  `/help-wanted`
  *   activity     `/activity` — the header's bell and the phone's fourth tab
  *
  * A path nothing owns lights NOTHING — a person's page, `/me`, `/search`,
@@ -31,9 +30,6 @@ export function sectionFor(pathname: string): string {
   const segments = path.split("/").filter((segment) => segment.length > 0);
   const head = segments[0] ?? "";
   if (head === "") return "feed";
-  // The list's other orders are views of Products, except the one that was
-  // the Help wanted section's address before it had its own.
-  if (head === "builds") return segments[1] === "roles" ? "help-wanted" : "products";
   if (head === ACTIVITY_PATH.slice(1)) return "activity";
   // A person's page is `/@ada` in the address bar (rewritten to
   // `/people/ada` at the router). It is nobody's section: the owner's rule is
@@ -51,17 +47,23 @@ export function sectionFor(pathname: string): string {
 /**
  * Top-level routes that are neither a section nor a product's page.
  *
- * ONE LIST, TWO READERS: `sectionFor` above (a reserved head lights nothing)
- * and the footer's `hasOwnFooter` (a reserved head takes the site footer
- * rather than a product page's own). They were two lists, and they had
- * drifted — `/stack` and `/pricing` were in neither, so both lit a section
- * and lost their footer as if they were products.
+ * ONE LIST. It had a second reader — the footer, which stepped aside on a
+ * product's page and asked this list what a product's page was — and before
+ * that it was two lists that had drifted (`/stack` and `/pricing` were in
+ * neither, so both lit a section as if they were products). The footer is on
+ * every page since OPR1, so `sectionFor` is the only reader left.
  */
 export const RESERVED_HEADS: ReadonlySet<string> = new Set([
-  // Lit by `sectionFor` before this list is consulted; here for the footer.
-  "activity",
+  // The path Next renders an UNMATCHED address under on the server
+  // (`/_not-found`). Without it the not-found page for an address no route
+  // owns — `/builds/zzz`, `/a/b/c` — was served with Products lit, as if it
+  // were a product's page (seen in a browser at OPR1).
+  "_not-found",
   "api",
   "auth",
+  // OPR1 — every `/builds/{order}` address redirects (`next.config.mjs`);
+  // what is left under the head is a 404, which lights nothing.
+  "builds",
   // OB1 — no longer sections, still routes.
   "collections",
   "leaderboard",
@@ -90,24 +92,3 @@ export const RESERVED_HEADS: ReadonlySet<string> = new Set([
   "threads",
   "transparency",
 ]);
-
-/**
- * A product page (`/kettleworks`) or a person's page (`/people/ada`, served
- * at `/@ada`) carries its own footer. Everything else takes the site's
- * (`site-footer.tsx`).
- *
- * HERE, BESIDE `sectionFor`, because it is the same question asked for a
- * different reason — is this top-level path a product, a person, or one of
- * ours — and because a pure function in a `.ts` is one a test can call.
- */
-export function hasOwnFooter(pathname: string): boolean {
-  const segments = pathname.split("?")[0]!.split("/").filter((s) => s.length > 0);
-  if (segments.length === 1) {
-    const head = segments[0]!;
-    if (head.startsWith("@")) return true;
-    if (RESERVED_HEADS.has(head)) return false;
-    if (SECTIONS.some((s) => s.href === `/${head}`)) return false;
-    return true;
-  }
-  return segments.length === 2 && segments[0] === "people";
-}

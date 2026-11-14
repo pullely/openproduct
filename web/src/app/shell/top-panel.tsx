@@ -10,7 +10,7 @@ import { NotificationBell } from "./notification-bell";
 import { HeaderSearch } from "./palette";
 import { SearchGlyph } from "./palette-glyph";
 import { sectionFor } from "./section-for";
-import { SECTIONS } from "./shell";
+import { SECTIONS, SIGN_IN_PATH } from "./shell";
 
 import { AppLink } from "../ui/link";
 
@@ -37,7 +37,7 @@ import { AppLink } from "../ui/link";
  * ONE ROW, AND IT DOES NOT WRAP (FR1's rule, kept). The board's header
  * wraps; a bar that may wrap gets taller every time something inside it
  * does, and at tablet widths everything inside it does. So nothing wraps
- * and something gives way instead: the search box shrinks from its 260px,
+ * and something gives way instead: the search box shrinks from its 268px,
  * and below `lg` the word steps aside and the mark alone goes home.
  *
  * STILL A CLIENT COMPONENT, AND STILL NOT FOR PERSONALISATION — for
@@ -49,10 +49,27 @@ import { AppLink } from "../ui/link";
  *
  * AT MOST ONE `aria-current` IN THE BAR: `sectionFor` names one destination
  * or none, and the pills and the bell both ask it.
+ *
+ * TWO PAGES TAKE LESS OF IT, and both are the boards' own:
+ *
+ *   `/signin` (boards `SignIn`, `PhoneSignIn`) — the mark and the word, and
+ *   nothing else. The page IS the way in, so a profile control that offers
+ *   to sign in, a bell with nothing behind it and a search box are three
+ *   ways to leave the one thing the visitor came to do. The word stays at
+ *   every width here: with nothing beside it, it has the room.
+ *
+ *   `/search` on a phone (board `PhoneSearch`) — no search link. The page's
+ *   own field is the search, directly under this bar; a second pill above
+ *   it that links to the page it is on is the same control twice.
+ *
+ * Both are read from the path, which is the same for every visitor (I6).
  */
 export function TopPanel() {
   const pathname = usePathname() ?? "/";
   const activeSection = sectionFor(pathname);
+  const path = pathname.split("?")[0] ?? "/";
+  const door = path === SIGN_IN_PATH;
+  const onSearch = path === SEARCH_PATH;
 
   return (
     <header className="sticky top-0 z-40 w-full bg-panel/[0.62] backdrop-blur-[16px] backdrop-saturate-[1.6]">
@@ -71,67 +88,74 @@ export function TopPanel() {
         >
           <Logomark size={24} className="max-sm:h-[26px] max-sm:w-[26px]" />
           {/* THE WORD STEPS ASIDE BELOW `lg`. At 768px the word, three pills,
-              a 260px search box and two discs do not fit in one row; the
+              a 268px search box and two discs do not fit in one row; the
               mark still goes home and the link still says the brand in its
               name. Hanken Grotesk at 18px/600, the board's wordmark. */}
-          <span className="text-[18px] font-semibold leading-none tracking-[-0.02em] max-lg:hidden">
+          <span className={`text-[18px] font-semibold leading-none tracking-[-0.02em] ${door ? "" : "max-lg:hidden"}`}>
             openproduct
           </span>
         </AppLink>
 
-        {/* THE SECTIONS, AS PILLS. 36px tall, 2px apart; the current one is
-            an ink pill with the light ink on it. Below `sm` they are the
-            bottom tab bar instead, so every one is still reachable on a
-            phone (XP4). Both navs are labelled "Main", which is correct
-            because only one is ever displayed. */}
-        <nav aria-label="Main" className="flex shrink-0 items-center gap-[2px] max-sm:hidden">
-          {SECTIONS.map((section) => {
-            const current = section.id === activeSection;
-            return (
-              <AppLink
-                key={section.id}
-                href={section.href}
-                // QE0 — OFF, with the tab bar's: a prefetch per section on
-                // every page load, for the click that usually never comes.
-                // The hover warm in `AppLink` keeps the switch instant for
-                // the person who reaches for it.
-                prefetch={false}
-                aria-current={current ? "page" : undefined}
-                className={`flex h-[36px] shrink-0 items-center whitespace-nowrap rounded-full px-[14px] text-[15px] no-underline transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring ${
-                  current
-                    ? "bg-foreground font-semibold text-background"
-                    : "font-medium text-copy hover:bg-foreground/[0.05]"
-                }`}
-              >
-                {section.label}
-              </AppLink>
-            );
-          })}
-        </nav>
+        {door ? null : (
+          <>
+            {/* THE SECTIONS, AS PILLS. 36px tall, 2px apart; the current one is
+                an ink pill with the light ink on it. Below `sm` they are the
+                bottom tab bar instead, so every one is still reachable on a
+                phone (XP4). Both navs are labelled "Main", which is correct
+                because only one is ever displayed. */}
+            <nav aria-label="Main" className="flex shrink-0 items-center gap-[2px] max-sm:hidden">
+              {SECTIONS.map((section) => {
+                const current = section.id === activeSection;
+                return (
+                  <AppLink
+                    key={section.id}
+                    href={section.href}
+                    // QE0 — OFF, with the tab bar's: a prefetch per section on
+                    // every page load, for the click that usually never comes.
+                    // The hover warm in `AppLink` keeps the switch instant for
+                    // the person who reaches for it.
+                    prefetch={false}
+                    aria-current={current ? "page" : undefined}
+                    className={`flex h-[36px] shrink-0 items-center whitespace-nowrap rounded-full px-[14px] text-[15px] no-underline transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring ${
+                      current
+                        ? "bg-foreground font-semibold text-background"
+                        : "font-medium text-copy hover:bg-foreground/[0.05]"
+                    }`}
+                  >
+                    {section.label}
+                  </AppLink>
+                );
+              })}
+            </nav>
 
-        {/* The right-hand group takes the row's slack and packs to the right,
-            so the search box, the bell and the profile control sit at the
-            column's edge. `min-w-0` lets the search box shrink inside it. */}
-        <div className="flex min-w-0 flex-1 items-center justify-end gap-[10px]">
-          {/* The search that opens in place — its own island, so the bar
-              around it stays one static render. Not displayed on a phone. */}
-          <HeaderSearch />
+            {/* The right-hand group takes the row's slack and packs to the right,
+                so the search box, the bell and the profile control sit at the
+                column's edge. `min-w-0` lets the search box shrink inside it. */}
+            <div className="flex min-w-0 flex-1 items-center justify-end gap-[10px]">
+              {/* The search that opens in place — its own island, so the bar
+                  around it stays one static render. Not displayed on a phone. */}
+              <HeaderSearch />
 
-          {/* THE PHONE'S SEARCH IS A LINK. The same pill, 44px tall, going
-              to the search page, where the field and its results have the
-              whole screen. */}
-          <AppLink
-            href={SEARCH_PATH}
-            aria-label="Search"
-            className="box-border flex min-h-[44px] min-w-0 flex-1 items-center gap-2 rounded-full bg-card px-3 text-[16px] text-muted-foreground no-underline ring-1 ring-inset ring-foreground/[0.07] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring sm:hidden"
-          >
-            <SearchGlyph />
-            Search
-          </AppLink>
+              {/* THE PHONE'S SEARCH IS A LINK. The same pill, 44px tall, going
+                  to the search page, where the field and its results have the
+                  whole screen — and so not drawn ON that page, whose own field
+                  sits directly under this bar. */}
+              {onSearch ? null : (
+                <AppLink
+                  href={SEARCH_PATH}
+                  aria-label="Search"
+                  className="box-border flex min-h-[44px] min-w-0 flex-1 items-center gap-2 rounded-full bg-card px-3 text-[16px] text-muted-foreground no-underline ring-1 ring-inset ring-foreground/[0.07] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring sm:hidden"
+                >
+                  <SearchGlyph />
+                  Search
+                </AppLink>
+              )}
 
-          <NotificationBell current={activeSection === "activity"} />
-          <AccountChip />
-        </div>
+              <NotificationBell current={activeSection === "activity"} />
+              <AccountChip />
+            </div>
+          </>
+        )}
       </div>
     </header>
   );

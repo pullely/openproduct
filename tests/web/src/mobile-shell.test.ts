@@ -17,7 +17,7 @@ import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { FOOTER_LINKS, PHONE_TABS, SECTIONS } from "@openproduct-web/app/shell/shell";
-import { hasOwnFooter, sectionFor } from "@openproduct-web/app/shell/section-for";
+import { sectionFor } from "@openproduct-web/app/shell/section-for";
 import { THEME_CHOICES, THEME_STORAGE_KEY, applyTheme } from "@openproduct-web/app/ui/theme";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -107,6 +107,23 @@ describe("the four tabs, as the board draws them", () => {
     expect(nav()).not.toMatch(/\bborder|\bshadow|backdrop/);
   });
 
+  it("stands on the page's own colour, so no row shows round it as the page scrolls", () => {
+    // The bar is fixed and inset; without a ground the rows of the page were
+    // visible through the 10px at its sides and the 14px under it. The
+    // ground is one element before the nav, hidden from the tree, and its
+    // geometry is the reserve's — written beside the reserve in globals.css.
+    expect(bar()).toMatch(/<div aria-hidden="true" className="tabbar-ground" \/>\s*<nav/);
+    const css = readFileSync(resolve(APP, "../styles/globals.css"), "utf-8");
+    const rule = css.slice(css.lastIndexOf(".tabbar-ground {"));
+    const body = rule.slice(0, rule.indexOf("}"));
+    expect(body).toContain("position: fixed;");
+    expect(body).toContain("height: var(--tabbar-reserve);");
+    expect(body).toContain("pointer-events: none;");
+    expect(body).toContain("oklch(var(--background))");
+    // Off from `sm` up, where the bar is not drawn.
+    expect(css).toMatch(/\.tabbar-ground \{\s*display: none;/);
+  });
+
   it("stands clear of the home indicator", () => {
     // The safe-area inset is added to the bar's offset from the bottom, so
     // a phone with a home indicator gets the same 54px tabs lifted above it.
@@ -127,18 +144,29 @@ describe("sectionFor — which cell is lit", () => {
     expect(sectionFor("/?x=1")).toBe("feed");
   });
 
-  it("lights Products for the list, its pages and orders, and a product's own page", () => {
+  it("lights Products for the list, its pages and sorts, and a product's own page", () => {
     // Boards `Products`, `Product` and `ProductIdea` all light Products.
     expect(sectionFor("/products")).toBe("products");
     expect(sectionFor("/products/abc123")).toBe("products");
-    expect(sectionFor("/builds/newest")).toBe("products");
-    expect(sectionFor("/builds/upvoted")).toBe("products");
+    expect(sectionFor("/products?sort=upvoted")).toBe("products");
     expect(sectionFor("/my-product")).toBe("products");
   });
 
-  it("lights Help wanted at its own address, and at the one that redirects to it", () => {
+  it("lights Help wanted at its own address", () => {
     expect(sectionFor("/help-wanted")).toBe("help-wanted");
-    expect(sectionFor("/builds/roles")).toBe("help-wanted");
+  });
+
+  it("lights nothing under /builds/: every order there redirects, and what is left is a 404", () => {
+    // The orders were views of Products and Help wanted and lit them. They
+    // are `redirects()` entries now, so the bar never draws at those
+    // addresses; an unknown segment draws the not-found page, which is
+    // nobody's section — and must not read as a product's page.
+    for (const path of ["/builds", "/builds/newest", "/builds/roles", "/builds/zzz"]) {
+      expect([path, sectionFor(path)]).toEqual([path, ""]);
+    }
+    // …and the server renders an unmatched address under `/_not-found`, so
+    // that head lights nothing either: the 404 is not a product's page.
+    expect(sectionFor("/_not-found")).toBe("");
   });
 
   it("lights Activity — the bell and the phone's fourth tab", () => {
@@ -199,7 +227,6 @@ describe("sectionFor — which cell is lit", () => {
   it("reserves a head for every footer link, so none of them is taken for a product", () => {
     for (const link of FOOTER_LINKS) {
       expect([link.href, sectionFor(link.href)]).toEqual([link.href, ""]);
-      expect([link.href, hasOwnFooter(link.href)]).toEqual([link.href, false]);
     }
   });
 });
@@ -257,8 +284,7 @@ describe("the header may not grow", () => {
 
   it("keeps every destination reachable on a phone", () => {
     // Activity has no bell in a phone's top bar, so it is a tab; `Open a
-    // build` left the bar for the footer, which every page but a product's
-    // and a person's carries.
+    // build` left the bar for the footer, which every page carries.
     expect(PHONE_TABS.some((t) => t.href === "/activity")).toBe(true);
     expect(FOOTER_LINKS.some((l) => l.href === "/submit")).toBe(true);
   });
@@ -370,12 +396,20 @@ describe("which ramp, chosen by the reader (FR1, completing FR0)", () => {
     expect(code("ui/theme-toggle.tsx")).toContain("max-sm:min-h-[44px]");
   });
 
-  it("is reachable from every page, including the two that carry their own footer", () => {
+  it("is reachable from every page: the site footer is on all of them, and no page draws a footer of its own", () => {
     // A preference reachable on most pages is a preference a reader hunts
-    // for. `site-footer.tsx` steps aside on a product page and a person page,
-    // so both of those carry the control themselves.
-    for (const file of ["shell/site-footer.tsx", "[slug]/page.tsx", "people/[handle]/page.tsx"]) {
-      expect(code(file)).toContain("<ThemeToggle");
+    // for. `site-footer.tsx` used to step aside on a product page and a
+    // person page, which each carried a footer — and the control — of their
+    // own. Since OPR1 the one footer is on every page, unconditionally.
+    const footer = code("shell/site-footer.tsx");
+    expect(footer).toContain("<ThemeToggle />");
+    expect(footer).not.toMatch(/usePathname|hasOwnFooter|return null/);
+    expect(read("shell/site-footer.tsx")).not.toContain('"use client"');
+    expect(code("layout.tsx")).toContain("<SiteFooter />");
+    expect(code("shell/section-for.ts")).not.toContain("hasOwnFooter");
+    for (const file of ["[slug]/page.tsx", "people/[handle]/page.tsx"]) {
+      expect([file, /<footer\b/.test(code(file))]).toEqual([file, false]);
+      expect([file, code(file).includes("<ThemeToggle")]).toEqual([file, false]);
     }
   });
 });

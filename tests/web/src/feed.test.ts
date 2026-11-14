@@ -101,8 +101,8 @@ describe("`/` lists the products, and says so (openproduct-redesign OPR1)", () =
     expect(code("feed/product-card.tsx")).not.toMatch(/VoteBox|Shipping|Idea\b/);
     expect(card).not.toContain('"use client"');
     expect(existsSync(resolve(APP_DIR, "feed/card-row.tsx"))).toBe(false);
-    // The old tile's name still resolves, to this card — one card, not two.
-    expect(read("feed/build-tile.tsx")).toContain('export { ProductCard as BuildTile } from "./product-card";');
+    // The old tile's name is gone with its last importer — one card, one name.
+    expect(existsSync(resolve(APP_DIR, "feed/build-tile.tsx"))).toBe(false);
   });
 
   it("the card's facts say what was observed, and leave out what was not (OPC-C)", () => {
@@ -392,11 +392,22 @@ describe("no link promises a directory that no longer exists", () => {
       "[slug]/page.tsx",
       "topics/page.tsx",
       "topics/[topic]/page.tsx",
-      "launches/[day]/page.tsx",
     ]) {
       const source = read(file);
       expect([file, /href="\/products"|"\/products\?|DIRECTORY_PATH|topicDirectoryPath/.test(source)]).toEqual([file, false]);
     }
+  });
+
+  it("a day's board says where its list lives now: Products, at /products", () => {
+    // Its breadcrumb read "Launches" and went to `/` — the board index that
+    // folded into the front page. Since openproduct-redesign OPR1 `/` is the
+    // feed and `/products` is a page again (no hop), so the trail names the
+    // section the day's products belong to, in the nav's own word, and the
+    // structured trail beside it says the same thing.
+    const day = code("launches/[day]/page.tsx");
+    expect(day).toMatch(/<AppLink href="\/products" className=\{`tap \$\{LINK_QUIET\}`\}>\s*Products\s*<\/AppLink>/);
+    expect(day).toContain('{ name: "Products", path: "/products" },');
+    expect(day).not.toMatch(/DIRECTORY_PATH|topicDirectoryPath/);
   });
 
   it("the wordmark and the Feed pill point at the root; Products has an address of its own", () => {

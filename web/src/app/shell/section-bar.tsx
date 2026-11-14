@@ -49,47 +49,58 @@ export function SectionBar() {
   const active = sectionFor(pathname);
   const unread = useUnread();
   return (
-    <nav
-      aria-label="Main"
-      // `sm:hidden` — this is the phone's nav and the header's pills are
-      // everywhere else's. Both carry the same label, which is correct
-      // because only one is ever displayed.
-      //
-      // The bottom offset adds the home indicator's inset OUTSIDE the bar, so
-      // a phone with one gets the same 54px tabs lifted clear of it. The
-      // page's reserve for this bar is `--tabbar-reserve` in globals.css.
-      className="fixed inset-x-[10px] bottom-[calc(14px+env(safe-area-inset-bottom))] z-40 rounded-[16px] bg-card px-[6px] py-[4px] sm:hidden"
-    >
-      <ul className="m-0 grid list-none grid-cols-4 p-0">
-        {PHONE_TABS.map((tab) => {
-          const current = tab.id === active;
-          const marked = tab.id === "activity" && unread > 0;
-          return (
-            <li key={tab.id} className="min-w-0">
-              <AppLink
-                href={tab.href}
-                // QE0 — OFF, and the measurement is why. Viewport prefetch on
-                // this bar cost four RSC documents on every phone page load
-                // for a tap that usually never comes. `AppLink` still warms
-                // the destination on `touchstart`, which lands before the tap
-                // completes.
-                prefetch={false}
-                aria-current={current ? "page" : undefined}
-                aria-label={marked ? `${tab.label} — ${unread} unread` : undefined}
-                className={`flex min-h-[54px] flex-col items-center justify-center gap-[2px] rounded-[12px] text-center text-label leading-tight no-underline focus-visible:outline focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-ring ${
-                  current ? "font-semibold text-foreground" : "font-normal text-muted-foreground"
-                }`}
-              >
-                <span className="relative inline-flex">
-                  <SectionGlyph icon={tab.icon} className="h-[22px] w-[22px] shrink-0" />
-                  {marked ? <UnreadDot className="-right-[3px] -top-[2px]" /> : null}
-                </span>
-                {tab.label}
-              </AppLink>
-            </li>
-          );
-        })}
-      </ul>
-    </nav>
+    <>
+      {/* THE PAGE'S OWN COLOUR BEHIND THE BAR. The board's bar stands in the
+          column under the scrolling page, so nothing shows round it; this one
+          is `fixed` and inset, and without a ground the page's rows showed
+          through the 10px at its sides and the 14px under it as they
+          scrolled past — half a line of text below the bar. `.tabbar-ground`
+          (globals.css, beside the reserve it fills) is exactly that reserve
+          in the page colour. Decoration: hidden from the tree, and it takes
+          no pointer. */}
+      <div aria-hidden="true" className="tabbar-ground" />
+      <nav
+        aria-label="Main"
+        // `sm:hidden` — this is the phone's nav and the header's pills are
+        // everywhere else's. Both carry the same label, which is correct
+        // because only one is ever displayed.
+        //
+        // The bottom offset adds the home indicator's inset OUTSIDE the bar, so
+        // a phone with one gets the same 54px tabs lifted clear of it. The
+        // page's reserve for this bar is `--tabbar-reserve` in globals.css.
+        className="fixed inset-x-[10px] bottom-[calc(14px+env(safe-area-inset-bottom))] z-40 rounded-[16px] bg-card px-[6px] py-[4px] sm:hidden"
+      >
+        <ul className="m-0 grid list-none grid-cols-4 p-0">
+          {PHONE_TABS.map((tab) => {
+            const current = tab.id === active;
+            const marked = tab.id === "activity" && unread > 0;
+            return (
+              <li key={tab.id} className="min-w-0">
+                <AppLink
+                  href={tab.href}
+                  // QE0 — OFF, and the measurement is why. Viewport prefetch on
+                  // this bar cost four RSC documents on every phone page load
+                  // for a tap that usually never comes. `AppLink` still warms
+                  // the destination on `touchstart`, which lands before the tap
+                  // completes.
+                  prefetch={false}
+                  aria-current={current ? "page" : undefined}
+                  aria-label={marked ? `${tab.label} — ${unread} unread` : undefined}
+                  className={`flex min-h-[54px] flex-col items-center justify-center gap-[2px] rounded-[12px] text-center text-label leading-tight no-underline focus-visible:outline focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-ring ${
+                    current ? "font-semibold text-foreground" : "font-normal text-muted-foreground"
+                  }`}
+                >
+                  <span className="relative inline-flex">
+                    <SectionGlyph icon={tab.icon} className="h-[22px] w-[22px] shrink-0" />
+                    {marked ? <UnreadDot className="-right-[3px] -top-[2px]" /> : null}
+                  </span>
+                  {tab.label}
+                </AppLink>
+              </li>
+            );
+          })}
+        </ul>
+      </nav>
+    </>
   );
 }

@@ -129,7 +129,7 @@ export function seatAction(
   seat: Pick<Seat, "joinLinkRef">,
   options: { readonly consoleOrigin: string; readonly requested?: boolean },
 ): SeatAction {
-  if (options.requested === true) return { state: "requested", label: SEAT_REQUESTED_LABEL, href: "/me/applications" };
+  if (options.requested === true) return { state: "requested", label: SEAT_REQUESTED_LABEL, href: "/me?section=seats" };
   if (seat.joinLinkRef === null) return { state: "closed", label: SEAT_CLOSED_LABEL, href: null };
   return { state: "open", label: SEAT_TAKE_LABEL, href: seatDoorHref(options.consoleOrigin, seat.joinLinkRef) };
 }

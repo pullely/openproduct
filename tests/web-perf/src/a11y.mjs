@@ -499,8 +499,21 @@ export async function runA11y(base) {
           sized: imgs.filter((i) => i.getAttribute("width") && i.getAttribute("height")).length,
           named: imgs.filter((i) => (i.getAttribute("alt") ?? "").trim().length > 0).length,
           galleryLinks: panel ? panel.querySelectorAll('ul[aria-label="Gallery"] a[href]').length : 0,
-          dashed: panel
-            ? [...panel.querySelectorAll("figure")].filter((f) => getComputedStyle(f).borderStyle === "dashed").length
+          // OPR1 — THE CAPTURE'S FRAME IS A WELL, NOT DASHES. The redesign is
+          // flat and draws no borders, so the observed picture is told from
+          // the maker's by standing inside a padded, filled figure with a
+          // caption under it; the maker's pictures have neither. Both halves
+          // are measured: the well (padding and a fill of its own) and that
+          // no OTHER figure carries a caption.
+          welled: panel
+            ? [...panel.querySelectorAll("figure")].filter((f) => {
+                const cs = getComputedStyle(f);
+                return parseFloat(cs.paddingTop) > 0 && cs.backgroundColor !== "rgba(0, 0, 0, 0)" && f.querySelector("figcaption") !== null;
+              }).length
+            : 0,
+          captioned: panel ? [...panel.querySelectorAll("figure")].filter((f) => f.querySelector("figcaption") !== null).length : 0,
+          bordered: panel
+            ? [...panel.querySelectorAll("figure")].filter((f) => parseFloat(getComputedStyle(f).borderTopWidth) > 0).length
             : 0,
           captionDated: panel ? panel.querySelectorAll("figure figcaption time[datetime]").length : 0,
         };
@@ -511,9 +524,9 @@ export async function runA11y(base) {
         JSON.stringify(pictures),
       );
       check(
-        "product page: the capture is in the dashed frame, dated — and the maker's pictures are not",
-        pictures.dashed === 1 && pictures.captionDated === 1,
-        `${pictures.dashed} dashed frame(s), ${pictures.captionDated} dated caption(s)`,
+        "product page: the capture stands in its own well, dated — and the maker's pictures do not; nothing is bordered",
+        pictures.welled === 1 && pictures.captioned === 1 && pictures.captionDated === 1 && pictures.bordered === 0,
+        `${pictures.welled} well(s), ${pictures.captioned} captioned figure(s), ${pictures.captionDated} dated caption(s), ${pictures.bordered} bordered`,
       );
       const galleryReach = await keyboardReach(page, 'main ul[aria-label="Gallery"] li:first-child a');
       check("product page: the gallery is operable by keyboard alone — its first image is reached and shows focus", galleryReach.ok, galleryReach.why);
@@ -582,12 +595,15 @@ export async function runA11y(base) {
             title: document.title,
             rows: rows.length,
             named: targets.every((a) => ((a.getAttribute("aria-label") ?? a.textContent ?? "").trim().length > 0)),
-            back: document.querySelector('main a[href="/"]') !== null,
+            // OPR1 — the way back is to the list's own first page. It was
+            // `/` while the front page WAS the catalogue; Products has an
+            // address of its own now, and a continuation page goes back to it.
+            back: document.querySelector('main a[href="/products"]') !== null,
             h1: document.querySelector("main h1")?.textContent?.trim() ?? null,
           };
         });
         check(
-          "catalogue page: the next page is rows with named targets, a way back, and the same heading",
+          "catalogue page: the next page is rows with named targets, a way back to /products, and the same heading",
           next.rows > 0 && next.named && next.back && heading !== null && next.h1 === heading,
           JSON.stringify({ ...next, frontPageHeading: heading }),
         );

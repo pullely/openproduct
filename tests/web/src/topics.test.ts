@@ -107,7 +107,7 @@ describe("a topic page is the BOARD filtered, and the only place a topic leads",
     expect(topic).toContain("cardsInTopic(cards, doc.value)");
     expect(topic).toContain("{topicDirectoryMeta(directory.length)}");
     expect(topic).toContain("{TOPIC_DIRECTORY_HEADING}");
-    expect(topic).toContain("<BuildTile key={card.slug} card={card} returnTo={returnTo} />");
+    expect(topic).toContain("<ProductCard key={card.slug} card={card} returnTo={returnTo} />");
     // Absent when the directory could not be read — never a zero.
     expect(topic).toContain("directory !== null && directory.length > 0 ?");
   });

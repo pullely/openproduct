@@ -29,9 +29,9 @@
 // height is not — so the frame holds a `min-h` of most of a viewport, the
 // way the inbox's skeleton always has.
 //
-// This file also stands in for `/me/saved` and `/me/applications` — the old
-// addresses, which draw nothing of their own and arrive at a section of this
-// page. `/me/settings` is a form, and has its own.
+// (`/me/saved` and `/me/applications`, the old addresses, redirect to a
+// section of this page from the edge and draw nothing.) `/me/settings` is a
+// form, and has its own.
 
 import { BOARD_PAGE } from "../ui/design";
 import { LoadingAnnouncement, Shimmer, ShimmerLine } from "../ui/skeleton";

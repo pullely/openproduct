@@ -13,7 +13,7 @@ import {
   stackPath,
 } from "@openproduct/contracts";
 
-import { BuildTile } from "../../feed/build-tile";
+import { ProductCard } from "../../feed/product-card";
 import { fetchPublicDirectory, publicApexOrigin } from "../../public-api";
 import { JsonLd } from "../../ui/json-ld";
 
@@ -137,7 +137,7 @@ export default async function StackPage({ params }: { params: Promise<{ value: s
         <>
           <ul className="m-0 mt-8 grid list-none gap-[14px] p-0">
             {products.map((card) => (
-              <BuildTile key={card.slug} card={card} returnTo={path} />
+              <ProductCard key={card.slug} card={card} returnTo={path} />
             ))}
           </ul>
           {/* The order's own sentence, at its own address — the same 12.5px

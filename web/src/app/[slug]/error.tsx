@@ -16,8 +16,8 @@ export default function ListingError({ error, reset }: { error: Error & { digest
     <RouteError
       error={error}
       reset={reset}
-      what="This build's page stopped part way through. Reloading may be enough; the rest of the directory is unaffected."
-      actions={[{ label: "Open builds", href: "/" }]}
+      what="This product's page stopped part way through. Reloading may be enough; the rest of the site is unaffected."
+      actions={[{ label: "Products", href: "/products" }]}
     />
   );
 }

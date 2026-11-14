@@ -16,12 +16,11 @@ import { existsSync, readFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { BUILD_ORDERS, type PublicRoleOpening } from "@openproduct/contracts";
+import { BUILD_ORDERS, BUILD_ORDER_SEGMENTS, type PublicRoleOpening } from "@openproduct/contracts";
 import {
   DEFAULT_PRODUCT_SORT,
   PRODUCT_SORTS,
   PRODUCT_SORT_LABEL,
-  buildOrderRedirect,
   isProductSort,
   productSortOf,
   productsPath,
@@ -93,30 +92,34 @@ describe("a sort is an address", () => {
 });
 
 describe("the old order addresses redirect", () => {
-  it("maps each order to where it lives now, and nothing else to anywhere", () => {
-    expect(buildOrderRedirect("newest")).toBe("/products?sort=newest");
-    expect(buildOrderRedirect("upvoted")).toBe("/products?sort=upvoted");
-    expect(buildOrderRedirect("roles")).toBe("/help-wanted");
-    expect(buildOrderRedirect("most-active")).toBe("/products");
-    for (const never of ["", "Newest", "leaderboard", "roles/extra", "../products"]) {
-      expect([never, buildOrderRedirect(never)]).toEqual([never, null]);
-    }
+  const config = readFileSync(resolve(APP_DIR, "../../next.config.mjs"), "utf-8");
+
+  it("maps each order to where it lives now, from the edge, in one hop", () => {
+    // Every segment the contract ever published under `/builds/` is named,
+    // so a new order cannot be added there without deciding where it goes.
+    expect([...BUILD_ORDER_SEGMENTS]).toEqual(["newest", "upvoted", "roles"]);
+    expect(config).toContain('{ source: "/builds/newest", destination: "/products?sort=newest", permanent: true }');
+    expect(config).toContain('{ source: "/builds/upvoted", destination: "/products?sort=upvoted", permanent: true }');
+    expect(config).toContain('{ source: "/builds/roles", destination: "/help-wanted", permanent: true }');
+    // The destinations are the addresses the page itself gives its sorts.
+    expect(productsPath("newest")).toBe("/products?sort=newest");
+    expect(productsPath("upvoted")).toBe("/products?sort=upvoted");
+    // No redirect lands on another redirect: nothing points INTO `/builds/`.
+    expect(config).not.toMatch(/destination: "\/builds\//);
   });
 
-  it("is answered by a handler with the status itself — never a page whose body is a redirect (SB0)", () => {
-    expect(existsSync(resolve(APP_DIR, "builds/[order]/page.tsx"))).toBe(false);
-    const route = code("builds/[order]/route.ts");
-    expect(route).toContain("const target = buildOrderRedirect(order);");
-    expect(route).toContain("return NextResponse.redirect(new URL(target, request.url), 308);");
-    expect(route).toMatch(/if \(target === null\) \{[\s\S]*?status: 404/);
-    expect(route).toContain('export const dynamic = "force-dynamic";');
-    // Nothing personal passes through it.
-    expect(route).not.toMatch(/cookies\(|headers\(|request\.headers|authorization/i);
+  it("is ONE mechanism: no route is left under /builds/, so a segment that was never an order is the site's own 404", () => {
+    // A redirecting handler used to sit here beside the config entry, and it
+    // answered an unknown segment with a plain-text 404 of its own. With no
+    // route at all, Next's router answers and draws `not-found.tsx` — and a
+    // page whose body is a redirect (SB0) cannot come back either.
+    expect(existsSync(resolve(APP_DIR, "builds"))).toBe(false);
+    expect(code("feed/products.ts")).not.toContain("buildOrderRedirect");
   });
 
   it("the continuation feed still answers at its own address", () => {
-    // `/api/builds/{cursor}` is what *Show more* reads; the redirecting
-    // handler sits at `/builds/…`, a different tree.
+    // `/api/builds/{cursor}` is what *Show more* reads; the redirects are
+    // for `/builds/…`, a different tree.
     expect(existsSync(resolve(APP_DIR, "api/builds/[cursor]/route.ts"))).toBe(true);
     expect(code("api/builds/[cursor]/route.ts")).toContain("{ builds: page.projects.filter(frontPageEligible), next: page.next }");
   });
@@ -202,11 +205,11 @@ describe("the seat card's three states", () => {
     expect(seatDoorHref("", "tok_abc")).toBe("/join/tok_abc?from=openproduct");
   });
 
-  it("requested: says Requested and goes to the visitor's applications", () => {
+  it("requested: says Requested and goes to the visitor's requests, the Seats section of /me", () => {
     expect(seatAction({ joinLinkRef: "tok_abc" }, { consoleOrigin, requested: true })).toEqual({
       state: "requested",
       label: "Requested",
-      href: "/me/applications",
+      href: "/me?section=seats",
     });
     expect(SEAT_REQUESTED_LABEL).toBe("Requested");
     // A request that exists is a fact whatever happened to the door since.

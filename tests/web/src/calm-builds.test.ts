@@ -39,19 +39,23 @@ describe("every list of products draws the one card", () => {
   });
 
   it.each(["topics/[topic]/page.tsx", "stack/[value]/page.tsx", "pricing/[value]/page.tsx"])(
-    "%s draws it under the old name",
+    "%s draws the same card, under its own name",
     (file) => {
       const source = code(file);
-      expect(source).toContain("<BuildTile ");
+      expect(source).toContain('import { ProductCard } from "../../feed/product-card";');
+      expect(source).toContain("<ProductCard ");
+      expect(source).not.toContain("BuildTile");
       expect(source).not.toContain("CardRow");
     },
   );
 
-  it("the old row and the old list are gone, and the old tile's name is this card", () => {
-    for (const file of ["feed/card-row.tsx", "feed/builds.tsx", "feed/more-builds.tsx"]) {
+  it("the old row, the old list and the old tile's name are gone: one card, one name", () => {
+    // `feed/build-tile.tsx` re-exported the card as `BuildTile` while the
+    // topic, stack and pricing lists still imported the old name. They
+    // import `ProductCard` now, so the alias has no reader and is gone.
+    for (const file of ["feed/card-row.tsx", "feed/builds.tsx", "feed/more-builds.tsx", "feed/build-tile.tsx"]) {
       expect([file, existsSync(resolve(APP_DIR, file))]).toEqual([file, false]);
     }
-    expect(code("feed/build-tile.tsx").trim()).toBe('export { ProductCard as BuildTile } from "./product-card";');
   });
 
   it("the grid is the board's: columns of at least 250px, 18px apart; one column on a phone", () => {

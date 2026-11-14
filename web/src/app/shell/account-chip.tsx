@@ -266,9 +266,9 @@ export function AccountChip() {
             Your profile
           </MenuLink>
           {/* The public page: at the handle when there is one, and otherwise
-              at the profile form where a handle is claimed. The state word is
+              at the settings form where a handle is claimed. The state word is
               the overlay's answer, never a default — `—` until it reads. */}
-          <MenuLink href={handle ? `/@${handle}` : "/me"} icon={<GlobeIcon />} trailing={publicPageState}>
+          <MenuLink href={handle ? `/@${handle}` : "/me/settings"} icon={<GlobeIcon />} trailing={publicPageState}>
             Public page
           </MenuLink>
 

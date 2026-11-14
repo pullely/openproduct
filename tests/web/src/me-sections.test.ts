@@ -141,29 +141,29 @@ describe("a section of /me is an address", () => {
 });
 
 describe("the old addresses arrive at their sections", () => {
+  const config = readFileSync(resolve(APP_DIR, "../../next.config.mjs"), "utf-8");
+
   it.each([
-    ["me/saved/page.tsx", 'meSectionHref("saved")'],
-    ["me/applications/page.tsx", 'meSectionHref("seats")'],
-  ])("%s sends the reader on, signed in or out, and renders nothing", (file, target) => {
-    const src = markupOf(file);
-    expect(src).toContain(`const to = ${target};`);
-    // Signed out: the door, and back to the section. Signed in: the section.
-    expect(src).toContain("if (!session) redirect(signInFor(to));");
-    expect(src).toMatch(/redirect\(to\);\s*\}\s*$/);
-    // A per-request decision behind a session read — never a static redirect
-    // a build could prerender into a 200 with an empty body (SB0).
-    expect(src).toContain("await readSession()");
-    expect(src).toContain('export const dynamic = "force-dynamic";');
-    expect(src).not.toContain("permanentRedirect(");
-    // It draws no page of its own, and reads nothing but the session.
-    expect(src).not.toMatch(/<main|fetch[A-Z]\w*\(/);
+    ["/me/saved", "saved"],
+    ["/me/applications", "seats"],
+  ] as const)("%s is redirected to its section from the edge, with a status a crawler can read", (from, section) => {
+    // A real redirect, issued before the renderer is reached (SB0): the
+    // section's own address, exactly as the switcher writes it.
+    expect(config).toContain(`{ source: "${from}", destination: "${meSectionHref(section)}", permanent: true }`);
   });
 
-  it("left no second copy of either list behind", () => {
-    // The lists are `me/sections.tsx` and nowhere else; the old segments
-    // hold the redirect and nothing more — not even a skeleton of their own.
-    expect(readdirSync(resolve(APP_DIR, "me/saved"))).toEqual(["page.tsx"]);
-    expect(readdirSync(resolve(APP_DIR, "me/applications"))).toEqual(["page.tsx"]);
+  it("the page they arrive at is the one that reads the session, and sends a signed-out reader back to the SECTION", () => {
+    const page = markupOf("me/page.tsx");
+    expect(page).toContain("const here = meSectionHref(section);");
+    expect(page).toContain("if (!session) redirect(signInFor(here));");
+  });
+
+  it("left no page behind at either address", () => {
+    // The lists are `me/sections.tsx` and nowhere else. The old segments
+    // held a page whose whole body was a redirect; the config entry replaced
+    // them, so nothing is left to prerender, cache or drift.
+    expect(existsSync(resolve(APP_DIR, "me/saved"))).toBe(false);
+    expect(existsSync(resolve(APP_DIR, "me/applications"))).toBe(false);
   });
 
   it("a save and an unsave return to the Saved section, and say so when they failed", () => {
@@ -383,9 +383,7 @@ describe("nothing here is cached for anybody else", () => {
   it("every page under /me and /activity is force-dynamic, with no revalidate and nothing prerendered", () => {
     expect([...OWN_PAGES].sort()).toEqual([
       "activity/page.tsx",
-      "me/applications/page.tsx",
       "me/page.tsx",
-      "me/saved/page.tsx",
       "me/settings/page.tsx",
     ]);
     for (const file of OWN_PAGES) {

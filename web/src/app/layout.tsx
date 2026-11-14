@@ -19,10 +19,12 @@ import { TopPanel } from "./shell/top-panel";
 // in its italic; IBM Plex Mono is the small uppercase label and the machine
 // facts (licences, counts, component names).
 //
-// FIVE FILES, 98,664 BYTES, and the font budget was moved to say so
-// (`FONTS` in tests/web-perf/src/budgets.mjs; the wire budget's amendment is
-// in tests/web/src/wire-budget.decision.json). `latin` only and `swap` on all
-// three. Each file is here for a use the design names and no other: Hanken
+// FIVE FILES, 98,664 BYTES, OF WHICH A PAGE FETCHES FOUR (75,924) unless it
+// sets a quote in Lora's italic — see `loraItalic` below. The font budget
+// holds the four (`FONTS` in tests/web-perf/src/budgets.mjs), and the wire
+// budget did not move (tests/web/src/wire-budget.decision.json has the
+// measured numbers). `latin`
+// only and `swap` on all three. Each file is here for a use the design names and no other: Hanken
 // Grotesk is one variable file across 400–600, Lora ships 400 upright and 400
 // italic and no second weight, and IBM Plex Mono — which has no variable
 // build — ships 400 and the 500 its labels are set in. Weights stop at 600.
@@ -40,13 +42,31 @@ const hanken = localFont({
 });
 
 const lora = localFont({
-  src: [
-    { path: "../fonts/lora-latin-400.woff2", weight: "400", style: "normal" },
-    { path: "../fonts/lora-latin-400-italic.woff2", weight: "400", style: "italic" },
-  ],
+  src: "../fonts/lora-latin-400.woff2",
+  weight: "400",
+  style: "normal",
   display: "swap",
   variable: "--font-lora",
   // A serif: size the fallback against Times New Roman.
+  adjustFontFallback: "Times New Roman",
+});
+
+// LORA'S ITALIC IS DECLARED, NOT PRELOADED. `next/font` preloads every file
+// a declaration names, on every route the layout wraps — which is all of
+// them — and the italic is drawn only where a quote is: one page today (a
+// digest week's note), none of the boarded ones in OPR1. Declared in the
+// upright's own call it cost every page 22,740 bytes it never painted with.
+// Its own declaration with `preload: false` leaves the `@font-face` in the
+// stylesheet and the fetch to the browser, which makes it only on a page
+// that sets text in it (`.font-serif.italic` in globals.css names this
+// family first).
+const loraItalic = localFont({
+  src: "../fonts/lora-latin-400-italic.woff2",
+  weight: "400",
+  style: "italic",
+  display: "swap",
+  variable: "--font-lora-italic",
+  preload: false,
   adjustFontFallback: "Times New Roman",
 });
 
@@ -183,7 +203,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       lang="en"
       suppressHydrationWarning
       data-accent={ACCENT}
-      className={`${hanken.variable} ${lora.variable} ${plexMono.variable}`}
+      className={`${hanken.variable} ${lora.variable} ${loraItalic.variable} ${plexMono.variable}`}
     >
       <body className="flex min-h-dvh flex-col bg-background text-foreground antialiased">
         {/* esbuild's `keepNames` helper (`__name`) can be referenced by inline

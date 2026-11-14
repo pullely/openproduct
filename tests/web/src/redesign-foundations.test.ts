@@ -158,18 +158,23 @@ describe("three faces, five files, self-hosted", () => {
     }
   });
 
-  it("weighs 98,664 bytes, and the font budget is that plus thin headroom", () => {
+  it("weighs 98,664 bytes on disk; a page fetches four of the five, and the font budget is those plus thin headroom", () => {
     expect(bytes).toBe(98_664);
+    // The budget is what a page FETCHES. Lora's italic is declared without a
+    // preload, so every walked route takes the other four files.
+    const italic = statSync(resolve(FONTS_DIR, "lora-latin-400-italic.woff2")).size;
+    const fetched = bytes - italic;
+    expect(fetched).toBe(75_924);
     const budget = /const FONTS = \{ bytes: ([\d_]+), files: (\d+) \};/.exec(
       readFileSync(resolve(PERF, "budgets.mjs"), "utf-8"),
     );
     expect(budget).not.toBeNull();
     const [limit, files] = [Number(budget![1]!.replace(/_/g, "")), Number(budget![2])];
-    expect(files).toBe(FILES.length);
+    expect(files).toBe(FILES.length - 1);
     // Deterministic bytes, so the headroom stays under a tenth: a loose budget
     // on a stable number is a budget that admits a face.
-    expect(limit).toBeGreaterThanOrEqual(bytes);
-    expect(limit - bytes).toBeLessThan(bytes * 0.1);
+    expect(limit).toBeGreaterThanOrEqual(fetched);
+    expect(limit - fetched).toBeLessThan(fetched * 0.1);
   });
 
   it("says the same in the fonts README", () => {
@@ -184,11 +189,25 @@ describe("three faces, five files, self-hosted", () => {
     expect(layout).not.toMatch(/next\/font\/google/);
     const loaded = Array.from(layout.matchAll(/"\.\.\/fonts\/([\w.-]+\.woff2)"/g), (m) => m[1]!).sort();
     expect(loaded).toEqual(FILES);
-    // `swap` on all three; weights stop at 600.
-    expect(layout.match(/display: "swap"/g)?.length).toBe(3);
+    // `swap` on every declaration (three families, Lora's two cuts declared
+    // apart); weights stop at 600.
+    expect(layout.match(/display: "swap"/g)?.length).toBe(4);
     expect(layout).toContain('weight: "400 600"');
     expect(layout).not.toMatch(/weight: "[^"]*[7-9]00/);
-    expect(layout).toContain("className={`${hanken.variable} ${lora.variable} ${plexMono.variable}`}");
+    expect(layout).toContain(
+      "className={`${hanken.variable} ${lora.variable} ${loraItalic.variable} ${plexMono.variable}`}",
+    );
+    // Lora's italic is declared apart from the upright and NOT preloaded:
+    // `next/font` preloads every file a declaration names on every route,
+    // and the italic is drawn on one page. The browser fetches it where a
+    // quote is set in it, through the family `.font-serif.italic` names.
+    expect(layout).toMatch(
+      /const loraItalic = localFont\(\{\s*src: "\.\.\/fonts\/lora-latin-400-italic\.woff2",[\s\S]*?variable: "--font-lora-italic",\s*preload: false,/,
+    );
+    expect(layout).toMatch(/const lora = localFont\(\{\s*src: "\.\.\/fonts\/lora-latin-400\.woff2",/);
+    expect((layout.match(/preload: false/g) ?? []).length).toBe(1);
+    expect(CSS).toContain('--font-serif-italic: var(--font-lora-italic, "Lora"), var(--font-serif);');
+    expect(CSS).toMatch(/\.font-serif\.italic \{\s*font-family: var\(--font-serif-italic\);/);
   });
 
   it("lands them on the three stacks the stylesheet and Tailwind read", () => {
@@ -292,7 +311,7 @@ describe("flat cards, pill controls", () => {
   });
 
   it("makes every button and chip a pill, and the primary one ink", () => {
-    for (const name of ["BTN_PRIMARY", "BTN_OUTLINE", "BTN_QUIET", "BTN_SMALL", "BTN_COMPACT", "CHIP_BTN", "BADGE_ACCENT", "BADGE_WANTED"] as const) {
+    for (const name of ["BTN_PRIMARY", "BTN_OUTLINE", "BTN_QUIET", "BTN_SMALL", "BTN_SOFT", "BTN_INK", "BTN_SEAT", "CHIP_BTN", "BADGE_SEAT"] as const) {
       expect(design[name]).toContain("rounded-full");
     }
     expect(design.BTN_PRIMARY).toContain("bg-primary");

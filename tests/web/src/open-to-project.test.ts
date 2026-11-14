@@ -104,13 +104,16 @@ describe("two sides, and no edge between them (OPC-5)", () => {
     // query that could drift from the first and print a count nobody can
     // reconcile against the rows beneath it. Since openproduct-calm CL4 the
     // rows are a preview of the same array (`askingPreview`) and the link
-    // beside the count carries the whole of it to the Roles order.
+    // beside the count carries the whole of it to the Help wanted section
+    // (it was the Roles order, at `/builds/roles`, until openproduct-redesign
+    // OPR1 gave the section its own address and its own name).
     expect(src).toContain(
       '{asking.length} {asking.length === 1 ? "listing" : "listings"} with a role open',
     );
     expect(src).toContain("{askingPreview(asking).map((listing) => (");
-    expect(src).toContain("{askingAllLabel(asking.length)} →");
-    expect(src).toContain('href={buildOrderPath("roles")}');
+    expect(src).toContain('{asking.length === 1 ? "See it in Help wanted" : `See all ${asking.length} in Help wanted`} →');
+    expect(src).toContain('<AppLink href="/help-wanted"');
+    expect(src).not.toMatch(/buildOrderPath|askingAllLabel|in Roles/);
   });
 
   it("draws nothing when nobody is asking", () => {

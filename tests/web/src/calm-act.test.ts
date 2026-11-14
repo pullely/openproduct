@@ -37,7 +37,7 @@ describe("the act is ink (CP-R1)", () => {
   });
 
   it("every button token is a pill", () => {
-    for (const name of ["BTN_PRIMARY", "BTN_OUTLINE", "BTN_QUIET", "BTN_SMALL", "BTN_COMPACT"]) {
+    for (const name of ["BTN_PRIMARY", "BTN_OUTLINE", "BTN_QUIET", "BTN_SMALL", "BTN_SOFT", "BTN_INK", "BTN_SEAT"]) {
       const token = design.match(new RegExp(`export const ${name} =\\s*"([^"]*)"`))?.[1] ?? "";
       expect([name, token.includes("rounded-full")]).toEqual([name, true]);
     }

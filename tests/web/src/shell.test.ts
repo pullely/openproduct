@@ -20,6 +20,7 @@ import { fileURLToPath } from "node:url";
 
 import {
   ACCOUNT_MENU_ITEMS,
+  SIGN_IN_PATH,
   ACTIVITY_PATH,
   COUNT_PLACEHOLDER,
   FOOTER_LINKS,
@@ -141,6 +142,36 @@ describe("the section nav", () => {
   });
 });
 
+describe("two pages take less of the header (boards `SignIn`, `PhoneSearch`)", () => {
+  const panel = markupOf("shell/top-panel.tsx");
+
+  it("on the sign-in door it is the mark and the word, and nothing else", () => {
+    // The page IS the way in: a profile control offering to sign in, a bell
+    // and a search box are three ways to leave it. Read from the path, so
+    // the render is the same for every visitor (I6).
+    expect(SIGN_IN_PATH).toBe("/signin");
+    expect(panel).toContain("const door = path === SIGN_IN_PATH;");
+    expect(panel).toMatch(/\{door \? null : \(\s*<>\s*(?:\{\}\s*)?<nav aria-label="Main"/);
+    // Everything else in the bar is inside that one branch.
+    const rest = panel.slice(panel.indexOf("{door ? null : ("));
+    for (const part of ["<HeaderSearch />", "<NotificationBell", "<AccountChip />", "SECTIONS.map"]) {
+      expect([part, rest.includes(part)]).toEqual([part, true]);
+      expect([part, panel.slice(0, panel.indexOf("{door ? null : (")).includes(part)]).toEqual([part, false]);
+    }
+    // The word keeps its place at every width there: nothing is beside it.
+    expect(panel).toContain('${door ? "" : "max-lg:hidden"}');
+  });
+
+  it("on the search page a phone's bar does not repeat the search", () => {
+    // The page's own field is directly under the bar; a pill above it that
+    // links to the page it is on is the same control twice.
+    expect(panel).toContain("const onSearch = path === SEARCH_PATH;");
+    expect(panel).toMatch(/\{onSearch \? null : \(\s*<AppLink\s+href=\{SEARCH_PATH\}\s+aria-label="Search"/);
+    // Still exactly one such link in the source, and still phone-only.
+    expect((panel.match(/href=\{SEARCH_PATH\}/g) ?? []).length).toBe(1);
+  });
+});
+
 describe("the footer holds what left the bar", () => {
   it("links every section that has no board, and each one is a route that exists", () => {
     const hrefs = FOOTER_LINKS.map((l) => l.href);
@@ -216,19 +247,36 @@ describe("the account menu", () => {
     // public page CG1 gave it an address for.
     expect(ACCOUNT_MENU_ITEMS.map((i) => i.href)).toEqual([
       "/studio",
-      "/me/saved",
-      "/me/applications",
+      // OPR1 — the saved list and the requests are sections of `/me`; the
+      // menu names the section, not the old page that redirects to it.
+      "/me?section=saved",
+      "/me?section=seats",
       // NF0 — the inbox, in the same menu because it is the same question
       // (what is mine on this surface). Its address is `/activity` since
       // OPR1, the same one the header's bell goes to.
       "/activity",
-      "/me#digest",
+      // The digest switch is in the settings page's Notifications card.
+      "/me/settings#notifications",
     ]);
     // A subscription is not a number: the digest row carries no count.
     expect(ACCOUNT_MENU_ITEMS.find((i) => i.id === "digest")?.countKey).toBeUndefined();
     // The inbox's IS one, and it is the only count here that means "waiting
     // for you" rather than "held by you".
     expect(ACCOUNT_MENU_ITEMS.find((i) => i.id === "notifications")?.countKey).toBe("unread");
+  });
+
+  it("every anchor and section the menu names is one the page it goes to has", () => {
+    // A link to `#notifications` on a page with no such id lands at the top
+    // and says nothing; a link to a section the page does not know lands on
+    // the first one. Both are silent, so both are checked here.
+    const settings = readFileSync(resolve(APP_DIR, "me/settings/page.tsx"), "utf-8");
+    expect(settings).toContain('<section id="notifications"');
+    expect(settings).toContain('aria-label="Weekly digest"');
+    const sections = readFileSync(resolve(APP_DIR, "me/section.ts"), "utf-8");
+    expect(sections).toContain('export const ME_SECTION_KEYS = ["products", "saved", "seats"] as const;');
+    // With no handle yet, the public-page row goes to where one is claimed.
+    const chip = readFileSync(resolve(APP_DIR, "shell/account-chip.tsx"), "utf-8");
+    expect(chip).toContain('href={handle ? `/@${handle}` : "/me/settings"}');
   });
 
   it("the chip's own Profile section links the form and the public page", () => {

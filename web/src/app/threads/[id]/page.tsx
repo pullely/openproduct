@@ -133,14 +133,16 @@ function Post({
             A `#` is one glyph, 8px wide, and the design's 8px gap put the
             name's link exactly one 24px circle away — axe's target-size
             failed it at both widths. So the glyph keeps its place and its
-            HIT AREA grows: 9px of padding each side, cancelled by the same
-            negative margin, makes it at least 24px wide, and (above the phone width,
+            HIT AREA grows: 10px of padding each side, cancelled by the same
+            negative margin, makes it at least 24px wide (it was 9px while
+            the glyph was Geist Mono's; IBM Plex Mono's `#` is narrower and
+            the box measured 23.8px, which axe failed again), and (above the phone width,
             where `tap-h` already makes it 44px tall) 3px top and bottom make
             it 24px tall without moving the line. */}
         <AppLink
           href={postPermalink(threadId, post.id)}
           title="Link to this post"
-          className="tap-h -mx-[9px] px-[9px] text-center sm:-my-[3px] sm:py-[3px] font-mono text-faint hover:text-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+          className="tap-h -mx-[10px] px-[10px] text-center sm:-my-[3px] sm:py-[3px] font-mono text-faint hover:text-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
         >
           #
         </AppLink>
@@ -379,7 +381,11 @@ export default async function ThreadPage({ params }: PageProps) {
         </>
       )}
 
-      <ReportControl subjectKind="thread" subjectRef={thread.id} returnTo={`/threads/${thread.id}`} />
+      {/* As wide as the conversation's card above it, so the rule over the
+          report door ends where the card does. */}
+      <div className="max-w-[860px]">
+        <ReportControl subjectKind="thread" subjectRef={thread.id} returnTo={`/threads/${thread.id}`} />
+      </div>
     </main>
   );
 }

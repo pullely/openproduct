@@ -36,7 +36,10 @@ import { navigationStarted } from "../ui/navigation";
  *
  * ─── THE BOX BECOMES THE CARD ─────────────────────────────────────────────
  *
- * At rest it is a 40px pill, 260px wide. When the reader types, the box
+ * At rest it is a 40px pill, 268px wide — the board's 260px and the 8px its
+ * own placeholder needs: "Search products and people" at 16px measured one
+ * letter wider than the 260px box in a browser and was cut at the "e". When
+ * the reader types, the box
  * widens to 380px (eased over 0.32s) and becomes the top of ONE white card
  * that holds the results beneath it: the card is drawn behind the field, 6px
  * proud of it on three sides, so the field is the card's first row and not a
@@ -274,7 +277,7 @@ export function HeaderSearch() {
   };
 
   return (
-    // `relative` anchors the card to the box. THE BASIS IS THE WIDTH: 260px at
+    // `relative` anchors the card to the box. THE BASIS IS THE WIDTH: 268px at
     // rest and 380px with a card, and the only thing that changes between the
     // two is `flex-basis`, so the easing is one property. `shrink` lets it
     // give way on a narrow bar instead of pushing the bell out of the row.
@@ -286,7 +289,7 @@ export function HeaderSearch() {
       ref={rootRef}
       data-search-open={open ? "" : undefined}
       className={`relative flex min-w-0 shrink grow-0 transition-[flex-basis] duration-300 ${EASE} motion-reduce:transition-none max-sm:hidden ${
-        open ? "basis-[380px]" : "basis-[260px]"
+        open ? "basis-[380px]" : "basis-[268px]"
       }`}
     >
       <label

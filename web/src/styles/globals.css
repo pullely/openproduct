@@ -17,6 +17,9 @@
       -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
     --font-serif: var(--font-lora, "Lora"), ui-serif, Georgia,
       "Times New Roman", serif;
+    /* Lora's italic is a family of its own (layout.tsx declares it apart
+       from the upright so it is fetched only where it is drawn). */
+    --font-serif-italic: var(--font-lora-italic, "Lora"), var(--font-serif);
     --font-mono: var(--font-plex-mono, "IBM Plex Mono"), ui-monospace, "SF Mono",
       "Cascadia Code", "JetBrains Mono", Menlo, Consolas, monospace;
 
@@ -888,6 +891,28 @@
     }
   }
 
+  /* OPR1 — THE GROUND UNDER THE BOTTOM BAR. The bar is `fixed` and inset
+     (10px at the sides, 14px under it), so without a ground the page's rows
+     showed through those gaps as they scrolled past. This is exactly the
+     reserve above, in the page's colour, fading out over its top edge so a
+     row slides under it instead of being cut. HERE, beside the reserve it
+     fills, and one short class in every document instead of eight
+     utilities. Phones only: the bar is not drawn from `sm` up. */
+  .tabbar-ground {
+    display: none;
+  }
+  @media (max-width: 639.98px) {
+    .tabbar-ground {
+      display: block;
+      position: fixed;
+      inset: auto 0 0 0;
+      z-index: 40;
+      height: var(--tabbar-reserve);
+      pointer-events: none;
+      background: linear-gradient(to top, oklch(var(--background)) 82%, transparent);
+    }
+  }
+
   html,
   body {
     @apply bg-background text-foreground antialiased;
@@ -1438,6 +1463,12 @@
 
   /* Display serif for page titles and idea quotes: Lora, and 400 is the only
      weight the site ships of it. */
+/* A quote set in the serif's italic takes the italic FILE, not a slanted
+     upright: the two cuts are separate families (see `--font-serif-italic`). */
+  .font-serif.italic {
+    font-family: var(--font-serif-italic);
+  }
+
   .font-serif-display {
     font-family: var(--font-serif);
     font-weight: 400;

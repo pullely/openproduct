@@ -1,7 +1,7 @@
 {
   "$comment": "Decision WC2-8 (openproduct-worldclass-v2, recorded in sourceplane/orun-cloud specs/epics/openproduct-worldclass-v2/README.md): the performance budget is the number measured on 9 September 2026, held in CI, on the wire. Its numbers moved here at the repository cut (openproduct-standalone OPN1), so wire-budget.test.ts reads nothing outside this repository. They move only by a recorded decision: append an amendment here and change WIRE in tests/web-perf/src/wire.mjs in the same commit.",
   "decision": "WC2-8",
-  "bytesKB": 300,
+  "bytesKB": 276,
   "requests": 30,
   "thirdPartyHosts": 0,
   "amendments": [
@@ -10,12 +10,13 @@
       "fromKB": 250,
       "toKB": 276,
       "why": "The Next 16 upgrade. Next.js 15 left its support window and the OpenNext adapter stopped building it; 16.4.2's runtime (its router and the React it vendors) costs every page 26.5 KB more on the wire, and no app code grew. 276 is 250 plus exactly that rise, so every archetype keeps the margin it had."
-    },
+    }
+  ],
+  "notes": [
     {
       "date": "2026-11-14",
-      "fromKB": 276,
-      "toKB": 300,
-      "why": "The redesign's fonts (openproduct-redesign OPR1): three design families, five Latin-subset files. Geist, Newsreader and Geist Mono (3 files, 74,900 bytes) left; Hanken Grotesk variable 400-600 (34,664), Lora 400 upright and italic (21,188 + 22,740) and IBM Plex Mono 400 and 500 (10,016 + 10,056) arrived: 5 files, 98,664 bytes, +23,764 on every page. woff2 does not compress further, so the rise on the wire is the rise in the files; 300 is 276 plus that rise rounded up to the KB, and no app code is in it. The font budget moved with it (FONTS in tests/web-perf/src/budgets.mjs: 3 files / 82,000 to 5 files / 105,800). The two extra files are also two more requests per page; the 30-request limit is unchanged."
+      "heldKB": 276,
+      "why": "The redesign (openproduct-redesign OPR1) did not move the budget. Its first commit raised it to 300 KB by arithmetic (five font files where there were three, +23,764 bytes); measured on a full build, that was not needed and the amendment was withdrawn before it merged. Lora's italic is declared without a preload, so a page fetches four font files (75,924 bytes) where it fetched three (74,900). Measured, brotli as the lane compresses: / 261,811 B (was 258,141), /product-00 276,145 B (was 272,320), /products?sort=upvoted 262,461 B (was /builds/upvoted, 259,287). All three are under 276 KB; the listing keeps 6,479 bytes. Requests measured 26, 30 and 26 at desktop: the listing is at the 30-request limit."
     }
   ]
 }

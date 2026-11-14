@@ -19,12 +19,14 @@ import type { MediaFact } from "@openproduct/contracts";
  *
  * ─── THE HERO, THE GALLERY, THE CAPTURE — THREE FRAMES, NOT ONE ──────────
  *
- * The hero and the gallery are the maker's: a hairline frame, no caption, no
- * date, because an authored image has no moment (MD0). The screenshot is
- * OURS: a dashed frame — PV0's observed frame, the same shape the observed
- * row wears — and a caption that says what it is and when it was taken. A
- * sighted reader sees the dashes; a screen-reader user hears the alt, which
- * says the same thing (`screenshotAlt`). WC-3 in the medium that carries no
+ * The hero and the gallery are the maker's: a bare rounded picture, no
+ * caption, no date, because an authored image has no moment (MD0). The
+ * screenshot is OURS: it stands inside a sunken well with a caption under it
+ * that says what it is and when it was taken. (It was a dashed frame until
+ * openproduct-redesign OPR1; the redesign is flat and draws no borders, so
+ * the well and the caption carry the difference.) A sighted reader sees the
+ * well and reads the caption; a screen-reader user hears the alt, which says
+ * the same thing (`screenshotAlt`). WC-3 in the medium that carries no
  * label of its own.
  *
  * ─── OPERABLE BY KEYBOARD ALONE, WITH NO SCRIPT ─────────────────────────

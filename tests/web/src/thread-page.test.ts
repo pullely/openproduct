@@ -31,6 +31,21 @@ describe("every post has a stable address", () => {
     expect(page.indexOf("href={postPermalink(threadId, post.id)}")).toBeLessThan(page.indexOf("<PersonName"));
   });
 
+  it("the permalink is a 24px target, the comment's upvote is a pill, and the report rule ends where the card does", () => {
+    // Seen in a browser at openproduct-redesign OPR1. The `#` is IBM Plex
+    // Mono's now, a narrower glyph than Geist Mono's: with 9px each side the
+    // box measured 23.8px and axe's target-size failed it, so it is 10px.
+    const page = code("threads/[id]/page.tsx");
+    expect(page).toContain('className="tap-h -mx-[10px] px-[10px] text-center');
+    // Every button is a pill (design.md §3); the comment's upvote kept the
+    // old 6px corner.
+    expect(code("ui/comment-vote.tsx")).toContain("inline-flex h-[28px] items-center gap-1.5 rounded-full border px-[10px]");
+    expect(code("ui/comment-vote.tsx")).not.toContain("rounded-[6px]");
+    // The report door's rule is as wide as the conversation's card above it.
+    expect(page).toMatch(/<div className="max-w-\[860px\]">\s*<ReportControl subjectKind="thread"/);
+    expect(page).toContain("mt-10 max-w-[860px]");
+  });
+
   it("a post is a ROW for the keyboard layer, and `u` presses the comment's own upvote", () => {
     const page = code(PAGE);
     expect(page).toContain("{...{ [ROW_ATTRIBUTE]: true }}");

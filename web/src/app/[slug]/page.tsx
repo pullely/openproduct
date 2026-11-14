@@ -75,7 +75,6 @@ import {
   CARD,
   COVER_PRODUCT,
   FOCUS,
-  FOLLOW_PILL_OUTLINE,
   H3,
   PAGE_TITLE,
   PANEL,
@@ -89,7 +88,6 @@ import {
   STACK_PILL,
 } from "../ui/design";
 import { cardMeta, productCopy } from "../ui/og";
-import { ThemeToggle } from "../ui/theme-toggle";
 import { initialsOf } from "../feed/tile";
 import { DASH, NewPill, PersonName } from "../ui/bits";
 import { ProductTile } from "../ui/product-tile";
@@ -441,7 +439,7 @@ export default async function OpenproductProfilePage({ params }: PageProps) {
         {/* THE TRAIL, and it is emitted even where the listing is not:
             `noindex` says do not amplify THIS page; a breadcrumb is about the
             pages ABOVE it. */}
-        <JsonLd data={breadcrumbJsonLd([{ name: "Open builds", path: "/" }, { name: profile.slug, path: `/${profile.slug}` }], apex)} />
+        <JsonLd data={breadcrumbJsonLd([{ name: "Products", path: "/products" }, { name: profile.slug, path: `/${profile.slug}` }], apex)} />
 
         {/* ── the header card (board `Product`, visitor view) ─────────── */}
         {/* FR4 — a listing is ONE row, so `u` upvotes it without the reader
@@ -547,20 +545,25 @@ export default async function OpenproductProfilePage({ params }: PageProps) {
                   rule 3); Take a seat goes to the crew card and is there only
                   when a seat is open; Try it goes to the running product and
                   is there only when the listing has an address for one. */}
-              <div data-hero-actions className="flex flex-wrap justify-end gap-2 max-sm:grid max-sm:grid-cols-2">
+              <div
+                data-hero-actions
+                // Two to a row on a phone (board `PhoneProduct`); when there
+                // are three, the last takes the whole row rather than half
+                // of one beside a hole.
+                className="flex flex-wrap justify-end gap-2 max-sm:grid max-sm:grid-cols-2 max-sm:[&>*:last-child:nth-child(odd)]:col-span-2"
+              >
                 {/* XP2 — the same static markup for every visitor at the
                     SERVER render, personalised only after hydration by the
                     overlay (I6). */}
-                <div className={FOLLOW_PILL_OUTLINE}>
-                  <FollowButton
-                    kind="listing"
-                    value={profile.slug}
-                    followers={profile.followers}
-                    returnTo={`/${profile.slug}`}
-                    size="hero"
-                    countHidden
-                  />
-                </div>
+                <FollowButton
+                  kind="listing"
+                  value={profile.slug}
+                  followers={profile.followers}
+                  returnTo={`/${profile.slug}`}
+                  size="hero"
+                  tone="outline"
+                  countHidden
+                />
                 {openRoles.length > 0 ? (
                   <a href="#crew" className={BTN_SOFT}>
                     Take a seat
@@ -1066,7 +1069,7 @@ export default async function OpenproductProfilePage({ params }: PageProps) {
                     mostActiveRank === null ? (
                       DASH
                     ) : (
-                      <AppLink href="/" className="tap-h underline-offset-4 hover:underline">
+                      <AppLink href="/" className="tap underline-offset-4 hover:underline">
                         #{mostActiveRank}
                       </AppLink>
                     )
@@ -1220,19 +1223,6 @@ export default async function OpenproductProfilePage({ params }: PageProps) {
           </aside>
         </div>
       </main>
-
-      {/* The page's own footer: what was observed at publish, the theme
-          control (FR1 — this page carries its own footer instead of the
-          site's, so it carries the control too), and the page's short
-          address. The root layout's footer steps aside here. */}
-      <footer className="mx-auto box-border flex w-full max-w-[1180px] flex-wrap items-center justify-between gap-x-5 gap-y-3 px-6 pb-9 pt-2 text-[13px] text-muted-foreground max-sm:px-3">
-        <span>
-          Components, openings and licence as observed at publish
-          {publishedOn ? ` — ${publishedOn}` : ""}.
-        </span>
-        <ThemeToggle />
-        {apex ? <span className="font-mono">openproduct.live/{profile.slug}</span> : null}
-      </footer>
     </>
   );
 }

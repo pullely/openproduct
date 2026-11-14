@@ -2,44 +2,44 @@
   "header": {
     "top": 0,
     "left": 0,
-    "width": 365,
-    "height": 56
+    "width": 375,
+    "height": 68
   },
   "sectionBar": {
-    "top": 755,
-    "left": 0,
-    "width": 365,
-    "height": 57
+    "top": 736,
+    "left": 10,
+    "width": 355,
+    "height": 62
   },
   "main": {
-    "top": 56,
+    "top": 68,
     "left": 0,
-    "width": 365
+    "width": 375
   },
   "h1": {
-    "top": 107,
+    "top": 123,
     "left": 14,
-    "width": 118,
-    "height": 35
+    "width": 103,
+    "height": 31
   },
   "firstRow": {
     "left": 14,
-    "width": 337,
-    "height": 200
+    "width": 347,
+    "height": 187
   },
   "footer": {
     "left": 0,
-    "width": 365,
-    "height": 298
+    "width": 375,
+    "height": 300
   },
   "themeControl": {
-    "width": 67,
+    "width": 62,
     "height": 44
   },
   "colours": {
-    "body": "oklch(0.985 0.004 80)",
-    "text": "oklch(0.21 0.01 80)",
-    "header": "oklch(1 0 0 / 0.92)",
-    "h1": "oklch(0.21 0.01 80)"
+    "body": "oklch(0.967 0.0082 91.48)",
+    "text": "oklch(0.1908 0.002 106.59)",
+    "header": "oklch(1 0 0 / 0.62)",
+    "h1": "oklch(0.1908 0.002 106.59)"
   }
 }

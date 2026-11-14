@@ -51,6 +51,9 @@ describe("OV4 — the authenticated walk is a gate", () => {
     const listed = [...block.matchAll(/\{ path: (?:"([^"]+)"|`([^`]+)`)/g)]
       .map((m) => m[1] ?? m[2] ?? "")
       .map((p) => p.replace("${STUDIO_ORG}", "[org]").replace("${STUDIO_PROFILE}", "[profile]"));
+    // A section of `/me` is walked at its own address (`/me?section=saved`);
+    // the PAGE it is a view of is the path before the query.
+    const listedPages = [...new Set(listed.map((p) => p.split("?")[0] ?? p))];
     // `/activity` is the inbox: a signed-in page that left `/me` for an
     // address of its own at openproduct-redesign OPR1, and is still walked.
     const pages = [
@@ -60,15 +63,19 @@ describe("OV4 — the authenticated walk is a gate", () => {
     ];
     expect(pages).toContain("/activity");
     // OPR1 — the settings page is new, and joined the list with the change
-    // that added it; the two old addresses under `/me` are still pages.
+    // that added it. The two old addresses under `/me` are redirects now
+    // (`MOVED` holds their status); what is walked is the two SECTIONS they
+    // arrive at, each at its own address.
     expect(pages).toContain("/me/settings");
-    expect(pages).toContain("/me/saved");
-    expect(pages).toContain("/me/applications");
-    expect(pages.length).toBeGreaterThanOrEqual(16);
-    const unwalked = pages.filter((p) => !listed.includes(p));
+    expect(pages).not.toContain("/me/saved");
+    expect(pages).not.toContain("/me/applications");
+    expect(listed).toContain("/me?section=saved");
+    expect(listed).toContain("/me?section=seats");
+    expect(pages.length).toBeGreaterThanOrEqual(14);
+    const unwalked = pages.filter((p) => !listedPages.includes(p));
     expect(unwalked).toEqual([]);
     // And nothing listed that is not a page.
-    const phantom = listed.filter((p) => !existsSync(resolve(APP, `.${p}/page.tsx`)));
+    const phantom = listedPages.filter((p) => !existsSync(resolve(APP, `.${p}/page.tsx`)));
     expect(phantom).toEqual([]);
   });
 

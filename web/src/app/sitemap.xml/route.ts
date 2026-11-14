@@ -7,7 +7,6 @@ import {
   fetchBoardDays,
 } from "../public-api";
 import {
-  BUILD_ORDER_SEGMENTS,
   forumCategories,
   forumPath,
   parseWeekId,
@@ -87,17 +86,14 @@ export async function GET(request: Request): Promise<Response> {
     // No `lastmod` on either: they are indexes over a catalogue that changes
     // constantly, and a date stamped from the moment this document was built
     // would ask a crawler to re-fetch them on every publish anywhere.
-    // OB4 / OB7 — the front page's other three orders, each its own document
-    // with its own canonical address (the leaderboard's three ranges folded
-    // into Upvoted and redirect there, so they left this list). A finite set
-    // of distinct documents is what a sitemap is for; a facet permutation is
-    // not.
-    //
-    // OPR1 — the Roles order moved to the Help wanted section's own address
-    // (`/builds/roles` redirects there), and Products is a section with an
-    // address of its own. A sitemap lists the address a page lives at, never
-    // one that redirects.
-    ...BUILD_ORDER_SEGMENTS.filter((order) => order !== "roles").map((order) => ({ path: `builds/${order}`, lastmod: null })),
+    // OPR1 — THE LIST'S ORDERS LEFT THIS DOCUMENT. `/builds/newest` and
+    // `/builds/upvoted` were pages of their own and were listed here; they
+    // are sorts of the Products page now (`/products?sort=…`) and their old
+    // addresses redirect, as `/builds/roles` does to the Help wanted section
+    // and the leaderboard's ranges did before them (OB7). A sitemap lists the
+    // address a page lives at, never one that redirects — and a sort is a
+    // view of one document whose canonical address is `/products`, which is
+    // the one entry it gets.
     { path: "products", lastmod: null },
     { path: "help-wanted", lastmod: null },
     // QE1 — every day that holds a board, at its own address (LC3): a

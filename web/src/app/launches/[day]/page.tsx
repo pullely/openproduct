@@ -111,7 +111,7 @@ export default async function BoardDayPage({ params }: { params: Promise<{ day: 
       <JsonLd
         data={breadcrumbJsonLd(
           [
-            { name: "Products", path: "/" },
+            { name: "Products", path: "/products" },
             { name: dayLabel(parsed.day), path: `/launches/${parsed.day.id}` },
           ],
           publicApexOrigin(),
@@ -130,8 +130,8 @@ export default async function BoardDayPage({ params }: { params: Promise<{ day: 
         )}
       />
       <nav className={CRUMBS} aria-label="Breadcrumb">
-        <AppLink href="/" className={`tap ${LINK_QUIET}`}>
-          Launches
+        <AppLink href="/products" className={`tap ${LINK_QUIET}`}>
+          Products
         </AppLink>
         <span aria-hidden="true">/</span>
         <span className="text-foreground">{parsed.day.id}</span>

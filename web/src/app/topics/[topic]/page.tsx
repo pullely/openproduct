@@ -18,7 +18,7 @@ import {
   type FeedEntry,
 } from "@openproduct/contracts";
 
-import { BuildTile } from "../../feed/build-tile";
+import { ProductCard } from "../../feed/product-card";
 import { FeedRow } from "../../feed/feed-row";
 import { AppLink } from "../../ui/link";
 import { fetchPublicDirectory, fetchTopic, publicApexOrigin } from "../../public-api";
@@ -319,7 +319,7 @@ export default async function TopicPage({ params }: { params: Promise<{ topic: s
                 builds (CL-R3). */}
             <ul className="m-0 grid list-none gap-[14px] p-0">
               {directory.map((card) => (
-                <BuildTile key={card.slug} card={card} returnTo={returnTo} />
+                <ProductCard key={card.slug} card={card} returnTo={returnTo} />
               ))}
             </ul>
           </section>

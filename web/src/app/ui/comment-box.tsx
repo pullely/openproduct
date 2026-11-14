@@ -20,7 +20,7 @@ import { AppLink } from "./link";
  * counted and found empty — that is a fact, and an invitation to be the first
  * — where a dash would say the number was never measured. Nothing here has to
  * decide between them: a card that carries no count does not render this box
- * at all (`feed/build-tile.tsx`), so there is no absent count to spell.
+ * at all (`feed/product-card.tsx`), so there is no absent count to spell.
  *
  * A LINK, NOT A BUTTON, and therefore a SERVER COMPONENT: it takes nobody's
  * vote, reads nothing personal, and is byte-identical in every visitor's HTML
