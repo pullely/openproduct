@@ -634,3 +634,11 @@ export function PostBlocks({ post, skip = [] }: { post: Pick<PublicProductPost, 
 export function authorHref(post: Pick<PublicProductPost, "author">): string | null {
   return post.author ? makerPath(post.author.handle) : null;
 }
+
+/**
+ * A card's parts, for a page that lays the card out itself: the post's own
+ * page (`[slug]/posts/[id]/page.tsx`) draws the head and the body exactly as
+ * the feed does, then its own footer (React, Comment, Share) and the comment
+ * thread inside the same article.
+ */
+export { PostBody as PostCardBody, TicketNotches as PostTicketNotches };

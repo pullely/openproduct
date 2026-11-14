@@ -72,7 +72,10 @@ const EXCLUDED: Record<string, string> = {
   activity:
     "personal — one reader's inbox (it was `me/notifications` until openproduct-redesign OPR1 moved the address)",
   "me/settings": "personal — one reader's own settings, behind a session (openproduct-redesign OPR1)",
-  studio: "personal — the maintainer's own workspace, behind a session",
+  // OPR-3 — `/studio` itself is not a page any more: the list of your
+  // listings is "Your products" on `/me`, and the address answers 308 from a
+  // route handler (`studio/route.ts`). A listing's own settings are dynamic
+  // routes (`studio/[org]/[profile]/…`), which this walk does not enumerate.
   "studio/appeals": "personal — one maintainer's appeals",
   "studio/collections": "personal — one curator's collections",
   "studio/link": "personal — the repository-linking flow",

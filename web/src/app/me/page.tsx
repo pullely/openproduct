@@ -1,16 +1,29 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 
+import { consoleOrigin } from "../../lib/platform";
 import { readSession } from "../auth/session-server";
 import { initialsOf } from "../shell/shell";
 import { BOARD_PAGE, BTN_SOFT, COVER_PERSON, NOTICE_WARN, PAGE_TITLE } from "../ui/design";
 import { AppLink } from "../ui/link";
+import { consoleWorkspacePickerUrl } from "../ui/workspace-picker";
 import { GLYPH_EDIT, GLYPH_OUT, Glyph } from "./glyph";
 import { fetchMyListings } from "./listings";
+import { fetchFollowing } from "../posts/posts-api";
+import { fetchPublicProfile } from "../public-api";
+
 import { fetchMe, fetchMyApplications, fetchSaved } from "./me-api";
 import { ME_SECTIONS, MeSections } from "./nav";
 import { meSectionHref, meSectionOf, signInFor, type MeSection } from "./section";
-import { ProductsSection, SavedSection, SeatsSection, SectionUnavailable } from "./sections";
+import { MY_PRODUCT_READ_LIMIT, fetchMyDrafts, standingOf, type MyProductStanding } from "./products";
+import {
+  DraftsSection,
+  FollowingSection,
+  ProductsSection,
+  SavedSection,
+  SeatsSection,
+  SectionUnavailable,
+} from "./sections";
 import { MeUnavailable } from "./unavailable";
 
 /**
@@ -20,7 +33,8 @@ import { MeUnavailable } from "./unavailable";
  * THE BOARD'S SHAPE: the profile card — the disc, your name as the page's
  * title, the line you wrote about yourself, the way to your public page and
  * the way to edit — then ONE page with a switcher between what you hold
- * here: your products, what you saved, the seats you asked for.
+ * here: your products, what you follow, what you saved, the seats you asked
+ * for, and the posts you have not sent yet.
  *
  * WHAT MOVED. The form that was this page is `/me/settings` now, and the
  * card's Edit profile goes there. The saved list and the applications were
@@ -48,14 +62,15 @@ export default async function MePage(props: {
   const session = await readSession();
   if (!session) redirect(signInFor(here));
 
-  // ALL FOUR IN ONE ROUND TRIP: the card, and the three lists the switcher
+  // ALL FIVE IN ONE ROUND TRIP: the card, and the lists the switcher
   // counts. Each list is read whichever section is showing, because the
   // switcher prints every section's count.
-  const [me, listings, saved, applications] = await Promise.all([
+  const [me, listings, saved, applications, follows] = await Promise.all([
     fetchMe(session.accessToken),
     fetchMyListings(session.accessToken),
     fetchSaved(session.accessToken),
     fetchMyApplications(session.accessToken),
+    fetchFollowing(session.accessToken),
   ]);
   // A dead token (expired mid-session, revoked from the console) reads as
   // signed out, whichever read reported it; a service failure renders as
@@ -64,7 +79,8 @@ export default async function MePage(props: {
     me.kind === "unauthorized" ||
     listings.kind === "unauthorized" ||
     saved.kind === "unauthorized" ||
-    applications.kind === "unauthorized"
+    applications.kind === "unauthorized" ||
+    follows.kind === "unauthorized"
   ) {
     redirect(signInFor(here));
   }
@@ -88,12 +104,32 @@ export default async function MePage(props: {
     applications.kind === "ok" && Array.isArray(applications.data.applications)
       ? applications.data.applications
       : null;
+  const myFollowing = follows.kind === "ok" ? follows.data.following : null;
+
+  // THE SECOND ROUND TRIP, which needs the first: what each of your products
+  // has in draft (the Drafts section and its count), and where each published
+  // one stands — its stage, milestones and open seats, from the same public
+  // document a visitor reads. Bounded by `MY_PRODUCT_READ_LIMIT`.
+  const published = (myListings ?? []).filter((listing) => listing.visibility === "public").slice(0, MY_PRODUCT_READ_LIMIT);
+  const [myDrafts, documents] = await Promise.all([
+    myListings ? fetchMyDrafts(session.accessToken, myListings) : null,
+    section === "products" ? Promise.all(published.map((listing) => fetchPublicProfile(listing.slug))) : [],
+  ]);
+  const standings: Record<string, MyProductStanding | null> = {};
+  documents.forEach((document, index) => {
+    standings[published[index]!.slug] = standingOf(document);
+  });
+
   // A list that could not be read has no count — a zero would be a claim.
   const counts: Record<MeSection, number | null> = {
     products: myListings?.length ?? null,
+    following: myFollowing ? myFollowing.products.length + myFollowing.people.length : null,
     saved: mySaved?.length ?? null,
     seats: mySeats?.length ?? null,
+    drafts: myDrafts?.length ?? null,
   };
+  // The console's workspace picker: one of the two doors to a new product.
+  const pickerUrl = consoleWorkspacePickerUrl(consoleOrigin());
   const title = ME_SECTIONS.find((s) => s.key === section)?.label ?? "";
 
   return (
@@ -174,7 +210,17 @@ export default async function MePage(props: {
           ) : null}
 
           {section === "products" ? (
-            myListings ? <ProductsSection listings={myListings} /> : <SectionUnavailable />
+            myListings ? (
+              <ProductsSection listings={myListings} standings={standings} pickerUrl={pickerUrl} />
+            ) : (
+              <SectionUnavailable />
+            )
+          ) : null}
+          {section === "following" ? (
+            myFollowing ? <FollowingSection following={myFollowing} /> : <SectionUnavailable />
+          ) : null}
+          {section === "drafts" ? (
+            myDrafts ? <DraftsSection drafts={myDrafts} /> : <SectionUnavailable />
           ) : null}
           {section === "saved" ? (
             mySaved ? <SavedSection products={mySaved} /> : <SectionUnavailable />

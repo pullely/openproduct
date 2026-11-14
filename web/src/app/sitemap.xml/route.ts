@@ -15,7 +15,8 @@ import {
   weekWindow,
 } from "@openproduct/contracts";
 
-import { PRODUCT_ORDER_SEGMENTS, productsPath } from "../feed/products";
+import { PRODUCT_ORDER_SEGMENTS, productViews, productsPath } from "../feed/products";
+import { SEAT_STAGE_FILTERS, seatsPath } from "../help-wanted/seats";
 
 /**
  * The sitemap (launch polish, widened at openproduct-commons DS4).
@@ -97,7 +98,17 @@ export async function GET(request: Request): Promise<Response> {
     // a page lives at, never one that redirects.
     { path: "products", lastmod: null },
     ...PRODUCT_ORDER_SEGMENTS.map((order) => ({ path: productsPath(order).slice(1), lastmod: null })),
+    // OPR-3 — the stage filter's addresses (`/products/stage/<stage>`, each
+    // in each order): static pages of their own, canonical to themselves.
+    ...productViews()
+      .filter((view) => view.stage !== "all")
+      .map((view) => ({ path: view.path.slice(1), lastmod: null })),
     { path: "help-wanted", lastmod: null },
+    // OPR-3 — and Help wanted's two filtered lists.
+    ...SEAT_STAGE_FILTERS.filter((stage) => stage !== "all").map((stage) => ({
+      path: seatsPath(stage).slice(1),
+      lastmod: null,
+    })),
     // QE1 — every day that holds a board, at its own address (LC3): a
     // settled day is a document that never changes, which is the best kind
     // of sitemap entry there is.
@@ -121,6 +132,8 @@ export async function GET(request: Request): Promise<Response> {
     { path: "docs/checks", lastmod: null },
     { path: "docs/api", lastmod: null },
     { path: "docs/runbook", lastmod: null },
+    // OPR-3 — how posting works: the templates, generated from the catalogue.
+    { path: "docs/posting", lastmod: null },
     { path: "collections", lastmod: null },
     { path: "digest", lastmod: null },
     { path: "people", lastmod: null },

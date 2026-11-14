@@ -30,8 +30,9 @@ const SURFACES: Array<[string, string]> = [
   ["help-wanted/seat-card.tsx", "<ProductTile slug={seat.product.slug} thumbnail={seat.product.thumbnail} size={32} />"],
   // OPR1 — the header card's tile: the ladder's 76 rung grown to the board's
   // 92px by the page's own class, and the phone board's 52px.
-  ["[slug]/page.tsx", "thumbnail={thumbnail}\n                  size={76}\n                  phoneSize={52}\n                  className={HERO_TILE}"],
-  ["[slug]/page.tsx", "<ProductTile slug={card.slug} thumbnail={card.thumbnail} size={44} />"],
+  ["[slug]/product-page.tsx", "<ProductTile slug={slug} thumbnail={thumbnail} size={76} phoneSize={52} className={HERO_TILE} />"],
+  ["[slug]/product-page.tsx", "<ProductTile slug={slug} thumbnail={thumbnail} size={76} phoneSize={52} className={IDEA_TILE} />"],
+  ["[slug]/product-page.tsx", "<ProductTile slug={card.slug} thumbnail={card.thumbnail} size={44} />"],
   ["launches/board.tsx", "<ProductTile slug={entry.slug} thumbnail={entry.thumbnail} size={72} phoneSize={52} />"],
   ["collections/[slug]/page.tsx", "<ProductTile slug={item.card.slug} thumbnail={item.card.thumbnail} size={44} />"],
   // OPR1 — a search result is a row in a card (board `Search`), at the 44px step.
@@ -47,7 +48,9 @@ const SURFACES: Array<[string, string]> = [
   // the board's tiles.
   ["me/sections.tsx", "<ProductTile slug={listing.slug} thumbnail={listing.thumbnail} size={52} />"],
   ["me/sections.tsx", "<ProductTile slug={product.slug} thumbnail={product.thumbnail} size={44} />"],
-  ["studio/page.tsx", "<ProductTile slug={listing.slug} thumbnail={listing.thumbnail} size={72} phoneSize={52} />"],
+  // OPR-3 — the studio's list of listings moved to "Your products" on `/me`
+  // (the row above); a product you follow wears the same tile there.
+  ["me/sections.tsx", "<ProductTile slug={product.slug} thumbnail={product.logo} size={40} />"],
 ];
 
 describe("every product tile is ProductTile (OSD-5)", () => {
@@ -66,7 +69,7 @@ describe("every product tile is ProductTile (OSD-5)", () => {
     // and a second bar pinned under it is a row taken for state (owner rule
     // 10). What it guarded still holds, more simply — the tile is rendered by
     // the server page and no client component on it draws one.
-    const page = read("[slug]/page.tsx");
+    const page = read("[slug]/product-page.tsx");
     expect(page).not.toContain('"use client"');
     expect(page).not.toContain("ProductBar");
     expect(page).not.toContain("data-product-bar");

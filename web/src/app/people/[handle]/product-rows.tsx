@@ -15,10 +15,20 @@ import { ProductTile } from "../../ui/product-tile";
  * on `visibility = 'public'` on both sides, so XP-5 holds by construction here
  * rather than by remembering.
  *
- * NO FIGURES. A profile listing carries none, and this page adds no read to
- * fetch them.
+ * THE STAGE LINE (OPR-3). Where the page read it (`product-stages.ts`), a row
+ * says where its product stands — `shipping, 3 of 4`, `idea` — in the
+ * stage's own colour, in place of nothing: the tagline stays above it.
+ *
+ * NO OTHER FIGURES. A profile listing carries none.
  */
-export function ProductRows({ listings }: { listings: readonly PublicProfileListing[] }) {
+export function ProductRows({
+  listings,
+  stages = {},
+}: {
+  listings: readonly PublicProfileListing[];
+  /** Slug → stage line, for the products whose stage was read. */
+  stages?: Readonly<Record<string, string>>;
+}) {
   return (
     <ul className="m-0 grid list-none p-0">
       {listings.map((listing) => (
@@ -34,6 +44,14 @@ export function ProductRows({ listings }: { listings: readonly PublicProfileList
               <span className="truncate text-[15px] font-semibold text-foreground">{listing.slug}</span>
               {listing.tagline ? (
                 <span className="truncate text-[13px] text-muted-foreground">{listing.tagline}</span>
+              ) : null}
+              {stages[listing.slug] ? (
+                <span
+                  data-product-stage-line
+                  className={`truncate text-[13px] ${stages[listing.slug]!.startsWith("idea") ? "text-idea" : "text-amber-ink"}`}
+                >
+                  {stages[listing.slug]}
+                </span>
               ) : null}
             </span>
             {/* The board's row chevron: decoration — the row is the link. */}

@@ -42,7 +42,7 @@ describe("a checklist, not a score", () => {
   });
 
   it("the page feeds it the contract's items from the projection it already holds", () => {
-    const page = code("[slug]/page.tsx");
+    const page = code("[slug]/product-page.tsx");
     expect(page).toContain("<LaunchHealth items={launchHealth(profile, new Date(now))} now={now} />");
   });
 });

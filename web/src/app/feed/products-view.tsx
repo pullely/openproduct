@@ -7,7 +7,17 @@ import {
 } from "@openproduct/contracts";
 
 import { ProductList } from "./product-list";
-import { DEFAULT_PRODUCT_SORT, productsCountLine, type ProductSort } from "./products";
+import {
+  DEFAULT_PRODUCT_SORT,
+  DEFAULT_PRODUCT_STAGE,
+  filterByStage,
+  productStageCounts,
+  productsCountLine,
+  type ProductSort,
+  type ProductStageCounts,
+  type ProductStageFilter,
+} from "./products";
+import { StageFilter } from "./products-stage";
 import { SortControl, SortMenu } from "./sort-control";
 
 import { fetchAllDirectoryProjects, fetchDirectoryPage } from "../public-api";
@@ -23,13 +33,11 @@ import { FailurePanel } from "../ui/failure";
  * the search-within-list field and the sort; the grid of cards; the count of
  * what is shown beside *Show more*.
  *
- * WHAT IS LEFT OUT UNTIL OPR2, AND WHERE IT GOES. A listing has no stage
- * yet, so the board's left column of stage filters (Everything / Shipping /
- * Ideas; the row of three pills on a phone) and the "9 shipping · 21 ideas"
- * half of the count line are absent. The body is ONE column for now; the
- * filter column is a sibling of `ProductList` inside the `data-products-body`
- * box when it arrives, and the count line gains its two parts in
- * `productsCountLine`.
+ * THE STAGE FILTER (OPR-3). A product is an idea until its first milestone
+ * ships; the left column (three pills on a phone) narrows the list to one
+ * stage, and the count line says how many there are of each. Each filtered
+ * list is an ADDRESS (`productsPath(sort, stage)`), so the filter is links
+ * and every view stays one cacheable document.
  *
  * NOTHING HERE DECIDES AN ORDER. `orderBuilds` (the contract) applies the
  * floor and the comparator every other surface imports.
@@ -45,15 +53,21 @@ import { FailurePanel } from "../ui/failure";
  * A CATALOGUE THAT COULD NOT BE READ SAYS SO: a null read is the failure
  * panel, an empty catalogue is the list's own empty line.
  */
-export async function readProducts(sort: ProductSort): Promise<{
+export async function readProducts(
+  sort: ProductSort,
+  stage: ProductStageFilter = DEFAULT_PRODUCT_STAGE,
+): Promise<{
   cards: PublicProfileCard[];
   next: string | null;
   total: number | null;
   count: number;
   belowFloor: number;
   computedAt: string | null;
+  /** How many reachable products are at each stage — the whole catalogue's,
+   *  whichever view is drawn; null when it could not be counted. */
+  stages: ProductStageCounts | null;
 } | null> {
-  if (sort === DEFAULT_PRODUCT_SORT) {
+  if (sort === DEFAULT_PRODUCT_SORT && stage === DEFAULT_PRODUCT_STAGE) {
     const directory = await fetchDirectoryPage();
     if (directory === null) return null;
     const cards = orderBuilds(directory.projects, sort);
@@ -61,6 +75,11 @@ export async function readProducts(sort: ProductSort): Promise<{
     // `total` counts every listed product, the floor's included; the count
     // the title carries is the ones a reader can reach.
     const reachable = directory.total !== null ? Math.max(directory.total - belowFloor, cards.length) : cards.length;
+    // The stage counts are the WHOLE catalogue's. When this page holds all of
+    // it they are counted here; otherwise the catalogue is walked for them
+    // (bounded, cached like every public read), and a walk that failed
+    // leaves the two stage parts unsaid rather than wrong.
+    const whole = directory.next === null ? cards : await fetchAllDirectoryProjects().then((all) => (all ? orderBuilds(all, sort) : null));
     return {
       cards,
       next: directory.next,
@@ -68,35 +87,43 @@ export async function readProducts(sort: ProductSort): Promise<{
       count: directory.next !== null ? reachable : cards.length,
       belowFloor,
       computedAt: directory.computedAt,
+      stages: whole ? productStageCounts(whole) : null,
     };
   }
   const all = await fetchAllDirectoryProjects();
   if (all === null) return null;
-  const ordered = orderBuilds(all, sort);
+  const everything = orderBuilds(all, sort);
+  const ordered = filterByStage(everything, stage);
   const cards = ordered.slice(0, BUILD_ORDER_PAGE_SIZE);
   return {
     cards,
     next: null,
     total: ordered.length > cards.length ? ordered.length : null,
-    count: ordered.length,
+    // The title's count is the catalogue's, in every view: the filter's own
+    // count is on the filter.
+    count: everything.length,
     belowFloor: buildsBelowFloor(all),
     computedAt: null,
+    stages: productStageCounts(everything),
   };
 }
 
 export async function ProductsView({
   sort,
+  stage = DEFAULT_PRODUCT_STAGE,
   returnTo,
   retryHref,
 }: {
   sort: ProductSort;
+  /** The stage filter the address names; everything when it names none. */
+  stage?: ProductStageFilter;
   /** The address the page is drawn at: where sign-in returns a reader who
    *  pressed Follow signed out. */
   returnTo: string;
   /** Where *Try again* goes when the catalogue could not be read. */
   retryHref: string;
 }) {
-  const products = await readProducts(sort);
+  const products = await readProducts(sort, stage);
   // THE FAILURE PANEL IS A PAGE OF ITS OWN (its own `main`, its own `h1`):
   // it replaces this one rather than sitting inside it, so a failed read has
   // one heading like every other page.
@@ -119,7 +146,7 @@ export async function ProductsView({
         <div className="flex flex-wrap items-baseline gap-x-[18px] gap-y-1.5 max-sm:min-h-[44px] max-sm:items-center max-sm:px-[2px] max-sm:pr-[150px]">
           <h1 className={PAGE_TITLE}>Products</h1>
           <p className="m-0 font-mono text-label uppercase tracking-[0.1em] text-muted-foreground max-sm:hidden" data-products-count>
-            {productsCountLine(products.count, products.belowFloor)}
+            {productsCountLine(products.count, products.belowFloor, products.stages)}
             {moment !== null ? (
               <>
                 {" · "}
@@ -130,20 +157,27 @@ export async function ProductsView({
             ) : null}
           </p>
         </div>
-        <SortMenu current={sort} />
+        <SortMenu current={sort} stage={stage} />
       </div>
 
-      <div data-products-body>
-        <ProductList
-          // A sort is a different list: its search and its appended pages
-          // start over rather than carrying across.
-          key={sort}
-          cards={products.cards}
-          next={products.next}
-          total={products.total}
-          returnTo={returnTo}
-          sort={<SortControl current={sort} />}
-        />
+      {/* The board's two columns: the stage filter beside the list; on a
+          phone the filter is a row of three pills over it. */}
+      <div data-products-body className="flex items-start gap-7 max-md:flex-col max-md:items-stretch max-md:gap-2.5">
+        <div className="w-[250px] shrink-0 max-lg:w-[220px] max-md:w-auto">
+          <StageFilter current={stage} sort={sort} counts={products.stages} />
+        </div>
+        <div className="min-w-0 flex-1">
+          <ProductList
+            // A sort or a stage is a different list: its search and its
+            // appended pages start over rather than carrying across.
+            key={`${stage}:${sort}`}
+            cards={products.cards}
+            next={products.next}
+            total={products.total}
+            returnTo={returnTo}
+            sort={<SortControl current={sort} stage={stage} />}
+          />
+        </div>
       </div>
     </main>
   );

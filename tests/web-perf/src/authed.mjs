@@ -16,6 +16,7 @@ import { createRequire } from "node:module";
 import { chromium } from "playwright";
 
 import { AUTHED_ROUTES, sessionCookie } from "./fixture.mjs";
+import { CREW_SLUG } from "./fixture.mjs";
 import { TAP_MIN, sweepPage } from "./a11y.mjs";
 import { newRampContext } from "./ramp.mjs";
 
@@ -125,7 +126,10 @@ export async function runAuthed(base) {
       // OPR1 — `/me/settings` stands where `/me/saved` did: the saved list is
       // a section of `/me` now, and its old address sends a signed-out
       // visitor back to the SECTION rather than to itself.
-      for (const path of ["/me", "/me/settings", "/me/export", "/studio", "/studio/reports"]) {
+      // OPR-3 — `/studio` left this list: it is a 308 to `/me` now (`MOVED`),
+      // so signed out it arrives at `/me`'s door, not its own. The post
+      // builder joined it: a crew-only page whose door returns to itself.
+      for (const path of ["/me", "/me/settings", "/me/export", "/studio/reports", `/${CREW_SLUG}/new`]) {
         const res = await page.goto(base + path, { waitUntil: "load" });
         // `res` is the LAST response of the navigation: after an HTTP redirect
         // it is the sign-in page's 200, and `redirectedFrom()` says so. A page

@@ -52,7 +52,7 @@ export default async function StudioDiscussionsPage(props: PageProps) {
       <FailurePanel
         kind="missing"
         what="There is no listing here that you maintain."
-        actions={[{ label: "Your listings", href: "/studio" }]}
+        actions={[{ label: "Your products", href: "/me" }]}
       />
     );
   }
@@ -63,7 +63,7 @@ export default async function StudioDiscussionsPage(props: PageProps) {
         what="These discussions could not be loaded. It is not something you did."
         actions={[
           { label: "Try again", href: page },
-          { label: "Your listings", href: "/studio" },
+          { label: "Your products", href: "/me" },
         ]}
       />
     );

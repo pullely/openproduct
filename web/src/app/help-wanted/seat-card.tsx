@@ -1,9 +1,11 @@
 import { seatSub, type Seat, type SeatAction } from "./seats";
 
-import { BTN_SEAT, FOCUS, SEAT_RING } from "../ui/design";
+import { FOCUS, SEAT_RING } from "../ui/design";
 import { PlusIcon } from "../ui/icons";
 import { AppLink } from "../ui/link";
 import { ProductTile } from "../ui/product-tile";
+
+import { SeatButton } from "./seat-button";
 
 /**
  * An open seat, as a ticket (openproduct-redesign OPR1; boards `Seats`,
@@ -24,11 +26,13 @@ import { ProductTile } from "../ui/product-tile";
  * for that with no button at all.
  *
  * A SERVER COMPONENT, the same bytes for every visitor (I6). The card draws
- * the action it is handed and resolves nobody.
+ * the action it is handed and resolves nobody; the one personal fact — that
+ * THIS visitor already asked for the seat — is the button's own island
+ * (`seat-button.tsx`), lit from the overlay after paint.
  *
- * WHAT THE DATA DOES NOT HOLD, THE TICKET DOES NOT SAY: the product's stage
- * ("Shipping", "Idea") is absent until OPR2, and an opening's age is said
- * only where the contract publishes it (`seatSub`).
+ * THE QUIET LINE opens with the stage of the seat's product ("Shipping",
+ * "Idea"; OPR-3), and an opening's age is said only where the contract
+ * publishes it (`seatSub`).
  */
 export function SeatCard({ seat, action }: { seat: Seat; action: SeatAction }) {
   const sub = seatSub(seat);
@@ -72,37 +76,8 @@ export function SeatCard({ seat, action }: { seat: Seat; action: SeatAction }) {
           <ProductTile slug={seat.product.slug} thumbnail={seat.product.thumbnail} size={32} />
           <span className="truncate font-semibold">{seat.product.slug}</span>
         </AppLink>
-        <SeatButton action={action} />
+        <SeatButton seatId={seat.id} action={action} />
       </div>
     </article>
-  );
-}
-
-/** The ticket's button, in the state it was handed. */
-function SeatButton({ action }: { action: SeatAction }) {
-  if (action.state === "closed") {
-    return (
-      <span data-seat-action="closed" className="shrink-0 text-[13px] text-muted-foreground">
-        {action.label}
-      </span>
-    );
-  }
-  if (action.state === "requested") {
-    return (
-      <AppLink
-        href={action.href}
-        data-seat-action="requested"
-        className={`inline-flex h-[40px] shrink-0 items-center justify-center whitespace-nowrap rounded-full bg-seat-soft px-[18px] text-[15px] font-semibold text-seat-ink no-underline max-sm:h-[44px] max-sm:text-[13px] ${FOCUS}`}
-      >
-        {action.label}
-      </AppLink>
-    );
-  }
-  return (
-    // The door is on the console's origin (seam edge S5), so this is a plain
-    // anchor: the app's router has nothing to prefetch there.
-    <a href={action.href} data-seat-action="open" className={`${BTN_SEAT} max-sm:text-[13px] ${FOCUS}`}>
-      {action.label}
-    </a>
   );
 }

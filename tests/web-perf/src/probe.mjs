@@ -333,6 +333,8 @@ const SURFACES = [
   ["Discover", "/topics/developer-tools", "One topic"],
   ["Discover", "/products/by/upvoted", "Products (upvoted)"],
   ["Discover", "/products/by/newest", "Products (newest)"],
+  ["Discover", "/products/stage/shipping", "Products (shipping)"],
+  ["Discover", "/products/stage/ideas", "Products (ideas)"],
   ["Discover", "/launches/2026-05-20", "One day's board"],
   ["Discover", "/collections", "Collections index"],
   ["Discover", "/collections/worth-a-look", "One collection"],
@@ -350,6 +352,7 @@ const SURFACES = [
   ["Docs", "/docs/formulas", "Published formulas"],
   ["Docs", "/docs/checks", "Published checks"],
   ["Docs", "/docs/api", "API changelog"],
+  ["Docs", "/docs/posting", "Posting spec"],
   ["Submit", "/submit", "List your product"],
   ["Account", "/me", "Your profile"],
   // OPR1 — sections of `/me`, where the pages `/me/saved` and
@@ -358,7 +361,8 @@ const SURFACES = [
   ["Account", "/me?section=seats", "Seats"],
   ["Account", "/me/settings", "Settings"],
   ["Account", "/activity", "Activity"],
-  ["Studio", "/studio", "Studio home"],
+  // (OPR-3 — `/studio` redirects to `/me`: the list of your listings is the
+  // profile's first section, the first row of this group.)
 ];
 
 /** One control per act, named by what a visitor would click. */

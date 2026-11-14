@@ -17,14 +17,14 @@ import { existsSync, readFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { BUILD_ORDERS, catalogueMomentCopy, type PublicProfileCard } from "@openproduct/contracts";
+import { BUILD_ORDERS, catalogueMomentCopy } from "@openproduct/contracts";
 import {
   PRODUCTS_EMPTY,
   PRODUCT_SORTS,
   PRODUCT_SORT_LABEL,
   openSeatsLabel,
-  productFacts,
 } from "@openproduct-web/app/feed/products";
+import { stageMarkText } from "@openproduct-web/app/ui/stage";
 import { ordinal } from "@openproduct-web/app/ui/ordinal";
 import { hueFor, initialsOf } from "@openproduct-web/app/feed/tile";
 
@@ -38,15 +38,18 @@ const code = (file: string) =>
     .replace(/\/\*[\s\S]*?\*\//g, "")
     .replace(/^\s*\/\/.*$/gm, "");
 
-describe("`/` lists the products, and says so (openproduct-redesign OPR1)", () => {
-  it("the front page draws the Products view in the default sort, and nothing else", () => {
+describe("`/` is the feed, and `/products` lists the products (openproduct-redesign OPR-3)", () => {
+  it("the front page draws the feed of posts, and the product list left it", () => {
     const page = read("page.tsx");
-    // ONE BODY: the Products page's own view, in today's default order. `/`
-    // becomes the feed of posts in OPR2; until then it is the product list
-    // and is titled as one — nothing on it claims to be a feed.
-    expect(page).toContain('<ProductsView sort={DEFAULT_PRODUCT_SORT} returnTo="/" retryHref="/" />');
-    expect(page).toContain('title: "Products · openproduct"');
-    expect(page).not.toMatch(/<h1[^>]*>\s*Feed|FEED_PAGE_HEADING|Open builds ·/);
+    // ONE BODY: the feed (`feed/feed-view.tsx`), from the feed's first page.
+    // Through OPR1 this address drew the Products view; that list is
+    // `/products` now and nothing here draws it. `feed-of-posts.test.ts`
+    // holds what the feed itself must do.
+    expect(page).toContain('<FeedView page={page} directory={directory?.projects ?? null} returnTo="/" />');
+    expect(page).toContain("fetchFeedPage()");
+    expect(page).toContain('title: "Feed · openproduct"');
+    expect(page).not.toContain("ProductsView");
+    expect(page).not.toMatch(/FEED_PAGE_HEADING|Open builds ·/);
     expect(page).not.toContain("fetchFeed(");
     expect(page).not.toContain("fetchSidebar(");
     expect(page).not.toContain("<Sidebar");
@@ -65,9 +68,10 @@ describe("`/` lists the products, and says so (openproduct-redesign OPR1)", () =
     const view = read("feed/products-view.tsx");
     expect(view.match(/<h1\b/g)).toHaveLength(1);
     expect(view).toContain("<h1 className={PAGE_TITLE}>Products</h1>");
-    expect(view).toContain("{productsCountLine(products.count, products.belowFloor)}");
-    expect(view).toContain("<SortMenu current={sort} />");
-    expect(view).toContain("sort={<SortControl current={sort} />}");
+    expect(view).toContain("{productsCountLine(products.count, products.belowFloor, products.stages)}");
+    // OPR-3 — the sort keeps the stage filter the page is on.
+    expect(view).toContain("<SortMenu current={sort} stage={stage} />");
+    expect(view).toContain("sort={<SortControl current={sort} stage={stage} />}");
     // The default sort is the catalogue's first page, continued by cursor;
     // any other sort is the whole catalogue, ordered by the contract.
     expect(view).toContain("const directory = await fetchDirectoryPage();");
@@ -75,16 +79,21 @@ describe("`/` lists the products, and says so (openproduct-redesign OPR1)", () =
     expect(view).toContain("orderBuilds(directory.projects, sort)");
     expect(view).toContain("orderBuilds(all, sort)");
     expect(view).toContain("ordered.slice(0, BUILD_ORDER_PAGE_SIZE)");
-    // The stage filter and the milestone bar arrive with OPR2: not drawn, and
-    // not faked.
-    expect(code("feed/products-view.tsx")).not.toMatch(/Shipping|Ideas|aria-label="Product stages"/);
+    // OPR-3 — the stage filter is drawn, beside the list, from the stage the
+    // catalogue's cards carry (`products-and-seats.test.ts` holds its
+    // addresses). Its words live in `products.ts`, not in the view.
+    expect(view).toContain("<StageFilter current={stage} sort={sort} counts={products.stages} />");
+    expect(code("feed/products-view.tsx")).not.toMatch(/Shipping|Ideas/);
   });
 
-  it("the card is the board's: face, name, category, facts, pitch, seats and Follow", () => {
+  it("the card is the board's: face, name, category, stage, pitch, seats and Follow", () => {
     const card = read("feed/product-card.tsx");
     expect(card).toContain("<ProductTile slug={card.slug} thumbnail={card.thumbnail} size={44} />");
     expect(card).toContain("text-card-title font-semibold");
-    expect(card).toContain("{productFacts(card)}");
+    // OPR-3 — the stage mark sits where OPR1 put a line of facts (the board
+    // has the stage there; a listing had none then).
+    expect(card).toContain("<StageMark stage={card.stage} short />");
+    expect(card).not.toContain("productFacts");
     // Two lines of pitch at most.
     expect(card).toContain("line-clamp-2");
     // The seats link is drawn only when a seat is open, and goes to Help wanted.
@@ -96,7 +105,8 @@ describe("`/` lists the products, and says so (openproduct-redesign OPR1)", () =
     expect(follow).toContain('followKey({ kind: "listing", value: slug })');
     expect(follow).toContain('useToggle("follows", key, !following)');
     expect(follow).toContain("aria-pressed={following}");
-    // The card invents nothing: no rank, no comment count, no stage, no vote.
+    // The card invents nothing: no rank, no comment count, no vote — and the
+    // stage's words are `ui/stage.ts`'s, never spelt on the card.
     expect(card).not.toContain("#discussion");
     expect(code("feed/product-card.tsx")).not.toMatch(/VoteBox|Shipping|Idea\b/);
     expect(card).not.toContain('"use client"');
@@ -105,16 +115,12 @@ describe("`/` lists the products, and says so (openproduct-redesign OPR1)", () =
     expect(existsSync(resolve(APP_DIR, "feed/build-tile.tsx"))).toBe(false);
   });
 
-  it("the card's facts say what was observed, and leave out what was not (OPC-C)", () => {
-    const card = (metrics: Array<{ key: string; value: number }>) => ({ metrics }) as unknown as PublicProfileCard;
-    expect(productFacts(card([{ key: "merges.7d", value: 12 }, { key: "endorsements.7d", value: 3 }]))).toBe(
-      "12 changes · 3 upvotes · 7 days",
-    );
-    expect(productFacts(card([{ key: "merges.7d", value: 1 }, { key: "endorsements.7d", value: 1 }]))).toBe(
-      "1 change · 1 upvote · 7 days",
-    );
-    // A repository nobody read is not zero changes: the fact is absent.
-    expect(productFacts(card([]))).toBe("0 upvotes · 7 days");
+  it("the card says the stage in the stage's own words, and counts its open seats", () => {
+    // OPR-3 — the line of observed facts (changes, upvotes, 7 days) left the
+    // card with the board's stage mark; what is observed about a product is
+    // on its own page. The mark's words are one function's.
+    expect(stageMarkText("shipping", null, { short: true })).toBe("Shipping");
+    expect(stageMarkText("idea", null, { short: true })).toBe("Idea");
     expect(openSeatsLabel(1)).toBe("1 open seat");
     expect(openSeatsLabel(2)).toBe("2 open seats");
   });
@@ -124,7 +130,7 @@ describe("`/` lists the products, and says so (openproduct-redesign OPR1)", () =
     expect([...PRODUCT_SORTS]).toEqual(["most-active", "newest", "upvoted"]);
     expect(PRODUCT_SORTS.map((sort) => PRODUCT_SORT_LABEL[sort])).toEqual(["Most active", "Newest", "Upvoted"]);
     const control = read("feed/sort-control.tsx");
-    expect(control.match(/href=\{productsPath\(sort\)\}/g)).toHaveLength(2);
+    expect(control.match(/href=\{productsPath\(sort, stage\)\}/g)).toHaveLength(2);
     expect(control).toContain('aria-current={sort === current ? "page" : undefined}');
     expect(control).not.toContain('"use client"');
     // The phone's control opens without JavaScript.
@@ -184,12 +190,17 @@ describe("`/` lists the products, and says so (openproduct-redesign OPR1)", () =
   });
 
   it("Help wanted is its own page of seats, and the old address redirects", () => {
+    // OPR-3 — the page's body is `seats-view.tsx`, which its two filtered
+    // addresses (`stage/[stage]`) also draw.
     const page = read("help-wanted/page.tsx");
-    expect(page.match(/<h1\b/g)).toHaveLength(1);
-    expect(page).toContain("<h1 className={PAGE_TITLE}>Help wanted</h1>");
+    expect(page).toContain("return <HelpWantedView />;");
+    const view = read("help-wanted/seats-view.tsx");
+    expect(view.match(/<h1\b/g)).toHaveLength(1);
+    expect(view).toContain("<h1 className={PAGE_TITLE}>Help wanted</h1>");
     // The products with a seat open come from the contract's Roles order.
-    expect(page).toContain('orderBuilds(cards, "roles")');
-    expect(page).toContain("<SeatCard key={seat.id} seat={seat} action={seatAction(seat, { consoleOrigin: origin })} />");
+    expect(view).toContain('orderBuilds(cards, "roles")');
+    expect(view).toContain("<SeatCard key={seat.id} seat={seat} action={seatAction(seat, { consoleOrigin: origin })} />");
+    expect(view).not.toMatch(/searchParams|cookies\(|headers\(/);
     expect(page).toContain("export const revalidate = 60;");
     expect(page).toContain("${publicApexOrigin()}/help-wanted`");
     expect(page).not.toMatch(/searchParams|cookies\(|headers\(/);
@@ -409,6 +420,7 @@ describe("no link promises a directory that no longer exists", () => {
       "shell/palette.tsx",
       "shell/palette-rows.ts",
       "[slug]/page.tsx",
+      "[slug]/product-page.tsx",
       "topics/page.tsx",
       "topics/[topic]/page.tsx",
     ]) {
@@ -441,7 +453,7 @@ describe("no link promises a directory that no longer exists", () => {
 });
 
 describe("UV1 — where a listing placed on the day it launched", () => {
-  const page = read("[slug]/page.tsx");
+  const page = read("[slug]/product-page.tsx");
 
   it("renders the row only when there IS a placement", () => {
     // OL3 left this row out because the rank was not unmeasured — it did not
@@ -499,7 +511,7 @@ describe("OS5 — the catalogue's moment is on the page", () => {
   it("the heading's line says when the catalogue was computed, from the contract, and says nothing on the live join", () => {
     const source = read("feed/products-view.tsx");
     // The line beside the title is the count and the moment.
-    expect(source).toContain("{productsCountLine(products.count, products.belowFloor)}");
+    expect(source).toContain("{productsCountLine(products.count, products.belowFloor, products.stages)}");
     expect(source).toContain("catalogueMomentCopy(products.computedAt)");
     expect(source).toContain("data-catalogue-moment");
     expect(source).toMatch(/<time dateTime=\{products\.computedAt \?\? undefined\}/);

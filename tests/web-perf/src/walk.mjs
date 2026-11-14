@@ -39,7 +39,7 @@ const MIN_TEXT_PX = 12;
 
 /** The maintainer surfaces. Walked signed out — see the note above. */
 const STUDIO_ROUTES = [
-  "/studio",
+  // (OPR-3 — `/studio` is a redirect to `/me`, which is below.)
   "/studio/appeals",
   "/studio/reports",
   "/studio/collections",

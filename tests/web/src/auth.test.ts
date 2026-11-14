@@ -279,6 +279,12 @@ describe("byte-identical anonymous pages", () => {
     for (const file of [
       "page.tsx",
       "[slug]/page.tsx",
+      // OPR-3 — the product page's render, and the tab routes over it.
+      "[slug]/product-page.tsx",
+      "[slug]/about/page.tsx",
+      "[slug]/crew/page.tsx",
+      "[slug]/talk/page.tsx",
+      "[slug]/updates/[cursor]/page.tsx",
       "layout.tsx",
       "public-api.ts",
       "not-found.tsx",

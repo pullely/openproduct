@@ -156,7 +156,7 @@ describe("one card per kind, and the kind is the card's shape", () => {
     expect(seat).toContain("seatHref ?? productSeatsPath(post.product.slug)");
     expect(productSeatsPath("ackstack")).toBe("/ackstack#people-wanted");
     // The anchor it points at is on the product page.
-    expect(read("[slug]/page.tsx")).toContain('id="people-wanted"');
+    expect(read("[slug]/product-page.tsx")).toContain('id="people-wanted"');
   });
 
   it("says the kind to a screen reader and never prints it on the card", () => {

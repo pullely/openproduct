@@ -60,7 +60,7 @@ describe("the two pages are addresses, not queries", () => {
 
 describe("the chip on a listing", () => {
   it("renders only when answered, links to the filter, and says whose word it is on hover", () => {
-    const page = code("[slug]/page.tsx");
+    const page = code("[slug]/product-page.tsx");
     // OPR1 — a row of the board's In the open card: the label, then the value
     // as the link.
     expect(page).toMatch(

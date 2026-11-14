@@ -443,7 +443,7 @@ describe("the bar holds still", () => {
     // the box widening eats slack to its LEFT; the bell and the profile
     // control stay where they are.
     const panel = code("shell/top-panel.tsx");
-    expect(panel).toMatch(/<div className="flex min-w-0 flex-1 items-center justify-end gap-\[10px\]">\s*(?:\{\}\s*)?<HeaderSearch \/>/);
+    expect(panel).toMatch(/<div className="flex min-w-0 flex-1 items-center justify-end gap-\[10px\]">\s*(?:\{\}\s*)?(?:<div id="page-view-switch" data-header-slot="view-switch" className="contents" \/>\s*)?(?:\{\}\s*)?<HeaderSearch \/>/);
   });
 
   it("keeps the account control one disc wide in both of its branches", () => {

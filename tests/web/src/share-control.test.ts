@@ -93,13 +93,14 @@ describe("the browser's own sheet, and the panel behind it", () => {
 
 describe("it is on the listing, and only where the address is real", () => {
   it("sits with the other acts on the hero", () => {
-    expect(code("[slug]/page.tsx")).toContain("<ShareControl");
+    expect(code("[slug]/product-page.tsx")).toContain("<ShareControl");
   });
 
   it("shows nothing without a canonical origin", () => {
     // Sharing a preview host is sharing the wrong page, permanently, in
     // somebody else's timeline.
-    expect(code("[slug]/page.tsx")).toContain("share ? (");
-    expect(code("[slug]/page.tsx")).toContain("shareUrl(apex, profile.slug)");
+    expect(code("[slug]/product-page.tsx")).toContain("{share ? <ShareControl");
+    expect(code("[slug]/product-page.tsx")).toContain("shareUrl(publicApexOrigin(), profile.slug)");
+    expect(code("[slug]/product-page.tsx")).toContain("if (!url) return null;");
   });
 });

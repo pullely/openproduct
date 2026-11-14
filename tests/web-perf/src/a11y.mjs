@@ -438,8 +438,15 @@ export async function runA11y(base) {
     // heading where the page had five. These assert the five are there, that
     // each names its own section, and that nothing is hidden behind a control
     // a reader has to discover first.
+    //
+    // openproduct-redesign OPR-3 — THE TABS ARE BACK, AS ROUTES. Each tab is
+    // a document of its own (`/{slug}`, `/about`, `/crew`, `/talk`), so the
+    // property still holds on every one of them: its sections are all there,
+    // each under a real heading, none behind a control, and no `tablist`.
+    // The About tab is walked here because it is the one that holds the
+    // pictures the gallery checks below read.
     {
-      await page.goto(`${base}/${SAMPLE_SLUG}`, { waitUntil: "load" });
+      await page.goto(`${base}/${SAMPLE_SLUG}/about`, { waitUntil: "load" });
       await page.waitForTimeout(1200);
       const outline = await page.evaluate(() => {
         const sections = [...document.querySelectorAll("main section[aria-labelledby]")];
@@ -625,7 +632,8 @@ export async function runA11y(base) {
       // reading it cannot stand behind, and it does not say "withdrawn" in
       // a frame either, because a frame with nothing in it is a claim too.
       const staleSlug = SAMPLE_SLUG.replace(/00$/, "03");
-      await page.goto(`${base}/${staleSlug}`, { waitUntil: "load" });
+      // OPR-3 — the pictures are on the About tab.
+      await page.goto(`${base}/${staleSlug}/about`, { waitUntil: "load" });
       await page.waitForTimeout(800);
       const withdrawn = await page.evaluate(() => ({
         panel: document.querySelector("main [data-media-panel]") !== null,

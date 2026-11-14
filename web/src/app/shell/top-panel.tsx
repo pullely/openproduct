@@ -132,6 +132,14 @@ export function TopPanel() {
                 so the search box, the bell and the profile control sit at the
                 column's edge. `min-w-0` lets the search box shrink inside it. */}
             <div className="flex min-w-0 flex-1 items-center justify-end gap-[10px]">
+              {/* A NAMED, EMPTY SLOT (openproduct-redesign OPR-3). A page may
+                  draw one small control here, left of the search — today the
+                  product page's Manage / Visitor switch, portalled in by the
+                  crew's own browser after load (`[slug]/maker/view-switch.tsx`).
+                  `contents`, so empty it takes no room and no gap: the bar is
+                  the same bytes and the same layout for everybody else. */}
+              <div id="page-view-switch" data-header-slot="view-switch" className="contents" />
+
               {/* The search that opens in place — its own island, so the bar
                   around it stays one static render. Not displayed on a phone. */}
               <HeaderSearch />

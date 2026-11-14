@@ -56,7 +56,7 @@ describe("the control", () => {
       // tabs. The control did not change; the file it sits in did.
       "people/[handle]/maker-view.tsx",
       // PP1 — the listing, the one social object the page lacked.
-      "[slug]/page.tsx",
+      "[slug]/product-page.tsx",
     ]) {
       expect([file, read(file).includes("<FollowButton")]).toEqual([file, true]);
     }

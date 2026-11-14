@@ -113,7 +113,8 @@ const VIEWPORTS = [
 
 /** The three archetypes W·15 measured: the home, a listing, the leaderboard. */
 const ROUTES = [
-  { path: "/", name: "home", expect: SAMPLE_SLUG },
+  // OPR-3 — the home is the feed of posts; the first post's headline proves it drew.
+  { path: "/", name: "home", expect: "The state re-collection calendar" },
   { path: `/${SAMPLE_SLUG}`, name: "listing", expect: "Frontend contributor" },
   // OB7 (#1875) — the leaderboard is the Upvoted order; OPR1 — and that
   // order is the Products page's, at `/products/by/upvoted`.

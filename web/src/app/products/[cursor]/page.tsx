@@ -4,7 +4,7 @@ import { notFound } from "next/navigation";
 import { breadcrumbJsonLd, catalogueMomentCopy, cataloguePagePath, frontPageEligible } from "@openproduct/contracts";
 
 import { PRODUCT_GRID, ProductCard } from "../../feed/product-card";
-import { PRODUCTS_MORE_LABEL, PRODUCTS_ORDER_SEGMENT, productsShownLine } from "../../feed/products";
+import { PRODUCTS_MORE_LABEL, PRODUCTS_ORDER_SEGMENT, PRODUCTS_STAGE_SEGMENT, productsShownLine } from "../../feed/products";
 import { fetchDirectoryPage, publicApexOrigin } from "../../public-api";
 import { BOARD_PAGE, BTN_SOFT, EMPTY_NOTE, FOCUS, PAGE_TITLE } from "../../ui/design";
 import { JsonLd } from "../../ui/json-ld";
@@ -51,6 +51,8 @@ export default async function CataloguePage({ params }: { params: Promise<{ curs
   // directory is asked — the one word this page knows, and it is not a
   // cursor (`PRODUCTS_ORDER_SEGMENT` says why it never can be).
   if (cursor === PRODUCTS_ORDER_SEGMENT) notFound();
+  // OPR-3 — nor is `stage`: `/products/stage/<stage>` is the filtered list.
+  if (cursor === PRODUCTS_STAGE_SEGMENT) notFound();
   const page = await fetchDirectoryPage(cursor);
   // A cursor the directory did not issue is refused (422), and a refused
   // address is a 404 — the same answer `/{slug}` gives an unknown listing,

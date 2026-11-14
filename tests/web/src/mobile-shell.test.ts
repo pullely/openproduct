@@ -408,7 +408,7 @@ describe("which ramp, chosen by the reader (FR1, completing FR0)", () => {
     expect(read("shell/site-footer.tsx")).not.toContain('"use client"');
     expect(code("layout.tsx")).toContain("<SiteFooter />");
     expect(code("shell/section-for.ts")).not.toContain("hasOwnFooter");
-    for (const file of ["[slug]/page.tsx", "people/[handle]/page.tsx"]) {
+    for (const file of ["[slug]/page.tsx", "[slug]/product-page.tsx", "people/[handle]/page.tsx"]) {
       expect([file, /<footer\b/.test(code(file))]).toEqual([file, false]);
       expect([file, code(file).includes("<ThemeToggle")]).toEqual([file, false]);
     }

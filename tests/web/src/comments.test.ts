@@ -36,7 +36,7 @@ const SECTION = "[slug]/comments.tsx";
  *  sign-in round trip — see the file's own header — so the field assertions
  *  read it rather than the section that renders it. */
 const BOX = "[slug]/comment-draft.tsx";
-const PAGE = "[slug]/page.tsx";
+const PAGE = "[slug]/product-page.tsx";
 const ROUTE = "comment/route.ts";
 
 describe("the box asks for a sentence and nothing else", () => {

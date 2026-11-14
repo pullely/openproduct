@@ -108,7 +108,7 @@ const ROUTE_SOURCES = [
   "help-wanted/page.tsx",
   "help-wanted/seat-card.tsx",
   "help-wanted/seat-list.tsx",
-  "[slug]/page.tsx",
+  "[slug]/product-page.tsx",
   "people/(index)/page.tsx",
   "people/[handle]/page.tsx",
 ] as const;
@@ -160,7 +160,7 @@ describe("no route renders a zero where it means 'not measured'", () => {
   });
 
   it("the product page's unobserved stats render the dash, never a count", () => {
-    const page = read("[slug]/page.tsx");
+    const page = read("[slug]/product-page.tsx");
     // SN2 lit Activity and EN2 lit Endorsed by. Both now render a
     // MetricValue — which takes the METRIC rather than a number, so a caller
     // cannot forget the absent branch: the dash comes from there being
@@ -177,7 +177,7 @@ describe("no route renders a zero where it means 'not measured'", () => {
     expect(page).toContain("<MetricValue metric={endorsementsRecent} />");
     expect(page).toContain("PENDING.activity");
     // And nothing on the page passes a bare count to a StatCard.
-    expect(code("[slug]/page.tsx")).not.toMatch(/value=\{(endorsements|merges)\.value\}/);
+    expect(code("[slug]/product-page.tsx")).not.toMatch(/value=\{(endorsements|merges)\.value\}/);
   });
 
   it("SN2's renderer takes a metric, not a number — the absent branch is structural", () => {
@@ -209,7 +209,7 @@ describe("no route renders a zero where it means 'not measured'", () => {
     // the similar-launches panel is the surviving consumer, pinned under DS4.
   });
 
-  it("OL3 — the product page is stacked sections, not a tab strip", () => {
+  it("OL3 — the product page is sections with headings; its tabs are addresses, not a strip that hides them", () => {
     // The design draws one column a reader scrolls. The three tests that
     // guarded the tab strip retired with it; what replaces them is the
     // property the sections have to keep.
@@ -218,9 +218,19 @@ describe("no route renders a zero where it means 'not measured'", () => {
     // not give this page: an outline. A tab hid four fifths of the page from
     // a reader who did not know it was there, and four fifths of its headings
     // from a search result that could have quoted one.
-    const page = read("[slug]/page.tsx");
+    const page = read("[slug]/product-page.tsx");
     // OPR1 — the reading column's sections; the people and the components are
     // the side column's Crew and Built with cards, each with its heading too.
+    //
+    // openproduct-redesign OPR-3 — THE BOARD'S TABS ARE BACK, AS ADDRESSES.
+    // What a tab strip could not give was an outline and a link; a tab that
+    // is a ROUTE gives both: each of the four views is a cached document
+    // with its own headings (`[slug]/tabs.ts`, pinned in
+    // `section-nav.test.ts`), so nothing is hidden from a reader or a
+    // crawler, and no state decides what the page shows.
+    expect(page).toMatch(/<AppLink\s+href=\{link\.href\}\s+aria-current=\{link\.current \? "page" : undefined\}/);
+    expect(page).not.toMatch(/role="tab(list|panel)?"/);
+    expect(page).not.toContain("useState");
     for (const id of ["about", "launches", "discussion"]) {
       // Re-pinned for the design's restyle: the sections now carry a spacing
       // class before the id, so the match is on the id and label, not on the
@@ -236,8 +246,10 @@ describe("no route renders a zero where it means 'not measured'", () => {
     // And the hero's one action points at a SECTION rather than at a tab —
     // a plain fragment, which works with no JavaScript and survives a page
     // the reader has already scrolled.
-    // OPR1 — the board's "Take a seat" goes to the crew card.
-    expect(page).toContain('<a href="#crew" className={BTN_SOFT}>');
+    // OPR-3 — the board's "Take a seat" goes to the open seats, on the Crew
+    // tab's own address.
+    expect(page).toContain('const seatsHref = `${productTabPath(slug, "crew")}#${SEATS_ANCHOR}`;');
+    expect(page).toContain("<AppLink href={seatsHref} className={BTN_SOFT}>");
     for (const heading of ["crew-heading", "stack-heading", "open-heading"]) {
       expect([heading, page.includes(`id="${heading}"`)]).toEqual([heading, true]);
     }
@@ -297,7 +309,7 @@ describe("OPC-1 / I6 — the pages stay one document with no actor", () => {
     expect(read("launches/[day]/page.tsx")).toContain("const now = Date.now();");
     expect(read("launches/[day]/page.tsx")).toContain("now={now}");
     expect(read("launches/board.tsx")).not.toMatch(/Date\.now\(\)/);
-    expect(read("[slug]/page.tsx")).toContain("const now = Date.now();");
+    expect(read("[slug]/product-page.tsx")).toContain("const now = Date.now();");
   });
 });
 
@@ -327,8 +339,11 @@ describe("XP-5 — a person's name is a link or plain text, never a dead link", 
     // found the other still plain. The design's restyle renders the roster
     // ONCE, as Makers chips — so the count is one now — but the rule is the
     // same: the branch lives in `PersonName`, never in a ternary on the page.
-    const page = code("[slug]/page.tsx");
-    expect((page.match(/<PersonName\b/g) ?? []).length).toBe(1);
+    const page = code("[slug]/product-page.tsx");
+    // OPR-3 — twice now: a person on the crew, and an idea's "by" line. Both
+    // are the one component.
+    expect((page.match(/<PersonName\b/g) ?? []).length).toBe(2);
+    expect(page).not.toMatch(/href=\{`\/@\$\{/);
     // And nowhere near them is a second, hand-rolled branch.
     expect(page).not.toMatch(/maintainer\.handle \?/);
     expect(page).not.toContain("href={`/@${maintainer.handle}`}");
@@ -863,7 +878,7 @@ describe("CG1 — the contributor profile page", () => {
     const source = code("people/[handle]/page.tsx");
     // Named, so the number is checkable rather than taken on trust...
     // (OPR1: as the board's product rows, in the profile's side card.)
-    expect(source).toContain("<ProductRows listings={profile.contributesToListings} />");
+    expect(source).toContain("<ProductRows listings={profile.contributesToListings} stages={stages} />");
     // ...and the section is CONDITIONAL, because an empty "Contributes to —
     // nothing" on every profile prints an absence as a finding about a person
     // (OPC-C). Somebody nobody has named has not failed at anything.
@@ -979,7 +994,7 @@ describe("EN1 — the public act, and the private one, side by side", () => {
     // fetch inside the island. (Re-pinned from the directory row to the feed
     // row: the row's count is the day's `counted`, carried in the feed
     // document core already ranked.)
-    expect(read("[slug]/page.tsx")).toContain('metrics.get("endorsements.total")');
+    expect(read("[slug]/product-page.tsx")).toContain('metrics.get("endorsements.total")');
     expect(read("feed/feed-row.tsx")).toContain("count={entry.rank === null ? null : entry.counted}");
     expect(code("ui/vote-box.tsx")).not.toMatch(/fetch\(/);
   });
@@ -997,7 +1012,7 @@ describe("EN1 — the public act, and the private one, side by side", () => {
     // And the sentence names the alternative, which is why the two controls
     // are rendered together: the distinction is only real if a person can
     // see both options at the moment they choose.
-    const page = read("[slug]/page.tsx");
+    const page = read("[slug]/product-page.tsx");
     expect(page).toContain("<VoteBox");
     expect(page).toContain("<SaveControl slug={profile.slug} />");
   });
@@ -1012,7 +1027,7 @@ describe("EN1 — the public act, and the private one, side by side", () => {
     expect(UPVOTED_LABEL).toBe("Upvoted");
     // The identifiers are untouched, and this is the assertion that keeps them
     // that way.
-    expect(read("[slug]/page.tsx")).toContain('metrics.get("endorsements.total")');
+    expect(read("[slug]/product-page.tsx")).toContain('metrics.get("endorsements.total")');
     expect(control()).toMatch(/\/me\/(un)?endorse/);
     // NO SURFACE STILL SAYS THE OLD WORD TO A READER — and this matches what
     // a reader can SEE, which takes some care to state.
@@ -1052,7 +1067,7 @@ describe("EN1 — the public act, and the private one, side by side", () => {
       return [...strings, ...text];
     };
     for (const file of [
-      "[slug]/page.tsx",
+      "[slug]/product-page.tsx",
       "feed/feed-row.tsx",
       "launches/board.tsx",
       "digest/[week]/page.tsx",
@@ -1168,8 +1183,8 @@ describe("PV2 — one implementation per published sentence (was DS4)", () => {
     // `alternativesFor` is where the overlap rule and its ordering live, and
     // it is in the contract with the sentence that explains it. OL-2a: no
     // ordering is decided in the web layer.
-    expect(read("[slug]/page.tsx")).toContain("alternativesFor(catalog, profile.slug)");
-    expect(code("[slug]/page.tsx")).not.toMatch(/\.sort\(/);
+    expect(read("[slug]/product-page.tsx")).toContain("alternativesFor(catalog, slug)");
+    expect(code("[slug]/product-page.tsx")).not.toMatch(/\.sort\(/);
   });
 
   it("the panel links to the sentence that produced it (OPC-4)", () => {
@@ -1189,7 +1204,7 @@ describe("PV2 — one implementation per published sentence (was DS4)", () => {
   it("distinguishes 'could not read' from 'nothing overlaps' (the OD5 finding)", () => {
     // An empty room and a locked door look nothing alike to a reader, and
     // this panel should not have to guess. Three states, three sentences.
-    const page = read("[slug]/page.tsx");
+    const page = read("[slug]/product-page.tsx");
     expect(page).toContain("alternatives === null");
     expect(page).toContain("alternatives.length === 0");
     expect(page).toContain("None yet.");
@@ -1201,7 +1216,7 @@ describe("PV2 — one implementation per published sentence (was DS4)", () => {
     // could put one rule in an `sr-only` line because one rule covered every
     // row; here the reason differs per row, and a reason only some readers
     // get is the unexplained list this milestone refuses.
-    const page = read("[slug]/page.tsx");
+    const page = read("[slug]/product-page.tsx");
     expect(page).toMatch(/\{reason\}/);
     // And the sr-only line is still there — it explains the ORDER, which is a
     // different question from what any one row shares.
@@ -1211,7 +1226,7 @@ describe("PV2 — one implementation per published sentence (was DS4)", () => {
     // The milestone that lights something up deletes an entry from the
     // PENDING list rather than leaving a promise beside a working feature.
     expect(Object.keys(PENDING)).not.toContain("similar");
-    expect(read("[slug]/page.tsx")).not.toContain("PENDING.similar");
+    expect(read("[slug]/product-page.tsx")).not.toContain("PENDING.similar");
   });
 });
 
@@ -1221,7 +1236,7 @@ describe("PV2 — one implementation per published sentence (was DS4)", () => {
 
 describe("DS4 — what a crawler is told", () => {
   it("the listing page carries structured data, and only when it asks to be indexed", () => {
-    const page = read("[slug]/page.tsx");
+    const page = read("[slug]/product-page.tsx");
     // openproduct-studio OSD3 — with the media origin, for the logo's `image`.
     expect(page).toContain("listingJsonLd(profile, apex, publicApiBase())");
     // TS1 — a listing we have just asked a crawler NOT to amplify does not
@@ -1434,10 +1449,10 @@ describe("EN2 — the public count, on every surface", () => {
     // gone: its figure is the day's `counted`, read off the feed document
     // core already ranked — the page reads a metric, the row reads an entry,
     // and neither of them counts.)
-    expect(read("[slug]/page.tsx")).toContain('metrics.get("endorsements.total")');
+    expect(read("[slug]/product-page.tsx")).toContain('metrics.get("endorsements.total")');
     expect(read("feed/feed-row.tsx")).toContain("count={entry.rank === null ? null : entry.counted}");
     // Nothing on either surface computes a total of its own.
-    for (const file of ["[slug]/page.tsx", "feed/feed-row.tsx"]) {
+    for (const file of ["[slug]/product-page.tsx", "feed/feed-row.tsx"]) {
       expect(code(file)).not.toMatch(/\.filter\([^)]*endors[^)]*\)\.length/i);
       expect(code(file)).not.toMatch(/endorsements\.length|\.counted\s*[+-]/);
     }
@@ -1486,7 +1501,7 @@ describe("EN2 — the public count, on every surface", () => {
   });
 
   it("carries the moment it was computed, like every other number (I9)", () => {
-    const page = read("[slug]/page.tsx");
+    const page = read("[slug]/product-page.tsx");
     // The design's strip prints the unit alone, so the moment rides as the
     // note's title rather than as a line of its own — but it rides.
     expect(page).toContain("observedNote(endorsementsRecent, now,");
@@ -1539,7 +1554,7 @@ describe("EN2 — the public count, on every surface", () => {
 });
 
 describe("CG3 — the roster renders consent, not the publication list", () => {
-  const page = () => read("[slug]/page.tsx");
+  const page = () => read("[slug]/product-page.tsx");
 
   it("says what the roster means, on the roster", () => {
     // Every name there is there because its owner put it there. A reader
@@ -1556,8 +1571,13 @@ describe("CG3 — the roster renders consent, not the publication list", () => {
     // openproduct-calm-pages CP2 (CP-R3): an empty roster takes no panel; it
     // is named once on the page's *Not yet* line, as "listed makers" — which
     // still says nobody has been LISTED, not that nobody was asked.
+    // openproduct-redesign OPR-3: the *Not yet* line went with the interim
+    // layout. An empty roster still takes no panel and still claims nothing:
+    // the people list returns nothing, and the Crew tab then holds only the
+    // seats.
     const source = page();
-    expect(source).toContain('label: "listed makers"');
+    expect(source).toMatch(/if \(maintainers\.length === 0\) return null;\s*return \(\s*<ul id="makers"/);
+    expect(source).toContain("{profile.maintainers.length > 0 ? (");
     expect(source).not.toContain("No one has been published on this listing yet.");
   });
 
@@ -1567,7 +1587,7 @@ describe("CG3 — the roster renders consent, not the publication list", () => {
     // — so every surface got it at once, and no surface has a filter it
     // could forget.
     expect(page()).toContain("profile.maintainers");
-    expect(code("[slug]/page.tsx")).not.toMatch(/product_people|rosterState/i);
+    expect(code("[slug]/product-page.tsx")).not.toMatch(/product_people|rosterState/i);
   });
 });
 
@@ -1763,7 +1783,9 @@ describe("XP3 — the studio frame", () => {
     // The studio's forms are progressive-enhancement posts and the session
     // token never reaches the browser (OX5b).
     expect(read("studio/frame.tsx")).not.toContain('"use client"');
-    expect(read("studio/page.tsx")).not.toContain('"use client"');
+    // OPR-3 — the studio's landing is a redirect to `/me` now; the listing's
+    // overview is the frame's first page.
+    expect(read("studio/[org]/[profile]/page.tsx")).not.toContain('"use client"');
   });
 
   it("the three existing studio screens all use it", () => {
@@ -1771,7 +1793,7 @@ describe("XP3 — the studio frame", () => {
     // is only true if the ones that exist actually moved onto it.
     // A listing's editor moved its frame into a layout every step shares
     // (openproduct-studio OSD5); its pages keep the frame's notice island.
-    for (const rel of ["studio/page.tsx", "studio/[org]/[profile]/page.tsx"]) {
+    for (const rel of ["studio/reports/page.tsx", "studio/[org]/[profile]/page.tsx"]) {
       const source = read(rel);
       expect(`${rel}: ${source.includes("<StudioFrame") || source.includes("<StudioLive")}`).toBe(`${rel}: true`);
       // And they no longer hand-roll a container.
@@ -2083,7 +2105,7 @@ describe("LC1 — the digest's rules are published where somebody will look", ()
 // `/launches` redirect there from next.config.mjs).
 
 describe("TS3 — removed is not missing, and the report control is everywhere", () => {
-  const listing = () => read("[slug]/page.tsx");
+  const listing = () => read("[slug]/product-page.tsx");
   const tombstone = () => read("ui/tombstone.tsx");
   const control = () => read("ui/report-control.tsx");
 
@@ -2226,7 +2248,7 @@ describe("CB1 — the discussion surface", () => {
     // when the read had failed. OL3 removed the strip, and the rule survives
     // where the section now lives: `Discussions` renders the threads it was
     // given and the component distinguishes "none" from "could not ask".
-    const page = read("[slug]/page.tsx");
+    const page = read("[slug]/product-page.tsx");
     expect(page).not.toContain("threads.length");
     const discussions = read("[slug]/discussions.tsx");
     expect(discussions).toMatch(/threads === null/);
@@ -2257,7 +2279,7 @@ describe("CB2 — the demand signal, floored (OPC-F)", () => {
   it("renders the contract's sentence and never a raw count", () => {
     // The page never sees a number below the floor, because the API never
     // sends one. What it must not do is start computing its own.
-    const page = read("[slug]/page.tsx");
+    const page = read("[slug]/product-page.tsx");
     expect(page).toContain("demandLine(role.demand)");
     expect(page).not.toMatch(/role\.demand\.pending/);
   });
@@ -2265,14 +2287,14 @@ describe("CB2 — the demand signal, floored (OPC-F)", () => {
   it("derives the sidebar from what the cards already say", () => {
     // A true total would be a SECOND number about the same small set, and two
     // numbers about a small set can be subtracted from each other.
-    const page = code("[slug]/page.tsx");
+    const page = code("[slug]/product-page.tsx");
     expect(page).toContain("function offersSummary");
     expect(page).not.toMatch(/reduce\([^)]*\+[^)]*pending/);
   });
 
   it("never renders the mock's own unshippable string", () => {
     // `1 waiting on a decision` is what OPC-F exists to refuse.
-    const page = read("[slug]/page.tsx");
+    const page = read("[slug]/product-page.tsx");
     expect(page).not.toContain("waiting on a decision");
   });
 });
@@ -2283,9 +2305,10 @@ describe("CB3 — the header's action follows the door", () => {
     // three, and the rule CB3 kept is the same one: a button that leads to a
     // door that is not there wastes the action. Take a seat needs an open
     // seat; Try it needs the listing's own address for the running product.
-    const page = code("[slug]/page.tsx");
-    expect(page).toMatch(/\{openRoles\.length > 0 \? \(\s*<a href="#crew" className=\{BTN_SOFT\}>/);
-    expect(page).toMatch(/\{profile\.liveUrl \? \(\s*<a href=\{profile\.liveUrl\}/);
+    const page = code("[slug]/product-page.tsx");
+    // OPR-3 — the address for the running product is `tryUrl`.
+    expect(page).toMatch(/\{openRoles\.length > 0 \? \(\s*<AppLink href=\{seatsHref\} className=\{BTN_SOFT\}>/);
+    expect(page).toMatch(/\{profile\.tryUrl \? \(\s*<a href=\{profile\.tryUrl\}/);
     // The old single button, and its two-way branch, are gone with it.
     expect(page).not.toContain("primaryAction(");
     expect(page).not.toContain("primary.kind");
@@ -2293,7 +2316,7 @@ describe("CB3 — the header's action follows the door", () => {
 
   it("no longer greys out the second half — CB1 made it real", () => {
     // XP1 left an inert `Start a thread` here with a pendingProps marker.
-    const page = code("[slug]/page.tsx");
+    const page = code("[slug]/product-page.tsx");
     expect(page).not.toMatch(/pendingProps\(PENDING\.discussions\)/);
   });
 });
@@ -2516,7 +2539,7 @@ describe("LC3 — the launch board, ranked separately from the directory", () =>
     // OB4 — the day board left the front page; each day keeps its archive
     // address, reached from a build's own launch line.
     expect(existsSync(resolve(APP_DIR, "launches/[day]/page.tsx"))).toBe(true);
-    expect(readFileSync(resolve(APP_DIR, "[slug]/page.tsx"), "utf-8")).toContain("href={`/launches/${profile.launch.day}`}");
+    expect(readFileSync(resolve(APP_DIR, "[slug]/product-page.tsx"), "utf-8")).toContain("href={`/launches/${profile.launch.day}`}");
   });
 });
 

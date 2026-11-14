@@ -1,6 +1,6 @@
 // The docs surface's shared shapes (openproduct redesign).
 //
-// THE FIVE DOCS PAGES ARE ONE DOCUMENT WITH TABS, which is how the design
+// THE DOCS PAGES ARE ONE DOCUMENT WITH TABS, which is how the design
 // draws them: a 26px title, a 16px lede, a 38px tab strip on a `--border`
 // rule, and then sections 32px apart in a 78ch column. `/docs/formulas` is
 // the one that keeps a breadcrumb instead, because it is reached from a
@@ -18,6 +18,8 @@ export const DOCS_TABS = [
   { id: "checks", label: "What runs automatically", href: "/docs/checks" },
   { id: "formulas", label: "Formulas", href: "/docs/formulas" },
   { id: "runbook", label: "Runbook", href: "/docs/runbook" },
+  // OPR-3 — how posting works: the templates, read from the block catalogue.
+  { id: "posting", label: "Posting", href: "/docs/posting" },
 ] as const;
 
 export type DocsTab = (typeof DOCS_TABS)[number]["id"];

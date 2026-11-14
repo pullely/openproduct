@@ -26,7 +26,7 @@ const code = (file: string) =>
     .replace(/\{\/\*[\s\S]*?\*\/\}/g, "");
 
 const FRAME = "[slug]/observed-row.tsx";
-const LISTING = "[slug]/page.tsx";
+const LISTING = "[slug]/product-page.tsx";
 
 /** Every field a maintainer types. None of these may reach the frame. */
 const AUTHORED = [

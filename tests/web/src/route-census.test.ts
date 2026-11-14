@@ -106,6 +106,11 @@ describe("the route census", () => {
     expect(ROUTES.length).toBeGreaterThan(20);
     expect(ROUTES).toContain("page.tsx");
     expect(ROUTES).toContain("[slug]/page.tsx");
+    // OPR-3 — a shipping product's tabs, and the later pages of its updates,
+    // are routes of their own.
+    for (const tab of ["[slug]/about/page.tsx", "[slug]/crew/page.tsx", "[slug]/talk/page.tsx", "[slug]/updates/[cursor]/page.tsx"]) {
+      expect(ROUTES).toContain(tab);
+    }
   });
 
   it("every route declares which kind it is — there is no SIXTH state", () => {

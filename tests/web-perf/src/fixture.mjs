@@ -1260,10 +1260,11 @@ function crewAnswer(rest, req) {
 
 export const ROUTES = [
   // The archetypes come first: they are what XP4's budgets name. `/` is the
-  // list of builds. `/products` was a redirect here until
-  // openproduct-redesign OPR1 made Products a section with its own address;
-  // it is a route below.
-  { path: "/", name: "feed (launch board)", archetype: true, expect: SAMPLE_SLUG },
+  // FEED OF POSTS since openproduct-redesign OPR-3 (it listed products
+  // through OPR1; that list is `/products`, a route below). `expect` is the
+  // first post's headline: neither the empty state nor the failure panel
+  // carries one.
+  { path: "/", name: "feed (posts)", archetype: true, expect: "The state re-collection calendar" },
   { path: `/${SAMPLE_SLUG}`, name: "listing (tabbed detail)", archetype: true, expect: "Frontend contributor" },
   { path: "/people", name: "contributors (card grid)", archetype: true, expect: "Ada Lovelace" },
   { path: `/people/${SAMPLE_HANDLE}`, name: "profile", archetype: true, expect: "Ada Lovelace" },
@@ -1307,6 +1308,29 @@ export const ROUTES = [
   // so its name is on a ticket. Products is the board's list of cards.
   { path: "/help-wanted", name: "help wanted", expect: CARDS[0].slug },
   { path: "/products", name: "products", expect: SAMPLE_SLUG },
+  // OPR-3 — the stage filter's addresses. Each is a path, so each is one
+  // static, revalidated document like the sorts above: a `no-store` on any of
+  // them fails here. `product-00` is shipping and `product-01` is an idea, so
+  // each filtered list names the one and the filter marks itself current.
+  { path: "/products/stage/shipping", name: "products · shipping", expect: SAMPLE_SLUG },
+  { path: "/products/stage/ideas", name: "products · ideas", expect: 'data-product-stage="idea"' },
+  { path: "/products/stage/ideas/by/newest", name: "products · ideas, newest", expect: 'data-product-stage="idea"' },
+  { path: "/help-wanted/stage/shipping", name: "help wanted · on shipping products", expect: "data-seat-filters" },
+  { path: "/help-wanted/stage/ideas", name: "help wanted · on ideas", expect: "data-seat-filters" },
+  // OPR-3 — a post's own page (the comment section's id proves the thread
+  // drew: a 404 and a failure panel have none), and the feed's second page,
+  // the document behind *Show more* (`expect` is a post only page two holds).
+  { path: `/${SAMPLE_SLUG}/posts/${SAMPLE_POST}`, name: "post", expect: 'id="comments"' },
+  { path: `/feed/${POSTS_PAGE_TWO_CURSOR}`, name: "feed (continued)", expect: CARDS[2].slug },
+  // OPR-3 — a shipping product's tabs are routes of their own, each a cached
+  // document (`/{slug}` itself, the Updates tab, is the archetype above); and
+  // an idea product draws the other page at the same kind of address.
+  // `expect` is a mark only that view draws: the milestones' "N of M
+  // shipped", the open seats' anchor, the conversation's anchor, the note.
+  { path: `/${SAMPLE_SLUG}/about`, name: "product · about", expect: "data-shipped-mark" },
+  { path: `/${SAMPLE_SLUG}/crew`, name: "product · crew", expect: 'id="people-wanted"' },
+  { path: `/${SAMPLE_SLUG}/talk`, name: "product · talk", expect: 'id="discussion"' },
+  { path: `/${SAMPLE_IDEA_SLUG}`, name: "product (an idea)", expect: "data-idea-note" },
   // QE2 — every public address is walked. These had none of the three lanes
   // over them: HB2's year, PP3's pricing pages, FO1's forum and its two
   // variants, FO2's listing forum. A public route the axe pass does not
@@ -1331,6 +1355,9 @@ export const ROUTES = [
   { path: "/docs/api", name: "API changelog", expect: "Additive forever" },
   // OO4 — the runbook: one page per degraded state, from the contract.
   { path: "/docs/runbook", name: "runbook", expect: "When a promise breaks" },
+  // OPR-3 — how posting works, generated from the block catalogue: the
+  // attribute is on the grid of templates, which a failure page has none of.
+  { path: "/docs/posting", name: "posting spec", expect: "data-posting-templates" },
   // SB0 — the design's address. The old one, `/create`, is in `MOVED` below:
   // it has no bytes to budget and no headings to check, so it is not walked
   // like a page — but its STATUS is checked, because the first attempt at this
@@ -1401,6 +1428,11 @@ export const MOVED = [
   // …and the two lists under `/me` that became sections of it.
   { from: "/me/saved", to: "/me?section=saved", status: 308 },
   { from: "/me/applications", to: "/me?section=seats", status: 308 },
+  // OPR-3 — the studio's landing was the list of your listings; that list is
+  // "Your products" on `/me`. A route handler answers the 308 itself
+  // (`studio/route.ts`), signed in or out. A listing's own settings and the
+  // moderation pages did not move.
+  { from: "/studio", to: "/me", status: 308 },
 ];
 
 /**
@@ -1442,6 +1474,10 @@ export const ABSENT = [
   { path: "/products/by/zzz-not-an-order", why: "OPR1 — an order the Products page never published: no page, rather than the default list under a second address" },
   { path: "/products/by/most-active", why: "OPR1 — the default order lives at /products and nowhere else" },
   { path: "/products/by", why: "OPR1 — the stem of the sorted pages is not a cursor: refused by name" },
+  { path: "/products/stage", why: "OPR-3 — the stem of the stage filter is not a cursor: refused by name" },
+  { path: "/products/stage/zzz-not-a-stage", why: "OPR-3 — a stage that does not exist: no page, rather than the whole list under a second address" },
+  { path: "/products/stage/idea", why: "OPR-3 — the ideas live at /products/stage/ideas and nowhere else" },
+  { path: "/help-wanted/stage/zzz-not-a-stage", why: "OPR-3 — Help wanted's filter has two stages; anything else is no page" },
 ];
 
 /** The reads, keyed by the path the web app asks for. */
@@ -1501,10 +1537,21 @@ export const AUTHED_ROUTES = [
   // `/me/applications`, are redirects and live in `MOVED` above.)
   { path: "/me?section=saved", name: "me · saved", expect: 'data-me-section="saved"' },
   { path: "/me?section=seats", name: "me · seats", expect: 'data-me-section="seats"' },
+  // OPR-3 — the two sections the board draws that OPR1 had no read for: what
+  // you follow, and the posts of your products that are not out yet. The
+  // list's own attribute proves the read answered (a failed one says so and
+  // draws no list).
+  { path: "/me?section=following", name: "me · following", expect: "data-me-following" },
+  { path: "/me?section=drafts", name: "me · drafts", expect: "data-me-drafts" },
+  // OPR-3 — the post builder: crew-only and per-request. The walker is on the
+  // crew of `CREW_SLUG`; signed out it goes through sign-in and back.
+  { path: `/${CREW_SLUG}/new`, name: "post builder · new", expect: 'data-compose-kind="feature"' },
+  { path: `/${CREW_SLUG}/new?draft=${SAMPLE_DRAFT_POST}`, name: "post builder · a draft", expect: "data-compose-remove-post" },
   { path: "/me/settings", name: "me · settings", expect: "Download your data" },
   // OPR1 — the inbox's address is `/activity` (the old one is in `MOVED`).
   { path: "/activity", name: "activity", expect: "Mark all read" },
-  { path: "/studio", name: "studio · listings", expect: "Your listings" },
+  // (OPR-3 — `/studio` itself is a redirect to `/me` now, and lives in
+  // `MOVED`; the list it was is the first row of this table.)
   { path: "/studio/collections", name: "studio · collections", expect: "Collections" },
   { path: "/studio/reports", name: "studio · reports", expect: "Reports" },
   { path: "/studio/appeals", name: "studio · appeals", expect: "Appeals" },
@@ -1735,7 +1782,15 @@ function answer(pathname, search, req = { method: "GET", body: undefined }) {
     };
   }
   if (pathname === "/v1/openproduct/me/listings") {
-    return { listings: [{ id: STUDIO_PROFILE, orgId: STUDIO_ORG, slug: MAINTAINER_PROFILE.slug }] };
+    return {
+      listings: [
+        { id: STUDIO_PROFILE, orgId: STUDIO_ORG, slug: MAINTAINER_PROFILE.slug, visibility: "private", tagline: null, reviewedAt: null, workspaceLinkedAt: null, thumbnail: null },
+        // OPR-3 — the product the walker is on the crew of: published, so
+        // "Your products" reads its stage from its public document, and its
+        // `needs-you` answers the Drafts section.
+        { id: CREW_PROFILE, orgId: CREW_ORG, slug: CREW_SLUG, visibility: "public", tagline: null, reviewedAt: EARLIER, workspaceLinkedAt: EARLIER, thumbnail: null },
+      ],
+    };
   }
   // OV4 — THE SIGNED-IN HALF, answered so the authenticated walk renders the
   // real pages rather than their "could not be loaded" panels. Every read a

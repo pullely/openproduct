@@ -108,7 +108,7 @@ export const STUDIO_SECTIONS: ReadonlyArray<{
   /** What it will do, for the ones that do not exist yet. */
   readonly then?: string;
 }> = [
-  { label: "Listings", href: "/studio", live: true },
+  { label: "Your products", href: "/me", live: true },
   // openproduct-studio OSD7 — COLLECTIONS AND APPEALS WERE BUILT AND NOT
   // REACHABLE. Both pages existed under `/studio/` with the frame's crumbs,
   // but nothing in the studio linked to them: a maker learned of an appeal
@@ -235,7 +235,7 @@ export function StudioFrame({
 function StudioCrumbs({ crumbs }: { crumbs: readonly StudioCrumb[] }) {
   return (
     <nav aria-label="Breadcrumb" className="flex flex-wrap items-center gap-2 text-[13px]">
-      <AppLink prefetch="auto" href="/studio" className="text-muted-foreground no-underline hover:text-foreground">
+      <AppLink prefetch="auto" href="/me" className="text-muted-foreground no-underline hover:text-foreground">
         Studio
       </AppLink>
       {crumbs.map((crumb) => (
@@ -271,7 +271,7 @@ function StudioCrumbs({ crumbs }: { crumbs: readonly StudioCrumb[] }) {
  */
 function StudioSectionNav({ crumbs }: { crumbs: readonly StudioCrumb[] }) {
   const last = crumbs[crumbs.length - 1]?.label;
-  const current = STUDIO_SECTIONS.find((section) => section.label === last)?.href ?? "/studio";
+  const current = STUDIO_SECTIONS.find((section) => section.label === last)?.href ?? "/me";
   return (
     <ul className="m-0 mt-5 flex list-none flex-wrap items-center gap-1.5 p-0">
       {STUDIO_SECTIONS.map((section) =>

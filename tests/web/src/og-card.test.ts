@@ -550,7 +550,7 @@ describe("every advertised card has a route behind it", () => {
   // symptom is a broken image on a surface nobody on the team ever unfurls.
   const PAGES = [
     "page.tsx",
-    "[slug]/page.tsx",
+    "[slug]/product-page.tsx",
     "topics/[topic]/page.tsx",
     "launches/[day]/page.tsx",
     "people/[handle]/maker-view.tsx",

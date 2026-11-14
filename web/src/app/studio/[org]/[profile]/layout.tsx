@@ -53,7 +53,7 @@ export default async function ListingLayout(props: {
   return (
     <main className={EDITOR_MAIN}>
       <EditorHead
-        back={{ href: "/studio", label: "Your listings" }}
+        back={{ href: "/me", label: "Your products" }}
         profile={profile}
         action={action}
         publishHref={`${hrefs.overview}#publish`}

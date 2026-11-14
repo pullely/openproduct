@@ -417,7 +417,9 @@ describe("the frame mounts it once, and every surface says which words it uses",
     // under the persistent layout (openproduct-studio OSD5); the rest through
     // the frame. Either way the words are named.
     const framed = PAGES.filter((page) => code(page).includes("<StudioFrame") || code(page).includes("<StudioLive"));
-    expect(framed.length).toBeGreaterThanOrEqual(11);
+    // Ten since OPR-3: the studio's landing (the list of your listings) is
+    // "Your products" on `/me` and `/studio` redirects there.
+    expect(framed.length).toBeGreaterThanOrEqual(10);
     for (const page of framed) {
       expect([page, /vocabulary=\{[A-Z_]+\}/.test(code(page))]).toEqual([page, true]);
     }
@@ -463,7 +465,6 @@ describe("the studio's own links report the click (OPP13's bar)", () => {
   it("the frame, the strip and the listings use AppLink", () => {
     for (const file of [
       "frame.tsx",
-      "page.tsx",
       "[org]/[profile]/step-strip.tsx",
       "[org]/[profile]/page.tsx",
     ]) {

@@ -56,7 +56,7 @@ const OVERLAY = "ui/overlay.ts";
 const CHIP = "shell/account-chip.tsx";
 const SECTION = "[slug]/comments.tsx";
 const BOX = "[slug]/comment-draft.tsx";
-const LISTING_PAGE = "[slug]/page.tsx";
+const LISTING_PAGE = "[slug]/product-page.tsx";
 const THREAD_PAGE = "threads/[id]/page.tsx";
 const COMMENT_ROUTE = "comment/route.ts";
 const REPLY_ROUTE = "threads/[id]/reply/route.ts";
@@ -122,7 +122,7 @@ describe("the island wraps the section and the section is still the page's", () 
   it("the heading's count moves with the visitor's own comments", () => {
     const page = code(LISTING_PAGE);
     expect(page).toContain("<LiveCount");
-    expect(page).toContain('conversation={conversationKey("listing", profile.slug)}');
+    expect(page).toContain('conversation={conversationKey("listing", slug)}');
   });
 
   it("the island is a client component that renders NOTHING on the server (I6)", () => {

@@ -82,13 +82,24 @@ function boundariesAbove(page: string): string[] {
 const read = (rel: string) => readFileSync(resolve(APP_DIR, rel), "utf-8");
 
 /** Pages that decide a thing does not exist. */
-const REFUSERS = PAGES.filter((p) => /\bnotFound\(\)/.test(read(p)));
+const refuses = (source: string) => /\bnotFound\(\)/.test(source);
+/** A product's route files hand their render to `[slug]/product-page.tsx`
+ *  (openproduct-redesign OPR-3): they refuse when it does. */
+const rendersProductPage = (source: string) => /from "(?:\.\.?\/)+product-page"/.test(source);
+const REFUSERS = PAGES.filter((p) => {
+  const source = read(p);
+  return refuses(source) || (rendersProductPage(source) && refuses(read("[slug]/product-page.tsx")));
+});
 
 describe("R11 — a page that can 404 has no skeleton above it", () => {
   it("finds the pages that refuse, so an empty list cannot read as a pass", () => {
     expect(REFUSERS.length).toBeGreaterThanOrEqual(5);
     for (const expected of [
       "[slug]/page.tsx",
+      "[slug]/about/page.tsx",
+      "[slug]/crew/page.tsx",
+      "[slug]/talk/page.tsx",
+      "[slug]/updates/[cursor]/page.tsx",
       "people/[handle]/page.tsx",
       "threads/[id]/page.tsx",
       "digest/[week]/page.tsx",

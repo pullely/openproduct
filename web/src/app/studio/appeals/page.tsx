@@ -83,7 +83,7 @@ export default async function AppealsPage(props: PageProps) {
         what="The record of what was done could not be loaded. It is not something you did, and trying again in a moment usually works."
         actions={[
           { label: "Try again", href: page },
-          { label: "Your listings", href: "/studio" },
+          { label: "Your products", href: "/me" },
         ]}
       />
     );
@@ -96,7 +96,7 @@ export default async function AppealsPage(props: PageProps) {
   return (
     <StudioFrame
       vocabulary={APPEAL_VOCABULARY}
-      crumbs={[{ label: "Listings", href: "/studio" }, { label: "Appeals" }]}
+      crumbs={[{ label: "Your products", href: "/me" }, { label: "Appeals" }]}
       title="Decisions about your listings"
       notice={noticeFrom(search, APPEAL_VOCABULARY)}
     >

@@ -16,6 +16,7 @@ import { JsonLd } from "../../ui/json-ld";
 import { CopyLink } from "./copy-link";
 import { MakerView, loadMaker, makerMetadata } from "./maker-view";
 import { ProductRows } from "./product-rows";
+import { readStageLines } from "./product-stages";
 
 /**
  * A contributor's public page (openproduct-commons CG1).
@@ -63,6 +64,12 @@ export default async function ContributorProfilePage({ params }: PageProps) {
   if (doc === null) notFound();
 
   const profile = doc.contributor;
+  // OPR-3 — where each of their products stands, from each product's own
+  // public document (the same bytes for every visitor, cached like the page).
+  const stages = await readStageLines([
+    ...profile.maintains.map((listing) => listing.slug),
+    ...profile.contributesToListings.map((listing) => listing.slug),
+  ]);
   const apex = publicApexOrigin();
   const shortLink = `${apex ? apex.replace(/^https?:\/\//, "") : "openproduct.live"}/@${profile.handle}`;
 
@@ -102,7 +109,7 @@ export default async function ContributorProfilePage({ params }: PageProps) {
               <p className={EMPTY_NOTE}>No published products right now.</p>
             ) : (
               <section aria-label="Products" className="rounded-[16px] bg-card p-2">
-                <ProductRows listings={profile.maintains} />
+                <ProductRows listings={profile.maintains} stages={stages} />
               </section>
             )
           }
@@ -130,7 +137,7 @@ export default async function ContributorProfilePage({ params }: PageProps) {
                     />
                   </span>
                 </div>
-                <ProductRows listings={profile.contributesToListings} />
+                <ProductRows listings={profile.contributesToListings} stages={stages} />
                 <p className="sr-only">{CONTRIBUTES_TO_NOTE}</p>
               </section>
             ) : undefined

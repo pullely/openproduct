@@ -387,7 +387,15 @@ const BUDGETS = {
   // assertion over a launch-day fixture: the fixture's board carries a hero
   // thumbnail on the listings that have one. The document grew by the
   // thumbnails' markup; measured and named in the MD3 entry.
-  "/": { js: 173_858, doc: 17_500, cls: 0.02, lcp: 2000, reads: 3, images: 400_000 },
+  //
+  // OPR-3 — `/` IS THE FEED OF POSTS, AND IT MAKES TWO READS: the feed's
+  // first page and the directory's first page (the right column's "Worth
+  // following" and "Open seats"), issued concurrently. `reads` says 2. THE
+  // BYTE BUDGETS BELOW ARE THE PRODUCT LIST'S AND HAVE NOT BEEN RE-MEASURED:
+  // the page now draws post cards (and their client list, `feed-posts.tsx`)
+  // instead of product cards, so `js` and `doc` need this lane run on a full
+  // build and re-baselined with the numbers named, as every entry above was.
+  "/": { js: 173_858, doc: 17_500, cls: 0.02, lcp: 2000, reads: 2, images: 400_000 },
   // THREE, AND IT HAS BEEN THREE SINCE CB1 — the number here was stale, and
   // it took a lane that failed on one run and passed on the next to notice.
   //
