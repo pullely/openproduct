@@ -19,7 +19,7 @@
   "h1": {
     "top": 110,
     "left": 87,
-    "width": 166,
+    "width": 160,
     "height": 31
   },
   "firstRow": {
@@ -33,7 +33,7 @@
     "height": 344
   },
   "themeControl": {
-    "width": 62,
+    "width": 64,
     "height": 44
   },
   "colours": {

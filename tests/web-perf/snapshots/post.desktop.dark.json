@@ -2,29 +2,29 @@
   "header": {
     "top": 0,
     "left": 0,
-    "width": 1280,
+    "width": 1270,
     "height": 60
   },
   "sectionBar": null,
   "main": {
     "top": 60,
-    "left": 50,
+    "left": 45,
     "width": 1180
   },
   "h1": {
     "top": 163,
-    "left": 136,
-    "width": 289,
+    "left": 131,
+    "width": 288,
     "height": 25
   },
   "firstRow": null,
   "footer": {
-    "left": 50,
+    "left": 45,
     "width": 1180,
     "height": 130
   },
   "themeControl": {
-    "width": 55,
+    "width": 57,
     "height": 26
   },
   "colours": {
