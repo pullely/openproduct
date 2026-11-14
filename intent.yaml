@@ -48,10 +48,14 @@ discovery:
     - infra/hyperdrive/
     - infra/db-migrate/
     - infra/media/
-    # NOT DISCOVERED YET, ON PURPOSE: infra/api-domain and infra/domain.
-    # They are terraform components that need the Cloudflare credentials even
-    # to plan, and they attach openproduct.live, which still serves the
-    # monorepo's deploy, so they join at the prod switch (OPN3).
+    # NOT DISCOVERED, ON PURPOSE: infra/api-domain and infra/domain.
+    # At the prod switch (OPN-10) openproduct.live and api.openproduct.live
+    # became Workers Custom Domains, attached in the openproduct account's
+    # dashboard. Attaching one needs "Workers Routes: Edit" on the zone, and
+    # no Cloudflare token the workspace can broker holds it (workers-deploy is
+    # scripts and KV only; dns-edit is DNS only). The two components also still
+    # keep the monorepo's S3 state and AWS provider. They join once a brokered
+    # template carries that permission and they are ported to platform state.
     # Their files stay in the tree because tests/web/src/deploy-ordering.test.ts
     # reads their component.yaml and terraform to hold the deploy order.
 
@@ -157,8 +161,9 @@ environments:
         namespacePrefix: prod-
         owner: pullely
         repo: openproduct
-        # OPENPRODUCT_CUSTOM_DOMAIN (openproduct.live) is set here only at the
-        # prod switch (OPN3). Until then the domain components plan to nothing.
+        # OPENPRODUCT_CUSTOM_DOMAIN (openproduct.live) is set here when the
+        # domain components are discovered (see `discovery`). Until then the
+        # hostnames are dashboard-attached Custom Domains (OPN-10).
     policies:
       requireApproval: "true"
     env:

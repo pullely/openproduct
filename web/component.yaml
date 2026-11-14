@@ -60,11 +60,10 @@ spec:
   #
   # The build values ride on each subscription's `env`, which orun merges into
   # the job's environment, so the build step sees them (departure 3: the
-  # composition has no `buildEnv`). Only the console origin is set before the
-  # prod switch. NEXT_PUBLIC_SITE_ORIGIN and NEXT_PUBLIC_OPENPRODUCT_API_URL
-  # name openproduct.live and api.openproduct.live, which still serve the
-  # monorepo's deployment until OPN3; baked now, this site would advertise and
-  # read the old one. See the comment under `installCommand`.
+  # composition has no `buildEnv`). Prod also sets NEXT_PUBLIC_SITE_ORIGIN
+  # since the prod switch (OPN-10), when openproduct.live became a Custom
+  # Domain on this worker. NEXT_PUBLIC_OPENPRODUCT_API_URL stays unset: see
+  # the comment under `installCommand`.
   subscribe:
     environments:
       - name: dev
@@ -91,6 +90,7 @@ spec:
         profile: verify
         env:
           NEXT_PUBLIC_CONSOLE_ORIGIN: https://app.orunbase.com
+          NEXT_PUBLIC_SITE_ORIGIN: https://openproduct.live
         profileRules:
           - profile: deploy
             when:
@@ -112,8 +112,9 @@ spec:
     assetsDir: .open-next/assets
 
     # Per-env worker names: openproduct-web-{dev,stage,prod}. The prod custom
-    # domain (openproduct.live) attaches via apps/openproduct/infra/domain —
-    # no longer as a second apex on the console worker.
+    # domain (openproduct.live) was attached in the openproduct account's
+    # dashboard at the prod switch (OPN-10), not by infra/domain (intent.yaml
+    # says why that component is not discovered).
     workerName: openproduct-web
     environmentAwareWorkerName: true
 
@@ -199,9 +200,16 @@ spec:
     # parameters are closed), so they ride on each subscription's `env` above.
     # Every one of the three reads in `src/lib/platform.ts` degrades on its
     # own when unset (the gateway's workers.dev host on the openproduct
-    # account, a relative console link, no canonical). OPN2 sets the console
-    # origin; the other two come back at the prod switch (OPN3), when
-    # openproduct.live serves this repository's deploy. The monorepo's values:
+    # account, a relative console link, no canonical). OPN2 set the console
+    # origin and the prod switch (OPN-10) the site origin.
+    #
+    # The API URL stays unset after the switch, on purpose. `api.openproduct.live`
+    # is a Workers Custom Domain attached in the Cloudflare dashboard, because no
+    # token the workspace can broker holds "Workers Routes: Edit" on the zone, so
+    # no component here creates it and this build cannot wait on one. The site
+    # reads the gateway's workers.dev host, which costs no performance (above);
+    # everyone else uses api.openproduct.live. Setting this needs a creator
+    # component first, and the ordering test below holds that. The monorepo's values:
     #
     #   dev:   NEXT_PUBLIC_CONSOLE_ORIGIN       https://orun-web-console-next-dev.oruncloud.workers.dev
     #   stage: NEXT_PUBLIC_CONSOLE_ORIGIN       https://stage.orunbase.com
