@@ -8,7 +8,7 @@ the code departed from `design.md`.
 | OPN0 — the spec | ✅ done | [#1](https://github.com/pullely/openproduct/pull/1) |
 | OPN1 — the tree, with D1 proven on one slice | ✅ done: **no-go for D1**, the owner's call (2026-11-11) | [#2](https://github.com/pullely/openproduct/pull/2), [#3](https://github.com/pullely/openproduct/pull/3), [#4](https://github.com/pullely/openproduct/pull/4) |
 | OPN2 — live on its own URLs, on Supabase | ✅ done (2026-11-11). Password sign-up moves to OPN3 (see OPN-8) | [#5](https://github.com/pullely/openproduct/pull/5), [#6](https://github.com/pullely/openproduct/pull/6), [#7](https://github.com/pullely/openproduct/pull/7), [#8](https://github.com/pullely/openproduct/pull/8), [#9](https://github.com/pullely/openproduct/pull/9) |
-| OPN3 — openproduct.live served from here | ◐ in progress: the stage switch (OPN-9) | [#11](https://github.com/pullely/openproduct/pull/11) · [orun-cloud#2400](https://github.com/sourceplane/orun-cloud/pull/2400) (the stage pointers) |
+| OPN3 — openproduct.live served from here | ◐ in progress: stage switched (OPN-9, 2026-11-14); the prod switch (OPN-10) is next | [#11](https://github.com/pullely/openproduct/pull/11) · [orun-cloud#2400](https://github.com/sourceplane/orun-cloud/pull/2400) (the stage pointers) · [#12](https://github.com/pullely/openproduct/pull/12) (OPN-11) |
 | OPN4 — openproduct, listed on openproduct.live | | |
 
 ## Inputs
@@ -27,10 +27,10 @@ the code departed from `design.md`.
 | Cloudflare connection | `openproduct` (`int_7fbdaafa…`), inherited from the account |
 | Epic in Orunbase | `openproduct-standalone`, EP-1 (`epc_0TXVHJ8Z`) |
 | Milestones | OPN0 `mls_VEMWNC1J` · OPN1 `mls_GPBDDEE7` · OPN2 `mls_GQ855EQV` · OPN3 `mls_QJP277KN` · OPN4 `mls_GFTKS4Q0` |
-| Tasks | OPN-1 `tsk_N14BB1XD` (OPN0, done: merged as `1fc8305`, PR #1) · OPN-2 `tsk_85D0P8WW` (OPN1, done: PR #2) · OPN-4 `tsk_DEKB9MPX` (OPN1, done: PR #3) · OPN-3 `tsk_DQTEWGM3` (OPN1, done: PR #4) · OPN-5 `tsk_KSEVSQNN` (OPN2, done: merged as `b8d55d3`, PR #5) · OPN-6 `tsk_8417K5E5` (OPN2, done: merged as `2b7b101`, PR #6) · OPN-7 `tsk_WFT2NPB0` (OPN2, done: merged as `0aeb50a`, PR #7) · OPN-8 `tsk_GXBYVA6W` (OPN2, done: merged as `5070529`, PR #8, and `8e9f80e`, PR #9) · OPN-9 `tsk_WG40EGHV` (OPN3, in progress: PR #11) |
+| Tasks | OPN-1 `tsk_N14BB1XD` (OPN0, done: merged as `1fc8305`, PR #1) · OPN-2 `tsk_85D0P8WW` (OPN1, done: PR #2) · OPN-4 `tsk_DEKB9MPX` (OPN1, done: PR #3) · OPN-3 `tsk_DQTEWGM3` (OPN1, done: PR #4) · OPN-5 `tsk_KSEVSQNN` (OPN2, done: merged as `b8d55d3`, PR #5) · OPN-6 `tsk_8417K5E5` (OPN2, done: merged as `2b7b101`, PR #6) · OPN-7 `tsk_WFT2NPB0` (OPN2, done: merged as `0aeb50a`, PR #7) · OPN-8 `tsk_GXBYVA6W` (OPN2, done: merged as `5070529`, PR #8, and `8e9f80e`, PR #9) · OPN-9 `tsk_WG40EGHV` (OPN3, done: PR #11 and its status PR, with three departures, see OPN-9) · OPN-11 `tsk_V7EXYNMV` (OPN3, done: merged as `24507f7`, PR #12) |
 | Project environments | `dev`, `stage`, `prod`, created through `POST …/projects/{prj}/environments` on 2026-11-09. A baseline bootstrap creates them; this repository never had one, and secret authoring refused until they existed |
 | Stage secrets | `CLOUDFLARE_API_TOKEN` (`workers-deploy`), `CLOUDFLARE_ACCOUNT_ID` (`account-id`), `CLOUDFLARE_D1_TOKEN` (`d1-edit`), `CLOUDFLARE_WORKERS_SUBDOMAIN` (`workers-subdomain`): all brokered from connection `int_7fbdaafa…`. `PROBE_TOKEN`: static, random, set from stdin. None has a prod counterpart yet |
-| Supabase connection | **`openproduct`** (`int_cc19cfd5…`), created by the owner on 2026-11-11 for this product and inherited from the account (OPN-T). The account's older `arca-orun` (`int_d9116c21…`) is not used, so every brokered Supabase secret names `openproduct` explicitly |
+| Supabase connection | **`openproduct`** (`int_cc19cfd5…`), created by the owner on 2026-11-11 for this product and inherited from the account (OPN-T). The account's older `arca-orun` (`int_d9116c21…`) is not used, so every brokered Supabase secret names `openproduct` explicitly. It is a different Supabase organisation and cannot see this product's projects. On 2026-11-14 the `openproduct` connection dropped out of the workspace's list, for a reason not found, and the brokered keys read orphaned. The owner re-added the organisation from the console's Connections page, and it came back under the same id, so the keys recovered without being re-created |
 
 ## D1 slice proof
 
@@ -332,7 +332,7 @@ instead of failing on keys that do not exist yet.
 
 ## OPN3 — as built
 
-### OPN-9: stage joins the platform's seam (in progress)
+### OPN-9: stage joins the platform's seam (done 2026-11-14, three departures)
 
 Design §6, steps 1 and 2. Two pull requests, because the platform's half is in another repository:
 
@@ -351,9 +351,41 @@ Design §6, steps 1 and 2. Two pull requests, because the platform's half is in 
 
 Prod's `LISTING_SEAM_SECRET` is not seeded on the platform's side: membership-worker prod keeps the value it has, which the monorepo deploy shares, because the platform's prod webhooks still go there. It moves at OPN-10.
 
-**Order.** The keys are seeded first. An unseeded key would not break a deploy (it is skipped by name), but the switch would send stage's webhooks to a gateway holding a different key. Then the orun-cloud merge (membership-worker, identity-worker and the console deploy), then #11's merge (core and the gateway), then the flow on stage.
+**Order, as run.** The keys were seeded in both workspaces first. An unseeded key would not break a deploy (it is skipped by name), but the switch would send stage's webhooks to a gateway holding a different key. Then #11's merge (run 43576326314: core and the gateway redeploy and `secrets-live` delivers the rotated keys), then orun-cloud#2400's (main run 43576713067: membership-worker, identity-worker and the console). This side took the new keys before the platform switched, so stage's webhooks never met a stale key.
 
-**A first attempt wrote to AWS.** Before the owner's call, a run created `integrations/openproduct-auth-seam/{stage,prod}` and rotated `integrations/listing-seam/stage` in the escrow, and its writes to this workspace failed: `orun secrets set` creates a key, and these already existed, which the platform answered with a bare 503 instead of a conflict. `orun secrets rotate` is the verb for an existing key. The two new escrow documents are to be deleted and `listing-seam/stage` restored to its previous version.
+**Checked after both merges:**
+- the auth seam on api-edge (`POST /v1/seam/openproduct/subject-by-email`, unsigned) answers 401 on stage and on prod, where it answered 503 *Resolver not configured* before: identity-worker holds `OPENPRODUCT_AUTH_SEAM_SECRET` in both;
+- the `secrets-live` logs on both sides show the keys pushed by name;
+- membership-worker stage's `LISTING_SEAM_URL` names `https://openproduct-gateway-stage.openproduct.workers.dev`, and prod's is unchanged.
+
+**The flow on stage (2026-11-14),** driven in the owner's browser, the owner entering the password and the emailed code:
+- **Password sign-up and sign-in** on `openproduct-web-stage.openproduct.workers.dev`, with the email of the owner's stage Orunbase account. The gateway's sign-in reaches identity-worker over the auth seam, so this exercises the new stage `OPENPRODUCT_AUTH_SEAM_SECRET`.
+- **Created and linked through the console.** "Open a build" handed the draft to the console's founder landing on `stage.orunbase.com`, which created the openproduct account, a public workspace (`org_e216d5f0…`) and its project, minted the link grant and handed back to the studio. Core accepted the grant, and the listing (`opp_c6f81951…`, `/testopenproduct`) was created. The grant is signed with the stage `LISTING_SEAM_SECRET`, so this proves both sides hold the same new key.
+- **Published.** The first attempt was refused with `blockers=pitch_missing`, as designed; a two-line pitch was added, and the listing published. The public page serves.
+
+**Departures from the contract's "done when":**
+1. **Not joined.** A join request has to come from a second stage account: the owner cannot ask to join their own workspace. The owner skipped it (2026-11-14). So S6, the first edge on which the platform itself posts to this gateway, has not carried a live delivery on stage. The fixtures pin its wire format on both sides.
+2. **Not purged.** S7 fires when a deleted workspace is erased, which is `WORKSPACE_ERASURE_DAYS` (30) after the delete, so it cannot run within a task. The test workspace is left in place; when the owner deletes it, the purge reaches this gateway 30 days later and takes the listing down.
+3. **Prod sign-up not run.** Signing up on prod creates a real account, which is the owner's call. The prod auth seam answers 401 unsigned, so its key is set. The prod smoke test at OPN-10 signs in anyway.
+
+The contract's first line still says the keys go to the platform's escrow. Since the owner's call they go to orun-cloud's Orunbase workspace instead (above).
+
+**A first attempt wrote to AWS.** Before the owner's call, a run created `integrations/openproduct-auth-seam/{stage,prod}` and rotated `integrations/listing-seam/stage` in the escrow, and its writes to this workspace failed: `orun secrets set` creates a key, and these already existed, which the platform answered with a bare 503 instead of a conflict. `orun secrets rotate` is the verb for an existing key. The owner undid it on 2026-11-14: the two new documents were deleted (seven-day recovery window), and `listing-seam/stage` is back on its previous version.
+
+### OPN-11: a quiet search index is not a stale one
+
+- **The symptom.** Both gateways' `/health` read `degraded` from 2026-11-11: the `searchIndex` sweep phase looked stale. Core skips the rebuild while the index is clean, and `/health` read `built_at`, which moves only on a rebuild. With an empty catalogue it stayed at 2026-11-11 23:00 UTC.
+- **The fix (#12).** Migration 2260 adds `search_index_state.checked_at`, stamped when a sweep finds nothing to rebuild, and the phase's last run is read as `GREATEST(built_at, checked_at)`.
+- **Live.** Merged as `24507f7` (main run 43589062851, green). Both gateways read `ok` from the 11:20 UTC sweep on 2026-11-14.
+- **Its first CI run was held up by the Supabase connection, not the code** (see "Supabase connection" under Estate). `openproduct-db-migrate` resolves the brokered `SUPABASE_ACCESS_TOKEN`, so it failed on every pull request touching `packages/db` until the owner re-added the connection.
+
+### Left for OPN-10, the prod switch
+
+- the `openproduct.live` zone moves to the new Cloudflare account (risk OPN-G), which is the owner's step;
+- `OPENPRODUCT_CUSTOM_DOMAIN` is set for prod and the domain components apply. The website's `NEXT_PUBLIC_SITE_ORIGIN` and `NEXT_PUBLIC_OPENPRODUCT_API_URL`, the gateway's `SITE_ORIGIN` and the synthetic monitor's prod names return to the canonical hosts;
+- in orun-cloud, membership-worker prod's `LISTING_SEAM_URL` becomes `https://api.openproduct.live`, and a fresh prod `LISTING_SEAM_SECRET` is written once to both workspaces;
+- the smoke test, including a password sign-up and "Sign in with Orunbase" on prod;
+- then OPN4's teardown, once the owner approves, with no read-only step and no read-only week (the owner's call, 2026-11-14; design §6).
 
 ## Departures from the design
 
