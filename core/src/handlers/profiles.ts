@@ -27,6 +27,8 @@ import type {
 } from "@openproduct/db";
 import {
   DEFAULT_TRUST_LEVEL,
+  PRODUCT_TAGLINE_MAX,
+  ROLE_OPENING_TITLE_MAX,
   canonicalise,
   facet,
   installLineRefusal,
@@ -55,6 +57,7 @@ import {
   generateId,
   orgPublicId,
   parseProjectPublicId,
+  productPostPublicId,
   profilePublicId,
   projectPublicId,
   roleOpeningPublicId,
@@ -68,11 +71,12 @@ export interface ProfileHandlerDeps {
 }
 
 const MAX_SLUG = 64;
-const MAX_TAGLINE = 200;
+/** The contract's number, so the page's counter and this refusal agree. */
+const MAX_TAGLINE = PRODUCT_TAGLINE_MAX;
 const MAX_PITCH = 20_000;
 const MAX_STACK_TAGS = 12;
 const MAX_STACK_TAG = 32;
-const MAX_TITLE = 120;
+const MAX_TITLE = ROLE_OPENING_TITLE_MAX;
 const MAX_MAINTAINERS = 50;
 /** OPR-3 — the Feature shipped post's "Try it" block holds 200 characters,
  *  and a post prefilled from this address has to fit it. */
@@ -1111,9 +1115,15 @@ export async function handleUpsertRoleOpening(
   // prefilled from the opening, which the crew publishes or discards. On
   // creation only, and only for a seat that is open. Best-effort — the seat
   // is open whether or not the draft could be written.
+  let offeredPostId: string | null = null;
   if (!openingId && opening.status === "open") {
     try {
-      await offerSeatPost(deps as unknown as SelfPostDeps, { orgId, profile: existing, actor, requestId }, opening);
+      const offered = await offerSeatPost(
+        deps as unknown as SelfPostDeps,
+        { orgId, profile: existing, actor, requestId },
+        opening,
+      );
+      offeredPostId = offered ? productPostPublicId(offered.id) : null;
     } catch {
       // Deliberately swallowed — see `self-posts.ts`.
     }
@@ -1129,6 +1139,9 @@ export async function handleUpsertRoleOpening(
         status: opening.status,
         joinLinkRef,
       },
+      // OPR-3 — the draft Help wanted post this act prepared, so the page
+      // that opened the seat can offer "Continue" on it. Null on an update.
+      offeredPostId,
     },
     requestId,
     openingId ? 200 : 201,

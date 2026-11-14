@@ -59,7 +59,8 @@ describe("CS-2 — generated from the pinned key sets, then annotated", () => {
       "card.stage",
       "product.tryUrl",
       "product.milestones",
-      "product.milestoneCounts",
+      "card.milestoneCounts",
+      "card.crewCount",
     ]);
   });
 });

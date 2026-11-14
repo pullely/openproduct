@@ -37,6 +37,8 @@ export interface ProbeContext {
   readonly collectionSlug: string;
   /** OPR-3 — a published product post of the corpus listing. */
   readonly productPostId: string;
+  /** OPR-3 — who wrote that post: the author a person's page lists posts for. */
+  readonly productPostAuthor: string;
 }
 
 export interface ReadProbe {
@@ -96,6 +98,7 @@ export const PUBLIC_READS: readonly ReadProbe[] = [
   { name: "listPublicProductPosts(20, next page)", route: "/", run: (r, c) => r.listPublicProductPosts({ cursor: { publishedAt: c.weekAgo, id: c.productPostId }, limit: 20 }) },
   { name: "listPublicProductPostsForProfile(profile)", route: "/{slug}", run: (r, c) => r.listPublicProductPostsForProfile(c.profileId, { cursor: null, limit: 20 }) },
   { name: "getPublicProductPost(id)", route: "/{slug}/posts/{id}", run: (r, c) => r.getPublicProductPost(c.productPostId) },
+  { name: "listPublicProductPostsByAuthor(author)", route: "/people/{handle}", run: (r, c) => r.listPublicProductPostsByAuthor(c.productPostAuthor, { cursor: null, limit: 20 }) },
   { name: "listPublicProductMilestones(profile)", route: "/{slug}", run: (r, c) => r.listPublicProductMilestones(c.profileId) },
   { name: "listStagesForSlugs(20)", route: "/search", run: (r, c) => r.listStagesForSlugs(c.slugs.slice(0, 20)) },
   { name: "listProductsForHandles(8)", route: "/search", run: (r) => r.listProductsForHandles(Array.from({ length: 8 }, (_, i) => `maker-${i + 1}`), 6) },

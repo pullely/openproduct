@@ -108,6 +108,8 @@ function deps(
             pricing: profile.pricing,
             licence: profile.repoLicence,
             roleOpeningCount: 1,
+            milestoneCounts: { shipped: 0, total: 0 },
+            crewCount: 1,
             openCommitments: ["a few hours a week · async"],
             hasLiveUrl: true,
             publishedAt: profile.publishedAt,

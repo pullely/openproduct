@@ -217,6 +217,7 @@ import {
   handleNeedsYou,
   handleProductPostReaction,
   handleProductPostsFeed,
+  handleProductPostsOfAuthor,
   handleProductPostsOfProduct,
   handlePublicProductPost,
   handlePublishProductPost,
@@ -392,6 +393,9 @@ const PUBLIC_PEOPLE_RE = /^\/internal\/public\/openproduct\/people\/([^/]+)$/;
 // second one, so a handle can never be mistaken for a tab or a tab for a
 // handle no matter how either grammar is relaxed later.
 const PUBLIC_MAKER_TAB_RE = /^\/internal\/public\/openproduct\/people\/([^/]+)\/tab\/([^/]+)$/;
+// OPR-3 — the published product posts one person wrote. A literal third
+// segment, so it is neither a handle nor a tab.
+const PUBLIC_PERSON_PRODUCT_POSTS_RE = /^\/internal\/public\/openproduct\/people\/([^/]+)\/product-posts$/;
 // DS4 — the ADDRESSES of every public profile, for the sitemap. Handles and
 // dates only; the page is where a person's details live.
 const PUBLIC_PEOPLE_INDEX_PATH = "/internal/public/openproduct/people";
@@ -1050,6 +1054,16 @@ async function publicRoutes(
       decodeURIComponent(makerTab[1]!),
       decodeURIComponent(makerTab[2]!),
       deps as unknown as MakerHandlerDeps,
+    );
+  }
+  const personPosts = PUBLIC_PERSON_PRODUCT_POSTS_RE.exec(url.pathname);
+  if (personPosts) {
+    return handleProductPostsOfAuthor(
+      env,
+      url,
+      requestId,
+      decodeURIComponent(personPosts[1]!),
+      deps as unknown as ProductPostHandlerDeps,
     );
   }
   const person = PUBLIC_PEOPLE_RE.exec(url.pathname);

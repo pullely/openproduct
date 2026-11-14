@@ -1,5 +1,13 @@
-// IN1 — a listing's overview (openproduct-worldclass), drawn as the design's
-// editor (openproduct redesign).
+// A listing's settings (openproduct-redesign OPR-3, design §5) — the page that
+// was the listing's overview at `/studio/{org}/{profile}` (IN1,
+// openproduct-worldclass), drawn as the design's editor.
+//
+// WHY IT MOVED ONE SEGMENT DOWN. A published product's own page is its
+// dashboard now, so the listing's base address forwards there (`../route.ts`).
+// What this page uniquely does — publish and unpublish, review, the
+// repository check, linking the workspace — stays, unchanged, HERE; and a
+// draft, which has no public page, is forwarded here from the base address,
+// so it is still the page a draft is set up on.
 //
 // This page WAS the editor: one document holding six sections, of which the
 // first was really two. IN1 split it into addressable steps. The design puts
@@ -26,7 +34,7 @@
 // beside the profile read and the page waits once. A card whose read failed
 // says so inside itself rather than failing the page.
 
-import { AppLink } from "../../../ui/link";
+import { AppLink } from "../../../../ui/link";
 
 import {
   LISTING_STEPS,
@@ -34,23 +42,24 @@ import {
   importedStack,
   importedValue,
   listingForumPath,
+  listingSettingsPath,
   listingStepPath,
 } from "@openproduct/contracts";
 
-import { consoleOrigin } from "../../../../lib/platform";
-import { publicApiBase } from "../../../public-api";
-import { BTN_OUTLINE, BTN_PRIMARY, LABEL, NOTICE_WARN, TEXTAREA } from "../../../ui/design";
-import { BTN_GHOST, RAIL_PANEL, } from "../../frame";
-import { StudioLive } from "../../live-save";
-import { LISTING_VOCABULARY } from "../../notices";
-import { publishDisclosure, NEVER_PUBLIC } from "../../publish-disclosure";
-import { LINK_WORKSPACE_LABEL, consoleWorkspacePickerUrl } from "../../workspace-picker";
-import { fetchLaunches, fetchProfileThreads } from "../../studio-api";
-import { CompletenessPanel } from "./completeness-panel";
-import { EditorColumns, stepHrefs } from "./editor";
-import { ImportPanel } from "./import-panel";
-import { loadListing, readMedia } from "./listing-shell";
-import { AboutCard, DiscussionsCard, LaunchesCard, MediaCard, PeopleCard } from "./sections";
+import { consoleOrigin } from "../../../../../lib/platform";
+import { publicApiBase } from "../../../../public-api";
+import { BTN_OUTLINE, BTN_PRIMARY, LABEL, NOTICE_WARN, TEXTAREA } from "../../../../ui/design";
+import { BTN_GHOST, RAIL_PANEL, } from "../../../frame";
+import { StudioLive } from "../../../live-save";
+import { LISTING_VOCABULARY } from "../../../notices";
+import { publishDisclosure, NEVER_PUBLIC } from "../../../publish-disclosure";
+import { LINK_WORKSPACE_LABEL, consoleWorkspacePickerUrl } from "../../../workspace-picker";
+import { fetchLaunches, fetchProfileThreads } from "../../../studio-api";
+import { CompletenessPanel } from "../completeness-panel";
+import { EditorColumns, stepHrefs } from "../editor";
+import { ImportPanel } from "../import-panel";
+import { loadListing, readMedia } from "../listing-shell";
+import { AboutCard, DiscussionsCard, LaunchesCard, MediaCard, PeopleCard } from "../sections";
 
 export const dynamic = "force-dynamic";
 
@@ -59,7 +68,7 @@ export default async function StudioListingOverviewPage(props: {
   searchParams: Promise<{ notice?: string; error?: string; blockers?: string }>;
 }) {
   const { org, profile: profileId } = await props.params;
-  const here = `/studio/${org}/${profileId}`;
+  const here = listingSettingsPath(org, profileId);
   const loaded = await loadListing(org, profileId, await props.searchParams, here, (token) =>
     Promise.all([
       readMedia(token, org, profileId),

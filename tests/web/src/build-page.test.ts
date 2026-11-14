@@ -145,7 +145,11 @@ describe("seats, in the redesign's word", () => {
     expect(seats).toContain("const requested = useOpeningRequested(openingId);");
     expect(seats).toContain("Requested");
     expect(seats).toContain('{quiet ? "Take it" : "Take the seat"}');
-    expect(seats).toContain('{quiet ? "Edit" : "Edit seat"}');
+    // The crew's control: "Edit seat" opens the seat's form in place; the
+    // side card's quiet "Edit" is a link to where that form is.
+    expect(seats).toContain("Edit seat");
+    expect(seats).toContain("onClick={() => setSeatForm(slug, openingId)}");
+    expect(seats).toContain("href={seatFormPath(slug, idea)}");
   });
 });
 
@@ -161,9 +165,10 @@ describe("the header card is the board's", () => {
     expect(page.match(/<h1\b/g)).toHaveLength(2);
     expect(header).toContain("<h1 className={`${PAGE_TITLE} min-w-0 break-words`}>{slug}</h1>");
     // Lora 400 at 40px, 28 on a phone — the shared title, not a local size.
-    expect(code("ui/design.ts")).toMatch(
+    expect(code("ui/design-core.ts")).toMatch(
       /export const PAGE_TITLE =\s*"m-0 font-serif text-display font-normal[^"]*max-sm:text-title/,
     );
+    expect(code("ui/design.ts")).toContain('export { BTN_OUTLINE, BTN_PRIMARY, BTN_SOFT, FOCUS, PAGE_NARROW, PAGE_TITLE } from "./design-core";');
   });
 
   it("wears the stage mark beside the name: SHIPPING · N OF M, from the document's counts", () => {
@@ -272,7 +277,7 @@ describe("the side column is the board's three cards, then what the repository s
     expect(crew).toContain("openRoles.map((role) => (");
     expect(crew).toContain("className={SEAT_ROW}");
     expect(crew).toContain("${SEAT_RING} h-[32px] w-[32px] border-[1.5px]");
-    expect(crew).toContain("<SeatAction slug={slug} openingId={role.id} title={role.title} joinLinkRef={role.joinLinkRef} quiet />");
+    expect(crew).toContain("<SeatAction slug={slug} openingId={role.id} title={role.title} joinLinkRef={role.joinLinkRef} quiet idea={idea} />");
     expect(code("ui/design.ts")).toContain(
       'export const SEAT_ROW = "flex items-center justify-between gap-2.5 rounded-[14px] bg-seat-wash px-3 py-2.5";',
     );

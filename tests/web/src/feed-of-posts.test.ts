@@ -25,6 +25,7 @@ import {
   FEED_MINE_PATH,
   feedPageDataPath,
   feedPagePath,
+  feedMorePosts,
   feedPosts,
   followingCount,
   openSeatsLine,
@@ -45,6 +46,7 @@ const code = (file: string) =>
 const PAGE = "page.tsx";
 const VIEW = "feed/feed-view.tsx";
 const LIST = "feed/feed-posts.tsx";
+const CARDS = "feed/feed-cards.tsx";
 const YOU = "feed/feed-you.tsx";
 const MINE = "feed/mine/route.ts";
 const CONTINUED = "feed/[cursor]/page.tsx";
@@ -90,10 +92,16 @@ describe("the feed never draws a draft", () => {
 
   it("every list of the feed goes through that filter, and the card draws nothing else", () => {
     expect(code(VIEW)).toContain("const posts = feedPosts(page.posts);");
-    expect(code(LIST)).toContain("feedPosts(posts, more)");
+    // …and a page appended by Show more adds only what the list does not
+    // already hold, published, each once.
+    expect(code(LIST)).toContain("feedMorePosts(held, more)");
+    expect(
+      feedMorePosts([post(1).id], [post(1), post(2, { state: "draft", publishedAt: null }), post(5), post(5)]).map((p) => p.id),
+    ).toEqual([post(5).id]);
     expect(code(CONTINUED)).toContain("const posts = feedPosts(page.posts);");
     expect(code(DATA)).toContain("{ posts: feedPosts(page.posts), next: page.next }");
-    expect(code(LIST)).toContain('<ProductPostCard post={post} variant="feed" returnTo={returnTo} />');
+    // Straight under the page's `h1`, so each card's headline is an `h2`.
+    expect(code(CARDS)).toMatch(/<ProductPostCard\s+post=\{post\}\s+variant="feed"\s+returnTo=\{returnTo\}\s+headingLevel=\{2\}/);
     expect(code("posts/post-card.tsx")).toContain("if (!isPublishedPost(post)) return null;");
     // The feed reads the PUBLIC feed and no crew route: a draft is in no
     // read this page makes.
@@ -138,14 +146,22 @@ describe('"Worth following" lists products only', () => {
     const suggest = code("feed/feed-suggest.ts");
     expect(suggest).not.toMatch(/handle|maker|person|contributor/i);
     const view = code(VIEW);
-    const section = view.slice(view.indexOf("data-worth-following"), view.indexOf("<FeedFollowing />"));
+    const section = view.slice(view.indexOf("data-worth-following"), view.indexOf("data-feed-seats"));
+    // The reader's own Following card arrives after load, so it is the LAST
+    // thing in the column: nothing public is pushed down when it draws.
+    expect(view.indexOf("<FeedFollowing />")).toBeGreaterThan(view.indexOf("data-feed-seats"));
+    expect(view.slice(view.indexOf("<FeedFollowing />"))).toMatch(/^<FeedFollowing \/>\s*<\/aside>/);
     expect(section).toContain("href={`/${product.slug}`}");
     expect(section).not.toMatch(/@\$\{|makerPath|handle/);
     expect(code(PAGE)).not.toMatch(/fetchPublicPeople|fetchContributorsDirectory/);
   });
 
   it("open seats name products with a seat open", () => {
-    expect(openSeatProducts([card("a"), card("b", { roleOpeningCount: 2 })])).toEqual([{ slug: "b", seats: 2 }]);
+    // …with the stage, which decides the address the seats are at.
+    expect(openSeatProducts([card("a"), card("b", { roleOpeningCount: 2 })])).toEqual([
+      { slug: "b", seats: 2, stage: card("b").stage },
+    ]);
+    expect(code(VIEW)).toContain("href={productSeatsPath(product.slug, product.stage)}");
     expect(openSeatsLine(1)).toBe("1 open seat");
     expect(openSeatsLine(2)).toBe("2 open seats");
   });
@@ -195,8 +211,23 @@ describe("nothing personal is in the feed's server render (I6)", () => {
     expect(you).toContain("useSyncExternalStore(subscribe, current, nothing)");
     expect(you).toContain("const nothing = (): FeedMine | null => null;");
     expect(you.match(/if \(!data\) return null;/g)).toHaveLength(2);
-    // Asked only when the pre-paint hint says there is a session.
-    expect(you).toMatch(/if \(hintedSignedIn\(\) && window\.matchMedia\(COLUMNS_QUERY\)\.matches\) ask\(\);/);
+    // Asked only when there is a session: the pre-paint hint, or — for a
+    // session whose hint cookie is missing — `/auth/session`'s answer, which
+    // the shell publishes. Either way, once.
+    expect(you).toContain("const signedIn = useSyncExternalStore(subscribeVisitor, visitorSnapshot, unknownVisitor).signedIn;");
+    expect(you).toMatch(/if \(\(hintedSignedIn\(\) \|\| signedIn\) && window\.matchMedia\(COLUMNS_QUERY\)\.matches\) ask\(\);\s*\}, \[signedIn\]\);/);
+    expect(you).toContain("if (asked) return;");
+    // AND THE CODE THAT DRAWS THEM IS FETCHED ONLY FOR A SESSION: the feed
+    // imports two gates, and an anonymous visitor's browser never downloads
+    // the columns it can never see.
+    const gates = code("feed/feed-personal.tsx");
+    expect(code(VIEW)).toContain('import { FeedFollowing, FeedYou } from "./feed-personal";');
+    expect(code(VIEW)).not.toContain('from "./feed-you"');
+    expect(gates.match(/React\.lazy\(\(\) => import\("\.\/feed-you"\)/g)).toHaveLength(2);
+    expect(gates).not.toMatch(/^import .* from "\.\/feed-you";$/m);
+    expect(gates).toContain("const never = (): boolean => false;");
+    expect(gates).toContain("return React.useSyncExternalStore(subscribeVisitor, signedIn, never);");
+    expect(gates.match(/if \(!useSignedIn\(\)\) return null;/g)).toHaveLength(2);
     expect(you.match(/fetch\(/g)).toHaveLength(1);
     expect(you).toContain("fetch(FEED_MINE_PATH");
     expect(FEED_MINE_PATH).toBe("/feed/mine");
@@ -261,6 +292,19 @@ describe("Show more is a link that appends in place", () => {
     expect(list).toContain("href={feedPagePath(cursor)}");
     expect(list.match(/fetch\(/g)).toHaveLength(1);
     expect(list).toContain("fetch(feedPageDataPath(cursor)");
+    // THE CARD'S CODE IS NOT IN WHAT A READER DOWNLOADS TO READ THE FEED —
+    // nor in what every other page prefetches for the header's "Feed" link.
+    // The page's own cards are drawn on the server and handed to the list as
+    // children; an appended page's are drawn by the same component, from a
+    // chunk fetched when Show more is pressed.
+    expect(list).not.toContain("post-card");
+    expect(list).toContain('React.lazy(() => import("./feed-cards")');
+    expect(list).toContain("{children}");
+    expect(list).toMatch(/appended\.length > 0 \? \(\s*<React\.Suspense fallback=\{null\}>\s*<MoreCards posts=\{appended\} returnTo=\{returnTo\} \/>/);
+    expect(read(CARDS).startsWith('"use client"')).toBe(false);
+    for (const file of [VIEW, CONTINUED]) {
+      expect([file, /<FeedPosts held=\{posts\.map\(\(post\) => post\.id\)\}[^>]*>\s*<FeedCards posts=\{posts\} returnTo=\{\w+\} \/>\s*<\/FeedPosts>/.test(code(file))]).toEqual([file, true]);
+    }
     expect(existsSync(resolve(APP_DIR, CONTINUED))).toBe(true);
     expect(existsSync(resolve(APP_DIR, DATA))).toBe(true);
   });
@@ -282,6 +326,6 @@ describe("focus as you scroll", () => {
     expect(FEED_FOCUS_CSS).not.toMatch(/opacity|filter|blur|margin|width|height|top:|left:/);
     expect(code(VIEW)).toContain("<style>{FEED_FOCUS_CSS}</style>");
     expect(code(VIEW)).not.toContain("dangerouslySetInnerHTML");
-    expect(code(LIST)).toContain("{...{ [FEED_CARD_ATTRIBUTE]: post.kind }}");
+    expect(code(CARDS)).toContain("{...{ [FEED_CARD_ATTRIBUTE]: post.kind }}");
   });
 });

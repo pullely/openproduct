@@ -59,6 +59,8 @@ function card(over: {
     hasLiveUrl: authored(false, "maintainer"),
     indexable: observed(true, "linked_repo", AT),
     stage: derived("idea", "product.stage", ["product_milestones"], AT),
+    milestoneCounts: derived({ shipped: 0, total: 0 }, "product.milestones-shipped", ["product_milestones"], AT),
+    crewCount: derived(1, "product.crew-count", ["published_maintainers"], AT),
     // MD0 — present and empty. Every listing's array is `[]` until MD1 gives
     // a maker somewhere to put a picture; the key is on the card anyway,
     // because a machine consumer that has to wait for our renderer is not a

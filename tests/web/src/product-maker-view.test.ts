@@ -27,6 +27,8 @@ import {
   MILESTONE_CODE_MAX,
   MILESTONE_SUMMARY_MAX,
   MILESTONE_TITLE_MAX,
+  PRODUCT_TAGLINE_MAX,
+  ROLE_OPENING_TITLE_MAX,
   type CrewNeedsYou,
   type CrewProductPost,
   type OverlayCrew,
@@ -57,11 +59,21 @@ import {
   seatRequestReviewHref,
   seatRequestText,
   seatRequesterName,
-  studioSeatsPath,
+  SEAT_FIELDS,
+  canSaveSeat,
+  moreSettingsLinks,
+  MAKER_SLOTS,
+  makerReserveBoot,
+  makerReserveKey,
+  makerSlotProperty,
+  parseMakerReserve,
+  seatFormPath,
+  seatValuesOf,
   taglineCount,
   viewModeKey,
   viewModeOf,
 } from "@openproduct-web/app/[slug]/maker/model";
+import { consoleWorkspaceViewUrl } from "@openproduct-web/app/[slug]/workspace-view";
 import { MILESTONE_INTENTS } from "@openproduct-web/app/posts/crew-forms";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -92,14 +104,121 @@ const CREW: OverlayCrew = { slug: "ackstack", org: "org_1", profile: "opp_1" };
 describe("no maker element is in any server render", () => {
   it("finds the maker components, so an empty folder cannot read as a pass", () => {
     expect(COMPONENTS.sort()).toEqual([
+      // The form "Edit details" opens, fetched when it is opened.
+      "details-form.tsx",
       "details.tsx",
+      // The gates a visitor's bundle carries for the crew-only pieces.
+      "lazy.tsx",
       "milestones.tsx",
       "needs-you.tsx",
       "new-post.tsx",
       "notice.tsx",
+      // Keeps the room the maker view takes true (`gate.ts`).
+      "reserve.tsx",
+      // The seat form and the crew's seats card, fetched for the crew.
+      "seat-form.tsx",
       "seats.tsx",
       "view-switch.tsx",
     ]);
+  });
+
+  it("a visitor's bundle carries the gates and never the pieces: each crew-only piece is fetched for the crew", () => {
+    const page = code(PAGE);
+    // The page takes the crew-only pieces through the gates…
+    expect(page).toContain('import { EditPostLink, MilestonesManager, NeedsYou, NewPostRow, ViewSwitch } from "./maker/lazy";');
+    for (const file of ["view-switch", "needs-you", "new-post", "milestones", "details-form", "seat-form", "model", "act"]) {
+      expect([file, new RegExp(`from "\\./maker/${file}"`).test(page)]).toEqual([file, false]);
+    }
+    // …and each gate asks `useMaker` before it fetches anything.
+    const gates = code(`${MAKER_DIR}/lazy.tsx`);
+    expect(gates.match(/React\.lazy\(\(\) =>\s*import\("\.\/(view-switch|needs-you|new-post|milestones)"\)/g)).toHaveLength(5);
+    expect(gates).not.toMatch(/^import .* from "\.\/(view-switch|needs-you|new-post|milestones|model|act)";$/m);
+    expect(gates.match(/if \(!managing\) return null;/g)).toHaveLength(4);
+    expect(gates).toContain("if (crew === null) return null;");
+    expect(gates.match(/<React\.Suspense fallback=\{null\}>/g)).toHaveLength(5);
+    // The two files that draw something for a visitor as well (the pitch,
+    // "Take the seat") fetch their crew-only halves the same way.
+    expect(code(`${MAKER_DIR}/details.tsx`)).toContain('React.lazy(() => import("./details-form")');
+    expect(code(`${MAKER_DIR}/seats.tsx`).match(/React\.lazy\(\(\) => import\("\.\/seat-form"\)/g)).toHaveLength(2);
+    // What every visitor's bundle imports of the maker view's rules is the
+    // small file, not the whole of them.
+    for (const eager of ["use-maker.ts", "notice.tsx", "seats.tsx", "details.tsx", "lazy.tsx", "reserve.tsx"]) {
+      expect([eager, /from "\.\/(model|act)"/.test(code(`${MAKER_DIR}/${eager}`))]).toEqual([eager, false]);
+    }
+    expect(code(`${MAKER_DIR}/model.ts`)).toContain('export * from "./gate";');
+    expect(code(`${MAKER_DIR}/gate.ts`)).not.toMatch(/from "\.\/|from "\.\.\//);
+  });
+
+  it("holds the maker view's room from the first paint on a later visit, and gives it back when it is not the crew's page", () => {
+    // The slots: empty in every visitor's page, around the pieces that push
+    // what is under them down.
+    expect([...MAKER_SLOTS]).toEqual(["needs-you", "post", "milestones"]);
+    const page = code(PAGE);
+    expect(page.match(/<MakerSlot name="(needs-you|post|milestones)">/g)).toEqual([
+      '<MakerSlot name="needs-you">',
+      '<MakerSlot name="post">',
+      '<MakerSlot name="milestones">',
+      '<MakerSlot name="needs-you">',
+      '<MakerSlot name="milestones">',
+    ]);
+    expect(page).toContain('<div data-maker-slot={name} className="maker-slot" style={{ minHeight: `var(${makerSlotProperty(name)}, 0px)` }}>');
+    expect(makerSlotProperty("needs-you")).toBe("--maker-needs-you");
+    const css = readFileSync(resolve(APP, "../styles/globals.css"), "utf-8");
+    expect(css).toMatch(/\.maker-slot:empty \{\s*display: none;\s*\}/);
+    expect(css).toMatch(/:root\[data-maker-reserved\] \.maker-slot:empty \{\s*display: block;\s*\}/);
+
+    // The memory: this browser's own, per product, the known slots only.
+    expect(makerReserveKey("ackstack")).toBe("openproduct.maker.ackstack");
+    expect(parseMakerReserve('{"needs-you":164.4,"post":68,"milestones":0,"other":900,"x":"y"}')).toEqual({ "needs-you": 164, post: 68 });
+    expect(parseMakerReserve('{"post":99999}')).toEqual({});
+    for (const junk of [null, undefined, "", "not json", "[]", "7"]) expect(parseMakerReserve(junk)).toEqual({});
+
+    // The boot script: the same text for every visitor of a product's page,
+    // which sets nothing unless the session hint says signed in — and holds
+    // no `<`, so nothing in it can close the tag it is written into.
+    const boot = makerReserveBoot("ackstack");
+    expect(boot).toContain('localStorage.getItem("openproduct.maker.ackstack")');
+    expect(boot).toContain('r.classList.contains("op-signed-in")');
+    expect(boot).toContain('r.setAttribute("data-maker-reserved","ackstack")');
+    expect(boot).not.toContain("<");
+    expect(() => new Function(boot)).not.toThrow();
+    // Run against a root that is signed in and has a memory: the room is held.
+    const run = (signedIn: boolean, stored: string | null) => {
+      const props: Record<string, string> = {};
+      const attrs: Record<string, string> = {};
+      const root = {
+        classList: { contains: (name: string) => signedIn && name === "op-signed-in" },
+        style: { setProperty: (name: string, value: string) => void (props[name] = value) },
+        setAttribute: (name: string, value: string) => void (attrs[name] = value),
+      };
+      new Function("document", "localStorage", boot)({ documentElement: root }, { getItem: () => stored });
+      return { props, attrs };
+    };
+    expect(run(true, '{"needs-you":164,"post":68}')).toEqual({
+      props: { "--maker-needs-you": "164px", "--maker-post": "68px" },
+      attrs: { "data-maker-reserved": "ackstack" },
+    });
+    // A visitor (no hint), a browser with no memory, and a memory that is
+    // not one: nothing is set.
+    expect(run(false, '{"needs-you":164}')).toEqual({ props: {}, attrs: {} });
+    expect(run(true, null)).toEqual({ props: {}, attrs: {} });
+    expect(run(true, '{"needs-you":"tall","evil":50,"post":-4}')).toEqual({ props: {}, attrs: {} });
+    expect(run(true, "{{{")).toEqual({ props: {}, attrs: {} });
+    // The script is drawn by a server component of its own, for a slug only.
+    const bootFile = code("[slug]/reserve-boot.tsx");
+    expect(bootFile).not.toContain('"use client"');
+    expect(bootFile).toContain("if (!/^[A-Za-z0-9-]{1,64}$/.test(slug)) return null;");
+    expect(bootFile).toContain("dangerouslySetInnerHTML={{ __html: makerReserveBoot(slug) }}");
+    expect(page).toContain("<MakerReserveBoot slug={slug} />");
+
+    // The sync: nothing is touched until the overlay has answered; anybody
+    // but the crew on Manage has the memory forgotten and the room released.
+    const sync = code(`${MAKER_DIR}/reserve.tsx`);
+    expect(sync).toContain('const answered = useOverlay(ids).status !== "pending";');
+    expect(sync).toContain("if (!answered) return;");
+    expect(sync).toMatch(/if \(!managing\) \{\s*remember\(slug, \{\}\);\s*release\(root\);\s*return;\s*\}/);
+    expect(sync).toContain("return () => release(document.documentElement);");
+    expect(page).toContain("<MakerReserve slug={slug} />");
   });
 
   it("makes every one of them a client component gated on useMaker", () => {
@@ -134,7 +253,9 @@ describe("no maker element is in any server render", () => {
       "needs-you.tsx": ["if (!managing || needsYouEmpty(needsYou)) return null;"],
       "new-post.tsx": ["if (!managing) return null;"],
       "milestones.tsx": ["if (!managing || milestones === null) return null;"],
-      "seats.tsx": ["if (!managing || crew === null) return null;", "if (managing && crew !== null) {"],
+      // Add a seat, the seat's form, the starter card — and "Edit seat",
+      // which replaces the visitor's control only for the crew.
+      "seats.tsx": ["if (!managing) return null;", "if (managing) {"],
       "notice.tsx": ["if (!isCrew || line === null) return null;"],
       "details.tsx": ["if (!managing || editing) return null;", "if (editing) {"],
     };
@@ -146,6 +267,10 @@ describe("no maker element is in any server render", () => {
     }
     // `editing` is only ever true while managing.
     expect(code(`${MAKER_DIR}/use-maker.ts`)).toContain("editing: managing && editing.has(slug),");
+    // `seatForm` (which seat's form is open) likewise.
+    expect(code(`${MAKER_DIR}/use-maker.ts`)).toContain("seatForm: managing ? (seatForms.get(slug) ?? null) : null,");
+    expect(code(`${MAKER_DIR}/seats.tsx`).split("if (!managing) return null;").length - 1).toBe(3);
+    expect(code(`${MAKER_DIR}/seat-form.tsx`).split("if (!managing) return null;").length - 1).toBe(2);
     // Both "Edit post" and "New post" are behind the same gate.
     expect(code(`${MAKER_DIR}/new-post.tsx`).split("if (!managing) return null;").length - 1).toBe(2);
   });
@@ -191,13 +316,24 @@ describe("no maker element is in any server render", () => {
       ["CrewNoticeLine", "slug={slug}"],
       ["NeedsYou", "slug={slug}"],
       ["NewPostRow", "slug={slug}"],
-      ["AddSeatLink", "slug={slug}"],
+      ["SeatsStarter", "slug={slug}"],
     ] as const) {
       const uses = page.match(new RegExp(`<${component}\\b[^>]*>`, "g")) ?? [];
       expect([component, uses.length > 0]).toEqual([component, true]);
       for (const use of uses) {
         expect([component, use]).toEqual([component, `<${component} ${props} />`]);
       }
+    }
+    // "Add a seat": the slug, and — from the side card — the public address
+    // of the seats, which is on the page for every visitor anyway.
+    expect(page.match(/<AddSeatLink\b[^>]*>/g)).toEqual([
+      '<AddSeatLink slug={slug} href={idea ? "#people-wanted" : `/${slug}/crew#people-wanted`} />',
+      "<AddSeatLink slug={slug} />",
+    ]);
+    // The seat form's slot: the seat's own public words (the row beside it
+    // draws the same ones), and never the workspace's or the listing's id.
+    for (const use of page.match(/<SeatFormSlot\b[\s\S]*?\/>/g) ?? []) {
+      expect([use, /org|profile\b|crew\./.test(use)]).toEqual([use, false]);
     }
     expect(page).toMatch(/<MakerHeaderActions slug=\{slug\} look="(shipping|idea)" \/>/);
     // The milestone manager is on the About tab, and on an idea's page —
@@ -221,12 +357,17 @@ describe("no maker element is in any server render", () => {
 
   it("draws the pitch for everybody and the form for the crew, from one component", () => {
     const details = code(`${MAKER_DIR}/details.tsx`);
-    const pitch = details.slice(details.indexOf("export function ProductPitch("), details.indexOf("function DetailsForm("));
+    const pitch = details.slice(details.indexOf("export function ProductPitch("), details.indexOf("export function MakerHeaderActions("));
     // Not editing — the server, every visitor, the crew on Visitor — is the
-    // paragraph.
+    // paragraph (or nothing, for a product with no pitch).
     expect(pitch).toContain("const shown = savedTagline === undefined ? tagline : savedTagline;");
-    expect(pitch).toContain("if (!shown) return null;");
-    expect(pitch).toContain("<p data-product-pitch className={PITCH_CLASS[look]}>");
+    expect(pitch).toMatch(/const pitch = shown \? \(\s*<p data-product-pitch className=\{PITCH_CLASS\[look\]\}>/);
+    expect(pitch).toMatch(/\) : null;\s*if \(editing\) \{/);
+    expect(pitch.trimEnd().endsWith("return pitch;\n}")).toBe(true);
+    // Editing: the form, fetched when it is opened — and the pitch stays
+    // where it is until the form has arrived.
+    expect(pitch).toContain("<React.Suspense fallback={pitch}>");
+    expect(pitch).toContain('<DetailsForm slug={slug} tagline={shown ?? ""} tryUrl={tryUrl ?? ""} look={look} />');
     expect(code(`${MAKER_DIR}/use-maker.ts`)).toContain("savedTagline: crew === null ? undefined : savedTaglines.get(slug),");
   });
 });
@@ -258,7 +399,8 @@ describe("the Manage / Visitor switch", () => {
     expect(gate).toContain("window.sessionStorage.setItem(viewModeKey(slug), mode);");
     expect(gate).not.toContain("localStorage");
     // Leaving Manage closes the edit form: Visitor is the public page.
-    expect(gate).toContain('if (mode === "visitor") editing.delete(slug);');
+    // …and the seat form with it.
+    expect(gate).toMatch(/if \(mode === "visitor"\) \{\s*editing\.delete\(slug\);\s*seatForms\.delete\(slug\);\s*\}/);
   });
 
   it("is drawn into the header's one named slot, left of the search, by the crew's browser", () => {
@@ -313,10 +455,24 @@ describe("Needs you: a seat request is reviewed on Orunbase", () => {
 
   it("offers one control on a request, and it is a link to Orunbase", () => {
     expect(SEAT_REQUEST_ACTION).toBe("Review on Orunbase");
-    expect(seatRequestReviewHref("https://console.example/", request)).toBe("https://console.example/orgs?request=jrq_1");
+    // WHERE IT LANDS: the product's workspace on the console —
+    // `{console}/view/{org}?from=openproduct`, the landing the seam pins
+    // (edge S12). Not `/orgs?request=…`: the console has no route that opens
+    // one join request and ignores that query, so the link promised a place
+    // it did not go to.
+    expect(seatRequestReviewHref("https://console.example/", { org: "org_abc123" })).toBe(
+      "https://console.example/view/org_abc123?from=openproduct",
+    );
+    expect(seatRequestReviewHref("https://console.example", { org: "org_abc123" })).toBe(
+      consoleWorkspaceViewUrl("https://console.example", "org_abc123"),
+    );
+    const model = code(`${MAKER_DIR}/model.ts`);
+    expect(model).toContain("return consoleWorkspaceViewUrl(origin, crew.org);");
+    expect(model).not.toContain("/orgs?");
     // Nothing to link to: no link, rather than one that goes nowhere.
-    expect(seatRequestReviewHref("", request)).toBeNull();
-    expect(seatRequestReviewHref("https://console.example", { requestRef: null })).toBeNull();
+    expect(seatRequestReviewHref("", { org: "org_abc123" })).toBeNull();
+    expect(seatRequestReviewHref("https://console.example", null)).toBeNull();
+    expect(seatRequestReviewHref("https://console.example", { org: "not a ref" })).toBeNull();
   });
 
   it("has no Accept and no Decline anywhere on the product page", () => {
@@ -330,7 +486,7 @@ describe("Needs you: a seat request is reviewed on Orunbase", () => {
     }
     const needs = code(`${MAKER_DIR}/needs-you.tsx`);
     expect(needs).toContain("{SEAT_REQUEST_ACTION}");
-    expect(needs).toContain("const review = seatRequestReviewHref(origin, request);");
+    expect(needs).toContain("const review = seatRequestReviewHref(origin, crew);");
     // And it writes nothing: the block only reads.
     expect(needs).not.toMatch(/crewWrite|method="post"|<form|<button/);
   });
@@ -382,7 +538,7 @@ describe("Needs you: a seat request is reviewed on Orunbase", () => {
 describe("Edit details: the pitch and the Try it address, never the name", () => {
   it("sends the tagline and tryUrl, and no slug", () => {
     expect([...PROFILE_FORM_FIELDS]).toEqual(["tagline", "tryUrl"]);
-    const details = code(`${MAKER_DIR}/details.tsx`);
+    const details = code(`${MAKER_DIR}/details-form.tsx`);
     expect(details).toContain('crewWrite<unknown>(slug, "profile", { tagline: pitch.trim(), tryUrl: address.trim() })');
     expect(details).toContain('action={manageRoute(slug, "profile")}');
     expect(details).toContain('name="tagline"');
@@ -393,11 +549,17 @@ describe("Edit details: the pitch and the Try it address, never the name", () =>
   });
 
   it("counts the pitch down from core's limit and will not save past it", () => {
-    expect(TAGLINE_LIMIT).toBe(200);
-    // The same number core enforces.
-    expect(readFileSync(resolve(REPO, "core/src/handlers/profiles.ts"), "utf-8")).toContain(
-      `const MAX_TAGLINE = ${TAGLINE_LIMIT};`,
-    );
+    // ONE NUMBER, in the contract: core refuses by it and this counter counts
+    // down from it. 200 — core's limit, kept, because taglines written before
+    // the redesign run past the board's 120.
+    expect(PRODUCT_TAGLINE_MAX).toBe(200);
+    expect(TAGLINE_LIMIT).toBe(PRODUCT_TAGLINE_MAX);
+    expect(code(`${MAKER_DIR}/model.ts`)).toContain("export const TAGLINE_LIMIT = PRODUCT_TAGLINE_MAX;");
+    const core = readFileSync(resolve(REPO, "core/src/handlers/profiles.ts"), "utf-8");
+    expect(core).toContain("const MAX_TAGLINE = PRODUCT_TAGLINE_MAX;");
+    // Neither side keeps a literal of its own to drift.
+    expect(core).not.toMatch(/const MAX_TAGLINE = \d/);
+    expect(code(`${MAKER_DIR}/model.ts`)).not.toMatch(/TAGLINE_LIMIT = \d/);
     expect(taglineCount("")).toEqual({ label: "200 left", over: false });
     expect(taglineCount("x".repeat(200))).toEqual({ label: "0 left", over: false });
     expect(taglineCount("x".repeat(203))).toEqual({ label: "3 over", over: true });
@@ -407,7 +569,7 @@ describe("Edit details: the pitch and the Try it address, never the name", () =>
   });
 
   it("has Save and Cancel, shows a refused field in red, and shows the saved pitch at once", () => {
-    const details = code(`${MAKER_DIR}/details.tsx`);
+    const details = code(`${MAKER_DIR}/details-form.tsx`);
     expect(details).toMatch(/>\s*Save\s*<\/button>/);
     expect(details).toMatch(/>\s*Cancel\s*<\/button>/);
     expect(details).toContain("disabled={busy || !canSaveDetails(pitch)}");
@@ -507,11 +669,98 @@ describe("milestones, managed", () => {
 });
 
 describe("seats and the quiet line", () => {
-  it("sends Add a seat and Edit seat to the studio's People step, with the overlay's ids", () => {
-    expect(studioSeatsPath(CREW)).toBe("/studio/org_1/opp_1/people");
-    const seats = code(`${MAKER_DIR}/seats.tsx`);
-    expect(seats.split("href={studioSeatsPath(crew)}").length - 1).toBe(2);
+  it("Add a seat and Edit seat open the seat's form in place, on the Crew tab", () => {
+    // The controls (and the visitor's own) are in `seats.tsx`; the form they
+    // open is fetched for the crew from `seat-form.tsx`.
+    const seats = code(`${MAKER_DIR}/seats.tsx`) + code(`${MAKER_DIR}/seat-form.tsx`);
+    // A seat is a role opening: a role, what they'd do, the time. Not the
+    // Help wanted post's fields.
+    expect(SEAT_FIELDS.map((field) => [field.name, field.label, field.required])).toEqual([
+      ["title", "Role", true],
+      ["description", "What they'd do", false],
+      ["commitment", "Time", false],
+    ]);
+    expect(SEAT_FIELDS[0]!.max).toBe(ROLE_OPENING_TITLE_MAX);
+    expect(seatValuesOf(null)).toEqual({ title: "", description: "", commitment: "" });
+    expect(seatValuesOf({ title: "Advisor", description: null, commitment: "2h a week" })).toEqual({
+      title: "Advisor",
+      description: "",
+      commitment: "2h a week",
+    });
+    expect(canSaveSeat({ title: "Advisor", description: "", commitment: "" })).toBe(true);
+    expect(canSaveSeat({ title: "  ", description: "x", commitment: "" })).toBe(false);
+    expect(canSaveSeat({ title: "x".repeat(ROLE_OPENING_TITLE_MAX + 1), description: "", commitment: "" })).toBe(false);
+
+    // The two controls open the form (a store the header's switch shares),
+    // and nothing here goes to the studio any more.
+    expect(seats).toContain("onClick={() => setSeatForm(slug, NEW_SEAT)}");
+    expect(seats).toContain("onClick={() => setSeatForm(slug, openingId)}");
+    expect(seats).not.toContain("/studio");
     expect(seats).toContain("Add a seat");
+    expect(seats).toContain("Edit seat");
+    // The form is a real form on the crew's own route, and every act goes
+    // through it: add, edit, close, delete.
+    expect(manageRoute("ackstack", "seats")).toBe("/ackstack/manage/seats");
+    expect(seats).toContain('action={manageRoute(slug, "seats")}');
+    expect(seats).toContain('crewWrite<RoleOpeningWriteAnswer | { deleted: boolean }>(slug, "seats", fields)');
+    expect(seats).toContain('{ intent: "create", ...trimmed(values) }');
+    expect(seats).toContain('{ intent: "update", seat: seat.id, ...trimmed(values), status: "open" }');
+    expect(seats).toContain('{ intent: "update", seat: seat.id, ...trimmed(values), status: "closed" }');
+    expect(seats).toContain('{ intent: "delete", seat: seat.id }');
+    // Delete is behind a confirm, and it is the form's one red control.
+    expect(seats).toMatch(/confirming \? \([\s\S]*?bg-destructive[\s\S]*?Delete seat/);
+    // No id of the product is sent: the handler resolves both from the slug.
+    expect(seats).not.toMatch(/crew\.org|crew\.profile|name="org"|name="profile"/);
+    // Crew only, on Manage: every piece returns nothing otherwise.
+    for (const piece of ["AddSeatLink", "SeatFormSlot", "SeatsStarter", "SeatFormSlotBody", "SeatsStarterBody"]) {
+      const source = seats.slice(seats.indexOf(`export function ${piece}(`));
+      expect([piece, /if \(!managing\) return null;/.test(source.slice(0, 900))]).toEqual([piece, true]);
+    }
+  });
+
+  it("opening a seat says the draft Help wanted post is ready, with the link to continue it", () => {
+    const seats = code(`${MAKER_DIR}/seat-form.tsx`);
+    expect(seats).toContain('offered: "offeredPostId" in answer ? answer.offeredPostId : null');
+    expect(seats).toContain("{OFFERED_POST_LABEL}");
+    expect(seats).toContain("href={continuePostPath(slug, done.offered)}");
+  });
+
+  it("the form is where the seats are: the Crew tab, or an idea's one page; other pages link there and open it", () => {
+    expect(seatFormPath("ackstack", false)).toBe("/ackstack/crew#people-wanted");
+    expect(seatFormPath("beacon24", true)).toBe("/beacon24#people-wanted");
+    const page = code(PAGE);
+    // Under each seat's own row, and once at the end of the card for a new one.
+    expect(page).toContain("seat={{ id: role.id, title: role.title, description: role.description, commitment: role.commitment }}");
+    expect(page).toContain("<SeatFormSlot slug={slug} seat={null} idea={idea} />");
+    // The side card's "Add a seat" and "Edit" are links to it.
+    expect(page).toContain('<AddSeatLink slug={slug} href={idea ? "#people-wanted" : `/${slug}/crew#people-wanted`} />');
+    expect(code(`${MAKER_DIR}/seats.tsx`)).toContain("href={seatFormPath(slug, idea)}");
+    // A page with no open seat has no public card; the crew still gets one.
+    expect(page).toContain("if (openRoles.length === 0 && !always) return <SeatsStarter slug={slug} />;");
+  });
+
+  it("More settings is one entry, closed until pressed, built in the crew's browser from the overlay's ids", () => {
+    expect(moreSettingsLinks(CREW)).toEqual([
+      { label: "Settings", href: "/studio/org_1/opp_1/settings" },
+      { label: "Details", href: "/studio/org_1/opp_1/details" },
+      { label: "Media", href: "/studio/org_1/opp_1/media" },
+      { label: "Topics", href: "/studio/org_1/opp_1/topics" },
+      { label: "People", href: "/studio/org_1/opp_1/people" },
+      { label: "Launches", href: "/studio/org_1/opp_1/launches" },
+      { label: "Discussions", href: "/studio/org_1/opp_1/discussions" },
+    ]);
+    const model = code(`${MAKER_DIR}/model.ts`);
+    expect(model).toContain("const base = listingBasePath(crew.org, crew.profile);");
+    // No literal studio address in the page's source: the routes suite
+    // forbids one on a public page, and the ids are the overlay's.
+    expect(model).not.toMatch(/["`]\/studio/);
+    const details = code(`${MAKER_DIR}/details-form.tsx`);
+    expect(details).toContain("More settings");
+    expect(details).toContain("aria-expanded={open}");
+    expect(details).toContain("if (crew === null) return null;");
+    expect(details).toContain("{open ? (");
+    expect(details).toContain("moreSettingsLinks(crew).map((link) => (");
+    expect(details.match(/<MoreSettings slug=\{slug\} \/>/g)).toHaveLength(1);
   });
 
   it("turns ?notice= and ?error= into one sentence from the handlers' vocabulary, in the browser", () => {

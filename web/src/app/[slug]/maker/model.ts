@@ -18,7 +18,11 @@ import {
   MILESTONE_SUMMARY_MAX,
   MILESTONE_TITLE_MAX,
   PRODUCT_POST_KIND_LABELS,
+  PRODUCT_TAGLINE_MAX,
+  ROLE_OPENING_TITLE_MAX,
   composePostPagePath,
+  listingBasePath,
+  listingSettingsPath,
   type AuthoredProductPostKind,
   type CrewNeedsYou,
   type CrewProductPost,
@@ -28,52 +32,20 @@ import {
 } from "@openproduct/contracts";
 
 import { postHeadline } from "../../posts/blocks";
+import { consoleWorkspaceViewUrl } from "../workspace-view";
 
-// ─── the Manage / Visitor switch ───────────────────────────────────────────
-
-/** `manage` shows the maker's controls; `visitor` shows the crew the public
- *  page exactly as everybody else gets it. */
-export const VIEW_MODES = ["manage", "visitor"] as const;
-export type ViewMode = (typeof VIEW_MODES)[number];
-
-export const VIEW_MODE_LABELS: Record<ViewMode, string> = {
-  manage: "Manage",
-  visitor: "Visitor",
-};
-
-/** The switch's accessible name (boards `Product`, `PhoneProduct`). */
-export const VIEW_SWITCH_LABEL = "View this page as";
-
-/** Where the header keeps the switch: the one named slot in `top-panel.tsx`. */
-export const VIEW_SWITCH_SLOT_ID = "page-view-switch";
-
-/** The session key the choice is remembered under: one per product. */
-export function viewModeKey(slug: string): string {
-  return `openproduct.view.${slug}`;
-}
-
-/** A stored value as a mode. Anything else is `manage`: the crew's default. */
-export function viewModeOf(stored: string | null | undefined): ViewMode {
-  return stored === "visitor" ? "visitor" : "manage";
-}
-
-/**
- * Whether the maker's controls draw. Both halves are required: the overlay
- * said this visitor is on the crew, and the switch is on Manage. "Visitor"
- * hides every maker element, so the crew sees the public page.
- */
-export function isManaging(crew: OverlayCrew | null, mode: ViewMode): boolean {
-  return crew !== null && mode === "manage";
-}
+// The switch, the gate and the two addresses a gate links to live in
+// `gate.ts` — the part every visitor's bundle carries. Everything below is
+// fetched for the crew only.
+export * from "./gate";
 
 // ─── edit details ──────────────────────────────────────────────────────────
 
 /**
- * The one-line pitch's limit. Core's own (`MAX_TAGLINE` in
- * `core/src/handlers/profiles.ts`); the counter counts down from it and core
- * refuses anything longer with a field error either way.
+ * The one-line pitch's limit: the contract's `PRODUCT_TAGLINE_MAX`, the same
+ * constant core refuses by. The counter counts down from it.
  */
-export const TAGLINE_LIMIT = 200;
+export const TAGLINE_LIMIT = PRODUCT_TAGLINE_MAX;
 
 /** `12 left` / `3 over` — the counter beside the pitch field. */
 export function taglineCount(value: string): { label: string; over: boolean } {
@@ -123,12 +95,6 @@ export function newPostKinds(slug: string): readonly NewPostKind[] {
 /** Every kind a maker writes has a pill. */
 export const NEW_POST_AUTHORED: readonly AuthoredProductPostKind[] = AUTHORED_PRODUCT_POST_KINDS;
 
-/** The builder, opened on a post the crew already has (a draft to continue,
- *  or a published post to edit). */
-export function continuePostPath(slug: string, postId: string): string {
-  return `${composePostPagePath(slug)}?draft=${encodeURIComponent(postId)}`;
-}
-
 // ─── needs you ─────────────────────────────────────────────────────────────
 
 /** The block's label, and what a screen reader is told about who sees it. */
@@ -144,14 +110,24 @@ export const NEEDS_YOU_ARIA = "Needs you, visible to the crew only";
 export const SEAT_REQUEST_ACTION = "Review on Orunbase";
 
 /**
- * Where a seat request is reviewed: the Orunbase console, carrying the
- * request's reference. Null when there is nothing to link to (no console
- * origin configured, or the request has no reference yet).
+ * Where a seat request is reviewed: THE PRODUCT'S WORKSPACE on the Orunbase
+ * console — `{console}/view/{org}?from=openproduct`, the workspace landing
+ * the seam pins (edge S12, `consoleWorkspaceViewUrl`).
+ *
+ * NOT AN ADDRESS OF THE REQUEST ITSELF. The console publishes no route that
+ * opens one join request, and a query it ignores (`/orgs?request=…`, as this
+ * was) is a link that promises a place and lands somewhere else. The
+ * workspace is the real address this site can build: the crew member opens
+ * it signed in to the console and decides the request there.
+ *
+ * `org` is the workspace's console ref, from the overlay's crew answer in
+ * the crew's own browser. Null when there is nothing to link to (no console
+ * origin configured, or no workspace ref).
  */
-export function seatRequestReviewHref(consoleOrigin: string, request: Pick<CrewSeatRequest, "requestRef">): string | null {
-  const origin = consoleOrigin.trim().replace(/\/+$/, "");
-  if (origin.length === 0 || !request.requestRef) return null;
-  return `${origin}/orgs?${new URLSearchParams({ request: request.requestRef }).toString()}`;
+export function seatRequestReviewHref(consoleOrigin: string, crew: Pick<OverlayCrew, "org"> | null): string | null {
+  const origin = consoleOrigin.trim();
+  if (origin.length === 0 || !crew || !/^org_[A-Za-z0-9]+$/.test(crew.org)) return null;
+  return consoleWorkspaceViewUrl(origin, crew.org);
 }
 
 /** Who asked, as the row names them. */
@@ -209,24 +185,70 @@ export function movedOrder(ids: readonly string[], id: string, step: -1 | 1): st
   return next;
 }
 
-/** What shipping a milestone offers: the draft post core prepared. */
-export const OFFERED_POST_LABEL = "Draft post ready";
-
 // ─── seats ─────────────────────────────────────────────────────────────────
 
 /**
- * Where a seat is added or edited today: the studio's People step. The
- * role-opening write routes are addressed by the workspace and listing ids
- * and are reached only through the studio's own form handler, so the page
- * links there instead of copying that form.
+ * A SEAT IS A ROLE OPENING: a role, what the person would do, the time it
+ * asks for, and whether it is open. It is not the Help wanted post — opening
+ * a seat prepares that post as a draft ("Draft post ready").
+ *
+ * It is added and edited IN PLACE, on the product's Crew tab, through
+ * `POST /{slug}/manage/seats`.
  */
-export function studioSeatsPath(crew: Pick<OverlayCrew, "org" | "profile">): string {
-  return `/studio/${encodeURIComponent(crew.org)}/${encodeURIComponent(crew.profile)}/people`;
+export interface SeatField {
+  readonly name: "title" | "description" | "commitment";
+  readonly label: string;
+  readonly max: number;
+  readonly required: boolean;
+}
+
+/**
+ * The seat form's three fields. The role's limit is the contract's (core
+ * refuses a longer one); the other two are the form's own bound — core holds
+ * them to none — sized so a seat's words still read as a row.
+ */
+export const SEAT_FIELDS: readonly SeatField[] = [
+  { name: "title", label: "Role", max: ROLE_OPENING_TITLE_MAX, required: true },
+  { name: "description", label: "What they'd do", max: 600, required: false },
+  { name: "commitment", label: "Time", max: 80, required: false },
+];
+
+export type SeatValues = Record<SeatField["name"], string>;
+
+/** A seat's words as the form starts with them. */
+export function seatValuesOf(seat: { title: string; description: string | null; commitment: string | null } | null): SeatValues {
+  return { title: seat?.title ?? "", description: seat?.description ?? "", commitment: seat?.commitment ?? "" };
+}
+
+/** Whether Save is available: a role, and every field inside its limit. */
+export function canSaveSeat(values: SeatValues): boolean {
+  return values.title.trim().length > 0 && SEAT_FIELDS.every((field) => values[field.name].length <= field.max);
+}
+
+// ─── more settings ─────────────────────────────────────────────────────────
+
+/**
+ * What the product page does not do, and where each is done: the listing's
+ * own settings pages. A compact list behind "More settings", built in the
+ * crew's own browser from the ids the overlay answered — never in the cached
+ * page, which carries no address of a maintainer's surface.
+ */
+export function moreSettingsLinks(crew: Pick<OverlayCrew, "org" | "profile">): ReadonlyArray<{ label: string; href: string }> {
+  const base = listingBasePath(crew.org, crew.profile);
+  return [
+    { label: "Settings", href: listingSettingsPath(crew.org, crew.profile) },
+    { label: "Details", href: `${base}/details` },
+    { label: "Media", href: `${base}/media` },
+    { label: "Topics", href: `${base}/topics` },
+    { label: "People", href: `${base}/people` },
+    { label: "Launches", href: `${base}/launches` },
+    { label: "Discussions", href: `${base}/discussions` },
+  ];
 }
 
 // ─── the crew routes ───────────────────────────────────────────────────────
 
 /** The crew's own handlers under the product's address. */
-export function manageRoute(slug: string, route: "profile" | "milestones" | "posts" | "needs-you"): string {
+export function manageRoute(slug: string, route: "profile" | "milestones" | "posts" | "needs-you" | "seats"): string {
   return `/${slug}/manage/${route}`;
 }

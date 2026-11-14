@@ -1,0 +1,41 @@
+{
+  "header": {
+    "top": 0,
+    "left": 0,
+    "width": 365,
+    "height": 68
+  },
+  "sectionBar": {
+    "top": 736,
+    "left": 10,
+    "width": 345,
+    "height": 62
+  },
+  "main": {
+    "top": 68,
+    "left": 0,
+    "width": 365
+  },
+  "h1": {
+    "top": 78,
+    "left": 10,
+    "width": 1,
+    "height": 1
+  },
+  "firstRow": null,
+  "footer": {
+    "left": 0,
+    "width": 365,
+    "height": 344
+  },
+  "themeControl": {
+    "width": 62,
+    "height": 44
+  },
+  "colours": {
+    "body": "oklch(0.967 0.0082 91.48)",
+    "text": "oklch(0.1908 0.002 106.59)",
+    "header": "oklch(1 0 0 / 0.62)",
+    "h1": "oklch(0.1908 0.002 106.59)"
+  }
+}

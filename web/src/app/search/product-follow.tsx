@@ -5,6 +5,7 @@ import * as React from "react";
 import { FOLLOWING_LABEL, FOLLOW_LABEL, followKey } from "@openproduct/contracts";
 
 import { FOCUS } from "../ui/design";
+import { useFollowAnchor } from "../ui/follow-button";
 import { isFollowing, useOverlay } from "../ui/use-overlay";
 import { useToggle } from "../ui/use-toggle";
 
@@ -46,12 +47,13 @@ export function ProductFollow({
   );
   const following = isFollowing(state, key);
   const { pending, onSubmit } = useToggle("follows", key, !following);
-  const target = `${returnTo}#follow-listing-${slug}`;
+  const anchor = useFollowAnchor("listing", slug);
+  const target = `${returnTo}#${anchor}`;
 
   return (
     <form
       onSubmit={onSubmit}
-      id={`follow-listing-${slug}`}
+      id={anchor}
       method="post"
       // Above the row's stretched link, so the press is the button's.
       className="relative z-[1] flex shrink-0"

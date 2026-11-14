@@ -29,6 +29,10 @@ import { readFileSync, readdirSync, statSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
+import { POSTING_DOCS_PATH } from "@openproduct/contracts";
+
+import { FOOTER_LINKS } from "@openproduct-web/app/shell/shell";
+
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const APP_DIR = resolve(__dirname, "../../../web/src/app");
 const read = (file: string) => readFileSync(resolve(APP_DIR, file), "utf-8");
@@ -150,6 +154,32 @@ describe("AG0 — the API is reachable, and that is the whole milestone", () => 
     const links = read("shell/shell.ts");
     expect(links).toMatch(/\{ label: "[^"]+", href: "\/docs" \}/);
     expect(links).toMatch(/\{ label: "[^"]+", href: "\/docs\/checks" \}/);
+  });
+
+  it("names the newest posts' pages from one cheap cached read, and only for products it lists", () => {
+    // OPR-3 — the feed's first page: the same cached document `/` renders,
+    // one read. Not the whole feed (that would be a read per twenty posts on
+    // every build of this document); the rest are reachable from the feed's
+    // later pages and from each product's own page.
+    const sitemap = read("sitemap.xml/route.ts")
+      .replace(/\/\*[\s\S]*?\*\//g, "")
+      .replace(/^\s*\/\/.*$/gm, "");
+    expect(sitemap.match(/fetchFeedPage\(/g)).toHaveLength(1);
+    expect(sitemap).toContain("fetchFeedPage(),");
+    expect(sitemap).toContain("path: productPostPagePath(post.product.slug, post.id).slice(1),");
+    expect(sitemap).toContain("lastmod: post.publishedAt.slice(0, 10),");
+    // A post's page is a page about its product: not listed for a product
+    // crawlers are asked not to index (TS1).
+    expect(sitemap).toContain(".filter((post) => indexableSlugs.has(post.product.slug))");
+    // A feed that could not be read costs the posts, never the sitemap.
+    expect(sitemap).toContain("...(feed?.posts ?? [])");
+    expect(sitemap).not.toMatch(/feed === null/);
+  });
+
+  it("the footer links the post templates' page, at the contract's address", () => {
+    expect(POSTING_DOCS_PATH).toBe("/docs/posting");
+    expect(FOOTER_LINKS.some((link) => link.href === POSTING_DOCS_PATH)).toBe(true);
+    expect(listed.has("docs/posting")).toBe(true);
   });
 
   it("the sitemap names the docs surface and both its pages", () => {

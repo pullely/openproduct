@@ -114,12 +114,12 @@ import { EarlierDiscussions } from "./discussions";
 import { InstallLine } from "./install-line";
 import { LaunchHealth } from "./launch-health";
 import { MakerHeaderActions, ProductPitch, VisitorOnly } from "./maker/details";
-import { MilestonesManager } from "./maker/milestones";
-import { NeedsYou } from "./maker/needs-you";
-import { EditPostLink, NewPostRow } from "./maker/new-post";
+import { EditPostLink, MilestonesManager, NeedsYou, NewPostRow, ViewSwitch } from "./maker/lazy";
+import { makerSlotProperty, type MakerSlotName } from "./maker/gate";
 import { CrewNoticeLine } from "./maker/notice";
-import { AddSeatLink, SeatAction } from "./maker/seats";
-import { ViewSwitch } from "./maker/view-switch";
+import { MakerReserve } from "./maker/reserve";
+import { MakerReserveBoot } from "./reserve-boot";
+import { AddSeatLink, SeatAction, SeatFormSlot, SeatsStarter } from "./maker/seats";
 import { MediaPanel } from "./media-panel";
 import { ObservedRow } from "./observed-row";
 import { SECTION_ATTRIBUTE, SECTION_CARD, SECTION_PROSE } from "./sections";
@@ -301,12 +301,32 @@ function Records({ profile, tab }: { profile: PublicProfile; tab: ProductTab }) 
   );
 }
 
+/**
+ * Where a piece of the maker view draws, when it pushes what is under it
+ * down (`maker/gate.ts`): an empty `div` in the server render — the same for
+ * every visitor, and `display: none` while it is empty — whose height the
+ * crew's own browser holds from the first paint on a later visit.
+ */
+function MakerSlot({ name, children }: { name: MakerSlotName; children: ReactNode }) {
+  return (
+    <div data-maker-slot={name} className="maker-slot" style={{ minHeight: `var(${makerSlotProperty(name)}, 0px)` }}>
+      {children}
+    </div>
+  );
+}
+
 /** The crew's pieces that belong to the page rather than to a card: the
  *  header's switch and the one line a crew form came back with. Both render
  *  nothing on the server. */
 function MakerChrome({ slug }: { slug: string }) {
   return (
     <>
+      {/* The room the maker view took last time, held before the first paint
+          for the crew's own browser (`maker/gate.ts`). The same script text
+          for every visitor: it reads this browser's own memory and nothing
+          else, and sets nothing unless the session hint says signed in. */}
+      <MakerReserveBoot slug={slug} />
+      <MakerReserve slug={slug} />
       <ViewSwitch slug={slug} />
       <CrewNoticeLine slug={slug} />
     </>
@@ -590,8 +610,12 @@ function UpdatesTab({
     <>
       {cursor ? null : (
         <>
-          <NeedsYou slug={slug} />
-          <NewPostRow slug={slug} />
+          <MakerSlot name="needs-you">
+            <NeedsYou slug={slug} />
+          </MakerSlot>
+          <MakerSlot name="post">
+            <NewPostRow slug={slug} />
+          </MakerSlot>
         </>
       )}
       {posts === null ? (
@@ -609,6 +633,7 @@ function UpdatesTab({
           milestoneCounts={profile.milestoneCounts}
           returnTo={cursor ? productUpdatesPagePath(slug, cursor) : `/${slug}`}
           seatHref={seatsHref}
+          headingLevel={2}
         />
       )}
       {cursor || posts?.next ? (
@@ -668,7 +693,9 @@ function AboutTab({ profile, now }: { profile: PublicProfile; now: number }) {
       </section>
 
       <MilestonesCard milestones={profile.milestones ?? []} counts={profile.milestoneCounts}>
-        <MilestonesManager slug={profile.slug} />
+        <MakerSlot name="milestones">
+          <MilestonesManager slug={profile.slug} />
+        </MakerSlot>
       </MilestonesCard>
 
       <DetailsCard tiles={detailTiles(profile)} />
@@ -870,10 +897,14 @@ async function IdeaPage({ read, profile }: { read: ListingRead; profile: PublicP
 
       <div className={BOARD_COLUMNS}>
         <div className={BOARD_STACK}>
-          <NeedsYou slug={slug} />
+          <MakerSlot name="needs-you">
+            <NeedsYou slug={slug} />
+          </MakerSlot>
           {/* The crew's way from an idea to a shipping product: add the
               first milestone, and ship it. Crew only, after load. */}
-          <MilestonesManager slug={slug} standalone />
+          <MakerSlot name="milestones">
+            <MilestonesManager slug={slug} standalone />
+          </MakerSlot>
 
           <section id="about" aria-labelledby="problem-heading" className={TAB_CARD} {...{ [SECTION_ATTRIBUTE]: true }}>
             <CardHead id="problem-heading" title="The problem">
@@ -905,7 +936,7 @@ async function IdeaPage({ read, profile }: { read: ListingRead; profile: PublicP
             </div>
           ) : null}
 
-          <OpenSeatsCard slug={slug} openRoles={openRoles} />
+          <OpenSeatsCard slug={slug} openRoles={openRoles} idea />
 
           {/* NO UPDATES UNTIL SOMETHING IS POSTED. An idea with posts shows
               them; an idea without has no heading over nothing. */}
@@ -925,7 +956,7 @@ async function IdeaPage({ read, profile }: { read: ListingRead; profile: PublicP
           <h2 id="talk" className={`${SIDE_TITLE} mx-1 mt-2 scroll-mt-[80px]`}>
             Talk
           </h2>
-          <TalkCards slug={slug} discussion={discussion} />
+          <TalkCards slug={slug} discussion={discussion} onPage />
         </div>
 
         <aside className={BOARD_STACK}>
@@ -935,6 +966,7 @@ async function IdeaPage({ read, profile }: { read: ListingRead; profile: PublicP
             openRoles={[]}
             // The dashed slot while the crew is only its maker.
             needsBuilder={profile.maintainers.length <= 1}
+            idea
           />
           <InTheOpenCard
             profile={profile}
@@ -1390,16 +1422,23 @@ export function CrewSideCard({
   maintainers,
   openRoles,
   needsBuilder = false,
+  idea = false,
 }: {
   slug: string;
   maintainers: readonly Maintainer[];
   openRoles: readonly PublicRoleOpening[];
   needsBuilder?: boolean;
+  /** An idea's page: its seats are on the page itself, not on a Crew tab. */
+  idea?: boolean;
 }) {
   if (maintainers.length === 0 && openRoles.length === 0 && !needsBuilder) return null;
   return (
     <section id="crew" aria-labelledby="crew-heading" className={`${SIDE_CARD} scroll-mt-[80px]`} {...{ [SECTION_ATTRIBUTE]: true }}>
-      <CardHead id="crew-heading" title="Crew" />
+      {/* The board's head: "Crew", and for the crew "Add a seat" — a link to
+          where the seat form is, drawn after load. */}
+      <CardHead id="crew-heading" title="Crew">
+        <AddSeatLink slug={slug} href={idea ? "#people-wanted" : `/${slug}/crew#people-wanted`} />
+      </CardHead>
       <CrewPeople maintainers={maintainers} />
       {needsBuilder ? (
         <div
@@ -1415,7 +1454,7 @@ export function CrewSideCard({
               <span aria-hidden="true" className={`${SEAT_RING} h-[32px] w-[32px] border-[1.5px]`} />
               <span className="min-w-0 break-words text-[15px] text-foreground">{role.title}</span>
             </span>
-            <SeatAction slug={slug} openingId={role.id} title={role.title} joinLinkRef={role.joinLinkRef} quiet />
+            <SeatAction slug={slug} openingId={role.id} title={role.title} joinLinkRef={role.joinLinkRef} quiet idea={idea} />
           </div>
         ))
       )}
@@ -1438,12 +1477,17 @@ export function OpenSeatsCard({
   slug,
   openRoles,
   always = false,
+  idea = false,
 }: {
   slug: string;
   openRoles: readonly PublicRoleOpening[];
   always?: boolean;
+  /** An idea's page: where a plain seat form comes back to. */
+  idea?: boolean;
 }) {
-  if (openRoles.length === 0 && !always) return null;
+  // Nothing open and no standing card: a visitor's page has none. The crew
+  // still needs somewhere to open the first seat, drawn after load.
+  if (openRoles.length === 0 && !always) return <SeatsStarter slug={slug} />;
   return (
     <section id="people-wanted" aria-labelledby="seats-heading" className={TAB_CARD} {...{ [SECTION_ATTRIBUTE]: true }}>
       <CardHead id="seats-heading" title="Open seats">
@@ -1473,10 +1517,18 @@ export function OpenSeatsCard({
                 ) : null}
               </div>
               <SeatAction slug={slug} openingId={role.id} title={role.title} joinLinkRef={role.joinLinkRef} />
+              {/* The seat's form, for the crew, under its own row. */}
+              <SeatFormSlot
+                slug={slug}
+                idea={idea}
+                seat={{ id: role.id, title: role.title, description: role.description, commitment: role.commitment }}
+              />
             </li>
           ))}
         </ul>
       )}
+      {/* "Add a seat" opens here. */}
+      <SeatFormSlot slug={slug} seat={null} idea={idea} />
     </section>
   );
 }
@@ -1742,11 +1794,11 @@ export function DetailsCard({ tiles }: { tiles: readonly DetailTile[] }) {
             <dd className="m-0 break-words text-[15px] font-semibold text-foreground">
               {tile.href ? (
                 tile.external ? (
-                  <a href={tile.href} rel="noreferrer noopener" className="tap-h text-foreground underline-offset-[3px] hover:underline">
+                  <a href={tile.href} rel="noreferrer noopener" className="tap text-foreground underline-offset-[3px] hover:underline">
                     {tile.value}
                   </a>
                 ) : (
-                  <AppLink href={tile.href} className="tap-h text-foreground underline-offset-[3px] hover:underline">
+                  <AppLink href={tile.href} className="tap text-foreground underline-offset-[3px] hover:underline">
                     {tile.value}
                   </AppLink>
                 )
@@ -1780,12 +1832,16 @@ export function PostList({
   milestoneCounts,
   returnTo,
   seatHref,
+  headingLevel = 3,
 }: {
   slug: string;
   posts: readonly PublicProductPost[];
   milestoneCounts: MilestoneCounts | null | undefined;
   returnTo: string;
   seatHref: string;
+  /** The cards' headline level: `2` straight under the page's `h1` (the
+   *  Updates tab), `3` under a section's own `h2` (an idea's page). */
+  headingLevel?: 2 | 3;
 }) {
   return (
     <>
@@ -1797,6 +1853,7 @@ export function PostList({
             returnTo={returnTo}
             milestoneCounts={milestoneCounts ?? null}
             seatHref={seatHref}
+            headingLevel={headingLevel}
             actions={post.kind === "seat" ? undefined : <EditPostLink slug={slug} postId={post.id} />}
           />
           {post.kind === "seat" ? (
@@ -1824,7 +1881,16 @@ type Discussion = Awaited<ReturnType<typeof fetchDiscussion>>;
  * its public/private switch, its filters and "Mark resolved" are milestone
  * OPR3 and are not drawn — nothing stands in for them.
  */
-export function TalkCards({ slug, discussion }: { slug: string; discussion: Discussion }) {
+export function TalkCards({
+  slug,
+  discussion,
+  onPage = false,
+}: {
+  slug: string;
+  discussion: Discussion;
+  /** An idea's page: the conversation is on the page itself, not on a tab. */
+  onPage?: boolean;
+}) {
   // The count beside the heading is of VISIBLE posts, which is what a
   // reader can see.
   const comments = discussion?.launch?.posts.length ?? 0;
@@ -1863,7 +1929,7 @@ export function TalkCards({ slug, discussion }: { slug: string; discussion: Disc
         </div>
         {/* DQ0b — the comment box FIRST: something to say, and what other
             people said. */}
-        <Comments slug={slug} launch={discussion?.launch ?? null} />
+        <Comments slug={slug} launch={discussion?.launch ?? null} onPage={onPage} />
 
         {/* PP0 (WC-6) — ONE CONVERSATION. What remains is a link list for
             the titled threads about this product, which renders nothing when

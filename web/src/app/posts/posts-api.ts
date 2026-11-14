@@ -3,7 +3,7 @@
 //
 // TWO HALVES IN ONE FILE, AND THEY CANNOT BE CONFUSED FOR EACH OTHER.
 //
-//   public   `fetchFeedPage`, `fetchProductPosts`, `fetchProductPost` go
+//   public   `fetchFeedPage`, `fetchProductPosts`, `fetchAuthorPosts`, `fetchProductPost` go
 //            through `readPublic` (`public-api.ts`): no credential, the 60s
 //            revalidate, `null` for a read that did not answer. There is no
 //            token parameter to pass by accident.
@@ -90,6 +90,22 @@ export async function fetchProductPosts(
 ): Promise<ProductPostsPage | null> {
   return pageOf(
     await readPublic<{ posts?: unknown; next?: unknown }>(PRODUCT_POST_API.ofProduct(slug, cursor), fetchImpl),
+  );
+}
+
+/**
+ * The published posts one person pressed Post on, across every product,
+ * newest first — the Posts section of their page. `handle` is the canonical
+ * (lower-case) one. `null` covers a person with no public page and a failed
+ * read alike; the person's page 404s on its own read before it asks for this.
+ */
+export async function fetchAuthorPosts(
+  handle: string,
+  cursor: string | null = null,
+  fetchImpl?: PublicFetch,
+): Promise<ProductPostsPage | null> {
+  return pageOf(
+    await readPublic<{ posts?: unknown; next?: unknown }>(PRODUCT_POST_API.ofAuthor(handle, cursor), fetchImpl),
   );
 }
 

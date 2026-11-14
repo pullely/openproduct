@@ -54,6 +54,17 @@ export const IDEA_MARK_SHORT = "Idea";
 export const IDEA_NEEDS_BUILDER = "Needs a first builder";
 
 /**
+ * Whether an idea's crew is only its maker: at most one person on it.
+ *
+ * FROM A COUNT SOMEBODY MADE. `null` or anything that is not a number (a
+ * card that predates the count) answers false: "needs a first builder" is a
+ * claim about a crew, and it is not made of one nobody counted.
+ */
+export function needsFirstBuilder(crewCount: number | null | undefined): boolean {
+  return typeof crewCount === "number" && Number.isFinite(crewCount) && crewCount <= 1;
+}
+
+/**
  * The mono mark, in sentence case (the mark's class uppercases it):
  * `Shipping · 3 of 4`, `Shipping` when there is nothing to count,
  * `An idea, not built yet` — or `Idea` when `short`.

@@ -47,7 +47,10 @@ import {
   validatePostBlocks,
   type ProductPostBlock,
   type ProductPostKind,
-} from "./product-posts.js";
+  // The barrel: the templates (the catalogue, the validator) live in
+  // `product-post-blocks.ts`, the rest in `product-posts.ts`, and a consumer
+  // imports both from one place.
+} from "./index.js";
 
 const row = (kind: ProductPostKind) =>
   POST_BLOCK_CATALOGUE[kind].map((b) => `${b.label}${b.required ? "*" : ""} ${b.type} ${b.limit}`);
@@ -397,5 +400,38 @@ describe("the overlay's new questions are bounded like the old ones", () => {
     expect(parseOverlayProductPostIds(null)).toEqual([]);
     const many = Array.from({ length: 300 }, (_, i) => `ppo_${String(i).padStart(32, "0")}`).join(",");
     expect(parseOverlayProductPostIds(many)).toHaveLength(ME_OVERLAY_MAX_IDS);
+  });
+});
+
+describe("the templates are a module of their own, so a page's shell does not carry them", () => {
+  // A bundler keeps or drops a module whole. The ids, kinds, reactions and
+  // addresses are read by every page; the catalogue and the validator by the
+  // post builder and a card's body. While they shared a file, every page
+  // downloaded the templates.
+  it("the catalogue and the validator are in product-post-blocks, and the barrel exports both files", async () => {
+    const { readFileSync } = await import("node:fs");
+    const { fileURLToPath } = await import("node:url");
+    const read = (name: string) => readFileSync(fileURLToPath(new URL(name, import.meta.url)), "utf-8");
+    const light = read("./product-posts.ts");
+    const blocks = read("./product-post-blocks.ts");
+    for (const name of ["POST_BLOCK_CATALOGUE", "validatePostBlocks", "parsePostBlocks", "publishedPostBlocks", "prefilledPostBlocks"]) {
+      expect([name, new RegExp(`export (const|function) ${name}\\b`).test(blocks)]).toEqual([name, true]);
+      expect([name, new RegExp(`export (const|function) ${name}\\b`).test(light)]).toEqual([name, false]);
+    }
+    // The light file takes TYPES from the templates and nothing that runs.
+    expect(light).toContain('import type { ProductPostBlock } from "./product-post-blocks.js";');
+    expect(light).not.toMatch(/^import \{[^}]*\} from "\.\/product-post-blocks\.js";$/m);
+    const barrel = read("./index.ts");
+    expect(barrel).toContain('export * from "./product-posts.js";');
+    expect(barrel).toContain('export * from "./product-post-blocks.js";');
+    // And the package says its modules have no side effects, which is what
+    // lets a bundler leave an unused one out.
+    expect(JSON.parse(read("../package.json")).sideEffects).toBe(false);
+  });
+
+  it("one number for a tagline's length and one for a seat's role, for core and the page alike", async () => {
+    const contracts = await import("./index.js");
+    expect(contracts.PRODUCT_TAGLINE_MAX).toBe(200);
+    expect(contracts.ROLE_OPENING_TITLE_MAX).toBe(120);
   });
 });

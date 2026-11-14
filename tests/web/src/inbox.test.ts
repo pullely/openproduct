@@ -273,8 +273,10 @@ describe("the sentences a reader actually sees", () => {
     expect(inboxHref({ kind: "rank.first", targetKind: "listing", targetRef: "acme-thing" })).toBe(
       "/acme-thing",
     );
+    // The conversation is on the product's Talk tab (OPR-3): its own
+    // address, not the bare page and a forward from it.
     expect(inboxHref({ kind: "post.reply", targetKind: "post", targetRef: "acme-thing" })).toBe(
-      "/acme-thing#discussion",
+      "/acme-thing/talk#discussion",
     );
   });
 

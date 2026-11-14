@@ -51,9 +51,9 @@ export const OPEN_SEATS_LIMIT = 3;
 export function openSeatProducts(
   cards: readonly PublicProfileCard[],
   limit = OPEN_SEATS_LIMIT,
-): Array<{ slug: string; seats: number }> {
+): Array<{ slug: string; seats: number; stage: PublicProfileCard["stage"] }> {
   return orderBuilds(cards, "most-active")
     .filter((card) => card.roleOpeningCount > 0)
     .slice(0, limit)
-    .map((card) => ({ slug: card.slug, seats: card.roleOpeningCount }));
+    .map((card) => ({ slug: card.slug, seats: card.roleOpeningCount, stage: card.stage }));
 }

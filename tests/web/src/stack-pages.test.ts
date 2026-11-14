@@ -113,6 +113,8 @@ describe("the rail cannot offer a value whose page would be empty", () => {
   const card = (slug: string, canonical: string[]): PublicProfileCard => ({
     slug,
     stage: "idea",
+    milestoneCounts: { shipped: 0, total: 0 },
+    crewCount: 1,
     tagline: null,
     stack: canonical,
     stackCanonical: canonical,

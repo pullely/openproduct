@@ -18,7 +18,9 @@ const code = (file: string) =>
     .replace(/^\s*\/\/.*$/gm, "");
 
 // "upvoted" was "leaderboard" until OB7 (#1875) folded the leaderboard into it.
-const ROUTE_KEYS = ["home", "listing", "upvoted", "topic", "maker", "day", "forum", "listing-forum"];
+// "feed" was "home" until openproduct-redesign OPR-3 made `/` the feed of
+// posts; "post" and "idea" are the two pages that milestone added.
+const ROUTE_KEYS = ["feed", "listing", "post", "idea", "upvoted", "topic", "maker", "day", "forum", "listing-forum"];
 
 describe("the snapshot lane is a gate", () => {
   const lane = code("src/snapshots.mjs");
@@ -30,7 +32,11 @@ describe("the snapshot lane is a gate", () => {
     expect(lane).not.toContain("screenshot(");
   });
 
-  it("covers the eight routes, both viewports, both ramps", () => {
+  it("covers the routes — the eight, and OPR-3's three — at both viewports, in both ramps", () => {
+    // The list is the lane's own, key for key: nothing is compared that is
+    // not listed, and no baseline is left behind for a page that moved.
+    expect([...lane.matchAll(/\{ key: "([a-z-]+)", path:/g)].map((m) => m[1]).sort()).toEqual([...ROUTE_KEYS].sort());
+    expect(lane).not.toContain('key: "home"');
     for (const key of ROUTE_KEYS) expect(lane).toContain(`key: "${key}"`);
     expect(lane).toContain("width: 1280");
     expect(lane).toContain("width: 375");

@@ -34,6 +34,7 @@ import {
   encodeProductPostCursor,
   isAuthoredProductPostKind,
   isProductPostReaction,
+  parseHandle,
   parsePostBlocks,
   productPostsPageSize,
   publishedPostBlocks,
@@ -81,6 +82,9 @@ export interface ProductPostHandlerDeps {
     // the public reads
     | "listPublicProductPosts"
     | "listPublicProductPostsForProfile"
+    | "listPublicProductPostsByAuthor"
+    | "getPublicContributor"
+    | "getSubjectsForHandles"
     | "getPublicProductPost"
     | "getPublicProfileId"
     | "listPublicMediaForSlugs"
@@ -139,6 +143,7 @@ export function publicProductPost(
       name: record.slug,
       stage: record.stage,
       logo: logoFor(record.slug),
+      milestoneCounts: { shipped: record.milestoneCounts.shipped, total: record.milestoneCounts.total },
     },
     // The handle IS the gate: non-null only when `/@handle` resolves. The
     // author's subject id stops here (I3).
@@ -250,6 +255,41 @@ export async function handleProductPostsOfProduct(
   if (!parsed.ok) return validationError(requestId, { cursor: ["Not a position this feed issued"] });
   const page = await deps.repo.listPublicProductPostsForProfile(profileId, {
     cursor: parsed.cursor,
+    limit: productPostsPageSize(url.searchParams.get("limit")),
+  });
+  return successResponse(await pageOf(deps, page), requestId);
+}
+
+/**
+ * GET /internal/public/openproduct/people/{handle}/product-posts?cursor=&limit=
+ * — the published posts one person pressed Post on, newest first.
+ *
+ * THE PERSON'S OWN GATE FIRST, the one their page applies: a handle that is
+ * malformed, unknown, released, or belongs to somebody with no public page
+ * answers the same 404, so this read discloses nothing their page does not.
+ * The posts then pass the feed's two predicates in the repository (published,
+ * on a listed product) — a draft is in nobody's list.
+ *
+ * Bounded and paged like the feed: the feed's page size, the feed's cursor.
+ */
+export async function handleProductPostsOfAuthor(
+  _env: Env,
+  url: URL,
+  requestId: string,
+  handle: string,
+  deps: Pick<ProductPostHandlerDeps, "repo">,
+): Promise<Response> {
+  const parsed = parseHandle(handle);
+  if (!parsed.ok) return errorResponse("not_found", "Not found", 404, requestId);
+  const person = await deps.repo.getPublicContributor(parsed.handle);
+  if (!person) return errorResponse("not_found", "Not found", 404, requestId);
+  const subjects = await deps.repo.getSubjectsForHandles([person.handle]);
+  const subjectId = subjects.get(person.handle);
+  if (!subjectId) return errorResponse("not_found", "Not found", 404, requestId);
+  const cursor = cursorOf(url);
+  if (!cursor.ok) return validationError(requestId, { cursor: ["Not a position this feed issued"] });
+  const page = await deps.repo.listPublicProductPostsByAuthor(subjectId, {
+    cursor: cursor.cursor,
     limit: productPostsPageSize(url.searchParams.get("limit")),
   });
   return successResponse(await pageOf(deps, page), requestId);
@@ -428,6 +468,11 @@ function blockFields(
 
 const BLOCKS_SHAPE = ["Must be a list of {block, value}"];
 
+/** Whether two block lists say the same thing, block for block, in order. */
+function sameBlocks(a: readonly ProductPostBlock[], b: readonly ProductPostBlock[]): boolean {
+  return a.length === b.length && a.every((entry, i) => entry.block === b[i]!.block && entry.value === b[i]!.value);
+}
+
 /** GET …/product-posts — the product's posts, drafts included. */
 export async function handleListCrewProductPosts(
   env: Env,
@@ -567,6 +612,14 @@ export async function handleUpdateProductPost(
  * post the seat; an idea post needs neither. A link to something that is not
  * this product's is refused.
  *
+ * A REFUSED POST STILL SAVES WHAT WAS TYPED. Blocks sent with the publish are
+ * written to the draft before the refusal is answered, whenever they pass the
+ * rule a draft is held to — so a form that only knows how to press Post never
+ * loses its text to a missing required block. Here and not in the caller: one
+ * request, one place that decides what the draft holds. Blocks a draft could
+ * not hold either (over a limit, a line with a break) are not written; the
+ * refusal names them.
+ *
  * Publishing stamps `publishedAt`, makes the comment thread, and names the
  * person who pressed Post as the post's author.
  */
@@ -621,7 +674,21 @@ export async function handlePublishProductPost(
       else roleOpeningId = parsed;
     }
   }
-  if (Object.keys(fields).length > 0) return validationError(requestId, fields);
+  if (Object.keys(fields).length > 0) {
+    if (body.blocks !== undefined && blockFields(existing.kind, blocks, "draft") === null && !sameBlocks(existing.blocks, blocks)) {
+      const saved = await deps.repo.updateProductPostBlocks(profileId, postId, blocks);
+      if (saved) {
+        await auditProductWrite(
+          deps,
+          crew.ctx,
+          "openproduct.product_post.updated",
+          `openproduct ${saved.state} ${PRODUCT_POST_KIND_LABELS[saved.kind]} post edited on ${crew.ctx.profile.slug}`,
+          { postId: productPostPublicId(saved.id), kind: saved.kind, state: saved.state },
+        );
+      }
+    }
+    return validationError(requestId, fields);
+  }
 
   const at = (deps.now ?? (() => new Date()))().toISOString();
   const published = await publishDraft(deps as unknown as SelfPostDeps, {

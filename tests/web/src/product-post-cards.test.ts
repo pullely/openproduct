@@ -73,6 +73,7 @@ const code = (file: string) =>
 
 const CARD = "posts/post-card.tsx";
 const CONTROL = "posts/reaction-control.tsx";
+const FOOTER = "posts/post-footer.tsx";
 
 /** One function's body out of the card file, bounded by the next one. */
 function part(name: string, file = CARD): string {
@@ -86,7 +87,7 @@ function part(name: string, file = CARD): string {
 const post = (kind: ProductPostKind, blocks: Array<[string, string]>, over: Partial<PublicProductPost> = {}): PublicProductPost => ({
   id: `ppo_${"0".repeat(31)}1`,
   kind,
-  product: { slug: "ackstack", name: "ackstack", stage: "shipping", logo: null },
+  product: { slug: "ackstack", name: "ackstack", stage: "shipping", logo: null, milestoneCounts: { shipped: 3, total: 4 } },
   author: { handle: "ada", displayName: "Ada Lovelace" },
   blocks: blocks.map(([block, value]) => ({ block, value })),
   publishedAt: "2026-05-30T10:00:00.000Z",
@@ -128,7 +129,9 @@ describe("one card per kind, and the kind is the card's shape", () => {
     const feature = part("FeatureBody");
     expect(feature).toContain("<CheckBadge />");
     expect(feature).toContain('blockText(post.blocks, "what")');
-    expect(feature).toContain("<MilestoneSegments counts={milestoneCounts} />");
+    // The bars: from the page's fresher counts when it has them, else the
+    // post's own — every post carries its product's.
+    expect(feature).toContain("<MilestoneSegments counts={milestoneCounts ?? post.product.milestoneCounts} />");
     expect(feature).toContain("data-post-try");
     expect(feature).toMatch(/Try it\s*<svg/);
 
@@ -153,10 +156,35 @@ describe("one card per kind, and the kind is the card's shape", () => {
     expect(seat).toContain("data-empty-seat");
     expect(seat).toContain("SEAT_RING");
     expect(seat).toContain("Take the seat");
-    expect(seat).toContain("seatHref ?? productSeatsPath(post.product.slug)");
-    expect(productSeatsPath("ackstack")).toBe("/ackstack#people-wanted");
+    expect(seat).toContain("seatHref ?? productSeatsPath(post.product.slug, post.product.stage)");
+    // The address the seats are AT, not one that forwards to it: a shipping
+    // product's Crew tab, an idea's one page. With no stage to go by, the
+    // Crew tab (an idea's page answers its tab addresses with itself).
+    expect(productSeatsPath("ackstack", "shipping")).toBe("/ackstack/crew#people-wanted");
+    expect(productSeatsPath("ackstack")).toBe("/ackstack/crew#people-wanted");
+    expect(productSeatsPath("beacon24", "idea")).toBe("/beacon24#people-wanted");
     // The anchor it points at is on the product page.
     expect(read("[slug]/product-page.tsx")).toContain('id="people-wanted"');
+  });
+
+  it("the headline is a heading at the level the page gives it: h3 in a list, the page's h1 on the post's own page", () => {
+    const card = code("posts/post-card.tsx");
+    // One component draws every kind's headline, and it is the only heading
+    // a card holds.
+    // Whatever comes next in the page's outline: `h2` in a list straight
+    // under the page's `h1` (the feed, a product's Updates), `h3` under a
+    // section's own `h2`. A level is never skipped.
+    expect(card).toContain('const Tag = level === 1 ? "h1" : level === 2 ? "h2" : "h3";');
+    expect(code("feed/feed-cards.tsx")).toContain("headingLevel={2}");
+    expect(code("[slug]/product-page.tsx")).toMatch(/seatHref=\{seatsHref\}\s*headingLevel=\{2\}/);
+    expect(code("[slug]/new/composer.tsx")).toContain("headingLevel={2}");
+    expect(card).toContain("<Tag data-post-title className={className}>");
+    expect(card.match(/<PostTitle level=\{headingLevel\}/g)).toHaveLength(5);
+    expect(card).not.toMatch(/<h[1-6]\b(?![^>]*data-post-title)/);
+    // The default is a list's level.
+    expect(card).toContain("level = 3,");
+    // An idea's quote is the heading on its own page, and a quote in a list.
+    expect(part("IdeaBody")).toMatch(/headingLevel === 1 \? \(\s*<h1\s+data-post-title/);
   });
 
   it("says the kind to a screen reader and never prints it on the card", () => {
@@ -357,7 +385,7 @@ describe("counts are shown only above zero", () => {
     expect(commentCountLine(5)).toBe("5 comments");
     expect(reactionCountLine({ ...none, useful: 1 })).toBe("1 reaction");
     expect(reactionCountLine({ useful: 3, would_use: 2, impressive: 0, curious: 0 })).toBe("5 reactions");
-    const footer = part("PostFooter");
+    const footer = part("PostFooter", FOOTER);
     expect(footer).toContain("const comments = commentCountLine(post.commentCount);");
     expect(footer).toMatch(/\{comments \? \(\s*<AppLink/);
     // With nothing to say the row takes no room.
@@ -366,7 +394,7 @@ describe("counts are shown only above zero", () => {
   });
 
   it("the comment count links to the post's own page", () => {
-    const footer = part("PostFooter");
+    const footer = part("PostFooter", FOOTER);
     expect(footer).toContain("const page = productPostPagePath(post.product.slug, post.id);");
     expect(footer).toContain("href={`${page}#comments`}");
     expect(part("CompactFooter")).toContain("href={`${page}#comments`}");
@@ -446,7 +474,10 @@ describe("nothing personal is in a server render", () => {
     expect(src).not.toMatch(/cookies\(|headers\(|op_session|SESSION_COOKIE|readSession|decodeSession/);
     expect(src).not.toMatch(/from ["'][^"']*\/auth\//);
     // The only client pieces it draws: Follow, the summary, the picker.
-    expect(src).toContain('import { ReactionPicker, ReactionSummary } from "./reaction-control";');
+    // …and the last two are the full card's footer's (`post-footer.tsx`),
+    // which this file does not import.
+    expect(src).not.toMatch(/reaction-control/);
+    expect(code(FOOTER)).not.toMatch(/\buse(State|Effect|Ref|SyncExternalStore|Overlay|Reaction|CrewOf|Toggle)\(/);
   });
 
   it("carries no maker control: Edit, drafts and Needs you are the page's, after load", () => {
@@ -471,7 +502,16 @@ describe("nothing personal is in a server render", () => {
     const card = part("ProductPostCard");
     expect(code(CARD)).toContain('export type PostCardVariant = "feed" | "product" | "person";');
     expect(card).toContain('const compact = variant !== "feed";');
-    expect(card).toContain("<PostFooter post={post} returnTo={props.returnTo} />");
+    // The full card's footer is handed in by the page that draws full cards
+    // (`post-footer.tsx`): it is the one part that imports the reaction
+    // controls, and a page of compact cards must not download them.
+    expect(card).toContain("(props.footer ?? null)");
+    expect(code(CARD)).not.toMatch(/reaction-control|post-footer|<PostFooter/);
+    expect(code(FOOTER)).toContain('import { ReactionPicker, ReactionSummary } from "./reaction-control";');
+    expect(code("feed/feed-cards.tsx")).toContain("footer={<PostFooter post={post} returnTo={returnTo} />}");
+    for (const page of ["[slug]/product-page.tsx", "people/[handle]/page.tsx"]) {
+      expect([page, /post-footer|reaction-control/.test(code(page))]).toEqual([page, false]);
+    }
     // A compact card says its counts in words and has no reaction control.
     expect(part("CompactFooter")).not.toMatch(/ReactionPicker|ReactionSummary/);
     // On a person's list a card names the product it is for.

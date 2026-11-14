@@ -9,6 +9,7 @@ import {
 import {
   forumCategories,
   forumPath,
+  productPostPagePath,
   parseWeekId,
   pricingTally,
   stackTally,
@@ -16,6 +17,7 @@ import {
 } from "@openproduct/contracts";
 
 import { PRODUCT_ORDER_SEGMENTS, productViews, productsPath } from "../feed/products";
+import { fetchFeedPage } from "../posts/posts-api";
 import { SEAT_STAGE_FILTERS, seatsPath } from "../help-wanted/seats";
 
 /**
@@ -44,7 +46,7 @@ export async function GET(request: Request): Promise<Response> {
   const origin = new URL(request.url).origin;
   // Both reads, concurrently: the sitemap is one document and a serial pair
   // of 60s-cached reads would make it twice as slow to build for no benefit.
-  const [projects, people, weeks, topicDoc, days] = await Promise.all([
+  const [projects, people, weeks, topicDoc, days, feed] = await Promise.all([
     // OS1 — the WHOLE catalogue, page by page: the sitemap is the one place
     // every listed product belongs, and a first page is not a sitemap.
     fetchAllDirectoryProjects(),
@@ -62,6 +64,13 @@ export async function GET(request: Request): Promise<Response> {
     // sitemap goes out without them rather than not at all: a day board is
     // reachable from the archive strip regardless.
     fetchBoardDays(),
+    // OPR-3 — the newest posts' own pages, from ONE read: the feed's first
+    // page, the same cached document `/` renders. Not every post there is: a
+    // post is reachable from its product's page and from the feed's later
+    // pages, and walking the whole feed to name them would be a read per
+    // twenty posts on every build of this document. Null is "could not be
+    // read", and the sitemap goes out without posts rather than not at all.
+    fetchFeedPage(),
   ]);
 
   // FAILURE IS A 503, NEVER A PARTIAL SITEMAP. If either read failed we
@@ -78,6 +87,7 @@ export async function GET(request: Request): Promise<Response> {
   }
 
   const topics = topicDoc.topics;
+  const indexableSlugs = new Set(projects.filter((project) => project.indexable).map((project) => project.slug));
   const xml = sitemapXml(origin, [
     // OL2 — R8, kept. `/` changed meaning: it was the faceted directory and
     // is now the launch feed. `sitemapXml` always emits `/` first, so what
@@ -176,6 +186,15 @@ export async function GET(request: Request): Promise<Response> {
       path: `pricing/${entry.value}`,
       lastmod: null,
     })),
+    // OPR-3 — the newest posts (the feed's first page), each at its own
+    // address, for the products a crawler is asked to index (TS1, below):
+    // a post's page is a page about its product.
+    ...(feed?.posts ?? [])
+      .filter((post) => indexableSlugs.has(post.product.slug))
+      .map((post) => ({
+        path: productPostPagePath(post.product.slug, post.id).slice(1),
+        lastmod: post.publishedAt.slice(0, 10),
+      })),
     ...projects
       // TS1 — a listing a crawler is told not to index does not belong in a
       // document whose entire purpose is asking crawlers to index things.

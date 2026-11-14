@@ -248,6 +248,11 @@ const PUBLIC_PRODUCT_POSTS_PATH = "/v1/public/openproduct/product-posts";
 const PUBLIC_PRODUCT_POST_RE = /^\/v1\/public\/openproduct\/product-posts\/(ppo_[0-9a-f]{32})$/;
 const PUBLIC_PROFILE_PRODUCT_POSTS_RE =
   /^\/v1\/public\/openproduct\/projects\/([A-Za-z0-9-]{1,64})\/product-posts$/;
+/** One person's published posts, for the Posts section of their page. The
+ *  handle grammar is CG0's, exactly as the person's own read pins it, and
+ *  `product-posts` is a literal third segment, so it is never a tab. */
+const PUBLIC_PERSON_PRODUCT_POSTS_RE =
+  /^\/v1\/public\/openproduct\/people\/([a-z0-9][a-z0-9-]{0,30}[a-z0-9])\/product-posts$/;
 
 const PUBLIC_DIRECTORY_PATH = "/v1/public/openproduct/projects";
 const PUBLIC_PROFILE_RE = /^\/v1\/public\/openproduct\/projects\/([^/]+)$/;
@@ -423,10 +428,12 @@ function isPublicRoute(pathname: string): boolean {
     PUBLIC_ROSTER_RE.test(pathname) ||
     PUBLIC_THREADS_RE.test(pathname) ||
     PUBLIC_THREAD_RE.test(pathname) ||
-    // OPR-3's product posts: the feed, one post, one product's posts.
+    // OPR-3's product posts: the feed, one post, one product's posts, one
+    // person's posts.
     pathname === PUBLIC_PRODUCT_POSTS_PATH ||
     PUBLIC_PRODUCT_POST_RE.test(pathname) ||
-    PUBLIC_PROFILE_PRODUCT_POSTS_RE.test(pathname)
+    PUBLIC_PROFILE_PRODUCT_POSTS_RE.test(pathname) ||
+    PUBLIC_PERSON_PRODUCT_POSTS_RE.test(pathname)
   );
 }
 
@@ -510,6 +517,7 @@ async function handlePublicRead(
   const publicTopic = PUBLIC_TOPIC_RE.exec(pathname);
   const productPost = PUBLIC_PRODUCT_POST_RE.exec(pathname);
   const productPostsOf = PUBLIC_PROFILE_PRODUCT_POSTS_RE.exec(pathname);
+  const productPostsBy = PUBLIC_PERSON_PRODUCT_POSTS_RE.exec(pathname);
   const target =
     // TS5 — first in the chain because it is an exact path and the fallthrough
     // at the bottom is `PUBLIC_PROFILE_RE.exec(pathname)![1]`, which throws on
@@ -526,6 +534,8 @@ async function handlePublicRead(
           ? `/internal/public/openproduct/product-posts/${productPost[1]}`
           : productPostsOf
             ? `/internal/public/openproduct/projects/${productPostsOf[1]}/product-posts${url.search}`
+            : productPostsBy
+              ? `/internal/public/openproduct/people/${productPostsBy[1]}/product-posts${url.search}`
             : publicCollection
       ? `/internal/public/openproduct/collections/${publicCollection[1]}`
       : pathname === PUBLIC_COLLECTIONS_INDEX_PATH

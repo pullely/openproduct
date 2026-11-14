@@ -81,7 +81,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   if (created.kind === "ok") {
     return NextResponse.redirect(
       new URL(
-        `/studio/${encodeURIComponent(payload.orgId)}/${encodeURIComponent(created.data.profile.id)}?notice=created`,
+        `/studio/${encodeURIComponent(payload.orgId)}/${encodeURIComponent(created.data.profile.id)}/settings?notice=created`,
         request.url,
       ),
       303,
@@ -117,7 +117,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     if (linked.kind === "ok") {
       return NextResponse.redirect(
         new URL(
-          `/studio/${encodeURIComponent(payload.orgId)}/${encodeURIComponent(existing.id)}?notice=linked`,
+          `/studio/${encodeURIComponent(payload.orgId)}/${encodeURIComponent(existing.id)}/settings?notice=linked`,
           request.url,
         ),
         303,

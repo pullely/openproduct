@@ -49,7 +49,8 @@ describe("the stage line under a person's product", () => {
 
   it("the page reads them with the public read — the same bytes for every visitor — and the row draws the line", () => {
     const page = code("people/[handle]/page.tsx");
-    expect(page).toContain("const stages = await readStageLines([");
+    // Read beside the person's posts, both public and cached like the page.
+    expect(page).toMatch(/const \[stages, authored\] = await Promise\.all\(\[\s*readStageLines\(\[/);
     expect(page).toMatch(/^export const revalidate = 60;$/m);
     expect(page).not.toMatch(/readSession|cookies\(|headers\(/);
     expect(code("people/[handle]/product-stages.ts")).toContain("= fetchPublicProfile,");

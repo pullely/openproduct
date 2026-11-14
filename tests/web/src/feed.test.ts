@@ -92,7 +92,10 @@ describe("`/` is the feed, and `/products` lists the products (openproduct-redes
     expect(card).toContain("text-card-title font-semibold");
     // OPR-3 — the stage mark sits where OPR1 put a line of facts (the board
     // has the stage there; a listing had none then).
-    expect(card).toContain("<StageMark stage={card.stage} short />");
+    // …with the product's progress from the card's own counts: "3 OF 4" in
+    // the mark and the bars under it, for a shipping product.
+    expect(card).toContain("<StageMark stage={card.stage} counts={card.milestoneCounts} short />");
+    expect(card).toContain("{!idea ? <MilestoneSegments counts={card.milestoneCounts} /> : null}");
     expect(card).not.toContain("productFacts");
     // Two lines of pitch at most.
     expect(card).toContain("line-clamp-2");
@@ -300,7 +303,8 @@ describe("the row renders an absent fact as absent, never as zero (OPC-C)", () =
     const box = read("ui/comment-box.tsx")
       .replace(/\/\*[\s\S]*?\*\//g, "")
       .replace(/^\s*\/\/.*$/gm, "");
-    expect(box).toContain("`/${slug}#discussion`");
+    // The conversation's own address: the product's Talk tab.
+    expect(box).toContain("`/${slug}/talk#discussion`");
     expect(box).toContain("{count}");
     // No dash and no absence: a zero is rendered as a zero.
     expect(box).not.toContain("—");

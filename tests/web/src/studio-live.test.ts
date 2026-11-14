@@ -317,7 +317,7 @@ describe("the forms did not change", () => {
       // The rows moved into the editor's shared file (openproduct redesign).
       ["[org]/[profile]/sections.tsx", "remove-media"],
       ["[org]/[profile]/editor.tsx", "unpublish"],
-      ["[org]/[profile]/page.tsx", "publish"],
+      ["[org]/[profile]/settings/page.tsx", "publish"],
       ["[org]/[profile]/launches/page.tsx", "schedule"],
       ["[org]/[profile]/details/page.tsx", "repo-check"],
     ] as const) {
@@ -466,7 +466,7 @@ describe("the studio's own links report the click (OPP13's bar)", () => {
     for (const file of [
       "frame.tsx",
       "[org]/[profile]/step-strip.tsx",
-      "[org]/[profile]/page.tsx",
+      "[org]/[profile]/settings/page.tsx",
     ]) {
       const src = code(file);
       expect([file, src.includes("<AppLink")]).toEqual([file, true]);

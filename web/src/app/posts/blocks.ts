@@ -15,6 +15,7 @@ import {
   type PostBlockSpec,
   type ProductPostBlock,
   type ProductPostKind,
+  type ProductStage,
   type PublicProductPost,
 } from "@openproduct/contracts";
 
@@ -114,23 +115,21 @@ export function postSummary(post: Pick<PublicProductPost, "kind" | "blocks">): s
   return id ? blockText(post.blocks, id) : null;
 }
 
-/**
- * IS THIS A PUBLISHED POST? The public reads only ever send published posts,
- * and `PublicProductPost` has no `state`. A crew post (`CrewProductPost`) has
- * one — and a draft handed to a card by mistake must draw NOTHING, on any
- * page, for anybody. So the card asks: a `state` that is not `published`, or
- * no publication date, is not drawn.
- */
-export function isPublishedPost(post: unknown): post is PublicProductPost {
-  if (typeof post !== "object" || post === null) return false;
-  const candidate = post as { state?: unknown; publishedAt?: unknown };
-  if (candidate.state !== undefined && candidate.state !== "published") return false;
-  return typeof candidate.publishedAt === "string" && candidate.publishedAt.length > 0;
-}
+// `isPublishedPost` — the question every list and every card asks before it
+// draws a post — is in `published.ts`: a list that only filters (the feed's)
+// imports that file and not the block catalogue this one reads.
+export { isPublishedPost } from "./published";
 
-/** Where a product's open seats are on its page: "Take the seat" goes here. */
-export function productSeatsPath(slug: string): string {
-  return `/${slug}#people-wanted`;
+/**
+ * Where a product's open seats are: "Take the seat" goes here.
+ *
+ * THE ADDRESS THE SEATS ARE AT, not one that forwards to it. A shipping
+ * product's seats are on its Crew tab; an idea has one page and its seats
+ * are on it. With no stage to go by, the Crew tab — which an idea's page
+ * answers by sending the visitor to itself, fragment kept.
+ */
+export function productSeatsPath(slug: string, stage?: ProductStage | null): string {
+  return stage === "idea" ? `/${slug}#people-wanted` : `/${slug}/crew#people-wanted`;
 }
 
 /** The DOM id a post's card wears, and the fragment that returns to it. */

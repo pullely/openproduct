@@ -43,6 +43,8 @@ function card(slug: string, pricing: string | null): PublicProfileCard {
     metrics: [],
     thumbnail: null,
     stage: "idea" as const,
+    milestoneCounts: { shipped: 0, total: 0 },
+    crewCount: 1,
   };
 }
 

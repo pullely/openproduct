@@ -23,6 +23,7 @@ import {
   POST_BLOCK_CATALOGUE,
   PRODUCT_POST_KIND_LABELS,
   isAuthoredProductPostKind,
+  listingSettingsPath,
   postBlockValue,
   type CrewProductPost,
   type MilestoneCounts,
@@ -81,9 +82,7 @@ export function standingLine(standing: MyProductStanding): string {
  * page, so it is managed where it is set up: its settings in the studio.
  */
 export function manageHref(listing: Pick<MyListing, "slug" | "visibility" | "orgId" | "id">): string {
-  return listing.visibility === "public"
-    ? `/${listing.slug}`
-    : `/studio/${encodeURIComponent(listing.orgId)}/${encodeURIComponent(listing.id)}`;
+  return listing.visibility === "public" ? `/${listing.slug}` : listingSettingsPath(listing.orgId, listing.id);
 }
 
 /** One unpublished post, with the product it is for. */

@@ -43,7 +43,8 @@ describe("the same document PP0 reads, at an address of its own", () => {
 
   it("is linked from the listing's discussion header and from the studio, and is in the sitemap", () => {
     expect(code("[slug]/product-page.tsx")).toContain("href={listingForumPath(slug)}");
-    expect(code("studio/[org]/[profile]/page.tsx")).toContain("href={listingForumPath(profile.slug)}");
+    // OPR-3 — the listing's overview is its settings page.
+    expect(code("studio/[org]/[profile]/settings/page.tsx")).toContain("href={listingForumPath(profile.slug)}");
     expect(code("sitemap.xml/route.ts")).toContain("{ path: `${project.slug}/forum`, lastmod: null }");
     expect(listingForumPath("acme-thing")).toBe("/acme-thing/forum");
     expect(listingForumMeaning("acme-thing")).toMatch(/also on \/threads/);

@@ -12,15 +12,15 @@
     "width": 1180
   },
   "h1": {
-    "top": 85,
-    "left": 66,
-    "width": 163,
+    "top": 132,
+    "left": 182,
+    "width": 202,
     "height": 44
   },
   "firstRow": {
     "left": 66,
-    "width": 271,
-    "height": 205
+    "width": 1138,
+    "height": 344
   },
   "footer": {
     "left": 45,
@@ -28,13 +28,13 @@
     "height": 130
   },
   "themeControl": {
-    "width": 57,
+    "width": 55,
     "height": 26
   },
   "colours": {
-    "body": "oklch(0.967 0.0082 91.48)",
-    "text": "oklch(0.1908 0.002 106.59)",
-    "header": "oklch(1 0 0 / 0.62)",
-    "h1": "oklch(0.1908 0.002 106.59)"
+    "body": "oklch(0.18 0.004 95)",
+    "text": "oklch(0.96 0.005 95)",
+    "header": "oklch(0.225 0.005 95 / 0.62)",
+    "h1": "oklch(0.96 0.005 95)"
   }
 }

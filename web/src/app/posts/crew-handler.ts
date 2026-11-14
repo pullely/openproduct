@@ -34,7 +34,9 @@ import { sanitizeReturnTo } from "../auth/auth";
 import {
   createCrewMilestone,
   createCrewPost,
+  createCrewSeat,
   deleteCrewMilestone,
+  deleteCrewSeat,
   fetchNeedsYou,
   listCrewMilestones,
   listCrewPosts,
@@ -46,6 +48,7 @@ import {
   updateCrewMilestone,
   updateCrewPost,
   updateCrewProfile,
+  updateCrewSeat,
   type CrewFetch,
   type CrewIds,
   type CrewResult,
@@ -54,10 +57,12 @@ import {
   readMilestoneAct,
   readPostAct,
   readProfilePatch,
+  readSeatAct,
   type Fields,
   type FormError,
   type MilestoneAct,
   type PostAct,
+  type SeatAct,
 } from "./crew-forms";
 
 /** What a route answers with, before it is a response. */
@@ -98,6 +103,9 @@ export const CREW_NOTICES = {
   shipped: "Marked as shipped",
   unshipped: "Marked as not shipped",
   "profile-saved": "Saved",
+  "seat-added": "Seat added",
+  "seat-saved": "Seat saved",
+  "seat-removed": "Seat removed",
 } as const;
 export type CrewNotice = keyof typeof CREW_NOTICES;
 
@@ -359,6 +367,43 @@ export async function handleMilestoneWrite(call: CrewCall): Promise<CrewAnswer> 
 /** `GET /{slug}/manage/milestones` — the milestones with their ids, and the stage. */
 export async function handleMilestonesRead(call: CrewCall): Promise<CrewAnswer> {
   return crewRead(call, (token, ids) => listCrewMilestones(token, ids, call.fetchImpl));
+}
+
+// ─── seats ─────────────────────────────────────────────────────────────────
+
+const SEAT_NOTICE: Record<SeatAct["intent"], CrewNotice> = {
+  create: "seat-added",
+  update: "seat-saved",
+  delete: "seat-removed",
+};
+
+/**
+ * `POST /{slug}/manage/seats` — open, edit (close, reopen) or remove a seat.
+ *
+ * A seat is a role opening; the routes are core's own role-opening routes,
+ * addressed with the ids the crew check returned. A form returns (303) to
+ * `return_to`, else the product's Crew tab, with `notice`; opening a seat
+ * also carries `offered` — the id of the draft Help wanted post core
+ * prepared — when there is one. An enhanced caller gets core's own data
+ * (`{roleOpening, offeredPostId}` or `{deleted}`).
+ */
+export async function handleSeatWrite(call: CrewCall): Promise<CrewAnswer> {
+  const back = returnTarget(call.fields, `/${call.slug}/crew`);
+  if (!call.token) return { kind: "signin", returnTo: back };
+  const act = readSeatAct(call.fields);
+  if ("kind" in act) return failure(call, back, act);
+  const crew = await crewFor(call, back);
+  if (!crew.ok) return crew.answer;
+  const result =
+    act.intent === "create"
+      ? await createCrewSeat(crew.token, crew.ids, act.body, call.fetchImpl)
+      : act.intent === "update"
+        ? await updateCrewSeat(crew.token, crew.ids, act.openingId, act.body, call.fetchImpl)
+        : await deleteCrewSeat(crew.token, crew.ids, act.openingId, call.fetchImpl);
+  if (result.kind !== "ok") return notOk(call, back, result);
+  if (call.json) return json(200, { data: result.data });
+  const offered = "offeredPostId" in result.data ? result.data.offeredPostId : null;
+  return { kind: "redirect", to: withQuery(back, { notice: SEAT_NOTICE[act.intent], offered }) };
 }
 
 // ─── the listing's own fields, and needs-you ───────────────────────────────

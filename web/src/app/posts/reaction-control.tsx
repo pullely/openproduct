@@ -27,7 +27,7 @@ import {
   type ProductPostReactionCounts,
 } from "@openproduct/contracts";
 
-import { FOCUS } from "../ui/design";
+import { FOCUS } from "../ui/design-core";
 import {
   bumpLiveCount,
   emptyLiveCounts,

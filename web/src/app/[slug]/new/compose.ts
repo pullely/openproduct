@@ -21,6 +21,7 @@ import {
   validatePostBlocks,
   type AuthoredProductPostKind,
   type PostBlockSpec,
+  type MilestoneCounts,
   type ProductPostBlock,
   type ProductStage,
   type PublicProductPost,
@@ -318,6 +319,7 @@ export interface ComposeProduct {
   readonly name: string;
   readonly stage: ProductStage;
   readonly logo: MediaThumbnail | null;
+  readonly milestoneCounts: MilestoneCounts;
 }
 
 /** The id the preview's card wears. Not a post's id: nothing can be read,
@@ -340,7 +342,13 @@ export function previewPost(
   return {
     id: PREVIEW_POST_ID,
     kind,
-    product: { slug: product.slug, name: product.name, stage: product.stage, logo: product.logo },
+    product: {
+      slug: product.slug,
+      name: product.name,
+      stage: product.stage,
+      logo: product.logo,
+      milestoneCounts: product.milestoneCounts,
+    },
     author: null,
     blocks: publishedPostBlocks(kind, composeBlocks(kind, values, placed)),
     publishedAt: at,

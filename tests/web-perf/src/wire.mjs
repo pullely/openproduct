@@ -102,6 +102,27 @@ import { CARDS, SAMPLE_SLUG } from "./fixture.mjs";
  * the listing at desktop and 29 on a phone. The listing is AT the limit of
  * 30 — the fourth font file is the request that put it there — so the next
  * request that page adds is a recorded decision, not a rounding.
+ *
+ * OPR2 (2026-11-15) — PRODUCTS POST FOR THEMSELVES: THE NUMBER HELD AGAIN.
+ *
+ * `/` is the feed of posts, and the feed quotes an idea in Lora's italic, as
+ * the boards draw it — so the home fetches the FIFTH font file, 22,740 bytes
+ * no page fetched before. On the first full build it was over, and so was
+ * the product page (whose crew's whole maker view was in every visitor's
+ * bundle):
+ *
+ *                             OPR1 (above)   first build   now       requests
+ *   / (home)                  261,811        299,632       281,381   25
+ *   /product-00               276,145        292,080       275,993   27
+ *   /products/by/upvoted      262,461        —             262,600   27
+ *
+ * What came off between the two is recorded, step by step and measured,
+ * beside the JS budgets in `budgets.mjs` (the note on `/`). The home is under
+ * 276 KB by 1,243 bytes WITH the italic in it; without it the feed is
+ * 258,641 — lighter than the list of products it replaced. The product page
+ * keeps 6,631 bytes, and its requests fell from the limit to 27. So there is
+ * no amendment for OPR2 either: a note in the decision file, with these
+ * numbers.
  */
 export const WIRE = { bytes: 276 * 1024, requests: 30, thirdPartyHosts: 0 };
 

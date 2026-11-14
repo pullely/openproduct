@@ -512,5 +512,14 @@ export const manifest: MigrationManifest = {
       description:
         "openproduct: product_posts (five template kinds, blocks, draft/published/removed, a comment thread under the new `post` tag) and product_post_reactions, one per person per post (openproduct-redesign OPR-3)",
     },
+    {
+      id: "2275_openproduct_product_posts_author",
+      context: "openproduct",
+      path: "2275_openproduct_product_posts_author/up.sql",
+      checksum:
+        "32ac2ef8be2026e9b829677634ce308a9c8c2ad81541325b11a72afc71e24d37",
+      description:
+        "openproduct: an index over a person's published product posts by position, for the Posts section of their page (openproduct-redesign OPR-3)",
+    },
   ],
 };

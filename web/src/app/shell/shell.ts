@@ -126,6 +126,8 @@ export const FOOTER_LINKS: readonly FooterLink[] = [
   { label: "RSS", href: "/digest/feed.xml", plain: true },
   { label: "Open a build", href: "/submit" },
   { label: "Docs", href: "/docs" },
+  // OPR-3 — the five post templates, block by block (board `Templates`).
+  { label: "How posting works", href: "/docs/posting" },
   { label: "What runs automatically", href: "/docs/checks" },
   { label: "Transparency", href: "/transparency" },
 ] as const;
@@ -231,7 +233,9 @@ export const ACCOUNT_MENU_ITEMS: readonly AccountMenuItem[] = [
   // The "You" section. The profile itself moved up into the menu's own
   // Profile section (account-chip.tsx) once CG1 gave it a public address to
   // show; what is left here is what you HOLD on this surface, counted.
-  { id: "listings", label: "Your listings", href: "/studio", countKey: "listings" },
+  // OPR-3 — a maker's products are a section of `/me` (its first), and each
+  // one's dashboard is its own page; the studio's index only redirects here.
+  { id: "listings", label: "Your products", href: "/me", countKey: "listings" },
   // OPR1 — the saved list and the requests are SECTIONS of `/me` (board
   // `Me`), and the menu names the section's own address rather than the old
   // page's, which only redirects there.

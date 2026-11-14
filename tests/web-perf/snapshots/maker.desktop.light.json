@@ -14,13 +14,13 @@
   "h1": {
     "top": 258,
     "left": 96,
-    "width": 981,
+    "width": 982,
     "height": 44
   },
   "firstRow": {
     "left": 73,
     "width": 823,
-    "height": 56
+    "height": 72
   },
   "footer": {
     "left": 45,
@@ -28,7 +28,7 @@
     "height": 130
   },
   "themeControl": {
-    "width": 57,
+    "width": 55,
     "height": 26
   },
   "colours": {

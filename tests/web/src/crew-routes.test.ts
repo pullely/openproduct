@@ -27,6 +27,8 @@ import {
   readMilestoneAct,
   readPostAct,
   readProfilePatch,
+  SEAT_INTENTS,
+  readSeatAct,
 } from "@openproduct-web/app/posts/crew-forms";
 import {
   CREW_ERRORS,
@@ -39,6 +41,7 @@ import {
   handlePostWrite,
   handlePostsRead,
   handleProfileWrite,
+  handleSeatWrite,
   returnTarget,
   withQuery,
   type CrewCall,
@@ -566,8 +569,130 @@ describe("what a write answers with", () => {
   });
 });
 
+describe("seats — a seat is a role opening, written by slug like every other crew act", () => {
+  const SEAT = { id: OPR, title: "HR-compliance advisor", description: "Advise on state rules.", commitment: "2 hours a week", status: "open", joinLinkRef: null };
+
+  it("reads a seat form into an act: a role, what they'd do, the time — never the Help wanted post's fields", () => {
+    expect(SEAT_INTENTS).toEqual(["create", "update", "delete"]);
+    expect(readSeatAct({ intent: "create", title: "  Advisor ", description: " Advise. ", commitment: "" })).toEqual({
+      intent: "create",
+      body: { title: "Advisor", description: "Advise.", commitment: "" },
+    });
+    // Closing and reopening are an update that says so.
+    expect(readSeatAct({ intent: "update", seat: OPR, title: "Advisor", status: "closed" })).toEqual({
+      intent: "update",
+      openingId: OPR,
+      body: { title: "Advisor", status: "closed" },
+    });
+    expect(readSeatAct({ intent: "delete", seat: OPR })).toEqual({ intent: "delete", openingId: OPR });
+    // Malformed: an intent that is not one, no role, a seat that is not an
+    // `opr_…`, a status outside the vocabulary.
+    expect(readSeatAct({ intent: "publish" })).toEqual({ kind: "invalid", fields: { intent: ["Unknown action"] } });
+    expect(readSeatAct({ intent: "create", title: "   " })).toEqual({ kind: "invalid", fields: { title: ["A seat needs a role"] } });
+    expect(readSeatAct({ intent: "update", seat: PPO, title: "x" })).toEqual({ kind: "invalid", fields: { seat: ["Name the seat"] } });
+    expect(readSeatAct({ intent: "delete" })).toEqual({ kind: "invalid", fields: { seat: ["Name the seat"] } });
+    expect(readSeatAct({ intent: "update", seat: OPR, title: "x", status: "gone" })).toEqual({
+      kind: "invalid",
+      fields: { status: ["One of open, filled, closed"] },
+    });
+  });
+
+  it("opens a seat at core's own role-opening route, and comes back with the draft post it prepared", async () => {
+    expect(A.crewSeats("org_9", "opp_9")).toBe("/v1/organizations/org_9/openproduct/profiles/opp_9/role-openings");
+    expect(A.crewSeat("org_9", "opp_9", OPR)).toBe(`/v1/organizations/org_9/openproduct/profiles/opp_9/role-openings/${OPR}`);
+    const g = gateway({
+      [`POST ${A.crewSeats("org_9", "opp_9")}`]: { status: 201, body: { data: { roleOpening: SEAT, offeredPostId: PPO } } },
+    });
+    const fields = { intent: "create", title: "HR-compliance advisor", description: "Advise on state rules.", commitment: "2 hours a week" };
+    // A form: back to the Crew tab, where the seats are, naming the draft.
+    expect(await handleSeatWrite(call({ fetchImpl: g.fetchImpl, fields }))).toEqual({
+      kind: "redirect",
+      to: `/ackstack/crew?notice=seat-added&offered=${PPO}`,
+    });
+    expect(g.writes()).toEqual([
+      {
+        method: "POST",
+        path: A.crewSeats("org_9", "opp_9"),
+        auth: "Bearer tok",
+        body: { title: "HR-compliance advisor", description: "Advise on state rules.", commitment: "2 hours a week" },
+      },
+    ]);
+    // An enhanced caller gets core's own answer.
+    expect(await handleSeatWrite(call({ fetchImpl: g.fetchImpl, json: true, fields }))).toEqual({
+      kind: "json",
+      status: 200,
+      body: { data: { roleOpening: SEAT, offeredPostId: PPO } },
+    });
+    expect(crewNotice("seat-added")).toBe("Seat added");
+  });
+
+  it("edits, closes and deletes a seat, each back to where the form says", async () => {
+    const g = gateway({
+      [`PUT ${A.crewSeat("org_9", "opp_9", OPR)}`]: { body: { data: { roleOpening: { ...SEAT, status: "closed" }, offeredPostId: null } } },
+      [`DELETE ${A.crewSeat("org_9", "opp_9", OPR)}`]: { body: { data: { deleted: true } } },
+    });
+    expect(
+      await handleSeatWrite(
+        call({ fetchImpl: g.fetchImpl, fields: { intent: "update", seat: OPR, title: "Advisor", status: "closed", return_to: "/ackstack/crew#people-wanted" } }),
+      ),
+    ).toEqual({ kind: "redirect", to: "/ackstack/crew?notice=seat-saved#people-wanted" });
+    expect(await handleSeatWrite(call({ fetchImpl: g.fetchImpl, fields: { intent: "delete", seat: OPR } }))).toEqual({
+      kind: "redirect",
+      to: "/ackstack/crew?notice=seat-removed",
+    });
+    expect(g.writes().map((c) => [c.method, c.path, c.body])).toEqual([
+      ["PUT", A.crewSeat("org_9", "opp_9", OPR), { title: "Advisor", status: "closed" }],
+      ["DELETE", A.crewSeat("org_9", "opp_9", OPR), undefined],
+    ]);
+    expect(crewNotice("seat-saved")).toBe("Seat saved");
+    expect(crewNotice("seat-removed")).toBe("Seat removed");
+  });
+
+  it("holds the same order as every crew act: sign in, the form, the crew check, then core's own refusal", async () => {
+    const g = gateway({
+      [`POST ${A.crewSeats("org_9", "opp_9")}`]: {
+        status: 422,
+        body: { error: { code: "validation_failed", message: "Validation failed", details: { fields: { title: ["1–120 characters"] } } } },
+      },
+    });
+    // Signed out: before the form is read, before anything is asked.
+    expect(await handleSeatWrite(call({ token: null, fetchImpl: g.fetchImpl, fields: {} }))).toEqual({ kind: "signin", returnTo: "/ackstack/crew" });
+    // A malformed form asks nothing.
+    expect(await handleSeatWrite(call({ fetchImpl: g.fetchImpl, json: true, fields: { intent: "create" } }))).toEqual({
+      kind: "json",
+      status: 422,
+      body: { error: { code: "validation_failed", message: CREW_ERRORS.invalid, fields: { title: ["A seat needs a role"] } } },
+    });
+    expect(g.calls).toEqual([]);
+    // Not on the crew: the same 404 as a product that is not there, and no
+    // write is ever sent — nor could a forged id in the form change that.
+    const stranger = call({ slug: "someone-elses", fetchImpl: g.fetchImpl, fields: { intent: "create", title: "x", org: "org_victim", profile: "opp_victim" } });
+    expect(await handleSeatWrite(stranger)).toEqual({ kind: "redirect", to: "/someone-elses/crew?error=not-found" });
+    expect(g.writes()).toEqual([]);
+    // Core's field errors come back verbatim to an enhanced caller, and as
+    // WHICH fields to a form.
+    const fields = { intent: "create", title: "x".repeat(200) };
+    expect(await handleSeatWrite(call({ fetchImpl: g.fetchImpl, json: true, fields }))).toEqual({
+      kind: "json",
+      status: 422,
+      body: { error: { code: "validation_failed", message: "Validation failed", fields: { title: ["1–120 characters"] } } },
+    });
+    expect(await handleSeatWrite(call({ fetchImpl: g.fetchImpl, fields }))).toEqual({
+      kind: "redirect",
+      to: "/ackstack/crew?error=invalid&fields=title",
+    });
+  });
+
+  it("uses its own client for those routes — nothing outside the studio imports from it", () => {
+    const api = code("posts/crew-api.ts");
+    expect(api).toContain("PRODUCT_POST_API.crewSeats(ids.org, ids.profile)");
+    expect(api).toContain("PRODUCT_POST_API.crewSeat(ids.org, ids.profile, openingId)");
+    expect(api).not.toMatch(/from\s+"[^"]*studio\//);
+  });
+});
+
 describe("the route files are adapters", () => {
-  const ROUTES = ["posts", "milestones", "profile", "needs-you"].map((name) => `[slug]/manage/${name}/route.ts`);
+  const ROUTES = ["posts", "milestones", "profile", "needs-you", "seats"].map((name) => `[slug]/manage/${name}/route.ts`);
 
   it("exist, one per crew surface, each beside no page", () => {
     for (const file of ROUTES) {
@@ -591,6 +716,8 @@ describe("the route files are adapters", () => {
     expect(code("[slug]/manage/milestones/route.ts")).toMatch(/export async function GET[\s\S]*export async function POST/);
     expect(code("[slug]/manage/profile/route.ts")).not.toContain("export async function GET");
     expect(code("[slug]/manage/needs-you/route.ts")).not.toContain("export async function POST");
+    // Seats are written here; they are read from the product's public page.
+    expect(code("[slug]/manage/seats/route.ts")).not.toContain("export async function GET");
   });
 
   it("the one adapter takes the token from the session and answers sign-in through the one place that builds it", () => {

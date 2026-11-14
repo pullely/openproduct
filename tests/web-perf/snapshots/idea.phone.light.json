@@ -17,23 +17,23 @@
     "width": 365
   },
   "h1": {
-    "top": 83,
-    "left": 13,
-    "width": 117,
+    "top": 110,
+    "left": 87,
+    "width": 166,
     "height": 31
   },
   "firstRow": {
     "left": 11,
     "width": 344,
-    "height": 192
+    "height": 332
   },
   "footer": {
     "left": 0,
     "width": 365,
-    "height": 300
+    "height": 344
   },
   "themeControl": {
-    "width": 64,
+    "width": 62,
     "height": 44
   },
   "colours": {

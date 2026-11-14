@@ -163,6 +163,11 @@ function MILESTONES_FOR(slug) {
   return CREW_MILESTONES_FOR(slug).map(({ code, title, summary, shippedAt }) => ({ code, title, summary, shippedAt }));
 }
 
+/** An idea's crew is only its maker; a shipping product has two people. */
+function CREW_COUNT_FOR(i) {
+  return stageOf(i) === "idea" ? 1 : 2;
+}
+
 function MILESTONE_COUNTS_FOR(slug) {
   const milestones = MILESTONES_FOR(slug);
   return { shipped: milestones.filter((m) => m.shippedAt !== null).length, total: milestones.length };
@@ -199,6 +204,10 @@ function card(i) {
     metrics: [metric("merges.7d", 3 + (i % 5)), metric("last_touched.all", 1)],
     // MD3 — the hero for the tile; the slug decides (see MEDIA_FOR).
     thumbnail: THUMBNAIL_FOR(`product-${String(i).padStart(2, "0")}`),
+    // OPR-3 — the card's own progress and crew count: the same rows the
+    // product's document carries (`MILESTONES_FOR`, `MAINTAINERS_FOR`).
+    milestoneCounts: MILESTONE_COUNTS_FOR(`product-${String(i).padStart(2, "0")}`),
+    crewCount: CREW_COUNT_FOR(i),
   };
 }
 
@@ -264,6 +273,9 @@ function CHANGES_FOR(slug) {
 /** OPR-3 — the seat the signed-in walker has a pending request for, and the
  *  product it is on. */
 export const SAMPLE_REQUESTED_OPENING = "opr_00000000000000000000000000000001";
+/** Every other product's one open seat, in the real id grammar, so the crew's
+ *  seat forms on `product-00` name an id core would accept. */
+export const SAMPLE_OPENING = "opr_00000000000000000000000000000002";
 export const REQUESTED_SEAT_SLUG = "product-03";
 
 /** One project page. Exactly PUBLIC_PROFILE_KEYS. */
@@ -344,7 +356,9 @@ function profile(slug) {
       { name: "api", kind: "service" },
       { name: "web", kind: "website" },
     ],
-    maintainers: MAINTAINERS,
+    // An idea's crew is only its maker (the page draws "Needs a first
+    // builder"); the card's `crewCount` counts these same rows.
+    maintainers: MAINTAINERS.slice(0, c.crewCount),
     // MD2 — see MEDIA_FOR.
     media: MEDIA_FOR(c.slug),
     roleOpenings:
@@ -354,7 +368,7 @@ function profile(slug) {
               // OPR-3 — `product-03`'s seat wears the real id grammar, and it
               // is the one the signed-in walker has asked for (the overlay's
               // `requestedOpenings` answers it).
-              id: c.slug === REQUESTED_SEAT_SLUG ? SAMPLE_REQUESTED_OPENING : "rol_000000000000000000000001",
+              id: c.slug === REQUESTED_SEAT_SLUG ? SAMPLE_REQUESTED_OPENING : SAMPLE_OPENING,
               title: "Frontend contributor",
               description: "Help with the directory surface.",
               commitment: "a-few-hours-a-week",
@@ -1005,7 +1019,7 @@ export const SAMPLE_SEAT_REQUEST = "req_00000000000000000000000000000001";
 
 const postProduct = (slug) => {
   const c = CARDS.find((x) => x.slug === slug) ?? CARDS[0];
-  return { slug: c.slug, name: c.slug, stage: c.stage, logo: c.thumbnail };
+  return { slug: c.slug, name: c.slug, stage: c.stage, logo: c.thumbnail, milestoneCounts: c.milestoneCounts };
 };
 const ADA = { handle: SAMPLE_HANDLE, displayName: "Ada Lovelace" };
 const NO_REACTIONS = { useful: 0, would_use: 0, impressive: 0, curious: 0 };
@@ -1200,6 +1214,27 @@ const postsPage = (posts, cursor) => {
   return { __status: 422, error: { code: "validation_failed", message: "Not a position this feed issued" } };
 };
 
+/** `CREW_SLUG` as its maintainer reads it: the studio listing's shape, for a
+ *  listing that is PUBLISHED (the studio's own sample is a draft). */
+function crewMaintainerProfile() {
+  return {
+    ...MAINTAINER_PROFILE,
+    id: CREW_PROFILE,
+    slug: CREW_SLUG,
+    visibility: "public",
+    tagline: CARDS[0].tagline,
+    stack: CARDS[0].stack,
+    stackCanonical: CARDS[0].stackCanonical,
+    repoVisibility: "public",
+    repoLicence: "MIT",
+    repoCheckedAt: EARLIER,
+    reviewedAt: EARLIER,
+    publishedAt: EARLIER,
+    maintainers: MAINTAINERS,
+    roleOpenings: [{ id: SAMPLE_OPENING, title: "Frontend contributor", status: "open" }],
+  };
+}
+
 /** The crew routes of `CREW_SLUG`, answered for the signed-in walker. Writes
  *  are answered with what core would send back; nothing here is stored. */
 function crewAnswer(rest, req) {
@@ -1211,9 +1246,44 @@ function crewAnswer(rest, req) {
     if (method === "PATCH") {
       return { profile: { id: CREW_PROFILE, slug: typeof body.slug === "string" ? body.slug : CREW_SLUG, tryUrl: body.tryUrl ?? `https://example.com/${CREW_SLUG}`, tagline: body.tagline ?? CARDS[0].tagline } };
     }
-    return undefined;
+    // The maintainer's own read of a PUBLISHED listing: what the listing's
+    // base address forwards on (`/studio/{org}/{profile}` → `/{slug}`), and
+    // what its settings pages draw.
+    return { profile: crewMaintainerProfile(), capabilities: { canReview: false } };
+  }
+  // The settings pages' other reads, answered empty: a published listing
+  // with no media rows, no launches and no threads of its own.
+  if (rest === "/threads") return { threads: [], slug: CREW_SLUG };
+  if (rest === "/media") return { media: [] };
+  if (rest === "/launches") {
+    return {
+      launches: [],
+      slug: CREW_SLUG,
+      eligibility: { isPublished: true, hasScheduled: false, lastLaunchedAt: null, consumedVersions: [] },
+      policy: { cooldownDays: 14, maxLeadDays: 30, minLeadMinutes: 15 },
+    };
   }
   if (rest === "/needs-you") return { needsYou: NEEDS_YOU };
+  // Seats are role openings. Opening one prepares its draft Help wanted post.
+  const seat = /^\/role-openings(?:\/(opr_[0-9a-f]{32}))?$/.exec(rest);
+  if (seat) {
+    if (method === "DELETE") return seat[1] ? { deleted: true } : undefined;
+    if (method !== "POST" && method !== "PUT") return undefined;
+    if (typeof body.title !== "string" || body.title.trim().length === 0) {
+      return { __status: 422, error: { code: "validation_failed", message: "Validation failed", details: { fields: { title: ["1–120 characters"] } } } };
+    }
+    return {
+      roleOpening: {
+        id: seat[1] ?? "opr_00000000000000000000000000000009",
+        title: body.title.trim(),
+        description: typeof body.description === "string" ? body.description : null,
+        commitment: typeof body.commitment === "string" ? body.commitment : null,
+        status: typeof body.status === "string" ? body.status : "open",
+        joinLinkRef: "join_000000000000000000000001",
+      },
+      offeredPostId: seat[1] ? null : SAMPLE_DRAFT_POST,
+    };
+  }
   if (rest === "/product-posts") {
     if (method === "POST") {
       return { post: { ...DRAFT_POST, id: POST_ID(91), kind: body.kind ?? "feature", blocks: Array.isArray(body.blocks) ? body.blocks : [], milestoneId: null } };
@@ -1487,6 +1557,19 @@ export const ABSENT = [
 // property under test is that it SURVIVES a save made on another step.
 export const STUDIO_ORG = "acme";
 export const STUDIO_PROFILE = "prf_000000000000000000000001";
+
+// OPR-3 — a listing's base address forwards. Signed out (which is how
+// `MOVED` is asked) nobody can be told whether the listing is published, so
+// the answer is its settings page, which then asks for a sign-in. A 307: the
+// destination depends on the listing's state today, so it is never one a
+// browser may keep. (Signed in, a published listing goes to `/{slug}` — the
+// authed lane holds that half.) Pushed here because the ids are declared
+// after `MOVED` is.
+MOVED.push({
+  from: `/studio/${STUDIO_ORG}/${STUDIO_PROFILE}`,
+  to: `/studio/${STUDIO_ORG}/${STUDIO_PROFILE}/settings`,
+  status: 307,
+});
 /** The subject the signed-in lanes walk as. Not an identity anybody minted —
  *  a fixture value the fixture gateway answers for. */
 export const WALK_SUBJECT = "sub_000000000000000000000001";
@@ -1556,7 +1639,10 @@ export const AUTHED_ROUTES = [
   { path: "/studio/reports", name: "studio · reports", expect: "Reports" },
   { path: "/studio/appeals", name: "studio · appeals", expect: "Appeals" },
   { path: "/studio/link", name: "studio · link a project", expect: "Link a project" },
-  { path: `/studio/${STUDIO_ORG}/${STUDIO_PROFILE}`, name: "studio · listing overview", expect: "Listing steps" },
+  // OPR-3 — the listing's overview is its settings page now. The base
+  // address forwards (a route handler): a draft here, a published listing
+  // to its product page; `MOVED` holds the signed-out answer.
+  { path: `/studio/${STUDIO_ORG}/${STUDIO_PROFILE}/settings`, name: "studio · listing settings", expect: "Listing steps" },
   // 3d54dc12 folded the page's "Something worse than off-topic?" panel into
   // the editor's Discussions card, so the card's own heading is what proves
   // the surface drew (a failure panel has none).
@@ -2063,6 +2149,15 @@ function answer(pathname, search, req = { method: "GET", body: undefined }) {
       marks: { firstLaunchDay: SAMPLE_DAY, cleanVoteListings: 1, maintains: 3 },
       observedAt: NOW,
     };
+  }
+  // OPR-3 — the posts one person pressed Post on, paged like the feed.
+  const personPosts = new RegExp(`^${P}/people/([^/]+)/product-posts$`).exec(pathname);
+  if (personPosts) {
+    if (personPosts[1] !== SAMPLE_HANDLE) return null;
+    return postsPage(
+      ALL_PRODUCT_POSTS.filter((p) => p.author?.handle === SAMPLE_HANDLE),
+      new URLSearchParams(search ?? "").get("cursor"),
+    );
   }
   if (pathname === `${P}/people/${SAMPLE_HANDLE}`) return { contributor: CONTRIBUTOR };
   if (pathname.startsWith(`${P}/people/`)) return null;

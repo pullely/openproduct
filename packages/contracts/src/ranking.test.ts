@@ -58,6 +58,8 @@ function card(
     ],
     thumbnail: null,
     stage: "idea" as const,
+    milestoneCounts: { shipped: 0, total: 0 },
+    crewCount: 1,
     ...rest,
   };
 }

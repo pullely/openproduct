@@ -219,6 +219,46 @@ describe("OPR-3 — milestones, and the stage that follows them", () => {
     expect((await repo.listCataloguePage({ cursor: null, limit: 10 })).cards[0]?.stage).toBe("shipping");
   });
 
+  it("the card counts the milestones and the crew, live and in the materialised catalogue", async () => {
+    await seedPublished();
+    // Nothing yet: zero of zero milestones, and nobody published on the crew.
+    expect((await repo.listPublicCards(10))[0]).toMatchObject({ milestoneCounts: { shipped: 0, total: 0 }, crewCount: 0 });
+    await repo.createProductMilestone({ id: M1, profileId: PROFILE, code: "AS1", title: "Sign in", summary: null });
+    await repo.createProductMilestone({ id: M2, profileId: PROFILE, code: "AS2", title: "Exports", summary: null });
+    await repo.createProductMilestone({ id: M3, profileId: PROFILE, code: "AS3", title: "Teams", summary: null });
+    await repo.setProductMilestoneShipped(PROFILE, M1, NOW);
+    await repo.setProductMilestoneShipped(PROFILE, M2, NOW);
+    await repo.setMaintainers(PROFILE, [
+      { subjectId: ADA, displayName: "Ada", roleLabel: "maker", sortOrder: 0 },
+      { subjectId: BOB, displayName: "Bob", roleLabel: null, sortOrder: 1 },
+    ]);
+    // The same rows the product page lists, counted.
+    expect((await repo.listMaintainers(PROFILE)).length).toBe(2);
+    expect((await repo.listPublicCards(10))[0]).toMatchObject({ milestoneCounts: { shipped: 2, total: 3 }, crewCount: 2 });
+
+    await repo.rebuildCatalogue({ now: NOW, mergesSince: NOW, endorsementsSince: NOW });
+    expect((await repo.listCataloguePage({ cursor: null, limit: 10 })).cards[0]).toMatchObject({
+      milestoneCounts: { shipped: 2, total: 3 },
+      crewCount: 2,
+    });
+
+    // A catalogue row materialised before the counts existed says zero of
+    // zero milestones and NO crew count — never a zero nobody counted.
+    await sql.execute(
+      `UPDATE openproduct.catalog_cards
+          SET record = record - 'milestones_shipped' - 'milestones_total' - 'crew_count'
+        WHERE profile_id = $1`,
+      [PROFILE],
+    );
+    expect((await repo.listCataloguePage({ cursor: null, limit: 10 })).cards[0]).toMatchObject({
+      milestoneCounts: { shipped: 0, total: 0 },
+      crewCount: null,
+    });
+    // …and the next sweep counts them.
+    await repo.rebuildCatalogue({ now: NOW, mergesSince: NOW, endorsementsSince: NOW });
+    expect((await repo.listCataloguePage({ cursor: null, limit: 10 })).cards[0]?.crewCount).toBe(2);
+  });
+
   it("a draft listing's milestones are not in the public read", async () => {
     await seedDraft();
     await repo.createProductMilestone({ id: M1, profileId: PROFILE, code: "AS1", title: "Sign in", summary: null });
@@ -423,9 +463,55 @@ describe("OPR-3 — the public reads never hold a draft, a removed post or an un
       authorName: null,
       slug: "acme-thing",
       stage: "shipping",
+      // The product's progress rides on the post, so a feature card in the
+      // feed draws its bars without a read per card.
+      milestoneCounts: { shipped: 1, total: 1 },
       reactions: { useful: 0, would_use: 0, impressive: 0, curious: 0 },
       commentCount: 0,
     });
+  });
+
+  it("a post's milestone counts follow the product's milestones", async () => {
+    await seedPublished();
+    await published(P1, T1, NOW);
+    expect((await repo.getPublicProductPost(P1))?.milestoneCounts).toEqual({ shipped: 0, total: 0 });
+    await repo.createProductMilestone({ id: M1, profileId: PROFILE, code: "AS1", title: "Sign in", summary: null });
+    await repo.createProductMilestone({ id: M2, profileId: PROFILE, code: "AS2", title: "Exports", summary: null });
+    await repo.setProductMilestoneShipped(PROFILE, M1, NOW);
+    expect((await repo.getPublicProductPost(P1))?.milestoneCounts).toEqual({ shipped: 1, total: 2 });
+    expect((await repo.listPublicProductPosts({ cursor: null, limit: 5 })).posts[0]?.milestoneCounts).toEqual({ shipped: 1, total: 2 });
+  });
+
+  it("one author's posts are theirs across products, published only, paged by the feed's position", async () => {
+    await seedPublished();
+    await seedPublished(PROFILE_TWO, PROJECT_TWO, "second-thing");
+    await published(P1, T1, "2026-08-17T10:00:00.000Z");
+    await published(P2, T2, "2026-08-17T11:00:00.000Z", PROFILE_TWO);
+    // Somebody else's post, and a draft of the author's own: neither is theirs to list.
+    await repo.createProductPost({ id: P3, profileId: PROFILE, kind: "feature", authorSubjectId: ADA, blocks: FEATURE });
+    await thread(T3, PROFILE, "2026-08-17T12:00:00.000Z");
+    await repo.publishProductPost(PROFILE, P3, { at: "2026-08-17T12:00:00.000Z", blocks: FEATURE, threadId: T3, authorSubjectId: ADA });
+    const DRAFT = asUuid("b4444444-4444-4444-8444-444444444444");
+    await repo.createProductPost({ id: DRAFT, profileId: PROFILE, kind: "feature", authorSubjectId: ACTOR, blocks: FEATURE });
+
+    const mine = await repo.listPublicProductPostsByAuthor(ACTOR, { cursor: null, limit: 20 });
+    expect(mine.posts.map((p) => p.id)).toEqual([P2, P1]);
+    expect(mine.posts.map((p) => p.slug)).toEqual(["second-thing", "acme-thing"]);
+    expect(mine.next).toBeNull();
+    expect((await repo.listPublicProductPostsByAuthor(ADA, { cursor: null, limit: 20 })).posts.map((p) => p.id)).toEqual([P3]);
+    expect((await repo.listPublicProductPostsByAuthor(BOB, { cursor: null, limit: 20 })).posts).toEqual([]);
+
+    // Paged like the feed: one at a time, by position, no gap and no repeat.
+    const one = await repo.listPublicProductPostsByAuthor(ACTOR, { cursor: null, limit: 1 });
+    expect(one.posts.map((p) => p.id)).toEqual([P2]);
+    expect(one.next).toEqual({ publishedAt: "2026-08-17T11:00:00.000Z", id: P2 });
+    const two = await repo.listPublicProductPostsByAuthor(ACTOR, { cursor: one.next, limit: 1 });
+    expect(two.posts.map((p) => p.id)).toEqual([P1]);
+    expect(two.next).toBeNull();
+
+    // A post on a listing that stops being listed leaves the author's list too.
+    await sql.execute(`UPDATE openproduct.profiles SET visibility = 'private' WHERE id = $1`, [PROFILE_TWO]);
+    expect((await repo.listPublicProductPostsByAuthor(ACTOR, { cursor: null, limit: 20 })).posts.map((p) => p.id)).toEqual([P1]);
   });
 
   it("names its author only when their public page resolves", async () => {

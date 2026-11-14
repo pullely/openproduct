@@ -64,6 +64,7 @@ import {
   seatStageOfSegment,
   seatsPath,
 } from "@openproduct-web/app/help-wanted/seats";
+import { needsFirstBuilder } from "@openproduct-web/app/ui/stage";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const APP_DIR = resolve(__dirname, "../../../web/src/app");
@@ -520,13 +521,28 @@ describe("OPR-3 — the stage filter is an address, and it composes with the sor
 
   it("the card wears the stage: the mark under the name, and the idea's own shape", () => {
     const card = code("feed/product-card.tsx");
-    expect(card).toContain("<StageMark stage={card.stage} short />");
+    expect(card).toContain("<StageMark stage={card.stage} counts={card.milestoneCounts} short />");
     expect(card).toContain("data-product-stage={card.stage}");
     expect(card).toContain('idea ? "rounded-[4px_16px_16px_16px] bg-idea-wash" : "rounded-[16px] bg-card"');
-    // "Needs a first builder" is said of an idea with a seat open, the one
-    // fact about its crew a card holds; the progress count needs milestone
-    // counts a card does not carry, so no count and no bar is drawn.
-    expect(card).toMatch(/idea && card\.roleOpeningCount > 0 \? \([\s\S]*?\{IDEA_NEEDS_BUILDER\}/);
-    expect(card).not.toMatch(/MilestoneSegments|milestoneCounts/);
+    // THE CARD CARRIES ITS OWN PROGRESS AND CREW COUNT (OPR-3), so a list
+    // draws both with no read per card: a shipping product's "3 OF 4" and
+    // its bars, and "Needs a first builder" on an idea whose crew is only
+    // its maker — from the count of the people its page lists, not from
+    // whether a seat happens to be open.
+    expect(card).toContain("{!idea ? <MilestoneSegments counts={card.milestoneCounts} /> : null}");
+    expect(card).toMatch(/idea && needsFirstBuilder\(card\.crewCount\) \? \([\s\S]*?\{IDEA_NEEDS_BUILDER\}/);
+    expect(card).not.toMatch(/idea && card\.roleOpeningCount/);
+  });
+
+  it("an idea needs its first builder when its crew is at most one — and only from a count somebody made", () => {
+    expect(needsFirstBuilder(0)).toBe(true);
+    expect(needsFirstBuilder(1)).toBe(true);
+    expect(needsFirstBuilder(2)).toBe(false);
+    // A card that predates the count says nothing about a crew nobody counted.
+    expect(needsFirstBuilder(null)).toBe(false);
+    expect(needsFirstBuilder(undefined)).toBe(false);
+    expect(needsFirstBuilder(Number.NaN)).toBe(false);
+    // The same rule the product page draws its dashed slot by.
+    expect(code("[slug]/product-page.tsx")).toContain("needsBuilder={profile.maintainers.length <= 1}");
   });
 });

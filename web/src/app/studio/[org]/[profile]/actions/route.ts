@@ -10,6 +10,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import {
   AUTHORED_MEDIA_KINDS,
   installLineRefusal,
+  LISTING_SETTINGS_SEGMENT,
   listingStepOf,
   normaliseInstallLine,
   type AuthoredMediaKind,
@@ -61,7 +62,11 @@ export async function POST(
   // than being trusted into a URL.
   const from = text(form?.get("from"));
   const step = from.length > 0 ? listingStepOf(from) : null;
-  const stepBase = step?.segment ? `${editor}/${step.segment}` : editor;
+  // OPR-3 — with no step named, the act came from the listing's settings
+  // page (publish, unpublish, review, the repository check). The base
+  // address only forwards now, and to the PUBLIC page once the listing is
+  // published — which would drop the act's notice on the floor.
+  const stepBase = step?.segment ? `${editor}/${step.segment}` : `${editor}/${LISTING_SETTINGS_SEGMENT}`;
   const back = (suffix: string) => answer.back(`${stepBase}${suffix}`);
   // A background caller's answer with the rows an act wrote (OSD4, OSD6).
   const rows = (to: string, media: readonly unknown[]) =>

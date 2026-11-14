@@ -12,7 +12,7 @@
 import { redirect } from "next/navigation";
 import { cache } from "react";
 
-import { listingBasePath, type MaintainerProfile } from "@openproduct/contracts";
+import { listingBasePath, listingSettingsPath, type MaintainerProfile } from "@openproduct/contracts";
 
 import { readSession } from "../../../auth/session-server";
 import { LISTING_VOCABULARY, noticeFrom } from "../../notices";
@@ -174,6 +174,6 @@ export async function loadListing<T = never>(
 export function stepCrumbs(org: string, profileId: string, slug: string, label?: string) {
   const base = [{ label: "Your products", href: "/me" }];
   return label
-    ? [...base, { label: slug, href: listingBasePath(org, profileId) }, { label }]
+    ? [...base, { label: slug, href: listingSettingsPath(org, profileId) }, { label }]
     : [...base, { label: slug }];
 }

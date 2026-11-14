@@ -759,6 +759,8 @@ describe("OL2 — the feed, the front page's one read", () => {
       "/v1/public/openproduct/product-posts",
       "/v1/public/openproduct/product-posts/ppo_0d5e1f2a111142228333444455556666",
       "/v1/public/openproduct/projects/acme-thing/product-posts",
+      // …and one person's posts, for the Posts section of their page.
+      "/v1/public/openproduct/people/ada/product-posts",
     ];
     for (const path of publicPaths) {
       const captured: CapturedFetch[] = [];

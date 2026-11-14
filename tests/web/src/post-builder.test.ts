@@ -390,7 +390,7 @@ describe("the preview is the exact card", () => {
     expect(composer).toMatch(/<div inert>\s*<ProductPostCard\s+post=\{previewPost\(kind, draft\.values, draft\.placed, product, props\.now\)\}/);
     // The editor wears the card's own shell.
     expect(composer).toContain("className={`${POST_CARD_SHELL[kind]} ");
-    const product = { slug: "kettle", name: "kettle", stage: "shipping" as const, logo: null };
+    const product = { slug: "kettle", name: "kettle", stage: "shipping" as const, logo: null, milestoneCounts: { shipped: 1, total: 2 } };
     const post = previewPost("feature", { feature: " Team seats ", what: "", try: "https://example.com" }, ["feature", "what", "try"], product, "2026-11-15T00:00:00.000Z");
     // The card draws it (it reads as a published post), with the blocks as
     // publishing stores them: empty ones dropped, an address normalised.

@@ -241,7 +241,8 @@ describe("your products, read from this side of the wall", () => {
     // product. A listing that is still a draft has no public page, and is
     // managed where it is set up.
     expect(manageHref({ slug: "kettle", visibility: "public", orgId: "org_1", id: "opp_1" })).toBe("/kettle");
-    expect(manageHref({ slug: "kettle", visibility: "private", orgId: "org_1", id: "opp_1" })).toBe("/studio/org_1/opp_1");
+    // …its settings page (OPR-3: the listing's base address only forwards).
+    expect(manageHref({ slug: "kettle", visibility: "private", orgId: "org_1", id: "opp_1" })).toBe("/studio/org_1/opp_1/settings");
     const sections = markupOf("me/sections.tsx");
     expect(sections).toContain("const manage = manageHref(listing);");
     expect(sections).toMatch(/<AppLink href=\{manage\}[^>]*>\s*Manage\s*<\/AppLink>/);

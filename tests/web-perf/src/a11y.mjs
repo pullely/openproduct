@@ -556,12 +556,17 @@ export async function runA11y(base) {
     // ── OS1: the catalogue continues at a plain link ────────────────
     {
       // The fixture's directory answers twenty-four cards and a `next`; the
-      // front page must draw the page after it as a LINK — a URL a reader
+      // Products page must draw the page after it as a LINK — a URL a reader
       // can copy and a crawler can follow, with no JavaScript in the path
       // (OS-2, OPP2) — and the page it reaches must be rows with named
-      // targets, like the first. Listing 25 is two clicks from the front
-      // page; listing 201 would be, at the real page size.
-      await page.goto(base + "/", { waitUntil: "load" });
+      // targets, like the first. Listing 25 is two clicks from the list's
+      // first page; listing 201 would be, at the real page size.
+      //
+      // ON `/products`, since openproduct-redesign OPR-3. The catalogue was
+      // the front page until `/` became the feed of posts; these two checks
+      // read `/` and found no catalogue there — which was true, and not what
+      // they are about. The feed's own continuation is checked just below.
+      await page.goto(base + "/products", { waitUntil: "load" });
       await page.waitForTimeout(800);
       const link = await page.evaluate(() => {
         const a = document.querySelector("main a[data-catalogue-next]");
@@ -575,7 +580,7 @@ export async function runA11y(base) {
       // ("Open builds") rather than a section's `#feed-catalogue`.
       const heading = await page.evaluate(() => document.querySelector("main h1")?.textContent?.trim() ?? null);
       check(
-        "front page: the catalogue continues at a plain link, not a button (OS-2)",
+        "products: the catalogue continues at a plain link, not a button (OS-2)",
         link !== null && /^\/products\/[^/]+$/.test(link.href ?? "") && link.text.length > 0 && !link.button,
         JSON.stringify(link),
       );
@@ -587,7 +592,7 @@ export async function runA11y(base) {
         return t ? { tag: t.tagName, datetime: t.getAttribute("datetime"), text: (t.textContent ?? "").trim() } : null;
       });
       check(
-        "front page: the catalogue says when it was computed — a <time> with the instant, as a UTC clock time (OS5)",
+        "products: the catalogue says when it was computed — a <time> with the instant, as a UTC clock time (OS5)",
         moment !== null && moment.tag === "TIME" && /^\d{4}-\d{2}-\d{2}T/.test(moment.datetime ?? "") && /^as of \d{2}:\d{2} UTC$/.test(moment.text),
         JSON.stringify(moment),
       );
@@ -619,6 +624,42 @@ export async function runA11y(base) {
           "catalogue page: the second page carries the same moment as the first (OS5)",
           nextMoment !== null && nextMoment === moment?.text,
           JSON.stringify({ first: moment?.text ?? null, second: nextMoment }),
+        );
+      }
+    }
+
+    // ── OPR-3: the feed continues at a plain link too ────────────────
+    {
+      // `/` is the feed of posts. Its "Show more" is a link to the next
+      // page's own address (`/feed/{cursor}`): with scripts it appends the
+      // page in place, without them it is a page of its own — posts with a
+      // headline each, one `h1`, and a way back to the newest.
+      await page.goto(base + "/", { waitUntil: "load" });
+      await page.waitForTimeout(800);
+      const more = await page.evaluate(() => {
+        const a = document.querySelector("main [data-feed-next]");
+        return a
+          ? { href: a.getAttribute("href"), text: (a.textContent ?? "").trim(), tag: a.tagName, posts: document.querySelectorAll("main article[id^='post-']").length }
+          : null;
+      });
+      check(
+        "front page: the feed is posts, and it continues at a plain link, not a button",
+        more !== null && more.tag === "A" && /^\/feed\/[^/]+$/.test(more.href ?? "") && more.text.length > 0 && more.posts > 0,
+        JSON.stringify(more),
+      );
+      if (more?.href) {
+        await page.goto(base + more.href, { waitUntil: "load" });
+        await page.waitForTimeout(800);
+        const second = await page.evaluate(() => ({
+          posts: document.querySelectorAll("main article[id^='post-']").length,
+          headlines: [...document.querySelectorAll("main article[id^='post-'] [data-post-title]")].every((h) => (h.textContent ?? "").trim().length > 0),
+          h1: document.querySelectorAll("h1").length,
+          back: document.querySelector('main a[href="/"]') !== null,
+        }));
+        check(
+          "feed page: the next page is posts with headlines, one h1, and a way back to the newest",
+          second.posts > 0 && second.headlines && second.h1 === 1 && second.back,
+          JSON.stringify(second),
         );
       }
     }

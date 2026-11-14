@@ -68,7 +68,7 @@ describe("the studio's doors go through the one helper", () => {
   });
 
   it("an unlinked listing's banner opens it on that listing's own workspace", () => {
-    expect(code("studio/[org]/[profile]/page.tsx")).toContain("consoleWorkspacePickerUrl(consoleUrl, org)");
+    expect(code("studio/[org]/[profile]/settings/page.tsx")).toContain("consoleWorkspacePickerUrl(consoleUrl, org)");
   });
 
   it("the link page's empty state offers it", () => {
@@ -76,7 +76,7 @@ describe("the studio's doors go through the one helper", () => {
   });
 
   it("no studio surface points at the retired per-workspace console page or 'the workspace console'", () => {
-    for (const file of ["me/page.tsx", "me/sections.tsx", "studio/[org]/[profile]/page.tsx", "studio/link/page.tsx"]) {
+    for (const file of ["me/page.tsx", "me/sections.tsx", "studio/[org]/[profile]/settings/page.tsx", "studio/link/page.tsx"]) {
       const source = code(file);
       expect(`${file}: ${source.includes("/openproduct`")}`).toBe(`${file}: false`);
       expect(`${file}: ${/workspace console/i.test(source)}`).toBe(`${file}: false`);

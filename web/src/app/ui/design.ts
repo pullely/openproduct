@@ -12,21 +12,16 @@
 // it HERE, named, rather than inventing it inline — two spellings of one card
 // is how a site stops looking like one thing.
 
+// The six every page's own bundle draws with — the focus ring, the page
+// title and its narrow column, the act, the outlined button and the soft
+// button — are in `design-core.ts` (it says why); they are still imported
+// from here.
+export { BTN_OUTLINE, BTN_PRIMARY, BTN_SOFT, FOCUS, PAGE_NARROW, PAGE_TITLE } from "./design-core";
+
 /** The page column (CL-R2): 1200px, 44px gutters, 80px above the title and
  *  104px under the page; `16px` gutters and 48px above on a phone. */
 export const PAGE =
   "mx-auto box-border w-full max-w-[1200px] px-[44px] pb-[104px] pt-[80px] max-lg:px-7 max-sm:px-4 max-sm:pb-[72px] max-sm:pt-12";
-
-/** A prose page: the 900px column the docs use, with the calm frame's room
- *  above (CL-R2). */
-export const PAGE_NARROW =
-  "mx-auto box-border w-full max-w-[900px] px-8 pb-[96px] pt-[64px] max-sm:px-4 max-sm:pb-[72px] max-sm:pt-10";
-
-/** The page title (OPR1): Lora 400 at 40px, line-height 1.1, -0.015em; 28px
- *  on a phone — the boards' `h1`. One size on every page, so a page announces
- *  itself the same way wherever a reader lands. */
-export const PAGE_TITLE =
-  "m-0 font-serif text-display font-normal tracking-[-0.015em] text-foreground max-sm:text-title max-sm:leading-[1.1]";
 
 /** The line under a page title (CL-R2): 17.5px/1.55 in `--muted`, 14px below,
  *  60ch wide; 16px on a phone. */
@@ -69,19 +64,6 @@ export const HEAD_META = "text-[13px] text-muted-foreground";
 /** A list row inside a card: a `--line` rule above, `16px 20px`, hover `--accent`. */
 export const ROW =
   "relative flex items-center gap-4 border-t border-line px-5 py-4 transition-colors hover:bg-accent";
-
-/** The act (CP-R1): the one thing a page asks for — offer, post, publish,
- *  sign in, start a thread: a 40px pill in `--primary`, which is ink
- *  (#141413) under #FAF9F5 on any page (OPR1). Never the accent: the endorse
- *  colour is the upvote's (XP-1, CL-R8), and an act filled with it reads as
- *  one. */
-export const BTN_PRIMARY =
-  "inline-flex h-[40px] shrink-0 items-center justify-center whitespace-nowrap rounded-full bg-primary px-[18px] text-[14px] font-medium text-primary-foreground transition-opacity hover:opacity-90";
-
-/** The outlined button: a 40px pill, `--border-strong`, on `--card`. Every
- *  button is a pill (CP1, OPR1). */
-export const BTN_OUTLINE =
-  "inline-flex h-[40px] shrink-0 items-center justify-center whitespace-nowrap rounded-full border border-border-strong bg-card px-4 text-[14px] font-medium text-foreground transition-colors hover:border-faint";
 
 /** The quiet outlined button: a 40px pill, on `--border` rather than `--border-strong`. */
 export const BTN_QUIET =
@@ -127,10 +109,6 @@ export const LINK_QUIET = "underline underline-offset-[3px] hover:text-foregroun
 
 /** A breadcrumb row: 13.5px in `--muted`, 8px between crumbs. */
 export const CRUMBS = "flex items-center gap-2 text-[13.5px] text-muted-foreground";
-
-/** The visible focus ring, for controls drawn without a Tailwind focus style. */
-export const FOCUS =
-  "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring";
 
 // ── OPR1, the sections with no board (design.md §5: "take the new shell and
 // tokens") ── topics, stack, pricing, collections, the digest, the day board,
@@ -218,11 +196,6 @@ export const COVER_PRODUCT =
  *  on a phone. */
 export const COVER_PERSON =
   "h-[120px] bg-[radial-gradient(600px_200px_at_85%_0%,oklch(var(--brand-amber-inverted)/0.4),transparent_70%),linear-gradient(120deg,oklch(var(--sunken)),oklch(var(--primary-foreground)))] max-sm:h-[72px]";
-
-/** The soft button: a 40px pill on 6% of ink, 15px/600 — "Take a seat",
- *  "Edit details". 44px on a phone. */
-export const BTN_SOFT =
-  "inline-flex h-[40px] shrink-0 items-center justify-center gap-2 whitespace-nowrap rounded-full bg-foreground/[0.06] px-[18px] text-[15px] font-semibold text-foreground no-underline transition-colors hover:bg-foreground/[0.1] max-sm:h-[44px]";
 
 /** The header card's ink button: `BTN_PRIMARY` at the boards' 15px/600 with
  *  room for a glyph — "Try it". 44px on a phone. */

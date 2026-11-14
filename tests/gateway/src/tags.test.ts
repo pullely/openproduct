@@ -70,6 +70,10 @@ describe("every public document says which family it belongs to", () => {
     ["/v1/public/openproduct/product-posts", "op-posts"],
     ["/v1/public/openproduct/product-posts/ppo_0d5e1f2a111142228333444455556666", "op-posts"],
     ["/v1/public/openproduct/projects/acme-thing/product-posts", "op-posts"],
+    // A person's posts carry both families: a publish and a profile change
+    // each purge them.
+    ["/v1/public/openproduct/people/ada/product-posts", "op-posts"],
+    ["/v1/public/openproduct/people/ada/product-posts", "op-people"],
   ];
 
   it.each(publicPaths)("%s carries %s", (path, family) => {

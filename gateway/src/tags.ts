@@ -103,6 +103,9 @@ export function publicCacheTags(pathname: string): string[] {
   else if (p.startsWith("/v1/public/openproduct/topics")) add(TAG_TOPICS);
   else if (p.startsWith("/v1/public/openproduct/threads")) add(TAG_THREADS);
   else if (p === "/v1/public/openproduct/contributors") add(TAG_PEOPLE);
+  // OPR-3 — a person's posts are posts first: a publish purges them with the
+  // feed, and a change to the person's page purges them with the person.
+  else if (/^\/v1\/public\/openproduct\/people\/[^/]+\/product-posts$/.test(p)) add(TAG_POSTS, TAG_PEOPLE);
   else if (p.startsWith("/v1/public/openproduct/people")) add(TAG_PEOPLE);
   else if (p === "/v1/search") add(TAG_SEARCH);
   else if (p === "/v1/facets") add(TAG_CATALOG);

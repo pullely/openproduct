@@ -40,16 +40,23 @@ import { fileURLToPath } from "node:url";
 
 import { chromium } from "playwright";
 
-import { SAMPLE_DAY, SAMPLE_HANDLE, SAMPLE_SLUG, SAMPLE_TOPIC } from "./fixture.mjs";
+import { SAMPLE_DAY, SAMPLE_HANDLE, SAMPLE_IDEA_SLUG, SAMPLE_POST, SAMPLE_SLUG, SAMPLE_TOPIC } from "./fixture.mjs";
 import { newRampContext } from "./ramp.mjs";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const DIR = resolve(here, "../snapshots");
 
-/** The eight routes this epic touched, per the plan. */
+/** The eight routes this epic touched, per the plan — and, since
+ *  openproduct-redesign OPR-3, the three it added. */
 export const ROUTES = [
-  { key: "home", path: "/" },
+  // OPR-3 — `/` is the feed of posts. It was "home" (the list of products)
+  // until then; the baseline was renamed with the page, so the feed's
+  // geometry is compared with the feed's and never with the list's.
+  { key: "feed", path: "/" },
   { key: "listing", path: `/${SAMPLE_SLUG}` },
+  // OPR-3 — a post's own page, and an idea's page (one page, no tabs).
+  { key: "post", path: `/${SAMPLE_SLUG}/posts/${SAMPLE_POST}` },
+  { key: "idea", path: `/${SAMPLE_IDEA_SLUG}` },
   // OB7 (#1875) — the leaderboard is the Upvoted order; OPR1 — and that
   // order is the Products page's, at `/products/by/upvoted`.
   { key: "upvoted", path: "/products/by/upvoted" },

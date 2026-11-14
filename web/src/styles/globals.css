@@ -1944,6 +1944,21 @@
     outline-offset: 2px;
   }
 
+  /* THE MAKER VIEW'S ROOM (openproduct-redesign OPR-3; `[slug]/maker/gate.ts`).
+     A slot is an empty `div` in every visitor's page, around a piece of the
+     maker view that pushes what is under it down. Empty, it is not there at
+     all — no box, and no gap in the column it sits in. Once the crew's own
+     browser has remembered how tall the piece was, the root carries
+     `data-maker-reserved` and the slot holds that room (its `min-height`
+     reads `--maker-<slot>`) from the first paint, so the page does not move
+     when the piece arrives. */
+  .maker-slot:empty {
+    display: none;
+  }
+  :root[data-maker-reserved] .maker-slot:empty {
+    display: block;
+  }
+
   /* THE ACCOUNT CONTROL'S TWO BRANCHES, AND CSS PICKS ONE.
 
      Both are in the document, always, for everybody — which is exactly what

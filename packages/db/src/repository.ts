@@ -1063,7 +1063,19 @@ const CARD_COLUMNS = `
   -- instructions about one URL.
   p.indexable,
   -- OPR-3 — idea or shipping, so a list can filter and label by it.
-  p.stage
+  p.stage,
+  -- OPR-3 — how many milestones have shipped, of how many, so a card draws
+  -- "3 of 4" and its bars without a read per card. Two counts over the
+  -- (profile_id, position) index.
+  (SELECT COUNT(*) FROM openproduct.product_milestones ms
+    WHERE ms.profile_id = p.id AND ms.shipped_at IS NOT NULL) AS milestones_shipped,
+  (SELECT COUNT(*) FROM openproduct.product_milestones mt
+    WHERE mt.profile_id = p.id) AS milestones_total,
+  -- OPR-3 — the crew the product page draws: its published maintainers,
+  -- counted. The SAME rows the page lists, so "Needs a first builder" on a
+  -- card and on the page cannot disagree.
+  (SELECT COUNT(*) FROM openproduct.published_maintainers cm
+    WHERE cm.profile_id = p.id) AS crew_count
 `;
 
 type CardRow = {
@@ -1086,8 +1098,20 @@ type CardRow = {
   indexable?: boolean | null;
   // OPR-3 — absent on a catalogue row materialised before 2265.
   stage?: string | null;
+  // OPR-3 — absent on a catalogue row materialised before these were counted.
+  milestones_shipped?: number | string | null;
+  milestones_total?: number | string | null;
+  crew_count?: number | string | null;
   published_at: string | Date | null;
 };
+
+/** A count a catalogue row may predate: a number when it was counted, `null`
+ *  when the row was materialised before the column existed. */
+function countOrNull(value: number | string | null | undefined): number | null {
+  if (value === null || value === undefined) return null;
+  const n = Number(value);
+  return Number.isFinite(n) ? n : null;
+}
 
 function cardOf(row: CardRow): ProfileCardRecord {
   return {
@@ -1112,6 +1136,15 @@ function cardOf(row: CardRow): ProfileCardRecord {
     indexable: row.indexable !== false,
     publishedAt: iso(row.published_at),
     stage: stageOf(row.stage),
+    // OPR-3 — zero of zero is a true answer for a product with no milestones,
+    // and what a row that predates the counts says until the next sweep.
+    milestoneCounts: {
+      shipped: countOrNull(row.milestones_shipped) ?? 0,
+      total: countOrNull(row.milestones_total) ?? 0,
+    },
+    // NULL, NOT ZERO, for a row that predates the count: "nobody is on this
+    // crew" is a claim, and a card says it only when it was counted.
+    crewCount: countOrNull(row.crew_count),
   };
 }
 
@@ -1408,6 +1441,8 @@ interface PublicProductPostRow extends SqlRow {
   author_name: string | null;
   slug: string;
   stage: string | null;
+  milestones_shipped: number | string | null;
+  milestones_total: number | string | null;
   useful: number | string | null;
   would_use: number | string | null;
   impressive: number | string | null;
@@ -1427,6 +1462,10 @@ function publicProductPostOf(row: PublicProductPostRow): PublicProductPostRecord
     authorName: row.author_name,
     slug: row.slug,
     stage: stageOf(row.stage),
+    milestoneCounts: {
+      shipped: Number(row.milestones_shipped ?? 0),
+      total: Number(row.milestones_total ?? 0),
+    },
     reactions: {
       useful: Number(row.useful ?? 0),
       would_use: Number(row.would_use ?? 0),
@@ -1461,6 +1500,12 @@ const PUBLIC_PRODUCT_POST_SELECT = `
   SELECT pp.id, pp.kind, pp.blocks, pp.published_at, pp.thread_id, pp.author_subject_id,
          au.handle AS author_handle, au.display_name AS author_name,
          p.slug, p.stage,
+         -- The product's progress, so a feature card in the feed draws its
+         -- bars without a read per card. Two counts over (profile_id, position).
+         (SELECT count(*) FROM openproduct.product_milestones ms
+           WHERE ms.profile_id = p.id AND ms.shipped_at IS NOT NULL) AS milestones_shipped,
+         (SELECT count(*) FROM openproduct.product_milestones mt
+           WHERE mt.profile_id = p.id) AS milestones_total,
          rc.useful, rc.would_use, rc.impressive, rc.curious,
          (SELECT count(*)
             FROM openproduct.posts po
@@ -1527,15 +1572,19 @@ export function createOpenproductRepository(sql: SqlExecutor): OpenproductReposi
 
   /** OPR-3 — one page of published posts, newest first, from a position. */
   async function publicProductPostsPage(
-    profileId: string | null,
+    of: { profileId?: string; authorSubjectId?: string },
     input: ProductPostsPageInput,
   ): Promise<ProductPostsPageRecord> {
     const limit = Math.min(Math.max(1, Math.trunc(input.limit) || 0), MAX_PRODUCT_POSTS_PAGE);
     const params: unknown[] = [limit + 1];
     const where: string[] = [];
-    if (profileId !== null) {
-      params.push(profileId);
+    if (of.profileId !== undefined) {
+      params.push(of.profileId);
       where.push(`pp.profile_id = $${params.length}::uuid`);
+    }
+    if (of.authorSubjectId !== undefined) {
+      params.push(of.authorSubjectId);
+      where.push(`pp.author_subject_id = $${params.length}::text`);
     }
     if (input.cursor !== null) {
       params.push(input.cursor.publishedAt, input.cursor.id);
@@ -8091,11 +8140,19 @@ export function createOpenproductRepository(sql: SqlExecutor): OpenproductReposi
     },
 
     async listPublicProductPosts(input) {
-      return publicProductPostsPage(null, input);
+      return publicProductPostsPage({}, input);
     },
 
     async listPublicProductPostsForProfile(profileId, input) {
-      return publicProductPostsPage(profileId, input);
+      return publicProductPostsPage({ profileId }, input);
+    },
+
+    async listPublicProductPostsByAuthor(subjectId, input) {
+      // The same SELECT and the same two predicates as the feed, narrowed to
+      // one author. Whether that author has a public page is the CALLER's
+      // gate (the handle resolved before this ran); this read never widens
+      // what is public about a post.
+      return publicProductPostsPage({ authorSubjectId: subjectId }, input);
     },
 
     async getPublicProductPost(id) {

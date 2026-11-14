@@ -10,6 +10,7 @@ import { JsonLd } from "../../ui/json-ld";
 import { AppLink } from "../../ui/link";
 
 import { FEED_CARD_ATTRIBUTE, FEED_TITLE, feedPagePath, feedPosts } from "../feed-copy";
+import { FeedCards } from "../feed-cards";
 import { FeedPosts } from "../feed-posts";
 
 /**
@@ -69,7 +70,9 @@ export default async function FeedContinuedPage({ params }: { params: Promise<{ 
         </AppLink>
       </nav>
       {posts.length > 0 ? (
-        <FeedPosts posts={posts} next={page.next} returnTo={here} />
+        <FeedPosts held={posts.map((post) => post.id)} next={page.next} returnTo={here}>
+          <FeedCards posts={posts} returnTo={here} />
+        </FeedPosts>
       ) : (
         <p className="m-0 rounded-[16px] bg-card px-7 py-9 text-center text-[15px] text-muted-foreground">Nothing on this page.</p>
       )}

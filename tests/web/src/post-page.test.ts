@@ -110,9 +110,12 @@ describe("the two anchors the cards link to", () => {
   it("are `comments` and `comment`, the fragments a card's footer uses", () => {
     expect(POST_COMMENTS_ID).toBe("comments");
     expect(POST_COMMENT_ID).toBe("comment");
-    const card = code("posts/post-card.tsx");
-    expect(card).toContain("href={`${page}#comments`}");
-    expect(card).toContain("href={`${page}#comment`}");
+    // A compact card's count links to `#comments`; the full card's footer
+    // (`post-footer.tsx`) links its count there and its Comment to `#comment`.
+    expect(code("posts/post-card.tsx")).toContain("href={`${page}#comments`}");
+    const footer = code("posts/post-footer.tsx");
+    expect(footer).toContain("href={`${page}#comments`}");
+    expect(footer).toContain("href={`${page}#comment`}");
   });
 
   it("both exist on every post's page, whether or not anybody can comment", () => {
@@ -201,9 +204,32 @@ describe("the page's words and its side column", () => {
     expect(postPageDescription(post({ blocks: [{ block: "what", value: "x".repeat(400) }] })).length).toBeLessThanOrEqual(200);
   });
 
-  it("the page has one h1", () => {
-    expect(code(PAGE).match(/<h1\b/g)).toHaveLength(1);
+  it("the page has one h1: the post's headline, drawn where the card draws it", () => {
+    // Not a hidden heading beside a visible `h3` saying the same words: the
+    // card draws its headline at the level the page gives it.
+    const page = code(PAGE);
+    expect(page).not.toMatch(/<h1\b/);
+    expect(page).not.toContain('className="sr-only"');
+    expect(page.match(/headingLevel=\{1\}/g)).toHaveLength(1);
+    expect(page).toMatch(/<PostCardBody[\s\S]*?headingLevel=\{1\}\s*\/>/);
+    const card = code("posts/post-card.tsx");
+    expect(card).toContain('const Tag = level === 1 ? "h1" : level === 2 ? "h2" : "h3";');
+    // Every other heading on the page is below it.
     expect(code(THREAD)).not.toMatch(/<h1\b/);
+    expect(page.match(/<h2\b/g)?.length ?? 0).toBeGreaterThan(0);
+  });
+
+  it("says Posted after Post, for the crew, after load", () => {
+    // Publishing lands on `/{slug}/posts/{id}?notice=posted`. The line is
+    // the crew's (read from the address in the browser, never on the
+    // server: the page is cached and the same bytes for everyone).
+    const page = code(PAGE);
+    // A toast: a line that arrived in the page's flow after load would push
+    // the post down.
+    expect(page).toContain("<CrewNoticeLine slug={post.product.slug} toast />");
+    expect(code("[slug]/maker/notice.tsx")).toContain("fixed bottom-6 left-1/2 z-40");
+    expect(page).not.toMatch(/searchParams|useSearchParams/);
+    expect(code("posts/crew-handler.ts")).toContain('posted: "Posted",');
   });
 
   it("More from the product leaves out this post and anything unpublished", () => {

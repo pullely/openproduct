@@ -29,6 +29,7 @@ import {
   PUBLIC_PRODUCT_POST_PRODUCT_KEYS,
   PUBLIC_PROFILE_CARD_KEYS,
   PUBLIC_PROFILE_KEYS,
+  PUBLIC_ROLE_OPENING_KEYS,
   SEARCH_PERSON_KEYS,
   isProductStage,
   milestoneCountsOf,
@@ -37,7 +38,7 @@ import {
   type PublicProductPost,
 } from "@openproduct/contracts";
 
-import { fetchFeedPage, fetchProductPost, fetchProductPosts, isDrawablePost } from "@openproduct-web/app/posts/posts-api";
+import { fetchAuthorPosts, fetchFeedPage, fetchProductPost, fetchProductPosts, isDrawablePost } from "@openproduct-web/app/posts/posts-api";
 import { parseOverlay } from "@openproduct-web/app/ui/overlay";
 
 interface Fixture {
@@ -54,7 +55,12 @@ interface Fixture {
   CREW_PROFILE: string;
   SAMPLE_DRAFT_POST: string;
   SAMPLE_REQUESTED_OPENING: string;
+  SAMPLE_OPENING: string;
+  SAMPLE_HANDLE: string;
   REQUESTED_SEAT_SLUG: string;
+  STUDIO_ORG: string;
+  STUDIO_PROFILE: string;
+  MOVED: Array<{ from: string; to: string; status: number }>;
 }
 
 // A `.mjs` this lane has no types for; the specifier is a value so the
@@ -197,6 +203,43 @@ describe("stage and milestones on the product documents and cards", () => {
     expect(new Set(cards.map((c) => c.stage)).size).toBe(2);
   });
 
+  it("a card carries its own progress and crew count, and they are the product document's", async () => {
+    const cards = (await get<{ projects: Array<{ slug: string; stage: string; milestoneCounts: { shipped: number; total: number }; crewCount: number }> }>(
+      "/v1/public/openproduct/projects",
+    )).data.projects;
+    const bySlug = new Map(cards.map((card) => [card.slug, card]));
+    expect(bySlug.get(fixture.SAMPLE_SLUG)!.milestoneCounts).toEqual({ shipped: 3, total: 4 });
+    for (const slug of [fixture.SAMPLE_SLUG, fixture.SAMPLE_IDEA_SLUG, "product-04"]) {
+      const card = bySlug.get(slug)!;
+      const profile = (await get<{ profile: { milestoneCounts: unknown; maintainers: unknown[] } }>(`/v1/public/openproduct/projects/${slug}`)).data.profile;
+      expect(keys(card.milestoneCounts)).toEqual([...MILESTONE_COUNTS_KEYS]);
+      // The list and the page cannot disagree: one says the count, the other
+      // lists the rows.
+      expect([slug, card.milestoneCounts]).toEqual([slug, profile.milestoneCounts]);
+      expect([slug, card.crewCount]).toEqual([slug, profile.maintainers.length]);
+    }
+    // An idea's crew is only its maker, so its card and its page both say it
+    // needs a first builder.
+    expect(bySlug.get(fixture.SAMPLE_IDEA_SLUG)!.crewCount).toBe(1);
+    // A post's product carries the same counts, so a feed card draws its bars.
+    const feed = (await get<{ posts: PublicProductPost[] }>(PRODUCT_POST_API.feed())).data.posts;
+    for (const post of feed) {
+      expect(keys(post.product)).toEqual([...PUBLIC_PRODUCT_POST_PRODUCT_KEYS]);
+      expect([post.product.slug, post.product.milestoneCounts]).toEqual([post.product.slug, bySlug.get(post.product.slug)!.milestoneCounts]);
+    }
+  });
+
+  it("one person's posts are theirs, in the feed's shape, and nobody else's page answers", async () => {
+    const page = await fetchAuthorPosts(fixture.SAMPLE_HANDLE, null, viaFixture);
+    expect(page).not.toBeNull();
+    expect(page!.posts.length).toBeGreaterThan(0);
+    for (const post of page!.posts) {
+      expect(keys(post)).toEqual([...PUBLIC_PRODUCT_POST_KEYS]);
+      expect(post.author?.handle).toBe(fixture.SAMPLE_HANDLE);
+    }
+    expect(await fetchAuthorPosts("nobody-here", null, viaFixture)).toBeNull();
+  });
+
   it("a shipping product has an address to try and shipped milestones; an idea has neither", async () => {
     const read = async (slug: string) =>
       (await get<{ profile: Record<string, unknown> }>(`/v1/public/openproduct/projects/${slug}`)).data.profile as {
@@ -312,6 +355,44 @@ describe("the crew routes, for the signed-in maker", () => {
     expect(keys(needsYou.requests[0]!)).toEqual([...CREW_SEAT_REQUEST_KEYS]);
     // Where it is reviewed: there is no accept or decline here.
     expect(typeof needsYou.requests[0]!.requestRef).toBe("string");
+  });
+
+  it("opens, edits and deletes a seat at core's role-opening routes; opening one names the draft post it prepared", async () => {
+    const { org, profile } = root();
+    const made = await get<{ roleOpening: { id: string; title: string; status: string }; offeredPostId: string | null }>(
+      PRODUCT_POST_API.crewSeats(org, profile),
+      sendJson("POST", { title: "HR-compliance advisor", description: "Advise on state rules.", commitment: "2 hours a week" }),
+    );
+    expect(keys(made.data)).toEqual(["offeredPostId", "roleOpening"]);
+    expect(keys(made.data.roleOpening)).toEqual([...PUBLIC_ROLE_OPENING_KEYS].filter((key) => key !== "demand"));
+    expect(made.data.roleOpening).toMatchObject({ title: "HR-compliance advisor", status: "open" });
+    expect(made.data.roleOpening.id).toMatch(ME_OVERLAY_OPENING_ID_RE);
+    expect(made.data.offeredPostId).toBe(fixture.SAMPLE_DRAFT_POST);
+    // An edit (closing is an edit that says so) prepares nothing.
+    const closed = await get<{ roleOpening: { status: string }; offeredPostId: string | null }>(
+      PRODUCT_POST_API.crewSeat(org, profile, fixture.SAMPLE_OPENING),
+      sendJson("PUT", { title: "Frontend contributor", status: "closed" }),
+    );
+    expect(closed.data).toMatchObject({ roleOpening: { status: "closed" }, offeredPostId: null });
+    expect((await get<{ deleted: boolean }>(PRODUCT_POST_API.crewSeat(org, profile, fixture.SAMPLE_OPENING), { method: "DELETE" })).data).toEqual({ deleted: true });
+    // A seat with no role is refused, as core refuses it.
+    expect((await get(PRODUCT_POST_API.crewSeats(org, profile), sendJson("POST", { title: "  " }))).status).toBe(422);
+    // And the seat a product's page shows wears the real id grammar, so the
+    // crew's form names one core would accept.
+    const opening = (await get<{ profile: { roleOpenings: Array<{ id: string }> } }>(`/v1/public/openproduct/projects/${fixture.CREW_SLUG}`)).data.profile.roleOpenings[0]!;
+    expect(opening.id).toBe(fixture.SAMPLE_OPENING);
+    expect(opening.id).toMatch(ME_OVERLAY_OPENING_ID_RE);
+  });
+
+  it("the maintainer's read of the crew's listing says it is published — what its base address forwards on", async () => {
+    const { org, profile } = root();
+    const read = (await get<{ profile: { slug: string; visibility: string } }>(`/v1/organizations/${org}/openproduct/profiles/${profile}`)).data.profile;
+    expect(read).toMatchObject({ slug: fixture.CREW_SLUG, visibility: "public" });
+    expect(fixture.MOVED.at(-1)).toEqual({
+      from: `/studio/${fixture.STUDIO_ORG}/${fixture.STUDIO_PROFILE}`,
+      to: `/studio/${fixture.STUDIO_ORG}/${fixture.STUDIO_PROFILE}/settings`,
+      status: 307,
+    });
   });
 
   it("lists the product's posts with the draft first, and its milestones with their ids", async () => {

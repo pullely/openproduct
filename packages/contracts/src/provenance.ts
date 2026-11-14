@@ -502,6 +502,12 @@ export const FORMULAS = {
       "How many of a product's milestones its crew has marked shipped, and how many it has. A milestone counts as shipped from the moment it was marked and stops counting if the mark is taken back.",
     computedBy: "OPR2",
   },
+  "product.crew-count": {
+    id: "product.crew-count",
+    sentence:
+      "How many people a product's page lists as its crew: the maintainers its crew published, counted. A count and never a list here; the names are on the product's page. It orders nothing.",
+    computedBy: "OPR2",
+  },
 } as const satisfies Record<string, Formula>;
 
 export type FormulaId = keyof typeof FORMULAS;

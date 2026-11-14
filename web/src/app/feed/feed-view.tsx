@@ -16,9 +16,10 @@ import {
   feedPosts,
   openSeatsLine,
 } from "./feed-copy";
+import { FeedCards } from "./feed-cards";
 import { FeedPosts } from "./feed-posts";
 import { openSeatProducts, worthFollowing } from "./feed-suggest";
-import { FeedFollowing, FeedYou } from "./feed-you";
+import { FeedFollowing, FeedYou } from "./feed-personal";
 
 /**
  * The feed (openproduct-redesign OPR-3; boards `Feed`, `PhoneFeed`): what
@@ -77,7 +78,9 @@ export function FeedView({
           {FEED_TITLE}
         </h1>
         {posts.length > 0 ? (
-          <FeedPosts posts={posts} next={page.next} returnTo={returnTo} />
+          <FeedPosts held={posts.map((post) => post.id)} next={page.next} returnTo={returnTo}>
+            <FeedCards posts={posts} returnTo={returnTo} />
+          </FeedPosts>
         ) : (
           <div className="flex flex-col items-center gap-3 rounded-[16px] bg-card px-7 py-9 text-center max-sm:px-5 max-sm:py-7" data-feed-empty>
             <h2 className="m-0 text-card-title font-semibold tracking-[-0.015em] text-foreground">{FEED_EMPTY_TITLE}</h2>
@@ -151,8 +154,6 @@ export function FeedView({
           </section>
         ) : null}
 
-        <FeedFollowing />
-
         {seats.length > 0 ? (
           <section aria-labelledby="feed-open-seats" className={`${SIDE_CARD} gap-2.5`} data-feed-seats>
             <h2 id="feed-open-seats" className={SIDE_TITLE}>
@@ -161,7 +162,7 @@ export function FeedView({
             <ul className="m-0 flex list-none flex-col gap-2 p-0">
               {seats.map((product) => (
                 <li key={product.slug}>
-                  <AppLink href={productSeatsPath(product.slug)} className={`flex flex-col text-foreground no-underline ${FOCUS}`}>
+                  <AppLink href={productSeatsPath(product.slug, product.stage)} className={`flex flex-col text-foreground no-underline ${FOCUS}`}>
                     <span className="text-[15px] font-medium">{product.slug}</span>
                     <span className="text-[13px] text-seat-ink">{openSeatsLine(product.seats)}</span>
                   </AppLink>
@@ -173,6 +174,11 @@ export function FeedView({
             </AppLink>
           </section>
         ) : null}
+
+        {/* LAST IN THE COLUMN, so nothing moves when it arrives: it is the
+            reader's own (what they follow), drawn after load, and a card
+            that appeared above the two public ones would push both down. */}
+        <FeedFollowing />
       </aside>
     </main>
   );

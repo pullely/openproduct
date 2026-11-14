@@ -6,8 +6,8 @@ import { openSeatsLabel } from "./products";
 import { FOCUS, SEAT_RING } from "../ui/design";
 import { AppLink } from "../ui/link";
 import { ProductTile } from "../ui/product-tile";
-import { IDEA_NEEDS_BUILDER } from "../ui/stage";
-import { StageMark } from "../ui/stage-mark";
+import { IDEA_NEEDS_BUILDER, needsFirstBuilder } from "../ui/stage";
+import { MilestoneSegments, StageMark } from "../ui/stage-mark";
 
 /**
  * A product, as a card (openproduct-redesign OPR1; boards `Products`,
@@ -26,15 +26,15 @@ import { StageMark } from "../ui/stage-mark";
  * as the idea's own card: the lavender wash with one square corner, the
  * shape an idea has everywhere on the site.
  *
- * WHAT THE DATA DOES NOT HOLD, THE CARD DOES NOT DRAW:
+ * WHAT THE CARD DRAWS, AND FROM WHAT:
  *
- *   progress  the board's "3 of 4" and its milestone bars need the product's
- *             milestone counts, and a catalogue card carries the stage only.
- *             The mark says `SHIPPING`; the count and the bars are on the
- *             product's own page until the card carries them.
- *   builder   "Needs a first builder" is said of an idea that has a seat
- *             open — the one fact about its crew a card holds. An idea with
- *             no open seat says `IDEA` and nothing more.
+ *   progress  a shipping product's `SHIPPING · 3 OF 4` and its milestone
+ *             bars, from the card's own `milestoneCounts`. A product with no
+ *             milestones says `SHIPPING` and draws no bar.
+ *   builder   "Needs a first builder" is said of an idea whose crew is only
+ *             its maker — the card's `crewCount`, the same people the
+ *             product's page lists, at most one. A count nobody made (`null`
+ *             on a card that predates it) says nothing.
  *   seats     the link is drawn only when a seat is open: "0 open seats" is
  *             a link to a page with nothing on it for this product.
  *   upvote    the board's card carries no vote. The act lives on the
@@ -69,8 +69,9 @@ export function ProductCard({ card, returnTo = "/products" }: { card: PublicProf
         </span>
         {staged ? (
           <span className="flex flex-col gap-1.5" data-product-stage-line>
-            <StageMark stage={card.stage} short />
-            {idea && card.roleOpeningCount > 0 ? (
+            <StageMark stage={card.stage} counts={card.milestoneCounts} short />
+            {!idea ? <MilestoneSegments counts={card.milestoneCounts} /> : null}
+            {idea && needsFirstBuilder(card.crewCount) ? (
               <span className="flex items-center gap-1.5 text-[13px] text-idea">
                 <span aria-hidden="true" className="box-border h-3 w-3 rounded-full border-[1.5px] border-dashed border-idea" />
                 {IDEA_NEEDS_BUILDER}

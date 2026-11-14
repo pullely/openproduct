@@ -36,7 +36,7 @@ async function answerOf<T>(res: Response): Promise<CrewActResult<T>> {
 /** `POST /{slug}/manage/{route}` with these fields. */
 export async function crewWrite<T>(
   slug: string,
-  route: "profile" | "milestones" | "posts",
+  route: "profile" | "milestones" | "posts" | "seats",
   fields: Readonly<Record<string, unknown>>,
   fetchImpl: typeof fetch = fetch,
 ): Promise<CrewActResult<T>> {

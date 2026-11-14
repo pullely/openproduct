@@ -1785,7 +1785,7 @@ describe("XP3 — the studio frame", () => {
     expect(read("studio/frame.tsx")).not.toContain('"use client"');
     // OPR-3 — the studio's landing is a redirect to `/me` now; the listing's
     // overview is the frame's first page.
-    expect(read("studio/[org]/[profile]/page.tsx")).not.toContain('"use client"');
+    expect(read("studio/[org]/[profile]/settings/page.tsx")).not.toContain('"use client"');
   });
 
   it("the three existing studio screens all use it", () => {
@@ -1793,7 +1793,7 @@ describe("XP3 — the studio frame", () => {
     // is only true if the ones that exist actually moved onto it.
     // A listing's editor moved its frame into a layout every step shares
     // (openproduct-studio OSD5); its pages keep the frame's notice island.
-    for (const rel of ["studio/reports/page.tsx", "studio/[org]/[profile]/page.tsx"]) {
+    for (const rel of ["studio/reports/page.tsx", "studio/[org]/[profile]/settings/page.tsx"]) {
       const source = read(rel);
       expect(`${rel}: ${source.includes("<StudioFrame") || source.includes("<StudioLive")}`).toBe(`${rel}: true`);
       // And they no longer hand-roll a container.
@@ -1921,7 +1921,7 @@ describe("LC0 — the launch scheduler in the studio frame", () => {
     // `listingStepPath`, and the scheduler is one of them. So the property is
     // pinned where it now lives: the contract says the schedule step keeps
     // the address LC0 shipped, and the overview links every step there is.
-    const overview = code("studio/[org]/[profile]/page.tsx");
+    const overview = code("studio/[org]/[profile]/settings/page.tsx");
     expect(overview).toContain("LISTING_STEPS.map");
     expect(overview).toContain("listingStepPath(org, profileId, step)");
     const schedule = LISTING_STEPS.find((s) => s.id === "schedule");

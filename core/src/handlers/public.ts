@@ -155,6 +155,8 @@ function cardOf(row: {
   indexable: boolean;
   publishedAt: string | null;
   stage: "idea" | "shipping";
+  milestoneCounts: { shipped: number; total: number };
+  crewCount: number | null;
 }, metrics: PublicMetric[], thumbnail: MediaThumbnail | null): PublicProfileCard {
   // Field by field, from the projection's own list — never by spreading the
   // record. CT1 widens this by four, and each one is a line somebody wrote.
@@ -188,6 +190,10 @@ function cardOf(row: {
     thumbnail,
     // OPR-3 — idea or shipping. Read, never recomputed; never an ordering input.
     stage: row.stage,
+    // OPR-3 — shipped of total, and the crew counted. Field by field; neither
+    // is an ordering input.
+    milestoneCounts: { shipped: row.milestoneCounts.shipped, total: row.milestoneCounts.total },
+    crewCount: row.crewCount,
   };
 }
 

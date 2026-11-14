@@ -57,7 +57,19 @@ describe("WC2-8's three numbers", () => {
     // The redesign is a NOTE, not an amendment: it held the number, and says
     // what was measured — the three archetypes, in bytes, and the font files
     // a page actually fetches.
-    expect(wc28.notes.map((n) => [n.date, n.heldKB])).toEqual([["2026-11-14", 276]]);
+    expect(wc28.notes.map((n) => [n.date, n.heldKB])).toEqual([
+      ["2026-11-14", 276],
+      // OPR2 — `/` became the feed, which fetches Lora's italic for an
+      // idea's quote. It was over on the first build and is under now, with
+      // the italic in it: a second note, and still no amendment.
+      ["2026-11-15", 276],
+    ]);
+    const opr2 = wc28.notes[1]!.why;
+    for (const measured of ["281,381", "275,993", "262,600", "22,740", "299,632", "292,080"]) {
+      expect([measured, opr2.includes(measured)]).toEqual([measured, true]);
+    }
+    for (const bytes of [281_381, 275_993, 262_600]) expect(bytes).toBeLessThanOrEqual(wc28.bytesKB * 1024);
+    expect(opr2).toContain("No number in this file changed.");
     const held = wc28.notes[0]!.why;
     for (const measured of ["261,811", "276,145", "262,461", "75,924", "four font files"]) {
       expect([measured, held.includes(measured)]).toEqual([measured, true]);

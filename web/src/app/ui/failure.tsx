@@ -31,7 +31,7 @@ import Link from "next/link";
 
 import type { ReactNode } from "react";
 
-import { BTN_OUTLINE, BTN_PRIMARY, PAGE_NARROW, PAGE_TITLE } from "./design";
+import { BTN_OUTLINE, BTN_PRIMARY, PAGE_NARROW, PAGE_TITLE } from "./design-core";
 
 /** One way onward. `href` for a place, `onClick` for a retry. */
 export interface FailureAction {

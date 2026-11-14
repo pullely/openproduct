@@ -22,6 +22,7 @@ import {
   FOLLOWED_PRODUCT_KEYS,
   ME_FOLLOWING_KEYS,
   MILESTONE_COUNTS_KEYS,
+  PRODUCT_POSTS_PAGE_MAX,
   PRODUCT_POSTS_PAGE_KEYS,
   PRODUCT_POST_REACTION_COUNT_KEYS,
   PRODUCT_POST_THREAD_TAG,
@@ -167,6 +168,10 @@ function harness(overrides: Partial<ProfileRecord> = {}) {
       authorName: author?.displayName ?? null,
       slug: store.profile.slug,
       stage: store.profile.stage,
+      milestoneCounts: {
+        shipped: store.milestones.filter((m) => m.shippedAt !== null).length,
+        total: store.milestones.length,
+      },
       reactions: counts,
       commentCount: 2,
     };
@@ -356,6 +361,28 @@ function harness(overrides: Partial<ProfileRecord> = {}) {
     async listPublicProductPostsForProfile(_profileId: string, input: { limit: number }) {
       return { posts: publicPosts().slice(0, input.limit).map(publicRecord), next: null };
     },
+    async listPublicProductPostsByAuthor(subjectId: string, input: { cursor: { publishedAt: string; id: string } | null; limit: number }) {
+      store.calls.push(`by-author:${subjectId}:${input.limit}:${input.cursor ? input.cursor.id : "start"}`);
+      const all = publicPosts().filter((p) => p.authorSubjectId === subjectId);
+      const from = input.cursor ? all.findIndex((p) => p.id === input.cursor!.id) + 1 : 0;
+      const rows = all.slice(from, from + input.limit).map(publicRecord);
+      const last = rows[rows.length - 1];
+      return {
+        posts: rows,
+        next: from + input.limit < all.length && last ? { publishedAt: last.publishedAt, id: last.id } : null,
+      };
+    },
+    // A person's page resolves only for a handle on record (CG1's gates are
+    // the repository's; here, the handle map is who has a public page).
+    async getPublicContributor(handle: string) {
+      const entry = [...store.handles.entries()].find(([, value]) => value.handle === handle);
+      return entry ? { handle, displayName: entry[1].displayName } : null;
+    },
+    async getSubjectsForHandles(handles: string[]) {
+      const out = new Map<string, string>();
+      for (const [subjectId, value] of store.handles) if (handles.includes(value.handle)) out.set(value.handle, subjectId);
+      return out;
+    },
     async getPublicProductPost(id: string) {
       const post = publicPosts().find((p) => p.id === id);
       return post ? publicRecord(post) : null;
@@ -511,7 +538,9 @@ describe("the public reads — one document for everybody, and never a draft", (
     expect(keysOf(post!.reactions)).toEqual([...PRODUCT_POST_REACTION_COUNT_KEYS]);
     expect(post).toMatchObject({
       kind: "feature",
-      product: { slug: "acme-thing", name: "acme-thing", stage: "idea", logo: null },
+      // The product's progress rides on the post, so a card draws its bars
+      // without a read per card.
+      product: { slug: "acme-thing", name: "acme-thing", stage: "idea", logo: null, milestoneCounts: { shipped: 0, total: 0 } },
       author: { handle: "ada", displayName: "Ada Iyer" },
       blocks: FEATURE,
       publishedAt: NOW,
@@ -523,6 +552,61 @@ describe("the public reads — one document for everybody, and never a draft", (
     // table id but the thread's, which is how a thread is addressed.
     expect(JSON.stringify(res.data)).not.toContain("usr_");
     expect(JSON.stringify(res.data)).not.toContain(PROFILE_UUID);
+  });
+
+  it("a post's product carries its milestone counts at their literal", async () => {
+    const h = harness();
+    const made = await call(h, "POST", `${BASE}/milestones`, ADA, { code: "AS1", title: "Sign in" });
+    await call(h, "POST", `${BASE}/milestones`, ADA, { code: "AS2", title: "Exports" });
+    await call(h, "PUT", `${BASE}/milestones/${(made.data.milestone as { id: string }).id}/shipped`, ADA);
+    await publish(h, await draft(h));
+    const [post] = (await call(h, "GET", `${PUBLIC}/product-posts`, null)).data.posts as PublicProductPost[];
+    expect(post!.product.milestoneCounts).toEqual({ shipped: 1, total: 2 });
+    expect(keysOf(post!.product.milestoneCounts)).toEqual([...MILESTONE_COUNTS_KEYS]);
+  });
+
+  it("one person's posts: the feed's literal, for a handle whose page resolves, paged like the feed", async () => {
+    const h = harness();
+    h.store.handles.set(ADA.subjectId, { handle: "ada", displayName: "Ada Iyer" });
+    const first = await draft(h);
+    await publish(h, first);
+    await publish(h, await draft(h));
+    // A draft of theirs is in nobody's list.
+    await draft(h);
+    const res = await call(h, "GET", `${PUBLIC}/people/ada/product-posts`, null);
+    expect(res.status).toBe(200);
+    expect(keysOf(res.data)).toEqual([...PRODUCT_POSTS_PAGE_KEYS]);
+    const posts = res.data.posts as PublicProductPost[];
+    expect(posts).toHaveLength(2);
+    for (const post of posts) {
+      expect(keysOf(post)).toEqual([...PUBLIC_PRODUCT_POST_KEYS]);
+      expect(post.author).toEqual({ handle: "ada", displayName: "Ada Iyer" });
+    }
+    expect(JSON.stringify(res.data)).not.toContain("usr_");
+    // Bounded like the feed, and paged by the feed's own cursor.
+    const one = await call(h, "GET", `${PUBLIC}/people/ada/product-posts?limit=1`, null);
+    expect((one.data.posts as unknown[]).length).toBe(1);
+    expect(typeof one.data.next).toBe("string");
+    const two = await call(h, "GET", `${PUBLIC}/people/ada/product-posts?limit=1&cursor=${encodeURIComponent(String(one.data.next))}`, null);
+    expect((two.data.posts as PublicProductPost[]).map((p) => p.id)).not.toEqual((one.data.posts as PublicProductPost[]).map((p) => p.id));
+    expect(two.data.next).toBeNull();
+    await call(h, "GET", `${PUBLIC}/people/ada/product-posts?limit=100000`, null);
+    expect(h.store.calls.filter((c) => c.startsWith("by-author:")).at(-1)).toBe(`by-author:${ADA.subjectId}:${PRODUCT_POSTS_PAGE_MAX}:start`);
+    expect((await call(h, "GET", `${PUBLIC}/people/ada/product-posts?cursor=nonsense`, null)).status).toBe(422);
+  });
+
+  it("one person's posts: one 404 for a handle that is malformed, unknown, or has no public page", async () => {
+    const h = harness();
+    await publish(h, await draft(h));
+    // Ada wrote a post and has no public page: her list is not served.
+    for (const handle of ["ada", "nobody-here", "A", "has space", "x"]) {
+      const res = await call(h, "GET", `${PUBLIC}/people/${encodeURIComponent(handle)}/product-posts`, null);
+      expect([handle, res.status]).toEqual([handle, 404]);
+    }
+    expect(h.store.calls.filter((c) => c.startsWith("by-author:"))).toEqual([]);
+    // And it is a read.
+    h.store.handles.set(ADA.subjectId, { handle: "ada", displayName: "Ada Iyer" });
+    expect((await call(h, "POST", `${PUBLIC}/people/ada/product-posts`, null, {})).status).toBeGreaterThanOrEqual(400);
   });
 
   it("an author with no public page is not named — there is nothing to link", async () => {
@@ -914,6 +998,48 @@ describe("Post — the whole rule, a thread, a moment, and the person who presse
     expect(h.store.posts[0]!.state).toBe("draft");
   });
 
+  it("a refused Post still saves the blocks that came with it, so nothing typed is lost", async () => {
+    const h = harness();
+    const id = await draft(h, "feature", []);
+    const typed = [
+      { block: "feature", value: "Dark mode" },
+      { block: "what", value: "The whole app follows the system theme." },
+    ];
+    // Try it is required and missing: the press is refused…
+    const res = await publish(h, id, { blocks: typed });
+    expect(res.status).toBe(422);
+    expect(res.fields).toEqual({ "blocks.try": ["Try it is required"] });
+    // …the post is still a draft, with no thread…
+    expect(h.store.posts[0]!.state).toBe("draft");
+    expect(h.store.threads).toEqual([]);
+    // …and it holds what was typed, written once, by this request.
+    expect(h.store.posts[0]!.blocks).toEqual(typed);
+    expect(h.store.audits.map((a) => a.type)).toEqual([
+      "openproduct.product_post.created",
+      "openproduct.product_post.updated",
+    ]);
+    // The crew's read returns it, so the builder reopens on the same words.
+    const listed = (await call(h, "GET", `${BASE}/product-posts`, ADA)).data.posts as CrewProductPost[];
+    expect(listed[0]!.blocks).toEqual(typed);
+  });
+
+  it("a refused Post saves nothing a draft could not hold, nothing unchanged, and nothing when no blocks came", async () => {
+    const h = harness();
+    const id = await draft(h, "feature", FEATURE.slice(0, 2));
+    const before = h.store.audits.length;
+    // No blocks with the press: the draft is what it was.
+    expect((await publish(h, id)).status).toBe(422);
+    // The same blocks again: nothing to write.
+    expect((await publish(h, id, { blocks: FEATURE.slice(0, 2) })).status).toBe(422);
+    // Over a limit: a draft may not hold it either, so it is refused and not stored.
+    const over = [{ block: "feature", value: "x".repeat(500) }, FEATURE[1]!];
+    const res = await publish(h, id, { blocks: over });
+    expect(res.status).toBe(422);
+    expect(Object.keys(res.fields)).toContain("blocks.feature");
+    expect(h.store.posts[0]!.blocks).toEqual(FEATURE.slice(0, 2));
+    expect(h.store.audits.length).toBe(before);
+  });
+
   it("publishes the blocks sent with the press, stored without the optional ones left empty", async () => {
     const h = harness();
     const id = await draft(h, "feature", []);
@@ -1168,6 +1294,13 @@ describe("posts that write themselves (design §6.2)", () => {
     });
     expect(res.status).toBe(201);
     const [post] = h.store.posts;
+    // The answer names the draft it prepared, so the page that opened the
+    // seat can offer "Continue" on it.
+    expect(keysOf(res.data)).toEqual(["offeredPostId", "roleOpening"]);
+    expect(res.data.offeredPostId).toMatch(/^ppo_[0-9a-f]{32}$/);
+    expect((await call(h, "GET", `${BASE}/product-posts`, ADA)).data.posts).toEqual([
+      expect.objectContaining({ id: res.data.offeredPostId, kind: "seat", state: "draft" }),
+    ]);
     expect(post).toMatchObject({ kind: "seat", state: "draft", authorSubjectId: null });
     expect(post!.roleOpeningId).toBe(h.store.openings[0]!.id);
     expect(post!.blocks.map((b) => b.block)).toEqual(["role", "what", "time"]);
@@ -1187,12 +1320,14 @@ describe("posts that write themselves (design §6.2)", () => {
 
   it("editing a seat, or opening one that is not open, offers nothing", async () => {
     const h = harness();
-    await call(h, "POST", `${BASE}/role-openings`, ADA, { title: "Filled already", status: "filled" });
+    const filled = await call(h, "POST", `${BASE}/role-openings`, ADA, { title: "Filled already", status: "filled" });
+    expect(filled.data.offeredPostId).toBeNull();
     expect(h.store.posts).toEqual([]);
     await call(h, "POST", `${BASE}/role-openings`, ADA, { title: "Maintainer" });
     expect(h.store.posts).toHaveLength(1);
     const id = seatId(h.store.openings.find((o) => o.title === "Maintainer")!.id);
-    await call(h, "PUT", `${BASE}/role-openings/${id}`, ADA, { title: "Maintainer, evenings" });
+    const edited = await call(h, "PUT", `${BASE}/role-openings/${id}`, ADA, { title: "Maintainer, evenings" });
+    expect(edited.data.offeredPostId).toBeNull();
     expect(h.store.posts).toHaveLength(1);
   });
 

@@ -26,7 +26,9 @@ const tsx = (dir: string): string[] =>
   });
 
 describe("the act is ink (CP-R1)", () => {
-  const design = code("ui/design.ts");
+  // The shell's own five live in `design-core.ts` and are re-exported from
+  // `design.ts`: the tokens are read from both.
+  const design = code("ui/design.ts") + code("ui/design-core.ts");
 
   it("the act is the bar's pill in `--primary`, and the accent button is gone", () => {
     expect(design).not.toContain("BTN_ACCENT");

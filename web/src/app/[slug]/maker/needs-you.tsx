@@ -44,7 +44,7 @@ import { useMaker } from "./use-maker";
  * "started a private thread" row with private threads (OPR3).
  */
 export function NeedsYou({ slug }: { slug: string }) {
-  const { managing } = useMaker(slug);
+  const { managing, crew } = useMaker(slug);
   const [needsYou, setNeedsYou] = React.useState<CrewNeedsYou | null>(null);
 
   React.useEffect(() => {
@@ -69,7 +69,7 @@ export function NeedsYou({ slug }: { slug: string }) {
         {NEEDS_YOU_LABEL}
       </div>
       {(needsYou?.requests ?? []).map((request) => {
-        const review = seatRequestReviewHref(origin, request);
+        const review = seatRequestReviewHref(origin, crew);
         const name = seatRequesterName(request);
         return (
           <div key={request.id} className={ROW}>

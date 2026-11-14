@@ -204,6 +204,9 @@ function cardOf(
     indexable: boolean;
     /** OPR-3 — idea or shipping. */
     stage: "idea" | "shipping";
+    /** OPR-3 — shipped of total, and the crew counted (null when uncounted). */
+    milestoneCounts: { shipped: number; total: number };
+    crewCount: number | null;
     /** MD0 — the listing's media rows, in the repository's document order. */
     media: readonly ProductMediaRecord[];
   },
@@ -264,6 +267,15 @@ function cardOf(
     // shipping while a milestone is. Nobody typed this word and nothing
     // measured it.
     stage: derived(row.stage, "product.stage", ["product_milestones"], computedAt),
+    // OPR-3 — two counts, each derived by a published rule. Field by field:
+    // the record's object is never passed through.
+    milestoneCounts: derived(
+      { shipped: row.milestoneCounts.shipped, total: row.milestoneCounts.total },
+      "product.milestones-shipped",
+      ["product_milestones"],
+      computedAt,
+    ),
+    crewCount: derived(row.crewCount, "product.crew-count", ["published_maintainers"], computedAt),
     // MD0 — every row carries its own provenance, because a hero and a
     // capture do not share one. Empty until MD1 gives a maker somewhere to
     // put a picture; the key is here regardless, so a client parses one shape
@@ -422,6 +434,10 @@ export async function handleCatalogProduct(
       hasLiveUrl: profile.liveUrl !== null,
       indexable: profile.indexable,
       stage: profile.stage,
+      // The product read has the milestones and the crew themselves, so it
+      // counts the rows the page renders rather than asking again.
+      milestoneCounts: milestoneCountsOf(milestones),
+      crewCount: maintainers.length,
       media,
       publishedAt: profile.publishedAt,
     },
@@ -476,13 +492,6 @@ export async function handleCatalogProduct(
     // OPR-3 — the crew's own list, in their order. `shippedAt` is the moment
     // they marked it, which is authored too: nothing observed a release.
     milestones: authored(milestones, BY_MAINTAINER),
-    // OPR-3 — derived from the list above by a published rule.
-    milestoneCounts: derived(
-      milestoneCountsOf(milestones),
-      "product.milestones-shipped",
-      ["product_milestones"],
-      computedAt,
-    ),
     // OPR5 (seam S12) — the console ref of the attested public workspace,
     // exactly as the website's projection carries it; null without a grant.
     workspaceRef: profile.linkGrant ? orgPublicId(profile.orgId) : null,

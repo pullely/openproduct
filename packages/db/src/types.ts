@@ -235,6 +235,8 @@ export interface PublicProductPostRecord {
   /** The product: its slug and its stage. */
   slug: string;
   stage: ProductStageName;
+  /** The product's milestones, counted: shipped, of how many. */
+  milestoneCounts: { shipped: number; total: number };
   /** Every reaction's live count; zero where nobody holds it. */
   reactions: Record<ProductPostReactionName, number>;
   /** Visible posts in the comment thread. */
@@ -401,6 +403,13 @@ export interface ProfileCardRecord {
   publishedAt: string | null;
   /** OPR-3 — idea or shipping, so a list can filter and label by it. */
   stage: ProductStageName;
+  /** OPR-3 — the product's milestones, counted: shipped, of how many. Zero
+   *  of zero for a product with none. */
+  milestoneCounts: { shipped: number; total: number };
+  /** OPR-3 — how many people the product page lists as its crew (its
+   *  published maintainers). `null` only on a catalogue row materialised
+   *  before the count existed: never a zero nobody counted. */
+  crewCount: number | null;
 }
 
 export interface RoleOpeningRecord {
@@ -3171,6 +3180,13 @@ export interface OpenproductRepository {
   listPublicProductPosts(input: ProductPostsPageInput): Promise<ProductPostsPageRecord>;
   /** One listed product's published posts, newest first. */
   listPublicProductPostsForProfile(profileId: string, input: ProductPostsPageInput): Promise<ProductPostsPageRecord>;
+  /**
+   * The published posts ONE AUTHOR pressed Post on, across every listed
+   * product, newest first, by the feed's position. The caller resolves the
+   * author from a handle whose public page resolves; a system post has no
+   * author and is in nobody's list.
+   */
+  listPublicProductPostsByAuthor(subjectId: string, input: ProductPostsPageInput): Promise<ProductPostsPageRecord>;
   /** One published post of a listed product, or null — one answer for a
    *  draft, a removed post, an unlisted product and an unknown id. */
   getPublicProductPost(id: string): Promise<PublicProductPostRecord | null>;

@@ -27,6 +27,28 @@ import type { MilestoneCounts, ProductStage, PublicMilestone } from "./product-p
 export const ROLE_OPENING_STATUSES = ["open", "filled", "closed"] as const;
 export type RoleOpeningStatus = (typeof ROLE_OPENING_STATUSES)[number];
 
+/**
+ * The longest a product's one-line pitch (its tagline) may be.
+ *
+ * THE ONE NUMBER. Core refuses a longer tagline with a field error and the
+ * product page's counter counts down from this; both read it from here, so
+ * the counter cannot promise room core will refuse. 200, not the 120 the
+ * design board draws: taglines written before the redesign run longer, and a
+ * limit below what is stored would refuse a maker's next unrelated edit.
+ */
+export const PRODUCT_TAGLINE_MAX = 200;
+
+/** The longest a role opening's title may be. One number, as above. */
+export const ROLE_OPENING_TITLE_MAX = 120;
+
+/** What a role opening's create or update answers with. `offeredPostId` is
+ *  the draft Help wanted post core prepared when the seat was created — null
+ *  on an update, when one already existed, or when it could not be written. */
+export interface RoleOpeningWriteAnswer {
+  roleOpening: PublicRoleOpening;
+  offeredPostId: string | null;
+}
+
 /** A profile's own publication state. Defaults to `private` at rest. */
 export const PROFILE_VISIBILITIES = ["private", "public"] as const;
 export type ProfileVisibility = (typeof PROFILE_VISIBILITIES)[number];
@@ -93,6 +115,20 @@ export interface PublicProfileCard {
   /** OPR-3 — `idea` until the product's first milestone ships, then
    *  `shipping`. On the card so a list can filter and label by it. */
   stage: ProductStage;
+  /** OPR-3 — how many of the product's milestones have shipped, of how many,
+   *  so a card draws "3 of 4" and its bars without a read per card. Zero of
+   *  zero for a product with no milestones. */
+  milestoneCounts: MilestoneCounts;
+  /**
+   * OPR-3 — how many people the product's page lists as its crew.
+   *
+   * THE SAME ROWS THE PAGE DRAWS (its published maintainers), counted, so a
+   * card that says an idea needs its first builder and the page that draws
+   * the empty slot cannot disagree. `null` only while the catalogue row
+   * predates the count (until the next sweep): a card says nothing about a
+   * crew nobody counted.
+   */
+  crewCount: number | null;
 }
 
 /** A maintainer as a visitor sees them: a name and a label, nothing else. */
@@ -399,6 +435,10 @@ export const PUBLIC_PROFILE_CARD_KEYS = [
   // one a literal edit, which IS the reviewable act the exact-key-set test
   // exists to force.
   "category",
+  // OPR-3 — how many people are on the crew, so an idea's card can say it
+  // needs its first builder from a count. This literal edit is the
+  // reviewable act.
+  "crewCount",
   // DS1 — the fourth widening. Two DERIVED values (`hasLiveUrl` here,
   // `openingCommitments` below): the rail cannot filter by a facet the
   // document does not carry, and computing them on the page instead would
@@ -410,6 +450,9 @@ export const PUBLIC_PROFILE_CARD_KEYS = [
   // SN2 — the third widening of the card. Observed numbers, each carrying
   // the moment it was true (I9).
   "metrics",
+  // OPR-3 — shipped of total, so a card draws its progress. This literal
+  // edit is the reviewable act.
+  "milestoneCounts",
   "openingCommitments",
   // PP3 — pricing on the card, so the filter page and the rail read it.
   "pricing",
@@ -1145,3 +1188,4 @@ export * from "./snapshots.js";
  * a forum post: `posts` in this package are replies in a thread.
  */
 export * from "./product-posts.js";
+export * from "./product-post-blocks.js";

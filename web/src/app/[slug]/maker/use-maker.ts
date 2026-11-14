@@ -6,7 +6,7 @@ import type { OverlayCrew } from "@openproduct/contracts";
 
 import { useCrewOf } from "../../ui/use-overlay";
 
-import { isManaging, viewModeKey, viewModeOf, type ViewMode } from "./model";
+import { isManaging, viewModeKey, viewModeOf, type ViewMode } from "./gate";
 
 /**
  * The maker view's one gate (openproduct-redesign OPR-3, design §4).
@@ -26,12 +26,27 @@ import { isManaging, viewModeKey, viewModeOf, type ViewMode } from "./model";
  *   editing  whether the "Edit details" form is open
  *   saved    the one-line pitch as just saved, shown until the cached page
  *            catches up (the public document is cached for a minute)
+ *   seat     which seat's form is open on the Crew tab: a seat's id, or
+ *            `new` for "Add a seat". Kept here so the link in the side card
+ *            (another tab's page) can open the form the Crew tab then draws.
  */
 const listeners = new Set<() => void>();
 let version = 0;
 const modes = new Map<string, ViewMode>();
 const editing = new Set<string>();
 const savedTaglines = new Map<string, string | null>();
+const seatForms = new Map<string, string>();
+
+/** The seat form's target for "Add a seat". Never a seat's id (`opr_…`). */
+export const NEW_SEAT = "new";
+
+/** Open the seat form for a seat (its id), for a new one (`NEW_SEAT`), or
+ *  close it (`null`). */
+export function setSeatForm(slug: string, target: string | null): void {
+  if (target === null) seatForms.delete(slug);
+  else seatForms.set(slug, target);
+  emit();
+}
 
 function emit(): void {
   version += 1;
@@ -64,7 +79,10 @@ function storedMode(slug: string): ViewMode {
 export function setViewMode(slug: string, mode: ViewMode): void {
   modes.set(slug, mode);
   // Leaving Manage closes the form: "Visitor" shows the public page.
-  if (mode === "visitor") editing.delete(slug);
+  if (mode === "visitor") {
+    editing.delete(slug);
+    seatForms.delete(slug);
+  }
   try {
     window.sessionStorage.setItem(viewModeKey(slug), mode);
   } catch {
@@ -96,6 +114,9 @@ export interface MakerView {
   editing: boolean;
   /** The pitch as last saved from this page, when it was. */
   savedTagline: string | null | undefined;
+  /** The seat whose form is open (an id, or `NEW_SEAT`); null when none is.
+   *  Only ever set while managing. */
+  seatForm: string | null;
 }
 
 export function useMaker(slug: string): MakerView {
@@ -112,5 +133,6 @@ export function useMaker(slug: string): MakerView {
     managing,
     editing: managing && editing.has(slug),
     savedTagline: crew === null ? undefined : savedTaglines.get(slug),
+    seatForm: managing ? (seatForms.get(slug) ?? null) : null,
   };
 }

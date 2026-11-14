@@ -124,7 +124,10 @@ export function inboxSentence(item: Pick<InboxItem, "kind" | "actor" | "targetRe
  *  itself what the reader may see (XP-5: never a link that goes nowhere). */
 export function inboxHref(item: Pick<InboxItem, "kind" | "targetKind" | "targetRef">): string {
   if (item.targetKind === "topic") return `/topics/${item.targetRef}`;
-  if (item.targetKind === "post") return `/${item.targetRef}#discussion`;
+  // The conversation is on the product's Talk tab (openproduct-redesign
+  // OPR-3): the tab's own address, not the bare page and a forward from it.
+  // An idea's page has no tabs and sends its tab addresses to itself.
+  if (item.targetKind === "post") return `/${item.targetRef}/talk#discussion`;
   return `/${item.targetRef}`;
 }
 

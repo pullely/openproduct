@@ -71,6 +71,14 @@ export interface CatalogCard {
   /** OPR-3 — `idea` until the product's first milestone ships, then
    *  `shipping`. Derived from the milestones (`product.stage`). */
   stage: Fact<ProductStage>;
+  /** OPR-3 — how many milestones have shipped, of how many
+   *  (`product.milestones-shipped`). On the card, so a list draws progress
+   *  without a read per product. */
+  milestoneCounts: Fact<MilestoneCounts>;
+  /** OPR-3 — how many people the product's page lists as its crew
+   *  (`product.crew-count`). The value is `null` while the catalogue row
+   *  predates the count. */
+  crewCount: Fact<number | null>;
   /**
    * MD0 — the listing's media, in document order: the hero, then the gallery
    * in the maker's order, then the capture.
@@ -156,8 +164,6 @@ export interface CatalogProduct extends CatalogCard {
   /** OPR-3 — the product's milestones in the crew's order: a code, a title,
    *  a summary, and the moment each shipped (null until it has). */
   milestones: Fact<PublicMilestone[]>;
-  /** OPR-3 — how many milestones have shipped, of how many. */
-  milestoneCounts: Fact<MilestoneCounts>;
   components: Fact<Array<{ name: string; kind: string | null }>> | null;
   maintainers: Array<{ displayName: Fact<string | null>; roleLabel: Fact<string | null> }>;
   openings: Array<{
@@ -242,6 +248,9 @@ export const CATALOG_API_VERSION = "1.4.0";
  */
 export const CATALOG_CARD_KEYS = [
   "category",
+  // OPR-3 — how many people are on the crew; I8, an idea's card says it
+  // needs its first builder from this count.
+  "crewCount",
   "hasLiveUrl",
   "hosting",
   "indexable",
@@ -257,6 +266,8 @@ export const CATALOG_CARD_KEYS = [
   // exist is not a first-class consumer (WC-9).
   "media",
   "metrics",
+  // OPR-3 — shipped of total; I8, a list's card draws its progress from it.
+  "milestoneCounts",
   "openIssues",
   "openRoles",
   "openingCommitments",
@@ -299,10 +310,10 @@ export const CATALOG_PRODUCT_KEYS = [
   "repoUrl",
   // OPR5 — the attested workspace's console ref (seam S12); I8 again.
   "workspaceRef",
-  // OPR-3 — the product page shows all three; I8 again.
+  // OPR-3 — the product page shows both; I8 again. (`milestoneCounts` is on
+  // the card, so it arrives through `CATALOG_CARD_KEYS` above.)
   "tryUrl",
   "milestones",
-  "milestoneCounts",
 ]
   .slice()
   .sort() as readonly string[];

@@ -41,6 +41,7 @@ import {
   fetchFeedPage,
   fetchFollowing,
   fetchProductPost,
+  fetchAuthorPosts,
   fetchProductPosts,
   isDrawablePost,
   setReaction,
@@ -114,12 +115,19 @@ describe("the public reads", () => {
     await fetchFeedPage("abc", f.fetchImpl);
     await fetchProductPosts("ackstack", null, f.fetchImpl);
     await fetchProductPost(PPO, f.fetchImpl);
+    // One person's posts, for the Posts section of their page — paged by
+    // the feed's own cursor.
+    await fetchAuthorPosts("ada", null, f.fetchImpl);
+    await fetchAuthorPosts("ada", "abc", f.fetchImpl);
     expect(f.calls.map(pathOf)).toEqual([
       PRODUCT_POST_API.feed(),
       PRODUCT_POST_API.feed("abc"),
       PRODUCT_POST_API.ofProduct("ackstack"),
       PRODUCT_POST_API.post(PPO),
+      "/v1/public/openproduct/people/ada/product-posts",
+      "/v1/public/openproduct/people/ada/product-posts?cursor=abc",
     ]);
+    expect(PRODUCT_POST_API.ofAuthor("ada")).toBe("/v1/public/openproduct/people/ada/product-posts");
     for (const call of f.calls) {
       // The closed header set of every public read: no credential can ride.
       expect(call.headers).toEqual({ accept: "application/json" });
@@ -130,7 +138,17 @@ describe("the public reads", () => {
     // the one anonymous read.
     const src = code("posts/posts-api.ts");
     expect(src).toContain("readPublic<");
-    expect(src.match(/export async function fetch(FeedPage|ProductPosts|ProductPost)\([^)]*token/g)).toBeNull();
+    expect(src.match(/export async function fetch(FeedPage|ProductPosts|ProductPost|AuthorPosts)\([^)]*token/g)).toBeNull();
+  });
+
+  it("a person's posts: an empty page is an answer, and anything unreadable is null", async () => {
+    const empty = recordingFetch(() => ({ body: { data: { posts: [], next: null } } }));
+    expect(await fetchAuthorPosts("ada", null, empty.fetchImpl)).toEqual({ posts: [], next: null });
+    // No public page, a failed read, a body that is not a page: one null.
+    for (const said of [{ status: 404, body: {} }, { status: 500, body: {} }, { body: { data: { posts: "no" } } }]) {
+      const failing = recordingFetch(() => said);
+      expect(await fetchAuthorPosts("ada", null, failing.fetchImpl)).toBeNull();
+    }
   });
 
   it("tell an EMPTY feed from one that could not be read", async () => {

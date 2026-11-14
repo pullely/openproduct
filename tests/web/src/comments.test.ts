@@ -178,6 +178,16 @@ describe("I6 — the section is one document with no actor in it", () => {
     // And it is dropped once the comment is on the page, or the box refills
     // with what somebody just posted.
     expect(read(ROUTE)).toContain("?commented=ok#discussion");
+    // …at the conversation's own address (OPR-3): the Talk tab, or an idea's
+    // one page when its form says so — one of two fixed paths, chosen by a
+    // flag, never an address read out of the form.
+    expect(read(ROUTE)).toContain('const home = String(form.get("at") ?? "") === "page" ? `/${slug}` : `/${slug}/talk`;');
+    expect(read(ROUTE)).toContain("NextResponse.redirect(new URL(`${home}${query}`, request.url), 303)");
+    expect(read(ROUTE)).not.toMatch(/form\.get\("return_to"\)/);
+    const comments = read("[slug]/comments.tsx");
+    expect(comments).toContain('{onPage ? <input type="hidden" name="at" value="page" /> : null}');
+    expect(comments).toContain("const home = onPage ? `/${slug}` : `/${slug}/talk`;");
+    expect(read("[slug]/product-page.tsx")).toContain("<TalkCards slug={slug} discussion={discussion} onPage />");
     expect(box).toContain('answer === "ok"');
     expect(box).toContain("removeItem(key)");
   });

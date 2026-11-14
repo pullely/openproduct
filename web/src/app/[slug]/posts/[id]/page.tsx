@@ -11,6 +11,7 @@ import {
 } from "@openproduct/contracts";
 
 import { postAnchor, postHeadline } from "../../../posts/blocks";
+import { CrewNoticeLine } from "../../maker/notice";
 import { POST_CARD_SHELL, PostCardBody, PostHead, PostTicketNotches, postDate } from "../../../posts/post-card";
 import { fetchProductPost, fetchProductPosts } from "../../../posts/posts-api";
 import { ReactionPicker, ReactionSummary } from "../../../posts/reaction-control";
@@ -30,7 +31,6 @@ import {
   morePostsOf,
   postCommentPath,
   postPageDescription,
-  postPageHeading,
   postPageTitle,
   postPageVerdict,
   postThreadState,
@@ -158,11 +158,23 @@ export default async function ProductPostPage({ params }: PageProps) {
           // a long thread both need the room.
           className={`${POST_CARD_SHELL[post.kind]} !overflow-visible`}
         >
-          <h1 className="sr-only">{postPageHeading(post)}</h1>
+          {/* What a crew form came back with ("Posted"), for the crew, after
+              load — as a toast, so the post under it does not move. */}
+          <CrewNoticeLine slug={post.product.slug} toast />
           <div className="relative">
             {post.kind === "seat" ? <PostTicketNotches /> : null}
             <PostHead post={post} returnTo={here} />
-            <PostCardBody post={post} variant="feed" returnTo={here} milestoneCounts={profile?.milestoneCounts ?? null} />
+            {/* THE HEADLINE IS THE PAGE'S ONE `h1`, drawn where the card draws
+                it — not a hidden heading beside a visible `h3` saying the
+                same words. The product is named in the row above it and in
+                the article's label. */}
+            <PostCardBody
+              post={post}
+              variant="feed"
+              returnTo={here}
+              milestoneCounts={profile?.milestoneCounts ?? null}
+              headingLevel={1}
+            />
           </div>
 
           <div

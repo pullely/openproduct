@@ -2,33 +2,33 @@
   "header": {
     "top": 0,
     "left": 0,
-    "width": 1270,
+    "width": 1280,
     "height": 60
   },
   "sectionBar": null,
   "main": {
     "top": 60,
-    "left": 135,
+    "left": 140,
     "width": 1000
   },
   "h1": {
     "top": 140,
-    "left": 179,
+    "left": 184,
     "width": 147,
     "height": 44
   },
   "firstRow": {
-    "left": 179,
+    "left": 184,
     "width": 912,
     "height": 114
   },
   "footer": {
-    "left": 45,
+    "left": 50,
     "width": 1180,
     "height": 130
   },
   "themeControl": {
-    "width": 57,
+    "width": 55,
     "height": 26
   },
   "colours": {

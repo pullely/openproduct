@@ -182,6 +182,7 @@ export default async function ComposePage(props: { params: Promise<{ slug: strin
         name: product?.slug ?? slug,
         stage: product?.stage ?? "idea",
         logo: product ? thumbnailOf(product.media) : null,
+        milestoneCounts: product?.milestoneCounts ?? { shipped: 0, total: 0 },
       }}
       kind={post?.kind ?? composeKindOf(requestedKind)}
       post={post}

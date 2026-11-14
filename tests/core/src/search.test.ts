@@ -75,6 +75,8 @@ interface Harness {
     pricing: string | null;
     licence: string | null;
     roleOpeningCount: number;
+    milestoneCounts: { shipped: number; total: number };
+    crewCount: number | null;
     openCommitments: string[];
     hasLiveUrl: boolean;
     publishedAt: string | null;
@@ -104,6 +106,8 @@ function harness(): Harness {
         pricing: null,
         licence: "Apache-2.0",
         roleOpeningCount: 2,
+        milestoneCounts: { shipped: 0, total: 0 },
+        crewCount: 1,
         openCommitments: ["A few hours a week"],
         hasLiveUrl: true,
         publishedAt: "2026-08-12T09:00:00.000Z",
@@ -118,6 +122,8 @@ function harness(): Harness {
         pricing: null,
         licence: "MPL-2.0",
         roleOpeningCount: 0,
+        milestoneCounts: { shipped: 0, total: 0 },
+        crewCount: 1,
         openCommitments: [],
         hasLiveUrl: false,
         publishedAt: "2026-08-19T09:00:00.000Z",

@@ -16,6 +16,7 @@ import {
   ME_OVERLAY_OPENING_ID_RE,
   POST_BLOCK_CATALOGUE,
   PRODUCT_POST_ID_RE,
+  ROLE_OPENING_STATUSES,
   isAuthoredProductPostKind,
   isProductPostKind,
   parsePostBlocks,
@@ -23,9 +24,10 @@ import {
   type MilestoneRequest,
   type ProductPostBlock,
   type ProductPostKind,
+  type RoleOpeningStatus,
 } from "@openproduct/contracts";
 
-import type { CrewProfilePatch } from "./crew-api";
+import type { CrewProfilePatch, CrewSeatBody } from "./crew-api";
 
 /** A form's fields, or a JSON body's members: strings from a form, anything
  *  from JSON. Every reader below checks the type of what it takes. */
@@ -231,6 +233,56 @@ export function readMilestoneAct(fields: Fields): MilestoneAct | FormError {
   if (!milestoneId || !MILESTONE_ID_RE.test(milestoneId)) return invalid("milestone", "Name the milestone");
   if (intent === "update") return { intent: "update", milestoneId, body: milestoneBody(fields) };
   return { intent: intent as "delete" | "ship" | "unship", milestoneId };
+}
+
+// ─── seats ─────────────────────────────────────────────────────────────────
+
+export const SEAT_INTENTS = ["create", "update", "delete"] as const;
+export type SeatIntent = (typeof SEAT_INTENTS)[number];
+
+export type SeatAct =
+  | { intent: "create"; body: CrewSeatBody }
+  | { intent: "update"; openingId: string; body: CrewSeatBody }
+  | { intent: "delete"; openingId: string };
+
+function seatBody(fields: Fields): CrewSeatBody | FormError {
+  const title = (text(fields, "title") ?? "").trim();
+  if (title.length === 0) return invalid("title", "A seat needs a role");
+  const body: CrewSeatBody = { title };
+  // An empty description or commitment is sent as empty: core stores what
+  // the form said, and "no commitment" is a thing a crew may say.
+  const description = text(fields, "description");
+  if (description !== null) body.description = description.trim();
+  const commitment = text(fields, "commitment");
+  if (commitment !== null) body.commitment = commitment.trim();
+  const status = text(fields, "status");
+  if (status !== null && status.length > 0) {
+    if (!(ROLE_OPENING_STATUSES as readonly string[]).includes(status)) return invalid("status", "One of open, filled, closed");
+    body.status = status as RoleOpeningStatus;
+  }
+  return body;
+}
+
+/**
+ * Fields: `intent` (create | update | delete), `seat` (an `opr_…`), `title`,
+ * `description`, `commitment`, `status` (open | filled | closed — how a seat
+ * is closed or reopened: an update that says so).
+ *
+ * A SEAT IS A ROLE OPENING, not a post: the Help wanted post is the draft
+ * core prepares when a seat is created.
+ */
+export function readSeatAct(fields: Fields): SeatAct | FormError {
+  const intent = text(fields, "intent");
+  if (!(SEAT_INTENTS as readonly string[]).includes(intent ?? "")) return invalid("intent", "Unknown action");
+  if (intent === "create") {
+    const body = seatBody(fields);
+    return "kind" in body ? body : { intent: "create", body };
+  }
+  const openingId = text(fields, "seat");
+  if (!openingId || !ME_OVERLAY_OPENING_ID_RE.test(openingId)) return invalid("seat", "Name the seat");
+  if (intent === "delete") return { intent: "delete", openingId };
+  const body = seatBody(fields);
+  return "kind" in body ? body : { intent: "update", openingId, body };
 }
 
 // ─── the listing's own fields ──────────────────────────────────────────────

@@ -34,6 +34,8 @@ import {
   type ProductPostBlock,
   type ProductStage,
   type PublishProductPostRequest,
+  type RoleOpeningStatus,
+  type RoleOpeningWriteAnswer,
 } from "@openproduct/contracts";
 
 import { fetchOverlay, meHeaders, type MeFetch } from "../me/me-api";
@@ -280,6 +282,53 @@ export function setCrewMilestoneShipped(
     { method: shipped ? "PUT" : "DELETE" },
     fetchImpl,
   );
+}
+
+// ─── seats ─────────────────────────────────────────────────────────────────
+
+/** A seat as its form sends it. A seat is a ROLE OPENING — a title, what the
+ *  role is, the commitment, and whether it is open — not a Help wanted post;
+ *  opening one prepares that post as a draft. */
+export interface CrewSeatBody {
+  title: string;
+  description?: string;
+  commitment?: string;
+  status?: RoleOpeningStatus;
+}
+
+/** Open a seat. Core answers with the seat and the draft post it prepared. */
+export function createCrewSeat(
+  token: string,
+  ids: CrewIds,
+  body: CrewSeatBody,
+  fetchImpl?: CrewFetch,
+): Promise<CrewResult<RoleOpeningWriteAnswer>> {
+  return crewRequest(token, PRODUCT_POST_API.crewSeats(ids.org, ids.profile), { method: "POST", body }, fetchImpl);
+}
+
+/** Edit a seat; `status` closes or reopens it. */
+export function updateCrewSeat(
+  token: string,
+  ids: CrewIds,
+  openingId: string,
+  body: CrewSeatBody,
+  fetchImpl?: CrewFetch,
+): Promise<CrewResult<RoleOpeningWriteAnswer>> {
+  return crewRequest(
+    token,
+    PRODUCT_POST_API.crewSeat(ids.org, ids.profile, openingId),
+    { method: "PUT", body },
+    fetchImpl,
+  );
+}
+
+export function deleteCrewSeat(
+  token: string,
+  ids: CrewIds,
+  openingId: string,
+  fetchImpl?: CrewFetch,
+): Promise<CrewResult<{ deleted: boolean }>> {
+  return crewRequest(token, PRODUCT_POST_API.crewSeat(ids.org, ids.profile, openingId), { method: "DELETE" }, fetchImpl);
 }
 
 // ─── needs you, and the listing's own fields ───────────────────────────────

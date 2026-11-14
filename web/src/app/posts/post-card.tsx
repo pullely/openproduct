@@ -57,7 +57,7 @@ import {
   postHeadline,
   productSeatsPath,
 } from "./blocks";
-import { ReactionPicker, ReactionSummary } from "./reaction-control";
+
 import { commentCountLine, reactionCountLine, safeCounts } from "./reactions";
 
 /**
@@ -79,9 +79,9 @@ export interface PostCardProps {
   /** The page the card is on. Sign-in returns here, at the control pressed. */
   returnTo: string;
   /**
-   * The product's milestone counts, when the page has them (a product's
-   * document does; a post does not). A Feature shipped card draws the
-   * progress bars only with them.
+   * The product's milestone counts, when the page holds fresher ones than the
+   * post's own (`post.product.milestoneCounts`, which every post carries). A
+   * Feature shipped card draws its progress bars from whichever it has.
    */
   milestoneCounts?: MilestoneCounts | null;
   /** Where "Take the seat" / "Take a seat" goes. The product's own seats by
@@ -90,6 +90,47 @@ export interface PostCardProps {
   /** Extra controls for the compact variants' last line (a maker's "Edit
    *  post", drawn by the page after load). Not drawn on `feed`. */
   actions?: React.ReactNode;
+  /**
+   * The `feed` variant's last rows: `<PostFooter>` from `post-footer.tsx`,
+   * handed in by the page that draws full cards.
+   *
+   * A PROP, NOT AN IMPORT, for one reason: weight. The footer holds the two
+   * reaction controls, which are client components, and a page downloads
+   * the code of every client component its files import — drawn or not. A
+   * product's Updates and a person's list draw compact cards only (they say
+   * the counts in words); while this file imported the footer, each of them
+   * downloaded the reaction controls for nothing. Not drawn on a compact card.
+   */
+  footer?: React.ReactNode;
+  /**
+   * The level of the card's headline, which is whatever comes next in the
+   * page's outline: `3` under a section's `h2` (the default), `2` in a list
+   * that sits straight under the page's `h1` (the feed, a product's
+   * Updates), and `1` on the post's own page, where the headline IS the
+   * page's heading — drawn once, visible, and not said a second time by a
+   * hidden one. A level is never skipped.
+   */
+  headingLevel?: 1 | 2 | 3;
+}
+
+/** A card's headline, at the level the page gives it. The look is the
+ *  caller's `className` either way: a level changes what the heading is, not
+ *  how it is drawn. */
+function PostTitle({
+  level = 3,
+  className,
+  children,
+}: {
+  level?: 1 | 2 | 3 | undefined;
+  className?: string;
+  children: React.ReactNode;
+}) {
+  const Tag = level === 1 ? "h1" : level === 2 ? "h2" : "h3";
+  return (
+    <Tag data-post-title className={className}>
+      {children}
+    </Tag>
+  );
 }
 
 /** The shell each kind's card is: the SHAPE that says what kind it is. */
@@ -132,7 +173,9 @@ export function ProductPostCard(props: PostCardProps) {
       {compact ? (
         post.kind === "seat" ? null : <CompactFooter post={post} actions={props.actions} />
       ) : (
-        <PostFooter post={post} returnTo={props.returnTo} />
+        // The full card's last rows — the reaction summary and the React /
+        // Comment row — are the page's to hand in (`PostFooter`).
+        (props.footer ?? null)
       )}
     </article>
   );
@@ -169,7 +212,8 @@ export function PostHead({ post, returnTo }: { post: PublicProductPost; returnTo
         <ProductTile slug={post.product.slug} thumbnail={post.product.logo} size={44} />
       </AppLink>
       <div className="flex min-w-0 flex-1 flex-col">
-        <AppLink href={href} className={`self-start font-semibold text-foreground no-underline hover:underline ${FOCUS}`}>
+        {/* 24px tall: the smallest a pointer target may be (WCAG 2.5.8). */}
+        <AppLink href={href} className={`inline-flex min-h-[24px] items-center self-start font-semibold text-foreground no-underline hover:underline ${FOCUS}`}>
           {post.product.name}
         </AppLink>
         <span className="text-[13px] text-muted-foreground">
@@ -205,49 +249,6 @@ function Byline({ post }: { post: PublicProductPost }) {
   );
 }
 
-/**
- * The full card's footer: the reaction summary and the comment count (which
- * links to the post's page), then the two actions — React and Comment.
- *
- * COUNTS ARE SHOWN ONLY ABOVE ZERO. With no reactions and no comments the
- * summary row is empty and takes no room.
- */
-export function PostFooter({ post, returnTo }: { post: PublicProductPost; returnTo: string }) {
-  const page = productPostPagePath(post.product.slug, post.id);
-  const comments = commentCountLine(post.commentCount);
-  return (
-    <>
-      <div
-        data-post-summary
-        className="flex items-center justify-between gap-2.5 px-5 pt-3.5 text-[13px] text-muted-foreground empty:hidden max-sm:px-[14px] max-sm:pt-2"
-      >
-        <ReactionSummary postId={post.id} reactions={safeCounts(post.reactions)} />
-        {comments ? (
-          <AppLink
-            href={`${page}#comments`}
-            data-post-comments
-            className={`ml-auto py-1.5 text-muted-foreground underline decoration-border-strong underline-offset-[3px] ${FOCUS}`}
-          >
-            {comments}
-          </AppLink>
-        ) : null}
-      </div>
-      <div className="mx-2.5 mt-2.5 grid grid-cols-2 gap-0.5 border-t border-line pb-1.5 pt-1 max-sm:mx-2 max-sm:mt-1.5">
-        <ReactionPicker postId={post.id} returnTo={returnTo} />
-        <AppLink
-          href={`${page}#comment`}
-          className={`flex min-h-[40px] items-center justify-center gap-1.5 rounded-full text-[13px] font-medium text-copy no-underline hover:bg-foreground/[0.04] max-sm:min-h-[44px] ${FOCUS}`}
-        >
-          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
-            <path d="M4 5h16v11H8l-4 4z" />
-          </svg>
-          Comment
-        </AppLink>
-      </div>
-    </>
-  );
-}
-
 /** A compact card's last line: `5 reactions · 5 comments`, each only above
  *  zero, and on the right whatever the page adds plus the kind's own link. */
 function CompactFooter({ post, actions }: { post: PublicProductPost; actions?: React.ReactNode }) {
@@ -274,7 +275,7 @@ function CompactFooter({ post, actions }: { post: PublicProductPost; actions?: R
       <span className="flex items-center gap-4">
         {actions}
         {tryLink ? (
-          <a href={tryLink} rel="nofollow noopener" className={`font-semibold no-underline hover:underline ${FOCUS}`}>
+          <a href={tryLink} rel="nofollow noopener" className={`tap justify-end font-semibold no-underline hover:underline ${FOCUS}`}>
             Try it
           </a>
         ) : null}
@@ -285,9 +286,21 @@ function CompactFooter({ post, actions }: { post: PublicProductPost; actions?: R
 
 /** The meta line under a compact card's title: the product (on a person's
  *  list), the milestone, the date, the author. */
-function CompactMeta({ post, variant, lead }: { post: PublicProductPost; variant: PostCardVariant; lead?: string | null }) {
+function CompactMeta({
+  post,
+  variant,
+  lead,
+  tone = "text-muted-foreground",
+}: {
+  post: PublicProductPost;
+  variant: PostCardVariant;
+  lead?: string | null;
+  /** The line's ink. The muted grey is 4.46:1 on the release-notes panel's
+   *  slate tint, so that panel passes its own. */
+  tone?: string;
+}) {
   return (
-    <span className="text-[13px] text-muted-foreground">
+    <span className={`text-[13px] ${tone}`}>
       {variant === "person" ? (
         <>
           for{" "}
@@ -339,7 +352,7 @@ function CheckBadge() {
   );
 }
 
-function FeatureBody({ post, variant, milestoneCounts }: PostCardProps & { variant: PostCardVariant }) {
+function FeatureBody({ post, variant, milestoneCounts, headingLevel }: PostCardProps & { variant: PostCardVariant }) {
   const compact = variant !== "feed";
   const what = blockText(post.blocks, "what");
   const forWho = blockText(post.blocks, "for");
@@ -352,14 +365,13 @@ function FeatureBody({ post, variant, milestoneCounts }: PostCardProps & { varia
       <div className="flex items-center gap-2.5 max-sm:gap-2">
         <CheckBadge />
         <div className="flex min-w-0 flex-col">
-          <h3
-            data-post-title
+          <PostTitle level={headingLevel}
             className={`m-0 font-semibold leading-[1.2] tracking-[-0.02em] text-foreground [overflow-wrap:anywhere] max-sm:text-card-title ${
               compact ? "text-[20px]" : "text-[21px]"
             }`}
           >
             {postHeadline(post)}
-          </h3>
+          </PostTitle>
           {compact ? <CompactMeta post={post} variant={variant} lead={milestone} /> : null}
         </div>
       </div>
@@ -378,7 +390,7 @@ function FeatureBody({ post, variant, milestoneCounts }: PostCardProps & { varia
           ) : null}
         </div>
       ) : null}
-      <MilestoneSegments counts={milestoneCounts} />
+      <MilestoneSegments counts={milestoneCounts ?? post.product.milestoneCounts} />
       {!compact && (screenshot || demo) ? (
         <div className="flex flex-wrap gap-x-4 gap-y-1 text-[13px]">
           {screenshot ? <OutLink href={screenshot}>See the screenshot</OutLink> : null}
@@ -413,7 +425,7 @@ const VERSION_GROUPS = [
   { block: "security", label: "Security", glyph: "!" },
 ] as const;
 
-function VersionBody({ post, variant }: PostCardProps & { variant: PostCardVariant }) {
+function VersionBody({ post, variant, headingLevel }: PostCardProps & { variant: PostCardVariant }) {
   const compact = variant !== "feed";
   const breaking = blockText(post.blocks, "breaking");
   const rows = VERSION_GROUPS.flatMap((group) =>
@@ -428,13 +440,12 @@ function VersionBody({ post, variant }: PostCardProps & { variant: PostCardVaria
     >
       <div className="flex flex-col">
         <span className="font-mono text-mono-label uppercase text-version">Release notes</span>
-        <h3
-          data-post-title
+        <PostTitle level={headingLevel}
           className="m-0 font-mono text-[30px] font-medium leading-[1.1] tracking-[-0.02em] text-foreground [overflow-wrap:anywhere] max-sm:text-[24px]"
         >
           {postHeadline(post)}
-        </h3>
-        {compact ? <CompactMeta post={post} variant={variant} /> : null}
+        </PostTitle>
+        {compact ? <CompactMeta post={post} variant={variant} tone="text-copy" /> : null}
       </div>
       {rows.length > 0 ? (
         <ul className="m-0 flex list-none flex-col gap-0.5 p-0">
@@ -461,7 +472,7 @@ function VersionBody({ post, variant }: PostCardProps & { variant: PostCardVaria
 
 // ─── New idea: the lavender note ───────────────────────────────────────────
 
-function IdeaBody({ post, variant, seatHref }: PostCardProps & { variant: PostCardVariant }) {
+function IdeaBody({ post, variant, seatHref, headingLevel }: PostCardProps & { variant: PostCardVariant }) {
   const compact = variant !== "feed";
   const detail = blockText(post.blocks, "detail");
   const who = blockText(post.blocks, "who");
@@ -473,12 +484,22 @@ function IdeaBody({ post, variant, seatHref }: PostCardProps & { variant: PostCa
       <span data-stage-mark="idea" className="font-mono text-mono-label uppercase text-idea">
         {IDEA_MARK}
       </span>
-      <blockquote
-        data-post-title
-        className="m-0 font-serif text-[22px] italic leading-[1.35] text-idea-deep [overflow-wrap:anywhere] max-sm:text-card-title"
-      >
-        {`“${postHeadline(post)}”`}
-      </blockquote>
+      {headingLevel === 1 ? (
+        // On the post's own page the quote is the page's heading.
+        <h1
+          data-post-title
+          className="m-0 font-serif text-[22px] font-normal italic leading-[1.35] text-idea-deep [overflow-wrap:anywhere] max-sm:text-card-title"
+        >
+          {`“${postHeadline(post)}”`}
+        </h1>
+      ) : (
+        <blockquote
+          data-post-title
+          className="m-0 font-serif text-[22px] italic leading-[1.35] text-idea-deep [overflow-wrap:anywhere] max-sm:text-card-title"
+        >
+          {`“${postHeadline(post)}”`}
+        </blockquote>
+      )}
       {compact ? <CompactMeta post={post} variant={variant} /> : null}
       {detail ? <p className="m-0 whitespace-pre-line text-[15px] text-idea-deep">{detail}</p> : null}
       {who || whyNow || evidence ? (
@@ -506,7 +527,7 @@ function IdeaBody({ post, variant, seatHref }: PostCardProps & { variant: PostCa
         <div className="flex items-center justify-between gap-2.5 rounded-[14px] border-[1.5px] border-dashed border-idea/35 px-3.5 py-3 text-[13px] text-idea-deep max-sm:px-3 max-sm:py-2.5">
           <span className="min-w-0 [overflow-wrap:anywhere]">{seats ?? IDEA_NEEDS_BUILDER}</span>
           <AppLink
-            href={seatHref ?? productSeatsPath(post.product.slug)}
+            href={seatHref ?? productSeatsPath(post.product.slug, post.product.stage)}
             data-post-seat
             className={`flex min-h-[40px] shrink-0 items-center rounded-full bg-idea-deep px-3.5 font-semibold text-idea-wash no-underline hover:opacity-90 max-sm:min-h-[44px] ${FOCUS}`}
           >
@@ -530,12 +551,12 @@ function TicketNotches() {
   );
 }
 
-function SeatBody({ post, variant, seatHref }: PostCardProps & { variant: PostCardVariant }) {
+function SeatBody({ post, variant, seatHref, headingLevel }: PostCardProps & { variant: PostCardVariant }) {
   const what = blockText(post.blocks, "what");
   const sub = [blockText(post.blocks, "time"), blockText(post.blocks, "return"), blockText(post.blocks, "skills")]
     .filter((part): part is string => part !== null)
     .join(" · ");
-  const href = seatHref ?? productSeatsPath(post.product.slug);
+  const href = seatHref ?? productSeatsPath(post.product.slug, post.product.stage);
   if (variant !== "feed") {
     // The list's ticket (boards `Product`, `Person`): the seat on its side.
     return (
@@ -547,9 +568,9 @@ function SeatBody({ post, variant, seatHref }: PostCardProps & { variant: PostCa
           <span className="font-mono text-mono-label uppercase text-seat-ink">
             {variant === "person" ? `Open seat · ${post.product.name}` : "Open seat"}
           </span>
-          <h3 data-post-title className="m-0 text-card-title font-semibold tracking-[-0.015em] text-foreground [overflow-wrap:anywhere]">
+          <PostTitle level={headingLevel} className="m-0 text-card-title font-semibold tracking-[-0.015em] text-foreground [overflow-wrap:anywhere]">
             {postHeadline(post)}
-          </h3>
+          </PostTitle>
           {sub ? <span className="text-[13px] text-muted-foreground">{sub}</span> : null}
         </div>
         <AppLink href={href} data-post-seat className={`${BTN_SEAT} max-sm:text-[13px] ${FOCUS}`}>
@@ -564,9 +585,9 @@ function SeatBody({ post, variant, seatHref }: PostCardProps & { variant: PostCa
         <PlusIcon className="h-6 w-6 shrink-0" />
       </span>
       <span className="font-mono text-mono-label uppercase text-seat-ink">Open seat on the crew</span>
-      <h3 data-post-title className="m-0 text-[21px] font-semibold leading-[1.2] tracking-[-0.02em] text-foreground [overflow-wrap:anywhere] max-sm:text-card-title">
+      <PostTitle level={headingLevel} className="m-0 text-[21px] font-semibold leading-[1.2] tracking-[-0.02em] text-foreground [overflow-wrap:anywhere] max-sm:text-card-title">
         {postHeadline(post)}
-      </h3>
+      </PostTitle>
       {what ? <p className="m-0 max-w-[440px] whitespace-pre-line text-[15px] text-copy">{what}</p> : null}
       {sub ? <span className="text-[13px] text-muted-foreground">{sub}</span> : null}
       <AppLink href={href} data-post-seat className={`${BTN_SEAT} px-[22px] ${FOCUS}`}>
@@ -578,14 +599,14 @@ function SeatBody({ post, variant, seatHref }: PostCardProps & { variant: PostCa
 
 // ─── Demo: in the vocabulary, drawn plainly until OPR4 ─────────────────────
 
-function DemoBody({ post, variant }: PostCardProps & { variant: PostCardVariant }) {
+function DemoBody({ post, variant, headingLevel }: PostCardProps & { variant: PostCardVariant }) {
   const compact = variant !== "feed";
   const blocks = drawnBlocks("demo", post.blocks, ["title"]);
   return (
     <div className={compact ? "contents" : "flex flex-col gap-1 px-5 pt-0.5 max-sm:px-[14px]"}>
-      <h3 data-post-title className="m-0 text-card-title font-semibold tracking-[-0.015em] text-foreground [overflow-wrap:anywhere]">
+      <PostTitle level={headingLevel} className="m-0 text-card-title font-semibold tracking-[-0.015em] text-foreground [overflow-wrap:anywhere]">
         {postHeadline(post)}
-      </h3>
+      </PostTitle>
       {compact ? <CompactMeta post={post} variant={variant} /> : null}
       {blocks.map((entry) => (
         <p key={entry.spec.id} className="m-0 whitespace-pre-line text-[15px] text-copy">

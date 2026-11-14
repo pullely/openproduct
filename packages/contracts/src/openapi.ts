@@ -167,6 +167,12 @@ export function propsFor(keys: readonly string[], deprecations: readonly ApiDepr
         description:
           "`{shipped, total}`: how many of the product's milestones are marked shipped, and how many it has. Derived from `milestones` (`product.milestones-shipped`).",
       };
+    } else if (key === "crewCount") {
+      out[key] = {
+        $ref: "#/components/schemas/Fact",
+        description:
+          "How many people the product's page lists as its crew: its published maintainers, counted (`product.crew-count`). `null` while the catalogue row predates the count — never a zero nobody counted. Not an ordering input.",
+      };
     } else if (key === "maintainers" || key === "openings") {
       out[key] = { type: "array", items: { type: "object" } };
     } else {

@@ -71,10 +71,21 @@ async function paint(browser, base, { hint, sessionAnswer }) {
       anonymous: show('[data-auth-branch="anonymous"]'),
       signedIn: show('[data-auth-branch="signed-in"]'),
       signedInClass: document.documentElement.classList.contains("op-signed-in"),
+      // The feed's own door, in its left column: the same branch attribute,
+      // so the same class hides it before paint.
+      feedDoor: show('[data-feed-left] [data-auth-branch="anonymous"]'),
       // Both branches are in the DOM. Only one may be REACHABLE, and both
       // `display: none` and `visibility: hidden` buy that (only `opacity: 0`
       // does not) — it is the half a screen reader and a Tab key care about.
-      reachable: [...document.querySelectorAll("a,button")]
+      //
+      // THE HEADER'S, since `/` became the feed (openproduct-redesign OPR-3):
+      // the feed's left column carries the board's own door for a visitor
+      // who is signed out — a card that says "Sign in" — so the PAGE holds
+      // two, by design. The claim this lane makes is about the shell's chip:
+      // of ITS two branches, one is reachable. The feed's card is held to
+      // the same rule just below (`feedDoor`): it shows with the anonymous
+      // branch and is gone with it.
+      reachable: [...document.querySelectorAll("header a, header button")]
         // Same correction as `show()` above: `offsetParent` is non-null for a
         // `visibility: hidden` element, and that element is NOT reachable —
         // it is out of the tab order and out of the accessibility tree.
@@ -102,9 +113,14 @@ export async function runChrome(base) {
       `anon=${cold.anonymous} signedIn=${cold.signedIn}`,
     );
     check(
-      "signed out: exactly one account control is reachable",
+      "signed out: exactly one account control is reachable in the header",
       cold.reachable.length === 1 && cold.reachable[0] === "Sign in",
       JSON.stringify(cold.reachable),
+    );
+    check(
+      "signed out: the feed's own door is shown beside it",
+      cold.feedDoor === "shown",
+      `feedDoor=${cold.feedDoor}`,
     );
 
     // ─── THE MILESTONE: the hint, before anything has answered ──────────
@@ -115,9 +131,14 @@ export async function runChrome(base) {
       `anon=${hinted.anonymous} signedIn=${hinted.signedIn} class=${hinted.signedInClass}`,
     );
     check(
-      "hinted: still exactly one account control is reachable",
+      "hinted: still exactly one account control is reachable in the header",
       hinted.reachable.length === 1 && /^Account —/.test(hinted.reachable[0] ?? ""),
       JSON.stringify(hinted.reachable),
+    );
+    check(
+      "hinted: the feed's door is hidden before paint, and keeps its box",
+      hinted.feedDoor === "hidden",
+      `feedDoor=${hinted.feedDoor}`,
     );
 
     // ─── a stale hint is corrected, not believed ────────────────────────

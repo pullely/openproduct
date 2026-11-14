@@ -15,7 +15,7 @@ import {
   type PublicProductPostAuthor,
 } from "@openproduct/contracts";
 
-import { isPublishedPost } from "../posts/blocks";
+import { isPublishedPost } from "../posts/published";
 import { usableCounts } from "../ui/stage";
 
 // ─── addresses ─────────────────────────────────────────────────────────────
@@ -77,6 +77,25 @@ export function feedPosts(
   const seen = new Set<string>();
   const out: PublicProductPost[] = [];
   for (const post of [...held, ...more]) {
+    if (!isPublishedPost(post) || seen.has(post.id)) continue;
+    seen.add(post.id);
+    out.push(post);
+  }
+  return out;
+}
+
+/**
+ * The posts a page appended by *Show more* adds: published, each once, and
+ * none the list already holds (`heldIds` — the server-drawn page's posts, by
+ * id; a post that moved between two reads could arrive twice).
+ */
+export function feedMorePosts(
+  heldIds: readonly string[],
+  more: readonly PublicProductPost[],
+): PublicProductPost[] {
+  const seen = new Set<string>(heldIds);
+  const out: PublicProductPost[] = [];
+  for (const post of more) {
     if (!isPublishedPost(post) || seen.has(post.id)) continue;
     seen.add(post.id);
     out.push(post);

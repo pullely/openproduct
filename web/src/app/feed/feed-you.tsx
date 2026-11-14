@@ -65,9 +65,15 @@ const nothing = (): FeedMine | null => null;
 
 function useFeedMine(): FeedMine | null {
   const state = useSyncExternalStore(subscribe, current, nothing);
+  // THE HINT, OR THE AUTHORITY. The cookie the boot script read is a guess
+  // made before paint; `/auth/session` is the answer, and the shell publishes
+  // it (`ui/visitor.ts`). Asking on either means a session whose hint cookie
+  // is missing or stale still gets its columns, one round trip later, rather
+  // than never until a reload.
+  const signedIn = useSyncExternalStore(subscribeVisitor, visitorSnapshot, unknownVisitor).signedIn;
   React.useEffect(() => {
-    if (hintedSignedIn() && window.matchMedia(COLUMNS_QUERY).matches) ask();
-  }, []);
+    if ((hintedSignedIn() || signedIn) && window.matchMedia(COLUMNS_QUERY).matches) ask();
+  }, [signedIn]);
   return state;
 }
 

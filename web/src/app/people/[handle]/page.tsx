@@ -8,6 +8,8 @@ import {
   breadcrumbJsonLd,
 } from "@openproduct/contracts";
 
+import { ProductPostCard } from "../../posts/post-card";
+import { fetchAuthorPosts } from "../../posts/posts-api";
 import { publicApexOrigin } from "../../public-api";
 import { StatInline } from "../../ui/bits";
 import { BOARD_PAGE, EMPTY_NOTE, HEAD_META, SIDE_CARD, SIDE_TITLE } from "../../ui/design";
@@ -66,10 +68,19 @@ export default async function ContributorProfilePage({ params }: PageProps) {
   const profile = doc.contributor;
   // OPR-3 — where each of their products stands, from each product's own
   // public document (the same bytes for every visitor, cached like the page).
-  const stages = await readStageLines([
-    ...profile.maintains.map((listing) => listing.slug),
-    ...profile.contributesToListings.map((listing) => listing.slug),
+  //
+  // AND THE POSTS THEY PRESSED POST ON (board `Person`): the first page of
+  // the per-author read, public and cached like this page. A read that did
+  // not answer draws no section — the products below are still theirs.
+  const [stages, authored] = await Promise.all([
+    readStageLines([
+      ...profile.maintains.map((listing) => listing.slug),
+      ...profile.contributesToListings.map((listing) => listing.slug),
+    ]),
+    fetchAuthorPosts(profile.handle),
   ]);
+  const posts = authored?.posts ?? [];
+  const here = `/@${profile.handle}`;
   const apex = publicApexOrigin();
   const shortLink = `${apex ? apex.replace(/^https?:\/\//, "") : "openproduct.live"}/@${profile.handle}`;
 
@@ -105,13 +116,28 @@ export default async function ContributorProfilePage({ params }: PageProps) {
           doc={doc}
           now={Date.parse(doc.observedAt)}
           builds={
-            profile.maintains.length === 0 ? (
-              <p className={EMPTY_NOTE}>No published products right now.</p>
-            ) : (
-              <section aria-label="Products" className="rounded-[16px] bg-card p-2">
-                <ProductRows listings={profile.maintains} stages={stages} />
-              </section>
-            )
+            <>
+              {/* Their posts first, as the board's main column has them: each
+                  card in the `person` variant, which names the product it is
+                  for. Absent when they have posted nothing. */}
+              {posts.length > 0 ? (
+                <section aria-labelledby="person-posts" data-person-posts className="flex flex-col gap-2.5">
+                  <h2 id="person-posts" className={`${SIDE_TITLE} mx-1`}>
+                    Posts
+                  </h2>
+                  {posts.map((post) => (
+                    <ProductPostCard key={post.id} post={post} variant="person" returnTo={here} />
+                  ))}
+                </section>
+              ) : null}
+              {profile.maintains.length === 0 ? (
+                <p className={EMPTY_NOTE}>No published products right now.</p>
+              ) : (
+                <section aria-label="Products" className="rounded-[16px] bg-card p-2">
+                  <ProductRows listings={profile.maintains} stages={stages} />
+                </section>
+              )}
+            </>
           }
           aside={
             // CG4 — THE SECOND HALF OF THE GRAPH, and it renders only when

@@ -38,7 +38,9 @@ describe("a checklist, not a score", () => {
     expect(src).toContain('href="#report"');
     expect(src).toContain("{LAUNCH_HEALTH_DISPUTE}");
     expect(LAUNCH_HEALTH_DISPUTE).toBe("Dispute an item");
-    expect(code("ui/report-control.tsx")).toContain('<details id="report"');
+    // The page's own subject wears `report`; a conversation's control on the
+    // same page wears its own id, so the anchor is never ambiguous.
+    expect(code("ui/report-control.tsx")).toContain('<details id={subjectKind === "thread" ? "report-thread" : "report"}');
   });
 
   it("the page feeds it the contract's items from the projection it already holds", () => {

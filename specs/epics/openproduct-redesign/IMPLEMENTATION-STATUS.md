@@ -7,7 +7,7 @@ the code departed from `design.md`.
 |---|---|---|
 | OPR0 — the spec | ✅ done (2026-11-14) | [#15](https://github.com/pullely/openproduct/pull/15) |
 | OPR1 — the new look | ✅ done (2026-11-14) | [#16](https://github.com/pullely/openproduct/pull/16) |
-| OPR2 — products post for themselves | | |
+| OPR2 — products post for themselves | ✅ done (2026-11-15) | [#17](https://github.com/pullely/openproduct/pull/17) |
 | OPR3 — threads, public and private | | |
 | OPR4 — demos | waits on risks R1 | |
 
@@ -51,7 +51,7 @@ gateway route.
   files (75,924 bytes measured). The fonts budget is four files and
   82,000 bytes. No per-route budget moved.
 
-### Left for the data that OPR2 and OPR3 add
+### Left at OPR1 for the data that OPR2 and OPR3 add
 
 The boards show these and OPR1 leaves them out rather than fake them:
 the stage (idea or shipping), milestones and the progress bar, the stage
@@ -61,6 +61,61 @@ the stage word and logo in search rows, "Requested" on a seat (the
 overlay counts requests but does not name the openings), the Following
 and Drafts sections of Your profile, and the Mentions and Seats tabs of
 Activity.
+
+## OPR2 — as built (OPR-3)
+
+A product has a stage, milestones and template posts; the feed is the home
+page; the product page is where its crew runs it.
+
+- **Data.** Three additive migrations: `2265` (`profiles.stage`,
+  `profiles.try_url`, `product_milestones`), `2270` (`product_posts`,
+  `product_post_reactions`, the thread tag `post`) and `2275` (an index
+  for a person's posts). Ids are `ppo_…` and `pms_…`.
+- **Templates.** `packages/contracts/src/product-posts.ts` holds the five
+  kinds with their blocks in fixed order and their limits. The validator,
+  the builder and `/docs/posting` all read that one catalogue. A post with
+  a block out of order, an unknown block or free-form content is refused.
+- **Routes.** Public and cached: the feed, one post, a product's posts, a
+  person's posts. Signed in: reactions, following, and the overlay's
+  `reactions`, `crew` and `requestedOpenings`. Crew, under the product:
+  posts (draft, save, publish), milestones (add, edit, reorder, ship),
+  needs-you, and the pitch and "Try it" address. The API changelog is at
+  1.4.0 (`card.milestoneCounts`, `card.crewCount`).
+- **The feed** is `/`: posts newest first in their card shapes, "Show
+  more" at `/feed/<cursor>`, the signed-in columns from the overlay.
+- **The post page** is `/<slug>/posts/<id>`: the post, reactions, Share
+  and its comment thread.
+- **The product page.** A shipping product has Updates, About, Crew and
+  Talk at their own cached addresses (`/<slug>`, `/about`, `/crew`,
+  `/talk`); an idea is one lavender page. The same cached bytes go to
+  everyone: the Manage/Visitor switch and every maker control arrive
+  through the overlay for the crew only, and sit in the header.
+- **The maker view:** edit the pitch and "Try it" address in place, Needs
+  you, milestones, seats added and edited on the Crew tab, New post, and
+  one "More settings" entry to the studio's steps.
+- **The builder** is `/<slug>/new`: the card is the editor, with counters
+  against the limits and Post off until the required blocks are filled.
+  It works as a plain form without JavaScript.
+- **Lists.** Stage views at `/products/stage/<shipping|ideas>` and
+  `/help-wanted/stage/<…>`; milestone bars and "needs a first builder" on
+  cards; "Requested" on a seat; a person's products with their stage in
+  an expanded search row; Posts on a person's page; Following and Drafts
+  on Your profile.
+- **Addresses.** `/studio` → `/me`. A published product's
+  `/studio/<org>/<profile>` → its page; its overview lives on at
+  `/studio/<org>/<profile>/settings`.
+- **Budgets.** The wire budget did not move (276 KB, 30 requests). `/`
+  went down (JS 168,100, document 17,100). New budgets for the tab routes
+  and the post page. `/people/<handle>` went up (document 17,500, reads
+  5) for the Posts section and the stage lines. A page that draws the
+  serif italic quote may fetch a fifth font file (104,740 bytes).
+- **Guards.** 40 layout snapshots (`home` became `feed`; `post` and
+  `idea` are new). No test was deleted or skipped.
+
+### Left for OPR3
+
+Private threads, a thread's kind and "resolved", the Talk tab's
+public/private filter, and the Mentions and Seats tabs of Activity.
 
 ## Departures from the design
 
@@ -91,3 +146,36 @@ Activity.
   neither.
 - **"Open a build" is a footer link.** The header on the boards has no
   place for it.
+
+### From OPR2
+
+- **The studio's steps stay.** The product page does not yet upload
+  media, pick topics, manage the roster or publish a draft, so those
+  steps keep working behind "More settings". Design §5 had the studio
+  redirect entirely.
+- **A draft's studio address forwards too**, to its `/settings`: one
+  address cannot be both a redirect and a page. The forward is a 307,
+  because where it lands depends on the listing's state.
+- **A product is not renamed from "Edit details".** The name is the
+  address; a rename would move the page.
+- **The pitch limit is 200 characters**, not the board's 120: pitches
+  that long already exist.
+- **Seat requests are reviewed on Orunbase.** Needs you has no Accept or
+  Decline; "Review on Orunbase" opens the workspace, not the request
+  itself, because the console has no address for one request.
+- **A product's first idea post is a draft** its maker publishes; the
+  site does not post on a product's behalf.
+- **Feed cards have React and Comment, no Share.** Share is on the post
+  page.
+- **The feed's focus effect scales the centred card and does not dim the
+  others:** dimmed muted text falls under 4.5:1.
+- **The feed's right column has a Following card** after Worth
+  following; the board has only the latter.
+- **A person's page keeps its Products list** under the new Posts
+  section.
+- **The sitemap lists the feed's first page of posts**, not every post.
+- **Known edges.** The catalogue is materialised, so a card not yet
+  rebuilt answers `crewCount: null` and draws no crew count. A crew
+  member's first visit to a product page shifts once when the maker
+  controls arrive. The seat list can be up to 60 seconds stale after a
+  write.

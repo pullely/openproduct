@@ -12,6 +12,7 @@ import {
 
 import { blockField } from "../../posts/crew-forms";
 import { POST_CARD_SHELL, ProductPostCard } from "../../posts/post-card";
+import { PostFooter } from "../../posts/post-footer";
 import { BTN_INK, BTN_SOFT, EYEBROW, FOCUS, NOTICE, NOTICE_ERROR } from "../../ui/design";
 import { BackIcon, CloseIcon, PlusIcon } from "../../ui/icons";
 import { AppLink } from "../../ui/link";
@@ -130,7 +131,9 @@ const KIND_SKIN: Record<
     mark: "md:bg-amber-soft/40 md:ring-[1.5px] md:ring-inset md:ring-amber/35",
     fieldMark: "max-md:ring-[1.5px] max-md:ring-inset max-md:ring-amber/40",
     dot: "ring-[1.5px] ring-inset ring-amber",
-    badge: "md:bg-amber-soft text-amber-ink",
+    // Words ON the amber tint take the deeper ink (`--endorse-ink`, 4.64:1);
+    // `--amber-ink` is 4.36 there. On a phone the badge has no tint.
+    badge: "md:bg-amber-soft text-amber-ink md:text-endorse-ink",
   },
   version: {
     tile: "bg-version-soft text-version",
@@ -374,12 +377,17 @@ export function Composer(props: ComposerProps) {
           <span className="flex shrink-0 max-md:hidden">
             <ProductTile slug={slug} thumbnail={product.logo} size={32} />
           </span>
+          {/* The product's name is a link at desktop width. On a phone it is
+              the small line above the title, and the Back button beside it
+              (44px) already goes to the same address — so there it is words,
+              not a 16px-tall second link to the same place. */}
           <AppLink
             href={`/${slug}`}
-            className={`truncate text-[15px] text-muted-foreground no-underline hover:underline max-md:text-[13px] ${FOCUS}`}
+            className={`truncate text-[15px] text-muted-foreground no-underline hover:underline max-md:hidden ${FOCUS}`}
           >
             {product.name}
           </AppLink>
+          <span className="max-w-full truncate text-[13px] text-muted-foreground md:hidden">{product.name}</span>
           <span aria-hidden="true" className="text-muted-foreground max-md:hidden">
             /
           </span>
@@ -786,6 +794,10 @@ export function Composer(props: ComposerProps) {
                   post={previewPost(kind, draft.values, draft.placed, product, props.now)}
                   variant="feed"
                   returnTo={here}
+                  // Under the page's `h1` ("New post"): no level is skipped.
+                  headingLevel={2}
+                  // The reader's own two rows, inert like the rest of the preview.
+                  footer={<PostFooter post={previewPost(kind, draft.values, draft.placed, product, props.now)} returnTo={here} />}
                 />
               </div>
             </section>

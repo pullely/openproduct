@@ -25,7 +25,9 @@ const code = (file: string) =>
     .replace(/\{\/\*[\s\S]*?\*\/\}/g, "");
 
 const LISTING = "studio/[org]/[profile]";
-const OVERVIEW = `${LISTING}/page.tsx`;
+// OPR-3 — the overview is the listing's settings page, one segment down; the
+// base address is a route handler that forwards (`studio-moved.test.ts`).
+const OVERVIEW = `${LISTING}/settings/page.tsx`;
 const ACTIONS = `${LISTING}/actions/route.ts`;
 const SHELL = `${LISTING}/listing-shell.tsx`;
 // openproduct-studio OSD5 — the frame every step shares, drawn once.
@@ -88,7 +90,9 @@ describe("each step is addressable", () => {
     const strip = code(STRIP);
     expect(strip).toContain("useSelectedLayoutSegment()");
     expect(strip).toContain("step.segment === segment");
-    expect(strip).toContain('label: "Overview", href: base, current: segment === null');
+    // The strip's home is the settings page (OPR-3): it is a segment like
+    // the steps, so it is "current" by the same rule and not by `null`.
+    expect(strip).toMatch(/label: "Settings",\s*href: listingSettingsPath\(org, profileId\),\s*current: segment === LISTING_SETTINGS_SEGMENT,/);
     expect(strip).toContain('"aria-current": "page"');
   });
 
@@ -152,8 +156,12 @@ describe("a save comes back to the step that made it", () => {
 
   it("refuses a `from` outside the vocabulary rather than trusting it", () => {
     // It reaches a URL, so it is validated against the contract's own list
-    // and falls back to the overview.
-    expect(code(ACTIONS)).toContain("step?.segment ? `${editor}/${step.segment}` : editor");
+    // and falls back to the overview — the listing's settings page (OPR-3):
+    // the base address forwards a published listing to its public page,
+    // which would drop the act's notice.
+    expect(code(ACTIONS)).toContain(
+      "step?.segment ? `${editor}/${step.segment}` : `${editor}/${LISTING_SETTINGS_SEGMENT}`",
+    );
   });
 
   it("has each step name itself on its form", () => {
