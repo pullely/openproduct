@@ -42,6 +42,7 @@ export const LOG_MESSAGES = {
   sweep_outcome_unrecorded: { level: "warn", means: "The run's ledger could not be handed to core; the status where core refused.", fields: ["reason", "status"] },
   capture_failed: { level: "warn", means: "One screenshot attempt failed, by one word (MD4).", fields: ["reason"] },
   search_rebuild_failed: { level: "warn", means: "The search index rebuild threw; the previous index stands (DS0).", fields: ["reason", "requestId"] },
+  search_check_unrecorded: { level: "warn", means: "The index was clean and the check could not be recorded; the index stands, and the sweep records the phase failed rather than stale (OPN-11).", fields: ["reason", "requestId"] },
   catalogue_rebuild_failed: { level: "warn", means: "The catalogue rebuild threw; the previous catalogue stands and the page keeps its moment (OS5).", fields: ["reason", "requestId"] },
   endorsement_recount_failed: { level: "warn", means: "The catalogue tick's endorsement re-count threw; the previous counts stand inside their freshness and the rebuild runs anyway (OB3).", fields: ["reason", "requestId"] },
   // ── the synthetic (OO1) — its own worker, the same list ──

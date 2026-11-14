@@ -26,6 +26,8 @@ spec:
     - core/src/handlers/search.ts
     - tests/core/src/search.test.ts
     - packages/contracts/src/sweep-health.ts
+    # The unrecorded check logs a line of its own, and the vocabulary is closed (OO2).
+    - packages/contracts/src/log-vocabulary.ts
     - specs/epics/openproduct-standalone/**
     - tasks/OPN-11.TaskContract.yaml
     - default/openproduct/openproduct-db
