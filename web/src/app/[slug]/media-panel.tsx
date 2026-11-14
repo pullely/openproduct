@@ -62,7 +62,7 @@ export function MediaPanel({
   return (
     <div className="mt-3 min-w-0 max-w-full" data-media-panel="">
       {plan.hero ? (
-        <figure className="m-0 overflow-hidden rounded-[8px] border border-border bg-muted">
+        <figure className="m-0 overflow-hidden rounded-[14px] bg-sunken">
           <Img source={imageSourceOf(plan.hero.value, apiBase, HERO_SIZES)} eager />
         </figure>
       ) : null}
@@ -78,7 +78,7 @@ export function MediaPanel({
               <li key={item.value.id} className="shrink-0 snap-start">
                 <a
                   href={source.src}
-                  className="block overflow-hidden rounded-[8px] border border-border bg-muted focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+                  className="block overflow-hidden rounded-[14px] bg-sunken focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
                 >
                   <Img source={source} thumbnail />
                 </a>
@@ -89,11 +89,11 @@ export function MediaPanel({
       ) : null}
 
       {plan.screenshot ? (
-        <figure className="m-0 mt-3 rounded-[8px] border border-dashed border-border-strong bg-muted p-2">
-          <div className="overflow-hidden rounded-[6px]">
+        <figure className="m-0 mt-3 rounded-[14px] bg-sunken p-2">
+          <div className="overflow-hidden rounded-[10px]">
             <Img source={imageSourceOf(plan.screenshot.value, apiBase, SCREENSHOT_SIZES)} />
           </div>
-          <figcaption className="mt-2 text-[12.5px] leading-[1.5] text-muted-foreground">
+          <figcaption className="mt-2 text-[13px] leading-[1.5] text-muted-foreground">
             {SCREENSHOT_CAPTION_LEAD}{" "}
             <time dateTime={screenshotCaption(plan.screenshot.provenance.observedAt).iso}>
               {screenshotCaption(plan.screenshot.provenance.observedAt).day}

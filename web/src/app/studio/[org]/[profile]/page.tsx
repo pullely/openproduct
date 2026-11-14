@@ -39,7 +39,7 @@ import {
 
 import { consoleOrigin } from "../../../../lib/platform";
 import { publicApiBase } from "../../../public-api";
-import { BTN_OUTLINE, BTN_PRIMARY, LABEL, TEXTAREA } from "../../../ui/design";
+import { BTN_OUTLINE, BTN_PRIMARY, LABEL, NOTICE_WARN, TEXTAREA } from "../../../ui/design";
 import { BTN_GHOST, RAIL_PANEL, } from "../../frame";
 import { StudioLive } from "../../live-save";
 import { LISTING_VOCABULARY } from "../../notices";
@@ -93,7 +93,7 @@ export default async function StudioListingOverviewPage(props: {
   return (
     <StudioLive vocabulary={LISTING_VOCABULARY} notice={notice} blockers={blockers} flush>
       {!linked ? (
-        <div className="mt-4 rounded-[12px] border border-warning-soft-border bg-warning-soft px-4 py-3.5 text-[13.5px] leading-[1.5] text-warning-strong">
+        <div className={`mt-4 ${NOTICE_WARN}`}>
           <span className="font-medium">Not linked to its workspace.</span>{" "}
           A listing can only be linked to the workspace it was made in, and only when that is one of your
           openproduct workspaces.{" "}
@@ -206,7 +206,7 @@ export default async function StudioListingOverviewPage(props: {
                   Check repository
                 </button>
               </form>
-              <span className="text-[12.5px] leading-[1.5] text-muted-foreground">Fills a gap. Never overwrites what you wrote.</span>
+              <span className="text-[13px] leading-[1.5] text-muted-foreground">Fills a gap. Never overwrites what you wrote.</span>
             </ImportPanel>
           </>
         }

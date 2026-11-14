@@ -95,14 +95,20 @@ const component = (name: string, file = "ui/bits.tsx") => {
  *  place. */
 const ROUTE_SOURCES = [
   "page.tsx",
-  // OB4 — the list and its control replaced the day board's feed.
-  "feed/builds.tsx",
+  // OPR1 — the Products view, its sort, its card and its list replaced the
+  // builds list; `/products` and `/help-wanted` are pages of their own, and
+  // `/builds/{order}` is a redirecting handler.
+  "feed/products-view.tsx",
   "feed/sort-control.tsx",
-  "builds/[order]/page.tsx",
+  "products/page.tsx",
+  "builds/[order]/route.ts",
   "feed/feed-row.tsx",
-  // CL2 — the build tile replaced the row, and the margin left the front page.
-  "feed/build-tile.tsx",
-  "feed/more-builds.tsx",
+  "feed/product-card.tsx",
+  "feed/product-list.tsx",
+  "feed/follow-product.tsx",
+  "help-wanted/page.tsx",
+  "help-wanted/seat-card.tsx",
+  "help-wanted/seat-list.tsx",
   "[slug]/page.tsx",
   "people/(index)/page.tsx",
   "people/[handle]/page.tsx",
@@ -214,7 +220,9 @@ describe("no route renders a zero where it means 'not measured'", () => {
     // a reader who did not know it was there, and four fifths of its headings
     // from a search result that could have quoted one.
     const page = read("[slug]/page.tsx");
-    for (const id of ["about", "components", "makers", "discussion"]) {
+    // OPR1 — the reading column's sections; the people and the components are
+    // the side column's Crew and Built with cards, each with its heading too.
+    for (const id of ["about", "launches", "discussion"]) {
       // Re-pinned for the design's restyle: the sections now carry a spacing
       // class before the id, so the match is on the id and label, not on the
       // attribute order. Re-pinned again for PP2: a section that also wears
@@ -229,7 +237,11 @@ describe("no route renders a zero where it means 'not measured'", () => {
     // And the hero's one action points at a SECTION rather than at a tab —
     // a plain fragment, which works with no JavaScript and survives a page
     // the reader has already scrolled.
-    expect(page).toContain('href={primary.kind === "offer" ? "#people-wanted" : "#discussion"}');
+    // OPR1 — the board's "Take a seat" goes to the crew card.
+    expect(page).toContain('<a href="#crew" className={BTN_SOFT}>');
+    for (const heading of ["crew-heading", "stack-heading", "open-heading"]) {
+      expect([heading, page.includes(`id="${heading}"`)]).toEqual([heading, true]);
+    }
     expect(page).not.toContain("?tab=");
   });
 });
@@ -256,14 +268,14 @@ describe("OPC-1 / I6 — the pages stay one document with no actor", () => {
     const page = read("page.tsx");
     expect(page).toContain("export const revalidate = 60");
     expect(page).not.toContain("searchParams");
-    for (const part of ["feed/builds.tsx", "feed/sort-control.tsx", "feed/row-shell.tsx", "feed/build-tile.tsx"]) {
+    for (const part of ["feed/sort-control.tsx", "feed/row-shell.tsx", "feed/product-card.tsx", "feed/follow-product.tsx"]) {
       expect([part, /fetch\(/.test(code(part))]).toEqual([part, false]);
     }
-    // THE ONE READ AFTER PAINT (openproduct-calm CL2, CL-R7): the endless
-    // list's layer is a client island that reads the next page from the
-    // same-origin, path-addressed `/api/builds/{cursor}` — never on the
-    // server, so `/` is still one artifact.
-    const more = code("feed/more-builds.tsx");
+    // THE ONE READ AFTER PAINT (openproduct-redesign OPR1; it was the endless
+    // list's, CL-R7): *Show more* is a client island that reads the next
+    // page from the same-origin, path-addressed `/api/builds/{cursor}` when
+    // it is pressed — never on the server, so `/` is still one artifact.
+    const more = code("feed/product-list.tsx");
     expect(more.startsWith('"use client";')).toBe(true);
     expect(more.match(/fetch\(/g)).toHaveLength(1);
     expect(more).toContain("fetch(`/api/builds/${encodeURIComponent(cursor)}`");
@@ -280,7 +292,8 @@ describe("OPC-1 / I6 — the pages stay one document with no actor", () => {
     // they render take `now` as a prop. (The directory that first held this
     // property is gone; the rule is re-pinned to the surviving pages.)
     expect(read("page.tsx")).not.toMatch(/Date\.now\(\)/);
-    expect(read("feed/builds.tsx")).not.toMatch(/Date\.now\(\)/);
+    expect(read("feed/products-view.tsx")).not.toMatch(/Date\.now\(\)/);
+    expect(read("help-wanted/page.tsx")).not.toMatch(/Date\.now\(\)/);
     expect(read("feed/feed-row.tsx")).not.toMatch(/Date\.now\(\)/);
     expect(read("launches/[day]/page.tsx")).toContain("const now = Date.now();");
     expect(read("launches/[day]/page.tsx")).toContain("now={now}");
@@ -850,7 +863,8 @@ describe("CG1 — the contributor profile page", () => {
   it("names the listings behind `contributes to`, and only when there are some", () => {
     const source = code("people/[handle]/page.tsx");
     // Named, so the number is checkable rather than taken on trust...
-    expect(source).toContain("<ListingRows listings={profile.contributesToListings} />");
+    // (OPR1: as the board's product rows, in the profile's side card.)
+    expect(source).toContain("<ProductRows listings={profile.contributesToListings} />");
     // ...and the section is CONDITIONAL, because an empty "Contributes to —
     // nothing" on every profile prints an absence as a finding about a person
     // (OPC-C). Somebody nobody has named has not failed at anything.
@@ -865,9 +879,15 @@ describe("CG1 — the contributor profile page", () => {
     // Two sections rendering listing rows two ways is two places for a link
     // to go dead. Extracted at the moment there were two of them, not after
     // they drifted.
+    //
+    // OPR1 — and now there are three: the products they run, the ones they
+    // contribute to, and the Products side card every other section shows.
+    // All three are `ProductRows`, and the one anchor is written in its file.
     const source = code("people/[handle]/page.tsx");
-    expect((source.match(/<ListingRows /g) ?? []).length).toBe(2);
-    expect((source.match(/href=\{`\/\$\{listing\.slug\}`\}/g) ?? []).length).toBe(1);
+    expect((source.match(/<ProductRows /g) ?? []).length).toBe(2);
+    expect((code("people/[handle]/maker-view.tsx").match(/<ProductRows /g) ?? []).length).toBe(1);
+    expect(source).not.toMatch(/href=\{`\/\$\{listing\.slug\}`\}/);
+    expect((code("people/[handle]/product-rows.tsx").match(/href=\{`\/\$\{listing\.slug\}`\}/g) ?? []).length).toBe(1);
   });
 
   it("the short link is selectable text, not only a button", () => {
@@ -2259,11 +2279,17 @@ describe("CB2 — the demand signal, floored (OPC-F)", () => {
 });
 
 describe("CB3 — the header's action follows the door", () => {
-  it("asks the contract rather than branching in the page", () => {
-    // The rule is about what the product offers a reader, and two copies of
-    // it would drift.
-    const page = read("[slug]/page.tsx");
-    expect(page).toContain("primaryAction({ openRoleCount: openRoles.length })");
+  it("offers each of the board's actions only when its door exists", () => {
+    // openproduct-redesign OPR1 — the header card's actions are the board's
+    // three, and the rule CB3 kept is the same one: a button that leads to a
+    // door that is not there wastes the action. Take a seat needs an open
+    // seat; Try it needs the listing's own address for the running product.
+    const page = code("[slug]/page.tsx");
+    expect(page).toMatch(/\{openRoles\.length > 0 \? \(\s*<a href="#crew" className=\{BTN_SOFT\}>/);
+    expect(page).toMatch(/\{profile\.liveUrl \? \(\s*<a href=\{profile\.liveUrl\}/);
+    // The old single button, and its two-way branch, are gone with it.
+    expect(page).not.toContain("primaryAction(");
+    expect(page).not.toContain("primary.kind");
   });
 
   it("no longer greys out the second half — CB1 made it real", () => {

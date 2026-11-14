@@ -7,8 +7,6 @@ import {
   OPEN_BUILD_REPO_HINT,
   OPEN_BUILD_REPO_LABEL,
   OPEN_BUILD_REPO_MAX,
-  OPEN_BUILD_REPO_WHY,
-  OPEN_BUILD_SUBTITLE,
   PREVIEW_HEADING,
   isGithubRepoUrl,
   previewEntry,
@@ -32,7 +30,7 @@ import {
   type DraftStorage,
 } from "./handoff";
 
-import { BTN_PRIMARY, FIELD, H2, LABEL, PAGE_TITLE, TEXTAREA } from "../ui/design";
+import { BTN_PRIMARY, EYEBROW, FIELD, FOCUS, LABEL, PAGE_TITLE, TEXTAREA } from "../ui/design";
 import { AppLink } from "../ui/link";
 
 /**
@@ -56,10 +54,18 @@ import { AppLink } from "../ui/link";
  * one session fact comes from `/auth/session`, client-side, exactly as the
  * shell's account chip reads it.
  *
- * THE DESIGN'S FRAME: a 1080px column with `64px 24px 72px` of padding, the
- * 26px sans title over a 15px lede, and a two-column grid — the form on the
- * left, the sticky preview in a 26rem column on the right, 48px between.
- * On a phone the grid stacks, form first, preview under it.
+ * THE FRAME: a 1080px column, the page title, and a two-column grid — the
+ * form on the left, the sticky preview in a 26rem column on the right, 48px
+ * between. On a phone the grid stacks, form first, preview under it.
+ *
+ * THE NEW LOOK (openproduct-redesign OPR1). The page is on no board, so its
+ * structure and steps are what they were and its skin is the redesign's:
+ * the Lora title, the form on one flat card, 44px fields, a pill for the
+ * act. It carries no sentence a reader does not need to fill it in
+ * (design.md §2 rule 9): the lede under the title and the paragraph under
+ * the repository field are gone. What stays is each field's label, which
+ * ones are optional, and — only once an address has been typed that is not
+ * a GitHub repository — what the field takes, in the danger ink.
  */
 
 function storage(): DraftStorage | null {
@@ -165,21 +171,18 @@ export default function CreateOpenproductPage() {
 
   return (
     <main className="mx-auto box-border w-full max-w-[1080px] px-[44px] pb-[104px] pt-[80px] max-lg:px-7 max-sm:px-4 max-sm:pb-[72px] max-sm:pt-12">
-      <header className="mb-8">
+      <header className="mb-8 max-sm:mb-6">
         <h1 className={PAGE_TITLE}>{OPEN_BUILD_HEADING}</h1>
-        <p className="m-0 mt-3 max-w-[65ch] text-[15px] leading-[1.6] text-muted-foreground">
-          {OPEN_BUILD_SUBTITLE}
-        </p>
       </header>
 
       {resuming ? (
-        <p className="m-0 mb-6 max-w-[65ch] rounded-[8px] border border-border bg-muted px-3 py-2 text-[13px] text-muted-foreground" role="status">
-          Welcome back &mdash; picking up where you left off.
+        <p className="m-0 mb-4 rounded-[14px] bg-sunken px-3.5 py-2.5 text-[13px] text-muted-foreground" role="status">
+          Picking up where you left off.
         </p>
       ) : null}
 
       <div className="grid gap-10 lg:grid-cols-[minmax(0,1fr)_minmax(0,26rem)] lg:items-start lg:gap-12">
-        <form onSubmit={onSubmit} className="grid gap-6">
+        <form onSubmit={onSubmit} className="grid gap-5 rounded-[16px] bg-card p-6 max-sm:p-4">
           <label className="block">
             <span className={LABEL}>Build name</span>
             <input
@@ -222,10 +225,10 @@ export default function CreateOpenproductPage() {
             />
           </label>
 
-          {/* OB6 — THE REPO, UP FRONT, OPTIONAL, WITH WHY. A build is a public
-              repo; asking for it here is what lets its work count from the
-              first sweep, and saying so is what keeps an optional field from
-              reading as a hoop. */}
+          {/* OB6 — THE REPO, UP FRONT AND OPTIONAL. A build is a public repo;
+              asking for it here is what lets its work count from the first
+              sweep. The label says it is optional; nothing under the field
+              argues for it (OPR1). */}
           <label className="block">
             <span className={LABEL}>
               {OPEN_BUILD_REPO_LABEL} <span className="font-normal text-muted-foreground">(optional)</span>
@@ -237,28 +240,32 @@ export default function CreateOpenproductPage() {
               onChange={(event) => setRepo(event.target.value)}
               maxLength={OPEN_BUILD_REPO_MAX}
               placeholder="https://github.com/owner/repo"
-              aria-describedby="repo-why"
+              aria-describedby={repoOk ? undefined : "repo-hint"}
               aria-invalid={repoOk ? undefined : true}
               className={FIELD}
             />
-            <span id="repo-why" className="mt-1.5 block max-w-[60ch] text-[12.5px] leading-[1.5] text-muted-foreground">
-              {repoOk ? OPEN_BUILD_REPO_WHY : OPEN_BUILD_REPO_HINT}
-            </span>
+            {/* Said only when what was typed cannot be saved, and in red
+                because it is an error: what the field takes. */}
+            {repoOk ? null : (
+              <span id="repo-hint" role="status" className="mt-1.5 block text-[13px] leading-[1.45] text-destructive">
+                {OPEN_BUILD_REPO_HINT}
+              </span>
+            )}
           </label>
 
           <div className="flex flex-wrap items-center gap-4">
             <button
               type="submit"
               disabled={!canSubmit}
-              className={`${BTN_PRIMARY} disabled:cursor-not-allowed disabled:opacity-50`}
+              className={`${BTN_PRIMARY} max-sm:h-[44px] disabled:cursor-not-allowed disabled:opacity-50`}
             >
               {buttonLabel}
             </button>
             <AppLink
               href="/"
-              className="tap text-[13px] text-muted-foreground underline underline-offset-4 hover:text-foreground"
+              className={`tap text-[13px] font-semibold text-amber-ink no-underline hover:text-foreground ${FOCUS}`}
             >
-              Back to Open builds
+              Back to the feed
             </AppLink>
           </div>
         </form>
@@ -289,9 +296,8 @@ export default function CreateOpenproductPage() {
  * NOTHING HERE ACTS, and `PreviewRow` carries the reason: a live vote box
  * would send the name somebody is typing to the overlay on every keystroke.
  *
- * THE DASHED BOX is the design's: the row alone, on a 14px dashed hairline
- * with 4px of padding, and no rule above it — the shell draws one for a row
- * inside a list, and this row is not in one.
+ * THE HEADING IS A MONO LABEL (OPR1), like every section head over a card:
+ * the row under it is the feed's own, and is the only thing in the column.
  */
 function Preview({ draft }: { draft: CreateDraft }) {
   // A fixed clock rather than `new Date()` on every render: the row shows no
@@ -304,7 +310,7 @@ function Preview({ draft }: { draft: CreateDraft }) {
       aria-labelledby="preview-heading"
       className="lg:sticky lg:top-6"
     >
-      <h2 id="preview-heading" className={H2}>
+      <h2 id="preview-heading" className={`m-0 px-[6px] font-normal ${EYEBROW}`}>
         {PREVIEW_HEADING}
       </h2>
       <ul

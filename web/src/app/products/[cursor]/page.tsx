@@ -1,31 +1,28 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
-import {
-  CATALOGUE_NEXT_LABEL,
-  FEED_CATALOGUE_HEADING,
-  breadcrumbJsonLd,
-  cataloguePageMeta,
-  catalogueMomentCopy,
-  cataloguePagePath,
-  frontPageEligible,
-} from "@openproduct/contracts";
+import { breadcrumbJsonLd, catalogueMomentCopy, cataloguePagePath, frontPageEligible } from "@openproduct/contracts";
 
-import { BuildTile } from "../../feed/build-tile";
+import { PRODUCT_GRID, ProductCard } from "../../feed/product-card";
+import { PRODUCTS_MORE_LABEL, productsShownLine } from "../../feed/products";
 import { fetchDirectoryPage, publicApexOrigin } from "../../public-api";
+import { BOARD_PAGE, BTN_SOFT, EMPTY_NOTE, FOCUS, PAGE_TITLE } from "../../ui/design";
 import { JsonLd } from "../../ui/json-ld";
 import { AppLink } from "../../ui/link";
-import { LINK_QUIET, PAGE, PAGE_HEAD, PAGE_SUBTITLE, PAGE_TITLE } from "../../ui/design";
 
 /**
  * The catalogue, continued (openproduct-scale OS1).
  *
- * `/products/{cursor}` is the page after the front page's product list,
- * and the page after that, and so on: one document at one address, in the
- * published order, reachable by a plain link. A PATH rather than `/?cursor=`,
+ * `/products/{cursor}` is the page after the Products page's first, and the
+ * page after that, and so on: one document at one address, in the published
+ * (default) order, reachable by a plain link. A PATH rather than `?cursor=`,
  * because this app prerenders and revalidates a path the way it does
- * `/launches/{day}` and cannot do that for a query string; and `/products`
- * itself stays the front page, as it always redirected.
+ * `/launches/{day}` and cannot do that for a query string.
+ *
+ * THE PRODUCTS PAGE'S OWN CARDS AND FOOT (openproduct-redesign OPR1): the
+ * board's grid, the count of what is shown, and *Show more* — here a plain
+ * link to the page after, because this document IS the no-JavaScript and
+ * crawler's path (`feed/product-list.tsx` reads the same pages in place).
  *
  * The cursor is opaque here as everywhere: this page hands it to the
  * directory and renders what comes back. It decodes nothing, because a page
@@ -41,8 +38,8 @@ export async function generateStaticParams() {
 export async function generateMetadata({ params }: { params: Promise<{ cursor: string }> }): Promise<Metadata> {
   const { cursor } = await params;
   return {
-    title: `${FEED_CATALOGUE_HEADING} — continued`,
-    description: "Every published listing, in the published order, one page at a time.",
+    title: "Products — continued",
+    description: "Every listed product, in the published order, one page at a time.",
     alternates: { canonical: cataloguePagePath(cursor) },
   };
 }
@@ -58,66 +55,64 @@ export default async function CataloguePage({ params }: { params: Promise<{ curs
   if (page === null) notFound();
 
   // The floor governs the catalogue wherever it is rendered (IN3): a listing
-  // below it is withheld here as on the front page.
+  // below it is withheld here as on the first page.
   const shown = page.projects.filter(frontPageEligible);
+  const moment = catalogueMomentCopy(page.computedAt);
 
   return (
-    <main className={PAGE}>
+    <main className={BOARD_PAGE}>
       <JsonLd
         data={breadcrumbJsonLd(
           [
-            { name: FEED_CATALOGUE_HEADING, path: "/" },
-            { name: `${FEED_CATALOGUE_HEADING} — continued`, path: cataloguePagePath(cursor) },
+            { name: "Products", path: "/products" },
+            { name: "Products — continued", path: cataloguePagePath(cursor) },
           ],
           publicApexOrigin(),
         )}
       />
-      <div className={PAGE_HEAD}>
-        <div>
-          <h1 className={PAGE_TITLE}>{FEED_CATALOGUE_HEADING}</h1>
-          <p className={PAGE_SUBTITLE}>
-            {cataloguePageMeta(shown.length, page.total)}
-            {/* OS5 — the catalogue's moment, as on the front page. */}
-            {catalogueMomentCopy(page.computedAt) !== null ? (
-              <>
-                {" · "}
-                <time dateTime={page.computedAt ?? undefined} data-catalogue-moment>
-                  {catalogueMomentCopy(page.computedAt)}
-                </time>
-              </>
-            ) : null}
-          </p>
-        </div>
+      <div className="flex flex-wrap items-baseline gap-x-[18px] gap-y-1.5 max-sm:px-[2px]">
+        <h1 className={PAGE_TITLE}>Products</h1>
+        <p className="m-0 font-mono text-label uppercase tracking-[0.1em] text-muted-foreground">
+          Continued
+          {/* OS5 — the catalogue's moment, as on the first page. */}
+          {moment !== null ? (
+            <>
+              {" · "}
+              <time dateTime={page.computedAt ?? undefined} data-catalogue-moment>
+                {moment}
+              </time>
+            </>
+          ) : null}
+        </p>
       </div>
 
-      <section aria-labelledby="catalogue-page" className="mt-5">
+      <section aria-labelledby="catalogue-page" className="flex min-w-0 flex-col gap-[18px] max-sm:gap-[10px]">
         <h2 id="catalogue-page" className="sr-only">
-          {FEED_CATALOGUE_HEADING}, continued
+          Products, continued
         </h2>
         {shown.length > 0 ? (
-          <ul className="m-0 grid list-none gap-[14px] p-0">
+          <ul className={PRODUCT_GRID} data-product-cards>
             {shown.map((card) => (
-              <BuildTile key={card.slug} card={card} />
+              <ProductCard key={card.slug} card={card} returnTo={cataloguePagePath(cursor)} />
             ))}
           </ul>
         ) : (
-          <p className="m-0 rounded-[12px] border border-dashed border-border px-5 py-10 text-center text-[15px] text-muted-foreground">
-            Nothing on this page.
-          </p>
+          <p className={EMPTY_NOTE}>Nothing on this page.</p>
         )}
-        <nav aria-label="Catalogue pages" className="mt-6 flex flex-wrap items-center gap-6 text-[14px] text-copy">
-          <AppLink href="/" className={`tap ${LINK_QUIET}`}>
-            ← The front page
-          </AppLink>
-          {page.next !== null ? (
-            <AppLink
-              href={cataloguePagePath(page.next)}
-              className={`tap font-medium ${LINK_QUIET}`}
-              data-catalogue-next
-            >
-              {CATALOGUE_NEXT_LABEL} →
+        <nav aria-label="Product pages" className="flex min-h-[44px] flex-wrap items-center justify-between gap-3 pt-1 max-sm:px-[2px] max-sm:pt-0">
+          <span className="font-mono text-label uppercase tracking-[0.1em] text-muted-foreground max-sm:text-mono-label">
+            {productsShownLine(shown.length, null)}
+          </span>
+          <span className="flex flex-wrap items-center gap-[6px]">
+            <AppLink href="/products" className={`${BTN_SOFT} ${FOCUS}`}>
+              First page
             </AppLink>
-          ) : null}
+            {page.next !== null ? (
+              <AppLink href={cataloguePagePath(page.next)} className={`${BTN_SOFT} ${FOCUS}`} data-catalogue-next>
+                {PRODUCTS_MORE_LABEL}
+              </AppLink>
+            ) : null}
+          </span>
         </nav>
       </section>
     </main>

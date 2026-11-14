@@ -46,10 +46,13 @@ describe("the docs read at a measure (CP-R4, CP-R5)", () => {
 describe("transparency: figures first, reasons one click away (CP-R5)", () => {
   const page = code("transparency/page.tsx");
 
-  it("the headline figures are the tile's: a faint label over a 30px number", () => {
-    expect(page).toContain("data-transparency-figures");
-    expect(page).toMatch(/<dt className="text-\[13px\] leading-\[1\.45\] text-faint">\{label\}<\/dt>/);
-    expect(page).toContain("text-[30px] font-medium");
+  // OPR1 — the figures sit on the shared flat panel; the label is 13px in
+  // `--muted` and the number is on the type scale (28px), not 30px.
+  it("the headline figures are the panel's: a quiet label over a 28px number", () => {
+    expect(page).toContain("data-transparency-figures className={`mt-10 ${PANEL}`}");
+    expect(page).toMatch(/<dt className="text-\[13px\] leading-\[1\.45\] text-muted-foreground">\{label\}<\/dt>/);
+    expect(page).toContain("text-title font-medium");
+    expect(page).not.toMatch(/rounded-\[20px\]|border border-border bg-card/);
   });
 
   it("each section's reasons fold into one details; sections head at 20px", () => {
@@ -80,7 +83,9 @@ describe("transparency: figures first, reasons one click away (CP-R5)", () => {
 describe("the digest's weeks are tiles (CP-R6)", () => {
   it("draws each week in the tile's card, 14px apart", () => {
     const digest = code("digest/page.tsx");
-    expect(digest).toContain('"block rounded-[20px] border border-border bg-card px-8 py-6');
+    // OPR1 — the shared flat tile that is a link, not a card spelled inline.
+    expect(digest).toContain("const WEEK_CARD = `block px-6 py-5 no-underline ${TILE_LINK}`;");
+    expect(digest).not.toMatch(/rounded-\[20px\]|border border-border bg-card/);
     expect(digest).toContain('<ul className="m-0 mt-5 grid list-none gap-[14px] p-0" data-digest-weeks>');
   });
 });

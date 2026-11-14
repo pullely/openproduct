@@ -7,7 +7,7 @@ import {
 
 import { agoOf } from "../ui/metric";
 
-import { PAGE_TITLE, PANEL } from "../ui/design";
+import { PAGE_TITLE, PANEL, TILE_LINK } from "../ui/design";
 import { EmptyState } from "../ui/empty-state";
 import { AppLink } from "../ui/link";
 import { ProductTile } from "../ui/product-tile";
@@ -29,9 +29,9 @@ import { ProductTile } from "../ui/product-tile";
  * is a claim about being first, and hiding the number while making the claim
  * would be coy about the one thing the page is for.
  *
- * THE ROW IS THE DESIGN'S DAY ROW: a 52px tile, the position and the name as
- * one 16px/600 phrase, the tagline in 15px `--copy`, and the count on a 13px
- * meta line — in a 12px card, every row under a `--line` rule. No vote box:
+ * THE ROW IS A FLAT TILE (OPR1): the product tile, the position and the name
+ * as one card-title (18px/600) phrase, the tagline in 15px `--copy`, and the
+ * count on a 13px meta line — on the shared `TILE_LINK`, no border. No vote box:
  * the board is a published record of a day, not a place to act on it, and a
  * control that looked like one would be a claim this static page cannot keep.
  */
@@ -76,7 +76,7 @@ export function Board({
           sentence, and the sentence has an address a reader can follow.
           I9 — a computed number carries the moment it was true: a board that
           could be an hour stale must say so rather than look live. */}
-      <p className="m-0 mt-4 text-[12.5px] text-muted-foreground">
+      <p className="m-0 mt-4 text-[13px] text-muted-foreground">
         {observedAt ? <>Ranked {agoOf(observedAt, now)}</> : null}
       </p>
     </>
@@ -90,7 +90,7 @@ function BoardRow({ entry, position }: { entry: BoardEntry; position: number }) 
     // `<li>` with an `::after`, so the whole row is what a finger presses.
     <li
       data-keyrow
-      className="relative flex list-none items-center gap-[22px] rounded-[20px] border border-border bg-card px-8 py-6 transition-colors hover:border-border-strong max-sm:gap-4 max-sm:px-5 max-sm:py-5"
+      className={`relative flex list-none items-center gap-[22px] px-6 py-5 max-sm:gap-4 max-sm:px-4 max-sm:py-4 ${TILE_LINK}`}
     >
       <AppLink
         href={href}
@@ -109,7 +109,7 @@ function BoardRow({ entry, position }: { entry: BoardEntry; position: number }) 
               would make the day's ordering part of the name of the thing. */}
           <span className="flex min-w-0 items-baseline gap-[5px]">
             <span
-              className="shrink-0 text-[16px] font-semibold leading-tight tabular-nums text-muted-foreground"
+              className="shrink-0 text-card-title font-semibold leading-tight tabular-nums text-muted-foreground"
               aria-hidden="true"
             >
               {position}.
@@ -121,12 +121,12 @@ function BoardRow({ entry, position }: { entry: BoardEntry; position: number }) 
                 the site does not. */}
             <AppLink
               href={href}
-              className="text-[16px] font-semibold leading-tight text-foreground after:absolute after:inset-0 after:content-[''] hover:text-copy focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+              className="text-card-title font-semibold leading-tight text-foreground after:absolute after:inset-0 after:content-[''] hover:text-copy focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
             >
               {entry.slug}
             </AppLink>
           </span>
-          <span className="text-[12.5px] tracking-[0.04em] text-muted-foreground">{entry.versionLabel}</span>
+          <span className="font-mono text-[13px] text-muted-foreground">{entry.versionLabel}</span>
         </h2>
 
         {entry.tagline ? (

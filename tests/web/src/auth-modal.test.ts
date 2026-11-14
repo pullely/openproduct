@@ -127,9 +127,12 @@ describe("AC2c — the modal is a door for three flows, not one", () => {
   });
 
   it("publishes the password floor where somebody is about to choose one", () => {
-    // The rule note was replaced by a short hint built from the contract's minimum.
-    expect(MODAL).toContain("At least {PASSWORD_MIN_LENGTH} characters.");
-    expect(MODAL).toContain("PASSWORD_MIN_LENGTH");
+    // Was a line under the field. OPR1 allows no helper text under a control
+    // (design.md §2 rule 9), so the floor is said IN the field somebody is
+    // about to fill — the new-password placeholder — and enforced by the
+    // field's own `minLength`, both from the contract's number.
+    expect(MODAL).toContain("placeholder={creating ? `At least ${PASSWORD_MIN_LENGTH} characters` : ");
+    expect(MODAL).toContain("minLength={creating ? PASSWORD_MIN_LENGTH : undefined}");
     expect(PASSWORD_MIN_LENGTH).toBeGreaterThanOrEqual(10);
   });
 
@@ -164,6 +167,132 @@ describe("AC2c — the modal is a door for three flows, not one", () => {
   });
 });
 
+describe("OPR1 — the card is the board's, and says what is true", () => {
+  /** The file with its comments removed: a guard about markup must not read
+   *  prose, because the header explains the wording it rejected. */
+  const CODE = MODAL.replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "");
+
+  it("offers the two ways in that exist, Orunbase first, across an OR rule", () => {
+    const platform = CODE.indexOf("Continue with Orunbase");
+    const rule = CODE.indexOf('uppercase text-muted-foreground">or</span>');
+    const email = CODE.indexOf('type="email"');
+    expect(platform).toBeGreaterThan(-1);
+    expect(rule).toBeGreaterThan(platform);
+    expect(email).toBeGreaterThan(rule);
+    // The platform's door is the ink button and still an ANCHOR to the
+    // handshake, carrying the way back.
+    expect(CODE).toMatch(/href=\{returnTo \? `\/auth\/start\?return_to=\$\{encodeURIComponent\(returnTo\)\}` : "\/auth\/start"\}\s*className=\{PLATFORM\}/);
+    expect(CODE).toMatch(/const PLATFORM =\s*"[^"]*bg-primary[^"]*text-primary-foreground/);
+  });
+
+  it("labels the email door for what it does: a password, not a link", () => {
+    // The board's second door reads "Email me a sign-in link". Nothing here
+    // mails a link: sign-in is an email and a password, and a sign-up mails
+    // a code to type. The card must not promise the board's wording.
+    expect(CODE).toContain('type="password"');
+    expect(CODE).not.toMatch(/sign-in link|magic link|Email me a/i);
+    expect(CODE).toContain('{creating ? "Create account" : "Sign in"}');
+    expect(CODE).toContain("Six-digit code");
+    expect(CODE).toContain('autoComplete="one-time-code"');
+  });
+
+  it("draws a refusal in red, and nothing that is not a failure", () => {
+    // design.md §2 rule 8: red is danger only. A failed sign-in and a wrong
+    // code are refusals; the reset's explanation and "check your inbox" are
+    // not, and keep the body ink.
+    expect(CODE).toContain('refused ? "text-destructive" : "text-copy"');
+    const refuse = CODE.slice(CODE.indexOf("function refuse("));
+    expect(refuse.slice(0, refuse.indexOf("\n  }"))).toMatch(/setRefused\(true\);\s*setNote\(sentence\);/);
+    // Both refusals go through it…
+    expect(CODE.match(/refuse\(answer\.note \?\? SIGN_IN_REFUSAL\)/g)).toHaveLength(2);
+    // …the ambiguous sign-up answer and the reset note do not…
+    expect(CODE).toContain("setNote(answer.note ?? AUTH_AMBIGUOUS_ANSWER);");
+    expect(CODE).toMatch(/setRefused\(false\);\s*setNote\(PASSWORD_RESET_NOTE\);/);
+    // …and every new attempt starts clean.
+    expect(CODE).toMatch(/setBusy\(true\);\s*setRefused\(false\);\s*setNote\(null\);/);
+    // Red appears nowhere else in the card.
+    expect(CODE.match(/text-destructive/g)).toHaveLength(1);
+  });
+
+  it("has a check-your-inbox state with the address and a way back", () => {
+    expect(CODE).toContain('stage === "code" ? "Check your inbox"');
+    expect(CODE).toContain("<MailIcon");
+    // The address the mail went to, so a typo is caught on this screen.
+    expect(CODE).toMatch(/<p className="[^"]*break-all[^"]*">\{email\}<\/p>/);
+    expect(CODE).toContain("Use a different email");
+    const back = CODE.slice(CODE.indexOf("function startOver("));
+    const fn = back.slice(0, back.indexOf("\n  }"));
+    expect(fn).toContain('setStage("form")');
+    expect(fn).toContain("setChallengeId(null)");
+    // Going back asks the gateway nothing.
+    expect(fn).not.toMatch(/fetch\(|post\(/);
+  });
+
+  it("cannot be submitted empty or twice", () => {
+    expect(CODE).toMatch(/stage === "code" \? code\.trim\(\)\.length > 0 : email\.trim\(\)\.length > 0 && password\.length > 0/);
+    expect(CODE.match(/disabled=\{busy \|\| !ready\}/g)).toHaveLength(2);
+  });
+
+  it("switches between signing in and creating an account with one line, not tabs", () => {
+    expect(CODE).toContain('{creating ? "Have an account?" : "New here?"}');
+    expect(CODE).toContain('onClick={() => switchTo(creating ? "signin" : "create")}');
+    expect(CODE).toContain('{creating ? "Sign in" : "Create an account"}');
+    expect(CODE).not.toMatch(/\bTAB(_ON|_OFF)?\b/);
+  });
+
+  it("is one title: the page's h1 on /signin, an h2 over a scrim", () => {
+    expect(CODE).toContain('const Title = inDialog ? "h2" : "h1";');
+    expect(CODE.match(/<Title className=\{PAGE_TITLE\}>\{title\}<\/Title>/g)).toHaveLength(2);
+    expect(CODE).not.toMatch(/<h[1-6]\b/);
+  });
+
+  it("is flat, with no illustration and no explainer", () => {
+    // No drop shadow (rule 11): over the scrim the card wears an inset ring.
+    expect(CODE).not.toMatch(/shadow-\[|shadow-(sm|md|lg|xl)/);
+    expect(CODE).toContain('className="ring-1 ring-inset ring-foreground/10"');
+    // The board's illustration panel and its "same account" line are not
+    // drawn: the second would be false for an account made with a password.
+    expect(CODE).not.toMatch(/op-visual|Same Orunbase account/);
+    expect(CODE).not.toContain("Enter the six-digit code we sent.");
+  });
+
+  it("gives a phone 44px targets and fields that do not zoom", () => {
+    expect(CODE).toMatch(/const PLATFORM =\s*"[^"]*max-sm:min-h-\[48px\]/);
+    expect(CODE).toMatch(/const SUBMIT =\s*"[^"]*max-sm:min-h-\[48px\]/);
+    expect(CODE).toMatch(/const CONFIRM =\s*"[^"]*max-sm:min-h-\[48px\]/);
+    expect(CODE).toMatch(/const TEXT_ACT =\s*"[^"]*max-sm:min-h-\[44px\]/);
+    // Every input is the design's 44px, 16px field.
+    expect(CODE.match(/className=\{FIELD\}/g)).toHaveLength(3);
+  });
+});
+
+describe("OPR1 — the sign-in failure notice", () => {
+  const NOTICE = read("app/auth-notice.tsx")
+    .replace(/\/\*[\s\S]*?\*\//g, "")
+    .replace(/^\s*\/\/.*$/gm, "");
+
+  it("says what failed in red, on a flat card, with one action and a dismiss", () => {
+    expect(NOTICE).toContain('<p className="m-0 text-[15px] font-semibold text-destructive">{copy.title}</p>');
+    expect(NOTICE).toContain("rounded-[16px] bg-card");
+    expect(NOTICE).not.toMatch(/border border-border|shadow-/);
+    expect(NOTICE.match(/<a\b/g)).toHaveLength(1);
+    expect(NOTICE).toContain('href="/signin"');
+    expect(NOTICE).toContain('aria-label="Dismiss"');
+    expect(NOTICE).toContain("<CloseIcon");
+  });
+
+  it("carries no heading: the page under it has the h1", () => {
+    expect(NOTICE).not.toMatch(/<h[1-6]\b/);
+  });
+
+  it("still reads the reason on the client and strips it on dismiss", () => {
+    expect(NOTICE).toContain('new URLSearchParams(window.location.search).get("auth_error")');
+    expect(NOTICE).toContain('url.searchParams.delete("auth_error")');
+    expect(NOTICE).toMatch(/max-sm:min-h-\[44px\]/);
+    expect(NOTICE).toMatch(/max-sm:h-\[44px\] max-sm:w-\[44px\]/);
+  });
+});
+
 describe("the door itself — `/signin`", () => {
   const PAGE = read("app/signin/page.tsx");
 
@@ -184,6 +313,13 @@ describe("the door itself — `/signin`", () => {
   it("is a step and not a page a crawler should hold", () => {
     expect(PAGE).toContain("robots");
     expect(PAGE).toContain("index: false");
+  });
+
+  it("is the card alone, centred: no illustration and no paragraph around it", () => {
+    // Boards `SignIn` and `PhoneSignIn`, less the decorative panel.
+    const markup = PAGE.replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "");
+    expect(markup).toMatch(/<main className="[^"]*flex[^"]*justify-center[^"]*">\s*<SignInCard returnTo=\{returnTo\} \/>\s*<\/main>/);
+    expect(markup).not.toMatch(/<p\b|<img\b|<svg\b|<h[1-6]\b/);
   });
 });
 
@@ -271,12 +407,11 @@ describe("AC3 — the reset, on the surface that has the two tabs", () => {
   });
 
   it("shows it on the sign-in tab only, where the failure it answers happens", () => {
-    // On the create tab the same spot carries the password rule, which is the
-    // thing somebody typing a NEW password needs. Offering a reset to
-    // somebody already creating an account is an answer to a question they
-    // did not ask.
-    // The create tab carries the short length hint (PASSWORD_MIN_LENGTH) rather than PASSWORD_RULE_NOTE.
-    expect(MODAL).toMatch(/\{creating \? \([\s\S]{0,400}PASSWORD_MIN_LENGTH\} characters[\s\S]{0,400}\) : \([\s\S]{0,400}PASSWORD_RESET_PROMPT/);
+    // Offering a reset to somebody already creating an account is an answer
+    // to a question they did not ask: while creating, the spot is empty (the
+    // password floor moved into the field's placeholder with OPR1).
+    expect(MODAL).toMatch(/\{creating \? null : \(\s*<button[\s\S]{0,300}onClick=\{offerReset\}[\s\S]{0,300}\{PASSWORD_RESET_PROMPT\}/);
+    expect(MODAL.match(/\{PASSWORD_RESET_PROMPT\}/g)).toHaveLength(1);
   });
 
   it("promises the account survives, because 'create it again' does not read that way", () => {

@@ -18,7 +18,7 @@ import { fetchPublicDirectory, publicApexOrigin } from "../../public-api";
 import { JsonLd } from "../../ui/json-ld";
 
 import { AppLink } from "../../ui/link";
-import { CRUMBS, LINK_QUIET, PAGE, PAGE_TITLE } from "../../ui/design";
+import { CRUMBS, EMPTY_NOTE, LINK_QUIET, PAGE, PAGE_TITLE } from "../../ui/design";
 
 /**
  * `/stack/{value}` (openproduct-worldclass VC1) — the directory, filtered to
@@ -130,7 +130,7 @@ export default async function StackPage({ params }: { params: Promise<{ value: s
           where the list begins. */}
 
       {products.length === 0 ? (
-        <p className="m-0 mt-[26px] rounded-[12px] border border-dashed border-border px-5 py-10 text-center text-[15px] leading-[1.6] text-muted-foreground">
+        <p className={`mt-8 ${EMPTY_NOTE}`}>
           Nothing here yet.
         </p>
       ) : (

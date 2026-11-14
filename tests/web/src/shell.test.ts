@@ -463,8 +463,11 @@ describe("XP-1 — one accent colour, one meaning", () => {
     // the same meaning the feed row spends it on. The vote box beside it is
     // a shared component and is held to its own rule below.
     const product = markupOf("[slug]/page.tsx");
-    expect(product.match(SPENDS_GOLD)?.length).toBe(3);
-    expect(product).toMatch(/border-endorse-line bg-endorse-soft[^"]*text-endorse-ink/);
+    // OPR1 — the pill is flat (a fill and its ink, no border), so it spends
+    // the gold twice where it spent it three times.
+    expect(product.match(SPENDS_GOLD)?.length).toBe(2);
+    expect(product).toMatch(/bg-endorse-soft[^"`]*text-endorse-ink/);
+    expect(product).not.toContain("border-endorse-line");
   });
 
   it("EN1 — the vote box is the one place the accent is SPENT, and it says why", () => {

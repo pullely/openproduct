@@ -124,7 +124,9 @@ function authedAnswer(pathname) {
   if (pathname === `${M}/me`) return ME;
   if (pathname === `${M}/me/digest`) return { subscription: { state: "subscribed" } };
   if (pathname === `${M}/me/applications`) return { applications: [] };
-  if (pathname === `${M}/me/saved`) return { projects: CARDS.slice(0, 12) };
+  // `products` is the key the website reads (`me-api.ts`); OPR1's `/me`
+  // counts this list on every load, so the stub has to answer in its shape.
+  if (pathname === `${M}/me/saved`) return { products: CARDS.slice(0, 12) };
   if (pathname === `${M}/me/collections`) return { collections: [] };
   if (pathname === `${M}/me/appeals`) return { appeals: [] };
   if (pathname === `${M}/me/notifications`) {
@@ -142,7 +144,9 @@ function authedAnswer(pathname) {
   }
   if (pathname === `${M}/me/listings`) {
     return {
-      listings: CARDS.slice(0, 5).map((c) => ({
+      listings: CARDS.slice(0, 5).map((c, i) => ({
+        // OPR1 — `/me` lists these too, keyed by the listing's id.
+        id: `prf_00000000000000000000000${i + 1}`,
         slug: c.slug,
         orgId: "org_000000000000000000000001",
         profileId: "prf_000000000000000000000001",
@@ -230,8 +234,6 @@ const EVICT = [
   `people/${SAMPLE_HANDLE}/comments`,
   "topics",
   "topics/developer-tools",
-  "builds/upvoted",
-  "builds/newest",
   "launches/2026-05-20",
   "collections",
   "collections/worth-a-look",
@@ -329,8 +331,8 @@ const SURFACES = [
   ["Discover", `/${SAMPLE_SLUG}`, "Product listing"],
   ["Discover", "/topics", "Topics index"],
   ["Discover", "/topics/developer-tools", "One topic"],
-  ["Discover", "/builds/upvoted", "Builds (upvoted)"],
-  ["Discover", "/builds/newest", "Builds (newest)"],
+  ["Discover", "/products?sort=upvoted", "Products (upvoted)"],
+  ["Discover", "/products?sort=newest", "Products (newest)"],
   ["Discover", "/launches/2026-05-20", "One day's board"],
   ["Discover", "/collections", "Collections index"],
   ["Discover", "/collections/worth-a-look", "One collection"],
@@ -350,9 +352,12 @@ const SURFACES = [
   ["Docs", "/docs/api", "API changelog"],
   ["Submit", "/submit", "List your product"],
   ["Account", "/me", "Your profile"],
-  ["Account", "/me/saved", "Saved products"],
-  ["Account", "/me/applications", "Applications"],
-  ["Account", "/activity", "Notifications"],
+  // OPR1 — sections of `/me`, where the pages `/me/saved` and
+  // `/me/applications` were; the form is `/me/settings`.
+  ["Account", "/me?section=saved", "Saved"],
+  ["Account", "/me?section=seats", "Seats"],
+  ["Account", "/me/settings", "Settings"],
+  ["Account", "/activity", "Activity"],
   ["Studio", "/studio", "Studio home"],
 ];
 
@@ -367,7 +372,7 @@ const ACTS = [
 const HOPS = [
   ["/", `/${SAMPLE_SLUG}`, "feed → listing"],
   ["/", "/collections", "feed → collections"],
-  ["/", "/builds/upvoted", "feed → upvoted"],
+  ["/", "/products?sort=upvoted", "feed → upvoted"],
   ["/", "/topics", "feed → topics"],
   [`/${SAMPLE_SLUG}`, "/", "listing → feed"],
   // The maker page is reached by its PRETTY form (`/@ada`), which the router

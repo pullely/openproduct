@@ -119,7 +119,13 @@ describe("the panel holds its column", () => {
   const read = (file: string) => readFileSync(resolve(APP, file), "utf-8");
 
   it("gives the reading column an explicit minmax(0,1fr) track", () => {
-    expect(read("page.tsx")).toContain('className="grid min-w-0 grid-cols-[minmax(0,1fr)] gap-4"');
+    // OPR1 — the column is the boards' stack of cards, spelt once in
+    // `ui/design.ts`; the track is still explicit, in the stack and in the
+    // two-column grid it sits in.
+    expect(read("page.tsx")).toContain("<div className={BOARD_STACK}>");
+    const design = readFileSync(resolve(APP, "../ui/design.ts"), "utf-8");
+    expect(design).toMatch(/export const BOARD_STACK = "grid min-w-0 grid-cols-\[minmax\(0,1fr\)\] /);
+    expect(design).toMatch(/export const BOARD_COLUMNS =\s*"grid grid-cols-\[minmax\(0,1fr\)_300px\] /);
   });
 
   it("lets the panel shrink below its gallery's min-content", () => {

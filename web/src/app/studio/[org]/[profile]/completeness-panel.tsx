@@ -39,7 +39,7 @@ import {
 } from "@openproduct/contracts";
 
 import { RAIL_PANEL } from "../../frame";
-import { H2 } from "../../../ui/design";
+import { H2, NOTICE, NOTICE_WARN } from "../../../ui/design";
 import { AppLink } from "../../../ui/link";
 
 /** Where the step that fills a field lives, so a gap is one click from its fix. */
@@ -80,9 +80,7 @@ export function CompletenessPanel({
           a message a maker has to infer, and the inference they draw from
           silence is rarely the true one. */}
       <p
-        className={`m-0 mt-3 rounded-[8px] px-3 py-2 text-[13px] leading-[1.55] ${
-          belowFloor ? "bg-warning-soft text-warning-strong" : "bg-muted text-muted-foreground"
-        }`}
+        className={`m-0 mt-3 ${belowFloor ? NOTICE_WARN : NOTICE}`}
       >
         {belowFloor ? FLOOR_NOTE : FLOOR_MET_NOTE}{" "}
         {/* OPC-4 — a rule that decides what a reader sees owes a sentence
@@ -103,7 +101,7 @@ export function CompletenessPanel({
             const done = meter.filled.includes(field);
             const gate = meter.belowFloor.includes(field);
             return (
-              <li key={field} className="flex items-baseline gap-2.5 text-[13.5px]">
+              <li key={field} className="flex items-baseline gap-2.5 text-[13px]">
                 <span
                   aria-hidden="true"
                   className={`shrink-0 font-mono ${done ? "text-foreground" : "text-faint"}`}
@@ -125,7 +123,7 @@ export function CompletenessPanel({
                     </AppLink>
                   )}
                   {gate ? (
-                    <span className="ml-2 text-[11.5px] text-warning-strong">
+                    <span className="ml-2 text-[11px] text-warning-strong">
                       keeps it off the front page
                     </span>
                   ) : null}
@@ -140,7 +138,7 @@ export function CompletenessPanel({
           changed which act: a build is published, not launched, so the last
           row is the overview's publish panel. The launch scheduler keeps its
           address for anyone holding the link. */}
-      <p className="m-0 mt-4 border-t border-line pt-3 text-[13.5px] leading-[1.55]">
+      <p className="m-0 mt-4 border-t border-line pt-3 text-[13px] leading-[1.55]">
         <span aria-hidden="true" className="mr-2.5 font-mono text-faint">
           →
         </span>

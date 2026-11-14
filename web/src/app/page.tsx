@@ -1,37 +1,37 @@
 import type { Metadata } from "next";
 
-import { FEED_PAGE_HEADING, FEED_PAGE_SUBTITLE, buildsBelowFloor, orderBuilds } from "@openproduct/contracts";
-
-import { Builds } from "./feed/builds";
-import { fetchDirectoryPage, publicApexOrigin } from "./public-api";
-import { FailurePanel } from "./ui/failure";
-import { PAGE, PAGE_HEAD, PAGE_SUBTITLE, PAGE_TITLE } from "./ui/design";
+import { ProductsView } from "./feed/products-view";
+import { DEFAULT_PRODUCT_SORT } from "./feed/products";
+import { publicApexOrigin } from "./public-api";
 import { SITE_CARD_ALT, cardMeta } from "./ui/og";
 
 /**
- * Open builds (openproduct-open-builds OB4, D1) — the front page, and the
- * ONLY list.
+ * The front page (openproduct-redesign OPR1).
  *
- * `/` IS THE LIST OF BUILDS IN THE MOST ACTIVE ORDER, and nothing else. The
- * week's day board left the front page with OB4: each day keeps its archive
- * at `/launches/{day}`, outside the nav. PL0 put the catalogue first and the
- * week under it; this retires the board as the product's centre rather than
- * reordering it again (R8). The other three orders are their own addresses
- * under `/builds/` (`build-orders.ts` says why they are not a query string).
+ * `/` IS THE LIST OF PRODUCTS IN THE DEFAULT ORDER, AND SAYS SO. The redesign
+ * makes `/` the feed of posts (board `Feed`), and a post does not exist until
+ * OPR2 — so for this milestone the front page keeps listing products, drawn
+ * as the Products page draws them (`feed/products-view.tsx`: the board's
+ * cards, the search-within-list field, the sort, *Show more*), under the
+ * title **Products**. Nothing on it claims to be a feed: no post, no
+ * composer, no "Feed" heading. The header's Feed pill lights here because
+ * this is the address the feed will have.
+ *
+ * WHAT KEEPS IT DISTINCT FROM `/products`: the address and its canonical
+ * (`/`, as it has always declared), the brand in the title, and the site's
+ * share card. The list is the same list; the sort's links go to
+ * `/products?sort=…`, where a sort is an address.
  *
  * A SERVER COMPONENT, STATIC, ONE READ — the catalogue's first page. OPC-1
  * requires one cacheable document that resolves no actor; the visitor's own
- * vote state arrives after paint from the XP2 overlay (UV0), so the
- * anonymous and signed-in renders are byte-identical (I6).
+ * Follow state arrives after paint from the XP2 overlay, so the anonymous
+ * and signed-in renders are byte-identical (I6). It reads no query string,
+ * which is why it stays static while `/products` (which reads `?sort=`) is
+ * rendered per request.
  *
- * ONE COLUMN (openproduct-calm CL2, CL-R5). The margin of six panels left
- * with render C: the order's formula is the caption beside the tabs, open
- * roles are the Roles order, the stack tally lives on the topic and stack
- * pages, and the digest is in the footer. The list is the page.
- *
- * NOTHING ON THIS PAGE DECIDES AN ORDER. The catalogue arrives in the
- * published order, and `orderBuilds` (the contract) applies the floor and the
- * comparator every other surface imports.
+ * NOTHING ON THIS PAGE DECIDES AN ORDER. `ProductsView` reads the catalogue
+ * in the published order and `orderBuilds` (the contract) applies the floor
+ * and the comparator every other surface imports.
  *
  * A CATALOGUE THAT COULD NOT BE READ SAYS SO. An empty room and a locked door
  * look nothing alike to a visitor (the OD5 finding): a null read is the
@@ -57,7 +57,7 @@ export const metadata: Metadata = {
   // which would be the same trap one level down for whoever edits this next —
   // a plain string that already reads correctly is what the template would
   // have produced, and `title-brand.test.ts` asserts exactly one brand in it.
-  title: "Open builds · openproduct",
+  title: "Products · openproduct",
   description: "Products built in the open: every build a public repo and a public workspace, ordered by work and interest.",
   ...(publicApexOrigin() ? { alternates: { canonical: `${publicApexOrigin()}/` } } : {}),
   openGraph: {
@@ -69,43 +69,6 @@ export const metadata: Metadata = {
   ...(SITE_CARD ? { twitter: SITE_CARD.twitter } : {}),
 };
 
-export default async function OpenproductFeedPage() {
-  const directory = await fetchDirectoryPage();
-  // OS1 — the catalogue read is the directory's FIRST PAGE, in the published
-  // order; the page after it continues on scroll from a plain link (`next`),
-  // and the line says how many there are in all (`total`).
-  const cards = directory === null ? null : directory.projects;
-  const builds = cards === null ? [] : orderBuilds(cards, "most-active");
-  // HB0 — the same array, read once more: what the floor is keeping off.
-  const belowFloor = cards === null ? 0 : buildsBelowFloor(cards);
-
-  return (
-    <main className={PAGE}>
-      <div className={PAGE_HEAD}>
-        <div>
-          <h1 className={PAGE_TITLE}>{FEED_PAGE_HEADING}</h1>
-          <p className={PAGE_SUBTITLE}>{FEED_PAGE_SUBTITLE}</p>
-        </div>
-      </div>
-
-      {cards === null ? (
-        <div className="mt-[48px]">
-          <FailurePanel
-            kind="unavailable"
-            what="The builds could not be loaded. It is not something you did, and trying again in a moment usually works."
-            actions={[{ label: "Try again", href: "/" }]}
-          />
-        </div>
-      ) : (
-        <Builds
-          order="most-active"
-          builds={builds}
-          belowFloor={belowFloor}
-          next={directory?.next ?? null}
-          total={directory?.next != null ? (directory.total ?? null) : null}
-          computedAt={directory?.computedAt ?? null}
-        />
-      )}
-    </main>
-  );
+export default function OpenproductFrontPage() {
+  return <ProductsView sort={DEFAULT_PRODUCT_SORT} returnTo="/" retryHref="/" />;
 }

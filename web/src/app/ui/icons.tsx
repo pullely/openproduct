@@ -263,3 +263,40 @@ export function ClockIcon(props: IconProps) {
     </Svg>
   );
 }
+
+/** Clearing a field, dismissing a notice: a cross. */
+export function CloseIcon(props: IconProps) {
+  return (
+    <Svg {...props}>
+      <path d="m5 5 10 10M15 5 5 15" />
+    </Svg>
+  );
+}
+
+/** Email: an envelope — the email door on sign-in, and "check your email". */
+export function MailIcon(props: IconProps) {
+  return (
+    <Svg {...props}>
+      <rect x="2.5" y="4.2" width="15" height="11.6" rx="1.7" />
+      <path d="m2.5 5.8 7.5 5 7.5-5" />
+    </Svg>
+  );
+}
+
+/** Going back a step: a chevron pointing left. */
+export function BackIcon(props: IconProps) {
+  return (
+    <Svg {...props}>
+      <path d="m12.5 5-5 5 5 5" />
+    </Svg>
+  );
+}
+
+/** Sorting a list: three rules, each shorter than the last. */
+export function SortIcon(props: IconProps) {
+  return (
+    <Svg {...props}>
+      <path d="M3.5 6h13M6 10h8M8.5 14h3" />
+    </Svg>
+  );
+}

@@ -727,16 +727,22 @@ export async function runA11y(base) {
     // script, because the order is in the URL. A switch built from buttons
     // would pass the generic sweep above and leave the order unlinkable.
     {
-      await page.goto(base + "/builds/upvoted", { waitUntil: "load" });
+      // openproduct-redesign OPR1 — the switch is the Products page's sort:
+      // the default at `/products`, the others at `/products?sort=<order>`.
+      // `[data-product-sort]` is the track drawn from `sm` up; a phone draws
+      // the same links inside a `<details>`.
+      await page.goto(base + "/products?sort=upvoted", { waitUntil: "load" });
       await page.waitForTimeout(1200);
       const orderNav = await page.evaluate(() => {
-        const nav = document.querySelector('nav[aria-label="Order builds by"]');
+        const nav = document.querySelector("nav[data-product-sort]");
         if (!nav) return null;
         const links = [...nav.querySelectorAll("a")];
         return {
           count: links.length,
           hrefs: links.map((a) => new URL(a.href).pathname + new URL(a.href).search),
-          current: links.filter((a) => a.getAttribute("aria-current") === "page").map((a) => new URL(a.href).pathname),
+          current: links
+            .filter((a) => a.getAttribute("aria-current") === "page")
+            .map((a) => new URL(a.href).pathname + new URL(a.href).search),
           labels: links.map((a) => (a.textContent ?? "").trim()),
           buttons: nav.querySelectorAll("button").length,
         };
@@ -750,19 +756,19 @@ export async function runA11y(base) {
         orderNav !== null && orderNav.count >= 2 && orderNav.buttons === 0,
         orderNav
           ? `${orderNav.count} link(s), ${orderNav.buttons} button(s) — ${orderNav.labels.join(" | ")}`
-          : 'no [aria-label="Order builds by"] switch found',
+          : "no [data-product-sort] switch found",
       );
       check(
         "order switch: exactly one order is announced as current, and it is this page's",
-        orderNav !== null && orderNav.current.length === 1 && orderNav.current[0] === "/builds/upvoted",
+        orderNav !== null && orderNav.current.length === 1 && orderNav.current[0] === "/products?sort=upvoted",
         orderNav ? `marked aria-current=page: ${orderNav.current.join(" | ") || "none"}` : "no switch",
       );
       check(
-        "order switch: every order is a real address — the default at /, the rest under /builds",
+        "order switch: every order is a real address — the default at /products, the rest in ?sort=",
         orderNav !== null &&
-          orderNav.hrefs.includes("/") &&
-          orderNav.hrefs.includes("/builds/upvoted") &&
-          orderNav.hrefs.every((h) => h === "/" || /^\/builds\/[a-z-]+$/.test(h)),
+          orderNav.hrefs.includes("/products") &&
+          orderNav.hrefs.includes("/products?sort=upvoted") &&
+          orderNav.hrefs.every((h) => /^\/products(\?sort=[a-z-]+)?$/.test(h)),
         orderNav ? orderNav.hrefs.join(" | ") : "no switch",
       );
 

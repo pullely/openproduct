@@ -9,7 +9,7 @@
 // Everything here is read off the design's `isDocs.html`; the measurements
 // the whole site shares come from `ui/design.ts` and are not respelled.
 
-import { TAB, TAB_OFF, TAB_ON } from "../ui/design";
+import { CARD, CHIP_BTN, CHIP_OFF, CHIP_ON, EYEBROW, FOCUS, INSET } from "../ui/design";
 import { AppLink } from "../ui/link";
 
 export const DOCS_TABS = [
@@ -22,10 +22,11 @@ export const DOCS_TABS = [
 
 export type DocsTab = (typeof DOCS_TABS)[number]["id"];
 
-/** The tab strip under a docs title: 24px below the lede, 6px between tabs. */
+/** The tabs under a docs title (OPR1): pills — the shared 32px chip, 44px on
+ *  a phone — 24px below the lede, 6px between them. */
 export function DocsTabs({ current }: { current: DocsTab }) {
   return (
-    <nav aria-label="Docs" className="mt-6 flex flex-wrap gap-1.5 border-b border-border">
+    <nav aria-label="Docs" className="mt-6 flex flex-wrap gap-1.5">
       {DOCS_TABS.map((tab) => {
         const on = tab.id === current;
         return (
@@ -33,7 +34,7 @@ export function DocsTabs({ current }: { current: DocsTab }) {
             key={tab.id}
             href={tab.href}
             aria-current={on ? "page" : undefined}
-            className={`tap-h ${TAB} ${on ? TAB_ON : TAB_OFF}`}
+            className={`tap-h ${CHIP_BTN} ${FOCUS} ${on ? CHIP_ON : CHIP_OFF}`}
           >
             {tab.label}
           </AppLink>
@@ -63,9 +64,8 @@ export const DOC_BODY = "m-0 mt-3 text-[16.5px] leading-[1.7] text-copy max-sm:t
 /** Several paragraphs of body, 16px apart. */
 export const DOC_PROSE = "mt-3 grid gap-4 text-[16.5px] leading-[1.7] text-copy max-sm:text-[15.5px]";
 
-/** A key/value list in a card, 14px under the body: 12px radius on `--card`. */
-export const DOC_ROWS =
-  "m-0 mt-4 list-none overflow-hidden rounded-[16px] border border-border bg-card p-0";
+/** A key/value list in a card, 14px under the body: the shared flat `CARD`. */
+export const DOC_ROWS = `m-0 mt-4 list-none p-0 ${CARD}`;
 
 /** One row of it: a 200px key beside its value, `12px 16px`, a `--line` rule between rows. */
 export const DOC_ROW =
@@ -77,29 +77,26 @@ export const DOC_KEY = "font-mono text-[12.5px] text-foreground";
 /** The row's value: 13.5px/1.55 in `--muted`. */
 export const DOC_VALUE = "m-0 text-[13.5px] leading-[1.55] text-muted-foreground";
 
-/** A code block: mono 13px/1.65 on `--secondary`, `12px 15px`, 14px below the body. */
-export const DOC_PRE =
-  "m-0 mt-4 overflow-x-auto rounded-[16px] border border-border bg-secondary px-[18px] py-3.5 font-mono text-[13px] leading-[1.65] text-foreground";
+/** A code block: mono 13px/1.65 on the sunken fill (the shared `INSET`),
+ *  no border, 14px below the body. */
+export const DOC_PRE = `m-0 mt-4 overflow-x-auto px-[18px] py-3.5 font-mono text-[13px] leading-[1.65] text-foreground ${INSET}`;
 
 /** A table inside the rows card: cells `12px 16px`, the key column mono. */
 export const DOC_TABLE = "w-full border-collapse text-[13.5px]";
-export const DOC_TH =
-  "border-b border-border px-4 py-2.5 text-left font-mono text-[11.5px] font-medium uppercase tracking-[0.06em] text-muted-foreground";
+export const DOC_TH = `border-b border-line px-4 py-2.5 text-left font-medium ${EYEBROW}`;
 export const DOC_TD_KEY = "whitespace-nowrap px-4 py-3 font-mono text-[12.5px] text-foreground";
 export const DOC_TD = "px-4 py-3 text-[13.5px] leading-[1.55] text-muted-foreground";
 
 /** A list of formula-style articles: a `--border` rule above, `--line` rules between. */
-export const DOC_ARTICLES = "mt-4 border-t border-border";
+export const DOC_ARTICLES = "mt-4 border-t border-line";
 export const DOC_ARTICLE = "scroll-mt-[72px] border-b border-line py-4 sm:scroll-mt-6";
 export const DOC_ARTICLE_H = "m-0 flex flex-wrap items-baseline gap-2.5";
 export const DOC_ARTICLE_TITLE = "text-[17px] font-medium text-foreground";
-export const DOC_ARTICLE_META =
-  "font-mono text-[12px] uppercase tracking-[0.06em] text-muted-foreground";
+export const DOC_ARTICLE_META = EYEBROW;
 export const DOC_ARTICLE_BODY = "m-0 mt-2 max-w-[68ch] text-[15.5px] leading-[1.7] text-muted-foreground";
 
 /** A labelled line inside an article: the label in the mono eyebrow, the value under it. */
-export const DOC_FIELD_LABEL =
-  "mt-3 font-mono text-[11.5px] uppercase tracking-[0.06em] text-muted-foreground";
+export const DOC_FIELD_LABEL = `mt-3 ${EYEBROW}`;
 export const DOC_FIELD_BODY = "m-0 mt-1 max-w-[70ch] text-[14.5px] leading-[1.6] text-foreground";
 
 /** The links under a section: 8px apart, 15px in `--copy`, underlined 4px off. */
@@ -114,7 +111,7 @@ export const DOC_LINK_P = "m-0 text-[15px] text-copy";
 export function DocsContents({ sections }: { sections: readonly { id: string; label: string }[] }) {
   return (
     <nav aria-label="On this page" className="sticky top-6 mt-12 hidden self-start lg:block" data-docs-contents>
-      <p className="m-0 text-[13px] font-medium text-faint">On this page</p>
+      <p className={`m-0 ${EYEBROW}`}>On this page</p>
       <ul className="m-0 mt-3 grid list-none gap-2 border-l border-line p-0 pl-4">
         {sections.map((section) => (
           <li key={section.id}>

@@ -931,14 +931,14 @@ export const ROUTES = [
   // failure panel names a product.
   { path: `/stack/${SAMPLE_STACK}`, name: "one stack", expect: CARDS[0].slug },
   { path: `/topics/${SAMPLE_TOPIC}`, name: "one topic", expect: topicCard(SAMPLE_TOPIC).label },
-  // OB7 (#1875) — the leaderboard folded into the front page's orders: the
-  // ranges are `MOVED` below, and the orders other than the default (`/`)
-  // are pages of their own. `CARDS[0]` is on all three: it has open roles.
-  { path: "/builds/upvoted", name: "builds · upvoted", expect: CARDS[0].slug },
-  { path: "/builds/newest", name: "builds · newest", expect: CARDS[0].slug },
-  // OPR1 — the header's other two sections. Help wanted is the Roles order
-  // at its own address (`/builds/roles` is in `MOVED` below); Products draws
-  // the list `/` draws until its page is rebuilt to its board.
+  // OPR1 — the list's other orders are the Products page's sorts, in
+  // `?sort=`; their old addresses under `/builds/` are `MOVED` below (as the
+  // leaderboard's ranges are, since OB7). `CARDS[0]` is on all of them.
+  { path: "/products?sort=upvoted", name: "products · upvoted", expect: CARDS[0].slug },
+  { path: "/products?sort=newest", name: "products · newest", expect: CARDS[0].slug },
+  // OPR1 — the header's other two sections. Help wanted is the page of open
+  // seats (`/builds/roles` is in `MOVED` below): `CARDS[0]` has open roles,
+  // so its name is on a ticket. Products is the board's list of cards.
   { path: "/help-wanted", name: "help wanted", expect: CARDS[0].slug },
   { path: "/products", name: "products", expect: SAMPLE_SLUG },
   // QE2 — every public address is walked. These had none of the three lanes
@@ -1016,6 +1016,10 @@ export const MOVED = [
   { from: "/leaderboard/month", to: "/builds/upvoted", status: 308 },
   // openproduct-redesign OPR1 — the two addresses the new chrome moved.
   { from: "/builds/roles", to: "/help-wanted", status: 308 },
+  // …and the two orders that became sorts of the Products page. Answered by
+  // a route handler (`builds/[order]/route.ts`), not the edge config.
+  { from: "/builds/upvoted", to: "/products?sort=upvoted", status: 308 },
+  { from: "/builds/newest", to: "/products?sort=newest", status: 308 },
   { from: "/me/notifications", to: "/activity", status: 308 },
 ];
 
@@ -1104,11 +1108,18 @@ export function sessionCookie(base) {
  * run over a failure panel.
  */
 export const AUTHED_ROUTES = [
-  { path: "/me", name: "me · profile", expect: "Download your data" },
-  { path: "/me/saved", name: "me · saved", expect: "Saved products" },
-  { path: "/me/applications", name: "me · applications", expect: "Your applications" },
+  // OPR1 — `/me` is the profile and its switcher (board `Me`); the form it
+  // used to be is `/me/settings`. `expect` is the section the page drew — an
+  // attribute the "temporarily unavailable" state does not have.
+  { path: "/me", name: "me · profile", expect: 'data-me-section="products"' },
+  // The saved list and the applications are SECTIONS of `/me` now. Their old
+  // addresses are still pages (they read the session and send the visitor
+  // on), so they are still walked: each must arrive at its section.
+  { path: "/me/saved", name: "me · saved (arrives at the section)", expect: 'data-me-section="saved"' },
+  { path: "/me/applications", name: "me · applications (arrives at the section)", expect: 'data-me-section="seats"' },
+  { path: "/me/settings", name: "me · settings", expect: "Download your data" },
   // OPR1 — the inbox's address is `/activity` (the old one is in `MOVED`).
-  { path: "/activity", name: "activity", expect: "Mark all as read" },
+  { path: "/activity", name: "activity", expect: "Mark all read" },
   { path: "/studio", name: "studio · listings", expect: "Your listings" },
   { path: "/studio/collections", name: "studio · collections", expect: "Collections" },
   { path: "/studio/reports", name: "studio · reports", expect: "Reports" },

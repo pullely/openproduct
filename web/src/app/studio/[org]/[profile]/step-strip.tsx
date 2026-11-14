@@ -18,11 +18,12 @@ import { useSelectedLayoutSegment } from "next/navigation";
 
 import { STRIP_STEPS, listingBasePath, listingStepPath } from "@openproduct/contracts";
 
-import { TAB_OFF, TAB_ON } from "../../../ui/design";
+import { CHIP_BTN, CHIP_OFF, CHIP_ON, FOCUS } from "../../../ui/design";
 import { AppLink } from "../../../ui/link";
 
-/** A tab on the hero's strip: 40px tall, 14px/500, the accent underline when current. */
-const STRIP_TAB = "-mb-px inline-flex h-[40px] items-center border-b-2 px-3 text-[14px] font-medium transition-colors";
+/** A tab on the hero's strip (OPR1): a pill — the shared 32px chip, 44px on a
+ *  phone, filled when current. */
+const STRIP_TAB = `tap-h ${CHIP_BTN} ${FOCUS}`;
 
 export function StepStrip({ org, profileId }: { org: string; profileId: string }) {
   // `null` on the overview — the layout's own page.
@@ -42,12 +43,12 @@ export function StepStrip({ org, profileId }: { org: string; profileId: string }
     { key: "discussions", label: "Discussions", href: `${base}/discussions`, current: segment === "discussions" },
   ];
   return (
-    <nav aria-label="Listing steps" className="mt-4 border-t border-line px-3 max-sm:px-1">
-      <ol className="m-0 flex list-none flex-wrap gap-x-0.5 p-0">
+    <nav aria-label="Listing steps" className="mt-4 border-t border-line px-5 py-2.5 max-sm:px-3">
+      <ol className="m-0 flex list-none flex-wrap gap-1 p-0">
         {tabs.map((tab) =>
           tab.href === null ? (
             <li key={tab.key}>
-              <span className={`${STRIP_TAB} whitespace-nowrap border-transparent text-faint`}>{tab.label}</span>
+              <span className={`${STRIP_TAB} whitespace-nowrap text-faint`}>{tab.label}</span>
             </li>
           ) : (
             <li key={tab.key}>
@@ -59,7 +60,7 @@ export function StepStrip({ org, profileId }: { org: string; profileId: string }
                 warm="intent"
                 href={tab.href}
                 {...(tab.current ? { "aria-current": "page" as const } : {})}
-                className={`${STRIP_TAB} ${tab.current ? TAB_ON : TAB_OFF} whitespace-nowrap no-underline`}
+                className={`${STRIP_TAB} ${tab.current ? CHIP_ON : CHIP_OFF} whitespace-nowrap no-underline`}
               >
                 {tab.label}
               </AppLink>

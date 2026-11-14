@@ -34,15 +34,39 @@ function memory() {
 }
 
 describe("Open a build asks for the repo up front", () => {
-  it("is an optional field with its reason beside it", () => {
+  it("is an optional field that says what it takes only when what was typed is wrong", () => {
+    // Was: the field's reason sat under it (`OPEN_BUILD_REPO_WHY`). OPR1
+    // allows no explainer under a control (design.md §2 rule 9): the label
+    // says it is optional, and the one line that can appear is the error —
+    // what the field takes — in the danger ink, tied to the field.
     const page = code("submit/page.tsx");
     expect(page).toContain("{OPEN_BUILD_REPO_LABEL}");
     expect(page).toContain("(optional)");
     expect(page).toContain('type="url"');
-    expect(page).toContain("OPEN_BUILD_REPO_WHY");
+    expect(page).not.toContain("OPEN_BUILD_REPO_WHY");
+    expect(page).not.toContain("OPEN_BUILD_SUBTITLE");
     // A typed address must be a GitHub repository; an empty one is fine.
     expect(page).toContain("const repoOk = !repoTyped || isGithubRepoUrl(repo);");
-    expect(page).toContain("Back to Open builds");
+    expect(page).toMatch(/\{repoOk \? null : \(\s*<span id="repo-hint"[^>]*text-destructive[^>]*>\s*\{OPEN_BUILD_REPO_HINT\}/);
+    expect(page).toContain('aria-describedby={repoOk ? undefined : "repo-hint"}');
+    expect(page).toContain("aria-invalid={repoOk ? undefined : true}");
+    // The way back names the feed, which is what `/` is.
+    expect(page).toMatch(/<AppLink\s+href="\/"[\s\S]{0,200}Back to the feed/);
+  });
+
+  it("wears the new look: one h1, the form on a flat card, 44px fields, a pill act (OPR1)", () => {
+    const page = code("submit/page.tsx");
+    expect(page.match(/<h1\b/g)).toHaveLength(1);
+    expect(page).toContain("<h1 className={PAGE_TITLE}>{OPEN_BUILD_HEADING}</h1>");
+    expect(page).toMatch(/<form onSubmit=\{onSubmit\} className="[^"]*rounded-\[16px\] bg-card[^"]*">/);
+    expect(page).not.toMatch(/border border-border|shadow-/);
+    // Every single-line field is the design's 44px field; the pitch its textarea.
+    expect(page.match(/className=\{FIELD\}/g)).toHaveLength(3);
+    expect(page).toContain("className={`${TEXTAREA} leading-[1.6]`}");
+    // The act is the ink pill, 44px on a phone.
+    expect(page).toContain("className={`${BTN_PRIMARY} max-sm:h-[44px] disabled:cursor-not-allowed disabled:opacity-50`}");
+    // The preview's head is a mono label, like every head over a card.
+    expect(page).toMatch(/<h2 id="preview-heading" className=\{`[^`]*\$\{EYEBROW\}`\}>/);
   });
 
   it("keeps the repo for the studio on submit, and never sends it to the console", () => {

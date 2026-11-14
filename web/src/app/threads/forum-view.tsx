@@ -18,7 +18,16 @@ import {
 } from "@openproduct/contracts";
 
 import { listCardMeta } from "../ui/og";
-import { BTN_PRIMARY, PAGE_HEAD, PAGE_TITLE, TAB, TAB_OFF, TAB_ON } from "../ui/design";
+import {
+  BTN_PRIMARY,
+  CHIP_BTN,
+  CHIP_OFF,
+  CHIP_ON,
+  EMPTY_NOTE,
+  FOCUS,
+  PAGE_HEAD,
+  PAGE_TITLE,
+} from "../ui/design";
 import { FailurePanel } from "../ui/failure";
 import { JsonLd } from "../ui/json-ld";
 import { AppLink } from "../ui/link";
@@ -52,9 +61,9 @@ export const FORUM_PAGE =
 
 /** A category is a FILTER, so it stays a pill (CP-R2, CL4's filter pills):
  *  36px, round, a hairline — filled with the foreground when it is on. */
-const CATEGORY = "tap inline-flex h-[36px] items-center rounded-full border px-4 text-[14px] no-underline transition-colors";
-const CATEGORY_ON = "border-foreground bg-foreground text-background";
-const CATEGORY_OFF = "border-border text-copy hover:text-foreground";
+const CATEGORY = `tap ${CHIP_BTN} ${FOCUS} no-underline`;
+const CATEGORY_ON = CHIP_ON;
+const CATEGORY_OFF = CHIP_OFF;
 
 export function forumMetadata(order: ForumOrder, tag: ChosenThreadTag | null): Metadata {
   const origin = publicApexOrigin();
@@ -106,7 +115,7 @@ export async function ForumView({ order, tag }: { order: ForumOrder; tag: Chosen
         {/* The one act on the page, in ink (CP-R1). */}
         <AppLink
           href={threadComposerHref()}
-          className={`tap ${BTN_PRIMARY} no-underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring`}
+          className={`tap ${BTN_PRIMARY} ${FOCUS} no-underline`}
         >
           {THREAD_COMPOSER_TITLE}
         </AppLink>
@@ -134,15 +143,15 @@ export async function ForumView({ order, tag }: { order: ForumOrder; tag: Chosen
         ))}
       </nav>
 
-      {/* THE ORDER IS A VIEW, so it is the underline strip every list's sorts
-          use (CP-R2, CL-R6): sticky from `sm` up, on the page's ground, with
+      {/* THE ORDER IS A VIEW, and its switches are pills like every tab in
+          the redesign (OPR1): sticky from `sm` up, on the page's ground, with
           the order's own sentence as its caption — linked to its published
           formula (OPC-4) — where the list begins. */}
       <div
         data-threads-strip
-        className="sticky top-0 z-20 mt-8 flex flex-wrap items-center justify-between gap-x-8 gap-y-2 border-b border-line bg-background max-sm:static"
+        className="sticky top-0 z-20 mt-6 flex flex-wrap items-center justify-between gap-x-8 gap-y-2 border-b border-line py-2 bg-background max-sm:static"
       >
-        <nav aria-label="Order" className="flex gap-6">
+        <nav aria-label="Order" className="flex gap-1.5">
           {FORUM_ORDERS.map((candidate) => {
             const on = candidate === order;
             return (
@@ -150,9 +159,7 @@ export async function ForumView({ order, tag }: { order: ForumOrder; tag: Chosen
                 key={candidate}
                 href={forumPath(candidate, tag)}
                 aria-current={on ? "page" : undefined}
-                className={`tap-h ${TAB} h-[52px] px-0 no-underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring ${
-                  on ? TAB_ON : TAB_OFF
-                }`}
+                className={`tap-h ${CHIP_BTN} ${FOCUS} no-underline ${on ? CHIP_ON : CHIP_OFF}`}
               >
                 {FORUM_ORDER_LABEL[candidate]}
               </AppLink>
@@ -162,7 +169,7 @@ export async function ForumView({ order, tag }: { order: ForumOrder; tag: Chosen
         <AppLink
           href={formulaHref(doc.formula)}
           data-threads-caption
-          className="tap py-2 text-[13.5px] text-faint hover:text-foreground"
+          className="tap py-2 text-[13px] text-muted-foreground hover:text-foreground"
         >
           {forumMeaning(order, tag)}
         </AppLink>
@@ -170,7 +177,7 @@ export async function ForumView({ order, tag }: { order: ForumOrder; tag: Chosen
 
       {doc.threads.length === 0 ? (
         // The list IS the page, so its empty state stays — said once.
-        <p className="m-0 mt-6 rounded-[20px] border border-dashed border-border px-8 py-14 text-center text-[16px] text-muted-foreground">
+        <p className={`mt-6 ${EMPTY_NOTE}`}>
           No threads yet.
         </p>
       ) : (

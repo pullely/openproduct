@@ -840,7 +840,9 @@ export async function runBudgets(base, gateway) {
     // The page's own heading is how its body is told from another's. CL5
     // (#1889) said "build" where it said "product", and this lane — which no
     // website change selected yet — kept the old words (sourceplane/orun-cloud#1882).
-    const NOT_FOUND_HEADING = "No build lives at this address";
+    // openproduct-redesign OPR1: the site says "product" again, and the 404
+    // with it — one title and one way back.
+    const NOT_FOUND_HEADING = "No product lives at this address";
     for (const absent of ABSENT) {
       const res = await context.request.get(base + absent.path, { maxRedirects: 0 });
       const body = res.status() === 404 ? await res.text() : "";

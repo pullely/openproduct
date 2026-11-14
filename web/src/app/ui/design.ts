@@ -157,3 +157,160 @@ export const CRUMBS = "flex items-center gap-2 text-[13.5px] text-muted-foregrou
 /** The visible focus ring, for controls drawn without a Tailwind focus style. */
 export const FOCUS =
   "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring";
+
+// ── OPR1, the sections with no board (design.md §5: "take the new shell and
+// tokens") ── topics, stack, pricing, collections, the digest, the day board,
+// the docs, the forum and the studio spell these rather than a tile inline.
+
+/** A tile (OPR1): the flat card as one item of a grid or a list — the card's
+ *  skin with no padding of its own, so each list says its own room. */
+export const TILE = "rounded-[16px] bg-card";
+
+/** A tile that is itself the link: the card's skin, and `--accent` under the
+ *  pointer — the flat design's hover, since there is no border to darken. */
+export const TILE_LINK = "rounded-[16px] bg-card transition-colors hover:bg-accent";
+
+/** The empty state of a list (OPR1): one centred sentence on the flat card,
+ *  where the dashed panel used to be. */
+export const EMPTY_NOTE =
+  "m-0 rounded-[16px] bg-card px-5 py-10 text-center text-[15px] leading-[1.6] text-muted-foreground";
+
+/** A block set INTO a card (OPR1): the sunken fill at the field's 14px
+ *  radius — a quoted note, a code sample, a nested record. No border. */
+export const INSET = "rounded-[14px] bg-sunken";
+
+/** A notice in a page or a card: 13px on the sunken fill, 14px radius. */
+export const NOTICE =
+  "rounded-[14px] bg-sunken px-3.5 py-2.5 text-[13px] leading-[1.5] text-muted-foreground";
+
+/** A notice that warns (not an error): the same shape on the warning tint. */
+export const NOTICE_WARN =
+  "rounded-[14px] bg-warning-soft px-3.5 py-2.5 text-[13px] leading-[1.5] text-warning-strong";
+
+/** A notice that something FAILED — the one place red is allowed (OPR1:
+ *  red is danger only). */
+export const NOTICE_ERROR =
+  "rounded-[14px] bg-destructive-soft px-3.5 py-2.5 text-[13px] leading-[1.5] text-destructive";
+
+/** A notice that something worked: the success tint. */
+export const NOTICE_OK =
+  "rounded-[14px] bg-success-soft px-3.5 py-2.5 text-[13px] leading-[1.5] text-success";
+
+/** A small pill button that is 44px tall on a phone (OPR1: every target
+ *  ≥44px there) — `BTN_SMALL` for a row's action on a page with no board. */
+export const BTN_SMALL_TAP = `${BTN_SMALL} max-sm:h-[44px] max-sm:px-4`;
+
+/** The 20px pill in teal (OPR1: teal is help wanted / seats) — `N
+ *  contributors wanted` wherever a page names open roles. */
+export const BADGE_SEAT =
+  "inline-flex h-[20px] items-center rounded-full bg-seat-soft px-2 text-[11px] font-medium text-seat-ink";
+
+// ── OPR1, the product and person pages (boards `Product`, `Person` and their
+// phone boards) ── the frame, the header card, the side cards and the pill
+// row both pages share. Read out of the boards' inline styles.
+
+/** The boards' page column: 1180px, `28px 24px 64px`, 24px between the header
+ *  card and the columns; `10px 12px` with 10px between on a phone. */
+export const BOARD_PAGE =
+  "mx-auto box-border flex w-full max-w-[1180px] flex-col gap-6 px-6 pb-16 pt-7 max-sm:gap-2.5 max-sm:px-3 max-sm:pb-6 max-sm:pt-2.5";
+
+/** The boards' two columns: the main column beside a 300px side column, 24px
+ *  between; one column once the pair no longer fits (the boards wrap). */
+export const BOARD_COLUMNS =
+  "grid grid-cols-[minmax(0,1fr)_300px] items-start gap-6 max-[900px]:grid-cols-[minmax(0,1fr)] max-sm:gap-2.5";
+
+/** The same pair beside the `Person` board's 280px side column. */
+export const BOARD_COLUMNS_NARROW =
+  "grid grid-cols-[minmax(0,1fr)_280px] items-start gap-6 max-[900px]:grid-cols-[minmax(0,1fr)] max-sm:gap-2.5";
+
+/** A column of cards: 18px between them, 10px on a phone. */
+export const BOARD_STACK = "grid min-w-0 grid-cols-[minmax(0,1fr)] gap-[18px] max-sm:gap-2.5";
+
+/** A main-column card: the flat card with the boards' `20px 22px` inside,
+ *  14px on a phone. */
+export const BOARD_CARD = "rounded-[16px] bg-card px-[22px] py-5 max-sm:p-[14px]";
+
+/** A side-column card: the flat card, 18px inside and 12px between its rows;
+ *  14px inside on a phone. */
+export const SIDE_CARD = "flex flex-col gap-3 rounded-[16px] bg-card p-[18px] max-sm:p-[14px]";
+
+/** A side card's heading: 15px/600. */
+export const SIDE_TITLE = "m-0 text-[15px] font-semibold leading-[1.3] text-foreground";
+
+/** A main card's heading: the card title, 18px/600 at -0.015em. */
+export const BOARD_CARD_TITLE = "m-0 text-card-title font-semibold tracking-[-0.015em] text-foreground";
+
+/** A label/value row in a side card: 15px, the label muted, no rule. */
+export const SIDE_ROW = "flex items-baseline justify-between gap-2.5 text-[15px]";
+
+/** The product header's cover band: 140px of amber wash with a glow at its
+ *  top right. Desktop only — the phone board draws no band on a product. */
+export const COVER_PRODUCT =
+  "h-[140px] bg-[radial-gradient(600px_200px_at_85%_0%,oklch(var(--brand-amber-inverted)/0.55),transparent_70%),linear-gradient(120deg,oklch(var(--amber-soft)),oklch(var(--warning-wash)))] max-sm:hidden";
+
+/** A person's cover band: 120px of the sunken wash under the same glow; 72px
+ *  on a phone. */
+export const COVER_PERSON =
+  "h-[120px] bg-[radial-gradient(600px_200px_at_85%_0%,oklch(var(--brand-amber-inverted)/0.4),transparent_70%),linear-gradient(120deg,oklch(var(--sunken)),oklch(var(--primary-foreground)))] max-sm:h-[72px]";
+
+/** The soft button: a 40px pill on 6% of ink, 15px/600 — "Take a seat",
+ *  "Edit details". 44px on a phone. */
+export const BTN_SOFT =
+  "inline-flex h-[40px] shrink-0 items-center justify-center gap-2 whitespace-nowrap rounded-full bg-foreground/[0.06] px-[18px] text-[15px] font-semibold text-foreground no-underline transition-colors hover:bg-foreground/[0.1] max-sm:h-[44px]";
+
+/** The header card's ink button: `BTN_PRIMARY` at the boards' 15px/600 with
+ *  room for a glyph — "Try it". 44px on a phone. */
+export const BTN_INK =
+  "inline-flex h-[40px] shrink-0 items-center justify-center gap-2 whitespace-nowrap rounded-full bg-primary px-[18px] text-[15px] font-semibold text-primary-foreground no-underline transition-opacity hover:opacity-90 max-sm:h-[44px]";
+
+/** The teal button, a seat's own action (design §3): "Take the seat". */
+export const BTN_SEAT =
+  "inline-flex h-[40px] shrink-0 items-center justify-center whitespace-nowrap rounded-full bg-seat px-[18px] text-[15px] font-semibold text-card no-underline transition-opacity hover:opacity-90 max-sm:h-[44px]";
+
+/** The header card's Follow, sized from outside: wraps `FollowButton` and
+ *  gives its button the boards' 40px pill at 15px/600 (44px, and the cell's
+ *  full width, on a phone); once followed it is the soft pill. */
+const FOLLOW_PILL =
+  "[&_button]:h-[40px] [&_button]:justify-center [&_button]:px-5 [&_button]:text-[15px] [&_button]:font-semibold max-sm:[&_button]:h-[44px] max-sm:[&_button]:w-full max-sm:[&_form]:w-full [&_button[aria-pressed=true]]:border-transparent [&_button[aria-pressed=true]]:bg-foreground/[0.06] [&_button[aria-pressed=true]]:text-copy";
+
+/** Follow on a PRODUCT's header (board `Product`): white under a 1.5px ink
+ *  ring — "Try it" is that card's ink button. */
+export const FOLLOW_PILL_OUTLINE = `${FOLLOW_PILL} [&_button[aria-pressed=false]]:border-[1.5px] [&_button[aria-pressed=false]]:border-foreground [&_button[aria-pressed=false]]:bg-card [&_button[aria-pressed=false]]:text-foreground`;
+
+/** Follow on a PERSON's header (board `Person`): the ink button — it is that
+ *  card's one action. */
+export const FOLLOW_PILL_INK = `${FOLLOW_PILL} [&_button[aria-pressed=false]]:border-primary [&_button[aria-pressed=false]]:bg-primary [&_button[aria-pressed=false]]:text-primary-foreground`;
+
+/** A pill in a header card's row of sections: 36px, 15px; 44px on a phone.
+ *  The current one is ink. */
+export const SECTION_PILL =
+  "inline-flex h-[36px] shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full px-3.5 text-[15px] no-underline transition-colors max-sm:h-[44px] max-sm:px-4";
+export const SECTION_PILL_ON = "bg-primary font-semibold text-primary-foreground";
+export const SECTION_PILL_OFF = "font-medium text-copy hover:bg-foreground/[0.06]";
+
+/** An open seat's row in a crew card: the teal wash at a 14px radius. */
+export const SEAT_ROW = "flex items-center justify-between gap-2.5 rounded-[14px] bg-seat-wash px-3 py-2.5";
+
+/** The empty seat: a dashed teal ring. */
+export const SEAT_RING = "box-border shrink-0 rounded-full border-dashed border-seat";
+
+/** A "Built with" pill: 13px on the lighter well, a dot before the word. */
+export const STACK_PILL = "inline-flex items-center gap-1.5 rounded-full bg-well px-2.5 py-1.5 text-[13px] text-foreground";
+
+// ── OPR1, the signed-in pages (boards `Me`, `Activity`, `Settings`) ──
+
+/** `BTN_SOFT` at the secondary size: a row's action — 13px, 16px of
+ *  padding. 44px on a phone. */
+export const BTN_SOFT_SMALL =
+  "inline-flex h-[40px] shrink-0 items-center justify-center gap-1.5 whitespace-nowrap rounded-full bg-foreground/[0.06] px-4 text-[13px] font-semibold text-copy no-underline transition-colors hover:bg-foreground/[0.1] max-sm:h-[44px]";
+
+/** A segmented switch (OPR1): the white pill a page's tabs sit in. */
+export const SEGMENTS = "flex gap-0.5 self-start rounded-full bg-card p-1 max-sm:p-[3px]";
+
+/** One segment: 40px, 15px/500; 44px and 13px on a phone. */
+export const SEGMENT =
+  "inline-flex h-[40px] items-center rounded-full px-[18px] text-[15px] no-underline transition-colors max-sm:h-[44px] max-sm:px-3.5 max-sm:text-[13px]";
+/** The current segment: ink under the primary's foreground, 600. */
+export const SEGMENT_ON = "bg-primary font-semibold text-primary-foreground";
+/** Another segment: body ink, 500. */
+export const SEGMENT_OFF = "font-medium text-copy hover:bg-accent";

@@ -23,7 +23,9 @@ describe("a thread is a tile (CP-R6)", () => {
   const tile = code("threads/thread-tile.tsx");
 
   it("draws the tile's card, with the title's link stretched over it", () => {
-    expect(tile).toContain("rounded-[20px] border border-border bg-card px-8 py-6");
+    // OPR1 — the shared flat tile that is a link, not a card spelled inline.
+    expect(tile).toMatch(/px-6 py-5 [^`]*\$\{TILE_LINK\}/);
+    expect(tile).not.toMatch(/rounded-\[20px\]|border border-border bg-card/);
     expect(tile).toContain("after:absolute after:inset-0 after:content-['']");
     expect(tile).toContain("data-keyrow");
     expect(tile).not.toContain("hover:text-endorse-ink");
@@ -55,7 +57,9 @@ describe("the order is the strip, the category a pill (CP-R2)", () => {
   it("is sticky from `sm` up, on the page's ground, and static on a phone", () => {
     expect(view).toContain("data-threads-strip");
     expect(view).toMatch(/className="sticky top-0 z-20 [^"]*bg-background max-sm:static"/);
-    expect(view).toContain("on ? TAB_ON : TAB_OFF");
+    // OPR1 — every tab is a pill: the order's switches are the shared chip.
+    expect(view).toContain("on ? CHIP_ON : CHIP_OFF");
+    expect(view).not.toMatch(/TAB_ON|TAB_OFF/);
     expect(view).not.toContain("rounded-[8px] bg-secondary p-[3px]");
   });
 
@@ -66,7 +70,9 @@ describe("the order is the strip, the category a pill (CP-R2)", () => {
   });
 
   it("keeps the categories as filter pills", () => {
-    expect(view).toContain('"tap inline-flex h-[36px] items-center rounded-full border px-4 text-[14px] no-underline transition-colors"');
+    // OPR1 — the shared chip, not a pill spelled inline.
+    expect(view).toContain("const CATEGORY = `tap ${CHIP_BTN} ${FOCUS} no-underline`;");
+    expect(view).toContain("const CATEGORY_ON = CHIP_ON;");
   });
 });
 
@@ -78,7 +84,9 @@ describe("the calm frame", () => {
 
   it("a thread's reply box and note take the tile's radius", () => {
     const thread = code("threads/[id]/page.tsx");
-    expect(thread).toContain("mt-10 max-w-[860px] rounded-[20px] border border-border bg-card px-8 py-7");
-    expect(thread).not.toMatch(/rounded-\[12px\]/);
+    // OPR1 — the shared flat panel; the reply box is the shared 44px-skin field.
+    expect(thread).toContain("className={`mt-10 max-w-[860px] max-sm:p-4 ${PANEL}`}");
+    expect(thread).toContain("className={`${TEXTAREA} resize-y`}");
+    expect(thread).not.toMatch(/rounded-\[(12|20)px\]|border border-border bg-card/);
   });
 });

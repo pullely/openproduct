@@ -61,7 +61,7 @@ export function RepoUrlField({ saved }: { saved: string | null }) {
         className={FIELD}
       />
       {carried ? (
-        <span id="repoUrl-carried" className="mt-1.5 block text-[12.5px] text-muted-foreground" role="status">
+        <span id="repoUrl-carried" className="mt-1.5 block text-[13px] text-muted-foreground" role="status">
           {OPEN_BUILD_REPO_CARRIED}
         </span>
       ) : null}

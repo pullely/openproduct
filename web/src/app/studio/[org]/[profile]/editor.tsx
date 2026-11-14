@@ -28,7 +28,8 @@ import type { MaintainerProfile } from "@openproduct/contracts";
 
 import { AppLink } from "../../../ui/link";
 import { LogoTile } from "../../../ui/logo-tile";
-import { BTN_OUTLINE, BTN_PRIMARY, H2, PAGE_TITLE } from "../../../ui/design";
+import { BTN_OUTLINE, BTN_PRIMARY, H2, INSET, PAGE_TITLE, TILE } from "../../../ui/design";
+import { STEP_CARD } from "./step-card";
 import {
   BTN_GHOST,
   GLYPH_BACK,
@@ -89,7 +90,7 @@ export function EditorHead({
       <AppLink
         prefetch="auto"
         href={back.href}
-        className="tap inline-flex items-center gap-1.5 text-[13.5px] text-muted-foreground no-underline hover:text-foreground"
+        className="tap inline-flex items-center gap-1.5 text-[13px] text-muted-foreground no-underline hover:text-foreground"
       >
         <Glyph d={GLYPH_BACK} />
         {back.label}
@@ -161,14 +162,14 @@ export function ListingHero({
   ].filter((label): label is string => label !== null);
 
   return (
-    <section aria-label="Listing" className="-mt-3 rounded-[12px] border border-border bg-card">
-      <div aria-hidden="true" className="h-[96px] rounded-t-[12px]" style={{ background: coverOf(profile.slug) }} />
+    <section aria-label="Listing" className={`-mt-3 ${TILE}`}>
+      <div aria-hidden="true" className="h-[96px] rounded-t-[16px]" style={{ background: coverOf(profile.slug) }} />
       <div className="-mt-9 flex flex-wrap items-start gap-5 px-6 max-sm:px-4">
         {tile ?? (
           <LogoTile
             slug={profile.slug}
             size={72}
-            className="box-border border-[3px] border-card shadow-[0_1px_3px_rgba(0,0,0,0.08)]"
+            className="box-border border-[3px] border-card"
           />
         )}
         <div className="min-w-[260px] flex-1 pt-11 max-sm:min-w-0 max-sm:basis-full max-sm:pt-0">
@@ -182,7 +183,7 @@ export function ListingHero({
               >
                 {profile.tagline ?? "No one-line description yet."}
               </p>
-              <div className="mt-3 flex flex-wrap items-center gap-x-2.5 gap-y-1.5 text-[13.5px] leading-[1.4] text-muted-foreground">
+              <div className="mt-3 flex flex-wrap items-center gap-x-2.5 gap-y-1.5 text-[13px] leading-[1.4] text-muted-foreground">
                 {profile.category ? (
                   <AppLink
                     href={topicPath(profile.category)}
@@ -282,7 +283,7 @@ export function ListingHero({
           Stack
         </AppLink>
       </div>
-      <p className="m-0 mt-2 px-6 text-[12.5px] leading-[1.5] text-muted-foreground max-sm:px-4">
+      <p className="m-0 mt-2 px-6 text-[13px] leading-[1.5] text-muted-foreground max-sm:px-4">
         {profile.stack.length === 0 ? (
           "No stack yet."
         ) : (
@@ -336,7 +337,7 @@ export function SectionCard({
   children: ReactNode;
 }) {
   return (
-    <section id={id} aria-labelledby={`${id}-heading`} className="scroll-mt-20 rounded-[12px] border border-border bg-card px-6 pb-5 pt-4 max-sm:px-4">
+    <section id={id} aria-labelledby={`${id}-heading`} className={STEP_CARD}>
       <div className="flex min-h-[32px] items-center justify-between gap-3">
         <h2 id={`${id}-heading`} className={H2}>
           {title}
@@ -361,14 +362,15 @@ export function Pencil({ href, label }: { href: string; label: string }) {
       href={href}
       aria-label={label}
       title={label}
-      className="tap inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-[8px] text-muted-foreground no-underline hover:bg-accent hover:text-foreground"
+      className="tap inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-muted-foreground no-underline hover:bg-accent hover:text-foreground"
     >
       <Glyph d={GLYPH_PENCIL} />
     </AppLink>
   );
 }
 
-/** The dashed "add" affordance: a full-width link to the step that adds it. */
+/** The "add" affordance (OPR1): a full-width link to the step that adds
+ *  it, on the shared sunken inset — flat, where the dashed box used to be. */
 export function DashedAdd({
   href,
   children,
@@ -382,7 +384,7 @@ export function DashedAdd({
     <AppLink
       prefetch="auto"
       href={href}
-      className={`tap flex w-full items-center gap-2.5 rounded-[8px] border border-dashed border-border-strong px-3.5 py-3 text-left text-[14px] text-muted-foreground no-underline transition-colors hover:border-faint hover:text-foreground ${className}`}
+      className={`tap flex w-full items-center gap-2.5 px-3.5 py-3 text-left text-[15px] text-muted-foreground no-underline transition-colors hover:bg-accent hover:text-foreground ${INSET} ${className}`}
     >
       <Glyph d={GLYPH_PLUS} />
       {children}

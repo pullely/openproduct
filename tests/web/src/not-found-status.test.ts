@@ -142,10 +142,11 @@ describe("R11 — a page that can 404 has no skeleton above it", () => {
     // and fails the reader. The perf lane asserts this against a real
     // response; here it is the source of the page that response comes from.
     const notFound = read("not-found.tsx");
-    // In the product's own word since openproduct-calm CL5: a build.
-    expect(notFound).toContain("No build lives at this address");
-    // The one useful next step is Open builds — `/` — since the directory
-    // that used to sit at `/products` is that same list.
+    // In the product's own word: a build under openproduct-calm CL5, a
+    // product again since openproduct-redesign OPR1. The perf lane's
+    // `NOT_FOUND_HEADING` looks for these same words in the response.
+    expect(notFound).toContain("No product lives at this address");
+    // The one useful next step is the feed — `/`.
     expect(notFound).toContain('href="/"');
   });
 });

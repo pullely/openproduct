@@ -81,7 +81,7 @@ describe("the row is the target, not the twenty pixels of its title", () => {
   // target still smaller than the row it sits in. The title's `::after` is
   // stretched over the whole `<li>` instead, so the 76px row is what a finger
   // presses.
-  it.each(["feed/row-shell.tsx", "feed/build-tile.tsx"])("%s stretches the title", (file) => {
+  it.each(["feed/row-shell.tsx"])("%s stretches the title", (file) => {
     const source = read(file);
     expect(source).toContain("after:absolute after:inset-0");
     // `relative` on the `<li>` is what the stretch is measured against.
@@ -89,7 +89,7 @@ describe("the row is the target, not the twenty pixels of its title", () => {
     expect(source).toMatch(/<li[^>]*className="relative /);
   });
 
-  it.each(["feed/row-shell.tsx", "feed/build-tile.tsx"])(
+  it.each(["feed/row-shell.tsx"])(
     "%s keeps the controls above the stretch",
     (file) => {
       // Without `z-10` the vote box, the comment box and the topic links stop
@@ -98,7 +98,7 @@ describe("the row is the target, not the twenty pixels of its title", () => {
     },
   );
 
-  it.each(["feed/row-shell.tsx", "feed/build-tile.tsx"])(
+  it.each(["feed/row-shell.tsx"])(
     "%s stops linking the tagline to the place the title already goes",
     (file) => {
       // Two links with two different accessible names to one destination, in
@@ -111,15 +111,49 @@ describe("the row is the target, not the twenty pixels of its title", () => {
   );
 });
 
+describe("the product card is the target, and its two controls are their own (OPR1)", () => {
+  // Was: the build tile stretched its title over the row and lifted the vote
+  // box above the stretch. The board's card makes the whole top block ONE
+  // link — face, name, facts and pitch — and puts the seats link and Follow
+  // in a foot outside it, so nothing is nested and nothing needs lifting.
+  const card = read("feed/product-card.tsx")
+    .replace(/\{\/\*[\s\S]*?\*\/\}/g, "")
+    .replace(/\/\*[\s\S]*?\*\//g, "");
+
+  it("the block is one link to the product, and the pitch is not a second one", () => {
+    expect(card).toMatch(/<AppLink\s+href=\{`\/\$\{card\.slug\}`\}\s+className=\{`flex flex-1 flex-col/);
+    expect(card.match(/href=\{`\/\$\{card\.slug\}`\}/g)).toHaveLength(1);
+    expect(card).not.toContain("after:absolute after:inset-0");
+  });
+
+  it("the seats link and Follow are 40px, and 44px on a phone", () => {
+    expect(card).toMatch(/data-product-seats\s+className=\{`inline-flex min-h-\[40px\][^`]*max-sm:min-h-\[44px\]/);
+    expect(read("feed/follow-product.tsx")).toMatch(/inline-flex h-\[40px\][^`]*max-sm:h-\[44px\]/);
+  });
+
+  it("the sort's options are 36px in the track, and 44px on a phone", () => {
+    const control = read("feed/sort-control.tsx");
+    expect(control).toContain("${OPTION} min-h-[36px]");
+    expect(control).toContain("${OPTION} min-h-[44px]");
+    expect(control).toMatch(/<summary[\s\S]*?min-h-\[44px\]/);
+  });
+
+  it("a seat's button is 40px, 44px on a phone, and the ticket's product link is 44px there", () => {
+    expect(read("ui/design.ts")).toMatch(/export const BTN_SEAT =\s*"inline-flex h-\[40px\][^"]*max-sm:h-\[44px\]/);
+    const seat = read("help-wanted/seat-card.tsx");
+    expect(seat).toContain("className={`${BTN_SEAT} ");
+    expect(seat).toMatch(/flex min-h-\[44px\] min-w-0 flex-1 items-center[^`]*sm:hidden/);
+  });
+});
+
 describe("the standalone links that had to be told", () => {
   // Each of these was measured under 44px by the pass and is a destination
   // rather than a word in a sentence: a footer's row, a row of formula ids,
   // an avatar, a range pill, a card's title.
   it.each([
-    // CL2 — the build tile's category link and the strip's formula caption
-    // (the margin, which carried seven of these, left the front page).
-    ["feed/build-tile.tsx", 1],
-    ["feed/builds.tsx", 1],
+    // (The build tile's category link and the strip's formula caption left
+    // with OPR1: the product card's controls state their own heights, held
+    // by the describe above.)
     // Three since AG0: the route rows are links now, and the one that carries
     // the floor is the anchor inside the table cell.
     // QE3 — five: the two standalone route links under the API section, told.

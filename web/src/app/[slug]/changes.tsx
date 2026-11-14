@@ -25,7 +25,7 @@ import { DIFF_HEADING, type Change } from "@openproduct/contracts";
 
 import { SECTION_ATTRIBUTE, SECTION_CARD } from "./sections";
 
-import { H2_SECTION } from "../ui/design";
+import { BOARD_CARD_TITLE } from "../ui/design";
 
 import { absoluteOf, agoOf } from "../ui/time";
 
@@ -58,28 +58,26 @@ export function Changes({
       <h2
         id="changed-heading"
         tabIndex={-1}
-        className={`${H2_SECTION} outline-none`}
+        className={`${BOARD_CARD_TITLE} outline-none`}
       >
         {DIFF_HEADING}
       </h2>
-      <ul className="m-0 mt-4 grid list-none gap-2 p-0">
+      <ul className="m-0 mt-3 grid list-none gap-2 p-0">
         {changes.map((change) => {
           const observed = change.provenance.class === "observed";
           return (
             <li
               key={change.field}
-              className={`rounded-[8px] border px-3.5 py-3 ${
-                observed
-                  ? // The same dashed frame PV0's observed row uses. A reader
-                    // who never learns this estate's vocabulary should still
-                    // come away knowing this line was read, not typed.
-                    "border-dashed border-border-strong bg-muted"
-                  : "border-border bg-card"
-              }`}
+              // Flat, and still two kinds: what was READ from the repository
+              // sits on the sunken fill PV0's observed row uses, what the
+              // maker answered on the lighter well. A reader who never learns
+              // this estate's vocabulary should still come away knowing which
+              // line was read and which was typed.
+              className={`rounded-[14px] px-3.5 py-3 ${observed ? "bg-sunken" : "bg-well"}`}
             >
               <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
-                <span className="text-[14.5px] font-semibold text-foreground">{change.label}</span>
-                <span className="text-[12.5px] text-muted-foreground">
+                <span className="text-[15px] font-semibold text-foreground">{change.label}</span>
+                <span className="text-[13px] text-muted-foreground">
                   {observed && change.provenance.class === "observed" ? (
                     // OPC-7 — an observation never travels without the
                     // moment of the read that found it.
@@ -94,7 +92,7 @@ export function Changes({
                   )}
                 </span>
               </div>
-              <p className="m-0 mt-1.5 flex flex-wrap items-baseline gap-2 text-[14px] leading-[1.5]">
+              <p className="m-0 mt-1.5 flex flex-wrap items-baseline gap-2 text-[15px] leading-[1.5]">
                 <span className="font-mono text-[13px] text-muted-foreground line-through decoration-border">
                   {change.from}
                 </span>

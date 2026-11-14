@@ -69,10 +69,13 @@ function routes(dir: string, prefix = ""): string[] {
 const EXCLUDED: Record<string, string> = {
   "": "the root is emitted by `sitemapXml` itself, always first",
   me: "personal — rendered per request for one reader, and behind a session",
-  "me/applications": "personal — one reader's requests",
+  "me/applications":
+    "personal — the old address of one reader's requests; it arrives at the Seats section of `/me` (openproduct-redesign OPR1)",
   activity:
     "personal — one reader's inbox (it was `me/notifications` until openproduct-redesign OPR1 moved the address)",
-  "me/saved": "personal — one reader's private list (OPC-3)",
+  "me/saved":
+    "personal — the old address of one reader's private list (OPC-3); it arrives at the Saved section of `/me` (openproduct-redesign OPR1)",
+  "me/settings": "personal — one reader's own settings, behind a session (openproduct-redesign OPR1)",
   studio: "personal — the maintainer's own workspace, behind a session",
   "studio/appeals": "personal — one maintainer's appeals",
   "studio/collections": "personal — one curator's collections",

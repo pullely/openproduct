@@ -107,8 +107,9 @@ const VIEWPORTS = [
 const ROUTES = [
   { path: "/", name: "home", expect: SAMPLE_SLUG },
   { path: `/${SAMPLE_SLUG}`, name: "listing", expect: "Frontend contributor" },
-  // OB7 (#1875) — the leaderboard is the Upvoted order now.
-  { path: "/builds/upvoted", name: "upvoted", expect: CARDS[0].slug },
+  // OB7 (#1875) — the leaderboard is the Upvoted order; OPR1 — and that
+  // order is the Products page's `?sort=upvoted`.
+  { path: "/products?sort=upvoted", name: "upvoted", expect: CARDS[0].slug },
 ];
 
 /** How long after `load` the lane keeps counting. The budget lane's value. */

@@ -15,7 +15,7 @@ import {
 import { Comments } from "../comments";
 import { fetchDiscussion, fetchListing, publicApexOrigin } from "../../public-api";
 import { JsonLd } from "../../ui/json-ld";
-import { BTN_PRIMARY, CRUMBS, H2_SECTION, PAGE, PAGE_HEAD, PAGE_SUBTITLE, PAGE_TITLE } from "../../ui/design";
+import { BTN_PRIMARY, CRUMBS, BOARD_CARD_TITLE, PAGE, PAGE_HEAD, PAGE_SUBTITLE, PAGE_TITLE } from "../../ui/design";
 import { SECTION_CARD } from "../sections";
 import { AppLink } from "../../ui/link";
 import { ThreadTile } from "../../threads/thread-tile";
@@ -120,7 +120,7 @@ export default async function ListingForumPage({ params }: { params: Promise<{ s
       <div className="mt-10 grid max-w-[820px] gap-4 max-sm:mt-8">
         {/* THE LAUNCH THREAD — the listing page's own component, unchanged. */}
         <section aria-labelledby="forum-comments" className={SECTION_CARD}>
-          <h2 id="forum-comments" className={H2_SECTION}>
+          <h2 id="forum-comments" className={BOARD_CARD_TITLE}>
             Comments
           </h2>
           <Comments slug={profile.slug} launch={discussion?.launch ?? null} />
@@ -130,12 +130,12 @@ export default async function ListingForumPage({ params }: { params: Promise<{ s
             CP-R3: a panel only when there is a thread; none is one quiet
             line under the comments. */}
         {threads.length === 0 ? (
-          <p data-not-yet className="m-0 px-2 text-[14px] text-muted-foreground">
+          <p data-not-yet className="m-0 px-2 text-[15px] text-muted-foreground">
             No threads about {profile.slug} yet.
           </p>
         ) : (
           <section aria-labelledby="forum-threads">
-            <h2 id="forum-threads" className={`${H2_SECTION} px-2`}>
+            <h2 id="forum-threads" className={`${BOARD_CARD_TITLE} px-2`}>
               {LISTING_FORUM_THREADS_HEADING}
             </h2>
             {/* CP3 — the same tile as /threads, without the build's name:

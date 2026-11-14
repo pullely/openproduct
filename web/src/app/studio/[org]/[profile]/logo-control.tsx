@@ -207,7 +207,7 @@ export function LogoControl({
   ) : shown ? (
     <Picture src={thumbnailSource(shown, apiBase).src} />
   ) : (
-    <LogoTile slug={slug} size={72} className="box-border border-[3px] border-card shadow-[0_1px_3px_rgba(0,0,0,0.08)]" />
+    <LogoTile slug={slug} size={72} className="box-border border-[3px] border-card" />
   );
 
   if (!scripted) {
@@ -243,7 +243,7 @@ export function LogoControl({
         {tile}
         <span
           aria-hidden="true"
-          className={`absolute inset-[3px] grid place-items-center rounded-[13px] bg-scrim/60 text-[11.5px] font-medium text-on-accent transition-opacity ${
+          className={`absolute inset-[3px] grid place-items-center rounded-[13px] bg-scrim/60 text-[11px] font-medium text-on-accent transition-opacity ${
             over || phase.kind === "sending" ? "opacity-100" : "opacity-0 group-hover:opacity-100 group-focus-visible:opacity-100"
           }`}
         >
@@ -271,11 +271,11 @@ export function LogoControl({
         <div
           role="dialog"
           aria-label="The logo"
-          className="absolute left-0 top-[84px] z-30 w-[300px] rounded-[12px] border border-border bg-card p-4 shadow-[0_8px_24px_rgba(0,0,0,0.12)]"
+          className="absolute left-0 top-[84px] z-30 w-[300px] rounded-[16px] border border-line bg-card p-4"
         >
           {phase.kind === "refused" ? (
             <>
-              <p role="status" className="m-0 text-[13.5px] leading-[1.5] text-warning-strong">
+              <p role="status" className="m-0 text-[13px] leading-[1.5] text-warning-strong">
                 {phase.message}
               </p>
               <div className="mt-3 flex gap-2">
@@ -289,7 +289,7 @@ export function LogoControl({
             </>
           ) : (
             <>
-              <label htmlFor="logo-alt" className="block text-[13px] font-medium text-foreground">
+              <label htmlFor="logo-alt" className="block text-[13px] font-medium text-copy">
                 What the logo shows
               </label>
               <input
@@ -351,7 +351,7 @@ export function LogoControl({
 /** The picture in the tile's box: contained on the card, as every tile draws a logo. */
 function Picture({ src }: { src: string }) {
   return (
-    <span className="block h-[72px] w-[72px] overflow-hidden rounded-[16px] border-[3px] border-card bg-card shadow-[0_1px_3px_rgba(0,0,0,0.08)]">
+    <span className="block h-[72px] w-[72px] overflow-hidden rounded-[16px] border-[3px] border-card bg-card">
       <img src={src} alt="" width={72} height={72} className="block h-full w-full object-contain" />
     </span>
   );
@@ -389,4 +389,4 @@ function refusalOf(status: number, body: string): string | null {
 
 const BTN = `${BTN_PRIMARY} disabled:opacity-60`;
 const BTN_QUIET =
-  "inline-flex h-[36px] items-center justify-center rounded-full px-3 text-[13.5px] font-medium text-muted-foreground hover:bg-accent hover:text-foreground disabled:opacity-60";
+  "inline-flex h-[40px] items-center justify-center rounded-full px-3 text-[14px] font-medium text-muted-foreground hover:bg-accent hover:text-foreground disabled:opacity-60";

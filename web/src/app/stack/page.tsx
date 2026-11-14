@@ -15,7 +15,7 @@ import { listOpenGraph } from "../ui/og";
 import { JsonLd } from "../ui/json-ld";
 
 import { AppLink } from "../ui/link";
-import { PAGE, PAGE_TITLE } from "../ui/design";
+import { EMPTY_NOTE, FOCUS, PAGE, PAGE_TITLE, TILE } from "../ui/design";
 
 /**
  * `/stack` (openproduct-worldclass VC1) — every language a listed product is
@@ -97,26 +97,26 @@ export default async function StacksPage() {
       {tally.length === 0 ? (
         // VC0's rule: the fact first, in one sentence, and never a card
         // standing empty under a heading.
-        <p className="m-0 mt-[26px] rounded-[12px] border border-dashed border-border px-5 py-10 text-center text-[15px] text-muted-foreground">
+        <p className={`mt-8 ${EMPTY_NOTE}`}>
           Nothing here yet.
         </p>
       ) : (
-        <ul className="m-0 mt-[26px] grid list-none grid-cols-[repeat(auto-fill,minmax(250px,1fr))] gap-3 p-0">
+        <ul className="m-0 mt-[48px] grid list-none grid-cols-[repeat(auto-fill,minmax(250px,1fr))] gap-[14px] p-0 max-sm:mt-8">
           {tally.map((entry) => (
             <li
               key={entry.value}
-              className="flex flex-col gap-[10px] rounded-[12px] border border-border bg-card px-[18px] pb-4 pt-[18px] transition-colors hover:border-faint"
+              className={`flex flex-col gap-[10px] p-6 ${TILE}`}
             >
               <AppLink
                 href={stackPath(entry.value)}
-                className="tap self-start font-sans text-[18px] font-semibold leading-[1.25] tracking-[-0.01em] text-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+                className={`tap self-start font-sans text-card-title font-semibold tracking-[-0.01em] text-foreground ${FOCUS}`}
               >
                 {entry.label}
               </AppLink>
               {/* PRODUCTS, not "listings" and not "uses": the thing counted is
                   a product, once, however many of its own spellings fold to
                   this value. */}
-              <span className="text-[13.5px] text-muted-foreground">
+              <span className="text-[13px] text-muted-foreground">
                 {entry.products} {entry.products === 1 ? "product" : "products"}
               </span>
             </li>

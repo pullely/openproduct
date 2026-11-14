@@ -262,7 +262,7 @@ export default function DocsPage() {
                 </span>
                 Every formula, one sentence each ({formulas.length})
               </summary>
-              <dl className="m-0 mt-4 grid gap-0 border-t border-border">
+              <dl className="m-0 mt-4 grid gap-0 border-t border-line">
                 {formulas.map((formula) => (
                   <div
                     key={formula.id}
@@ -289,7 +289,7 @@ export default function DocsPage() {
             </details>
             <div className={DOC_LINKS}>
               <p className={DOC_LINK_P}>
-                <AppLink href="/docs/formulas" className="tap underline underline-offset-4">
+                <AppLink href="/docs/formulas" className="tap text-link underline underline-offset-4">
                   Read them in full, with what we know is wrong with them →
                 </AppLink>
               </p>
@@ -297,7 +297,7 @@ export default function DocsPage() {
                   out moderation, and a maker whose listing quietly stopped
                   appearing in search has to be able to find out why. */}
               <p className={DOC_LINK_P}>
-                <AppLink href="/docs/checks" className="tap underline underline-offset-4">
+                <AppLink href="/docs/checks" className="tap text-link underline underline-offset-4">
                   What runs automatically, what it may do, and how often it is wrong →
                 </AppLink>
               </p>
@@ -305,7 +305,7 @@ export default function DocsPage() {
                   and the checks say what the rules are; this says how often we
                   used them, and how often we turned out to be wrong. */}
               <p className={DOC_LINK_P}>
-                <AppLink href="/transparency" className="tap underline underline-offset-4">
+                <AppLink href="/transparency" className="tap text-link underline underline-offset-4">
                   Every act of moderation, counted — including the ones we reversed →
                 </AppLink>
               </p>
@@ -313,7 +313,7 @@ export default function DocsPage() {
                   never do (remove a field without a dated notice), and everything
                   it has done, with the milestone that did it. */}
               <p className={DOC_LINK_P}>
-                <AppLink href="/docs/api" className="tap underline underline-offset-4">
+                <AppLink href="/docs/api" className="tap text-link underline underline-offset-4">
                   The API's changelog, and what it promises not to change →
                 </AppLink>
               </p>
@@ -321,7 +321,7 @@ export default function DocsPage() {
                   page per degraded state, reached from the alert. A product that
                   publishes its checks can publish its runbook. */}
               <p className={DOC_LINK_P}>
-                <AppLink href="/docs/runbook" className="tap underline underline-offset-4">
+                <AppLink href="/docs/runbook" className="tap text-link underline underline-offset-4">
                   What we do when something is stale, and what you would see →
                 </AppLink>
               </p>
@@ -403,15 +403,15 @@ export default function DocsPage() {
                 There is{" "}
                 <span className="font-medium text-foreground">no email signup, and no address</span>{" "}
                 stored anywhere on this side. The digest is a page at{" "}
-                <AppLink className="underline underline-offset-4" href="/digest">
+                <AppLink className="text-link underline underline-offset-4" href="/digest">
                   /digest
                 </AppLink>{" "}
                 with an{" "}
-                <a className="underline underline-offset-4" href="/digest/feed.xml">
+                <a className="text-link underline underline-offset-4" href="/digest/feed.xml">
                   RSS
                 </a>{" "}
                 and a{" "}
-                <a className="underline underline-offset-4" href="/digest/feed.json">
+                <a className="text-link underline underline-offset-4" href="/digest/feed.json">
                   JSON
                 </a>{" "}
                 feed, and every week keeps its address forever.

@@ -15,7 +15,17 @@ import {
 import { readSession } from "../../auth/session-server";
 import { fetchPublicDirectory } from "../../public-api";
 import { SignInCard } from "../../signin/sign-in-card";
-import { BTN_PRIMARY, FIELD, LABEL, PAGE_TITLE, TEXTAREA } from "../../ui/design";
+import {
+  BTN_PRIMARY,
+  CHIP_BTN,
+  FIELD,
+  FOCUS,
+  LABEL,
+  LINK_QUIET,
+  NOTICE_ERROR,
+  PAGE_TITLE,
+  TEXTAREA,
+} from "../../ui/design";
 import { AppLink } from "../../ui/link";
 
 /**
@@ -72,7 +82,7 @@ export default async function NewThreadPage(props: {
         // THE DOOR. The same panel the header's modal opens, in the page,
         // with a return into this composer — not a wall, and not a 401.
         <section aria-label="Sign in" className="mt-6">
-          <p className="m-0 mb-3 text-[14px] text-muted-foreground">{THREAD_COMPOSER_SIGNED_OUT}</p>
+          <p className="m-0 mb-3 text-[15px] text-muted-foreground">{THREAD_COMPOSER_SIGNED_OUT}</p>
           <SignInCard returnTo={returnTo} />
         </section>
       ) : null}
@@ -80,7 +90,7 @@ export default async function NewThreadPage(props: {
       {params.error ? (
         <p
           role="alert"
-          className="m-0 mt-5 rounded-[14px] border border-warning-line bg-warning-soft px-3.5 py-2.5 text-[13.5px] text-warning-strong"
+          className={`m-0 mt-5 ${NOTICE_ERROR}`}
         >
           {params.error === "invalid"
             ? "Every field is needed: the product, a category, a title and what you want to say."
@@ -120,13 +130,13 @@ export default async function NewThreadPage(props: {
 
         <fieldset className="m-0 border-0 p-0">
           <legend className={LABEL}>Category</legend>
-          {/* The forum's own category chips, as a picker: 32px, 8px radius,
-              a hairline, filled with the foreground when chosen. */}
+          {/* The category chips, as a picker (OPR1): the shared 32px pill,
+              44px on a phone, filled with ink when chosen. */}
           <div className="flex flex-wrap gap-1.5">
             {THREAD_TAGS.map((t) => (
               <label
                 key={t}
-                className="inline-flex h-[36px] cursor-pointer items-center rounded-full border border-border px-4 text-[14px] text-copy transition-colors hover:text-foreground has-[:checked]:border-foreground has-[:checked]:bg-foreground has-[:checked]:text-background max-sm:min-h-[44px]"
+                className={`${CHIP_BTN} cursor-pointer bg-card text-muted-foreground hover:text-foreground has-[:checked]:bg-primary has-[:checked]:text-primary-foreground has-[:focus-visible]:outline has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-ring max-sm:min-h-[44px]`}
               >
                 <input
                   type="radio"
@@ -176,15 +186,15 @@ export default async function NewThreadPage(props: {
           {/* The one act on the page, in ink (CP-R1); the way out beside it. */}
           <button
             type="submit"
-            className={`${BTN_PRIMARY} focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring`}
+            className={`${BTN_PRIMARY} ${FOCUS} max-sm:h-[44px]`}
           >
             Post thread
           </button>
-          <AppLink href="/threads" className="tap-h inline-flex items-center text-[13px] text-muted-foreground underline underline-offset-4 hover:text-foreground">
+          <AppLink href="/threads" className={`tap-h inline-flex items-center text-[13px] text-muted-foreground ${LINK_QUIET}`}>
             Cancel
           </AppLink>
         </div>
-        <p className="m-0 text-[12.5px] leading-[1.6] text-muted-foreground">Public, with your name on it.</p>
+        <p className="m-0 text-[13px] leading-[1.6] text-muted-foreground">Public, with your name on it.</p>
       </form>
     </main>
   );

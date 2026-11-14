@@ -68,6 +68,10 @@ export function planProfileSave(input: ProfileFormInput): ProfileSavePlan {
   };
 }
 
+/** Where the profile form lives, and so where every outcome returns: the
+ *  settings page, since openproduct-redesign OPR1 moved the form off `/me`. */
+export const SETTINGS_PATH = "/me/settings";
+
 /**
  * Where a write's outcome sends the person, or null to carry on. The three
  * non-success kinds land in three different places: a dead token at sign-in,
@@ -79,15 +83,15 @@ export function redirectFor(result: MeWriteResult<unknown>): string | null {
     case "ok":
       return null;
     case "unauthorized":
-      return "/signin?return_to=%2Fme";
+      return "/signin?return_to=%2Fme%2Fsettings";
     case "refused": {
       const [field, messages] = Object.entries(result.fields)[0] ?? [];
       const message = messages?.[0] ?? result.message;
       const params = new URLSearchParams({ error: "refused", message });
       if (field) params.set("field", field);
-      return `/me?${params.toString()}`;
+      return `${SETTINGS_PATH}?${params.toString()}`;
     }
     case "unavailable":
-      return "/me?error=save_failed";
+      return `${SETTINGS_PATH}?error=save_failed`;
   }
 }

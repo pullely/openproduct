@@ -28,7 +28,7 @@ export function consoleWorkspaceViewUrl(consoleOrigin: string, workspaceRef: str
 }
 
 /** The anchor's label on the listing. */
-export const WORKSPACE_VIEW_LABEL = "View workspace on Orunbase";
+export const WORKSPACE_VIEW_LABEL = "Open on Orunbase";
 
 /** The consent page's one sentence of why there is a second sign-in. */
 export const WORKSPACE_VIEW_CONSENT =

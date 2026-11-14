@@ -26,8 +26,8 @@ import { MaintainerRows, PeopleCard } from "../sections";
 export const dynamic = "force-dynamic";
 
 /** The design's row select: 32px, 13.5px, at its own width. */
-const ROW_SELECT = `${FIELD.replace(" w-full", "").replace("h-[38px]", "h-[32px]")} w-[120px] text-[13.5px]`;
-const ROW_INPUT = `${FIELD.replace("h-[38px]", "h-[32px]")} text-[13.5px]`;
+const ROW_SELECT = `${FIELD.replace(" w-full", "").replace("h-[38px]", "h-[32px]")} w-[120px] text-[13px]`;
+const ROW_INPUT = `${FIELD.replace("h-[38px]", "h-[32px]")} text-[13px]`;
 
 export default async function ListingPeoplePage(props: {
   params: Promise<{ org: string; profile: string }>;
@@ -79,7 +79,7 @@ export default async function ListingPeoplePage(props: {
                     placeholder="@handle | maintainer"
                     className={`${TEXTAREA} font-mono text-[13px]`}
                   />
-                  <p className="m-0 mt-1.5 text-[12.5px] leading-[1.5] text-muted-foreground">
+                  <p className="m-0 mt-1.5 text-[13px] leading-[1.5] text-muted-foreground">
                     <span className="font-mono">@handle | label</span> — the label is yours to write. The handle
                     is the name on their contributor page.
                   </p>

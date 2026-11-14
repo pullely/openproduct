@@ -67,7 +67,7 @@ export default async function ListingTopicsPage(props: {
                 placeholder="typescript, cloudflare"
                 className={FIELD}
               />
-              <p className="m-0 mt-1.5 text-[12.5px] leading-[1.5] text-muted-foreground">
+              <p className="m-0 mt-1.5 text-[13px] leading-[1.5] text-muted-foreground">
                 Comma-separated, at most 12.{" "}
                 <span title={PROVENANCE_NOTE[stack.provenance]}>{PROVENANCE_LABEL[stack.provenance]}.</span>
                 {stack.provenance === "authored" && stack.observed !== null && stack.observed !== stack.value ? (
@@ -81,7 +81,7 @@ export default async function ListingTopicsPage(props: {
                   Nothing is blocked: an unrecognised entry stays on the page in
                   their own words, and simply is not counted. */}
               {profile.stack.length > 0 ? (
-                <p className="m-0 mt-1.5 text-[12.5px] leading-[1.5] text-muted-foreground">
+                <p className="m-0 mt-1.5 text-[13px] leading-[1.5] text-muted-foreground">
                   Counted as{" "}
                   {profile.stackCanonical.length > 0 ? (
                     <span className="font-mono text-foreground">

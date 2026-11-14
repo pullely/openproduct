@@ -114,7 +114,7 @@ export default async function ListingMediaPage(props: {
                       required
                       accept="image/png,image/jpeg,image/webp"
                       aria-describedby="file-note"
-                      className="block w-full pt-1.5 text-[13.5px]"
+                      className="block w-full pt-1.5 text-[13px]"
                     />
                   </div>
                 </div>
@@ -132,7 +132,7 @@ export default async function ListingMediaPage(props: {
                     aria-describedby="file-note"
                     className={FIELD}
                   />
-                  <p id="file-note" className="m-0 mt-1.5 text-[12.5px] leading-[1.5] text-muted-foreground">
+                  <p id="file-note" className="m-0 mt-1.5 text-[13px] leading-[1.5] text-muted-foreground">
                     One sentence describing the picture. PNG, JPEG or WebP, up to{" "}
                     {Math.round(MEDIA_MAX_BYTES / 1024 / 1024)} MB. A logo is square and at least {LOGO_MIN_SIDE}×
                     {LOGO_MIN_SIDE}; a hero or gallery image is at least {MEDIA_MIN_WIDTH}×{MEDIA_MIN_HEIGHT} pixels.

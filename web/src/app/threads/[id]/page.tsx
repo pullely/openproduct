@@ -18,7 +18,7 @@ import {
 
 import { PersonName } from "../../ui/bits";
 import { CommentVote } from "../../ui/comment-vote";
-import { BTN_PRIMARY, CRUMBS, PAGE_TITLE, TEXTAREA } from "../../ui/design";
+import { BTN_PRIMARY, CRUMBS, EYEBROW, FOCUS, LINK_QUIET, PAGE_TITLE, PANEL, TEXTAREA } from "../../ui/design";
 import { MaintainerBadge } from "../../ui/maintainer-badge";
 
 import { ConversationLive } from "../../ui/conversation-live";
@@ -27,6 +27,7 @@ import { PostBody } from "../../ui/post-body";
 import { ReportControl } from "../../ui/report-control";
 import { ShareControl } from "../../[slug]/share-control";
 import { initialsOf } from "../../feed/tile";
+import { THREAD_TAG_PILL } from "../thread-tile";
 import { AppLink } from "../../ui/link";
 import { ROW_ATTRIBUTE } from "../../ui/keys";
 import { absoluteOf, agoOf } from "../../ui/time";
@@ -124,7 +125,7 @@ function Post({
         {initialsOf(post.authorName ?? post.authorHandle ?? "Somebody")}
       </span>
       <div className="min-w-0 flex-1">
-      <div className="mb-1 flex flex-wrap items-baseline gap-x-2 gap-y-1 text-[12.5px] text-muted-foreground">
+      <div className="mb-1 flex flex-wrap items-baseline gap-x-2 gap-y-1 text-[13px] text-muted-foreground">
         {/* FO3 — THE PERMALINK, first in the row: a stable address for the
             post, which is what makes a quote checkable and a notification's
             link land on the words it names.
@@ -153,7 +154,7 @@ function Post({
         {parent ? (
           <span>
             replying to{" "}
-            <AppLink href={postPermalink(threadId, parent.id)} className="underline underline-offset-[3px] hover:text-foreground">
+            <AppLink href={postPermalink(threadId, parent.id)} className={LINK_QUIET}>
               {parent.authorName ?? parent.authorHandle ?? "somebody"}
             </AppLink>
           </span>
@@ -167,7 +168,7 @@ function Post({
             component for it. */}
         {post.authorIsMaintainer ? <MaintainerBadge /> : null}
         {post.isAnswer ? (
-          <span className="font-mono text-[12px] uppercase tracking-[0.06em]">the answer</span>
+          <span className={EYEBROW}>the answer</span>
         ) : null}
       </div>
       {/* A removed post keeps its place and says so — the reply is still in
@@ -195,7 +196,7 @@ function Post({
               shape. */}
           {open ? (
             <details className="min-w-0 flex-1">
-              <summary className="cursor-pointer list-none text-[12.5px] text-muted-foreground hover:text-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring">
+              <summary className={`tap cursor-pointer list-none text-[13px] text-muted-foreground hover:text-foreground [&::-webkit-details-marker]:hidden ${FOCUS}`}>
                 Reply to this
               </summary>
               <form
@@ -212,7 +213,7 @@ function Post({
                 <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-2">
                   <button
                     type="submit"
-                    className={`${BTN_PRIMARY} focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring`}
+                    className={`${BTN_PRIMARY} ${FOCUS} max-sm:h-[44px]`}
                   >
                     Reply
                   </button>
@@ -220,7 +221,7 @@ function Post({
                       elsewhere on the page. This composer is a second one, so
                       it carries the rule too; a reader who opened this one
                       never saw the box at the bottom. */}
-                  <span className="text-[12.5px] text-muted-foreground">{POSTING_NOTICE}</span>
+                  <span className="text-[13px] text-muted-foreground">{POSTING_NOTICE}</span>
                 </div>
               </form>
             </details>
@@ -270,11 +271,11 @@ export default async function ThreadPage({ params }: PageProps) {
       </nav>
 
       <div className="mt-[18px] flex flex-wrap items-center gap-2.5">
-        <span className="inline-flex h-[26px] items-center rounded-full border border-border px-3 text-[13px] text-muted-foreground">
+        <span className={THREAD_TAG_PILL}>
           {THREAD_TAG_LABELS[thread.tag]}
         </span>
         {thread.state === "answered" ? (
-          <span className="font-mono text-[13px] text-muted-foreground">answered</span>
+          <span className={EYEBROW}>answered</span>
         ) : null}
       </div>
 
@@ -290,7 +291,7 @@ export default async function ThreadPage({ params }: PageProps) {
         >
           {initialsOf(author)}
         </span>
-        <span className="text-[13.5px] text-muted-foreground">
+        <span className="text-[13px] text-muted-foreground">
           <PersonName name={author} handle={thread.authorHandle} className="font-medium text-foreground" />
           {" · "}
           <span title={absoluteOf(thread.createdAt)}>started {agoOf(thread.createdAt, Date.now())}</span>
@@ -305,7 +306,7 @@ export default async function ThreadPage({ params }: PageProps) {
       ) : null}
 
       {thread.state === "removed" ? (
-        <p className="m-0 mt-6 max-w-[68ch] rounded-[20px] border border-border bg-card px-6 py-5 text-[14.5px] leading-[1.6] text-muted-foreground">
+        <p className={`m-0 mt-6 max-w-[68ch] text-[15px] leading-[1.6] text-muted-foreground ${PANEL}`}>
           {THREAD_REMOVED_NOTE}
         </p>
       ) : (
@@ -321,15 +322,14 @@ export default async function ThreadPage({ params }: PageProps) {
             renderedIds={posts.map((post) => post.id)}
             variant="post"
           >
-          {/* THE CARD: the composer first, the posts as rows beneath it —
-              `20px 24px` inside a 12px card, 860px at most. */}
-          <div className="mt-10 max-w-[860px] rounded-[20px] border border-border bg-card px-8 py-7 max-sm:px-5 max-sm:py-5">
+          {/* THE CARD (OPR1): the composer first, the posts as rows beneath
+              it — the shared flat `PANEL`, 860px at most. */}
+          <div className={`mt-10 max-w-[860px] max-sm:p-4 ${PANEL}`}>
           {open ? (
             <form
               method="post"
               action={`/threads/${thread.id}/reply`}
               data-live="post"
-              className="rounded-[14px] border border-border-strong bg-card px-4 py-3.5"
             >
               <label className="block">
                 <span className="sr-only">Reply</span>
@@ -338,19 +338,19 @@ export default async function ThreadPage({ params }: PageProps) {
                   required
                   rows={3}
                   maxLength={MAX_POST_BODY}
-                  className={`${TEXTAREA} resize-y border-0 bg-transparent px-0 py-0 focus:ring-0`}
+                  className={`${TEXTAREA} resize-y`}
                 />
               </label>
-              <div className="mt-2.5 flex flex-wrap items-center justify-between gap-3 border-t border-line pt-2.5">
+              <div className="mt-2.5 flex flex-wrap items-center justify-between gap-3">
                 {/* CB-2 — the standing notice, beside the field it governs.
                     d8b10168 cut it with the site's explainers, but it is not
                     one: it is the rule a person agrees to by pressing the
                     button, and the one line on this page that says their
                     words will be public and signed before they are. */}
-                <span className="text-[12.5px] text-muted-foreground">{POSTING_NOTICE}</span>
+                <span className="text-[13px] text-muted-foreground">{POSTING_NOTICE}</span>
                 <button
                   type="submit"
-                  className={`${BTN_PRIMARY} focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring`}
+                  className={`${BTN_PRIMARY} ${FOCUS} max-sm:h-[44px]`}
                 >
                   Reply
                 </button>
@@ -359,7 +359,7 @@ export default async function ThreadPage({ params }: PageProps) {
           ) : (
             // Locking ends a conversation; it does not retract it. The page
             // has to be clear which of those happened.
-            <p className="m-0 text-[13.5px] text-muted-foreground">{THREAD_LOCKED_NOTE}</p>
+            <p className="m-0 text-[13px] text-muted-foreground">{THREAD_LOCKED_NOTE}</p>
           )}
 
           <ol className="m-0 mt-2 list-none p-0">

@@ -70,8 +70,9 @@ describe("WC2-8's three numbers", () => {
     expect(wire).toContain('path: "/"');
     expect(wire).toContain("path: `/${SAMPLE_SLUG}`");
     // The audit's third archetype, the leaderboard, is the Upvoted order
-    // since OB7 (#1875); /leaderboard answers 308 to it.
-    expect(wire).toContain('path: "/builds/upvoted"');
+    // since OB7 (#1875) — and since openproduct-redesign OPR1 that order is
+    // the Products page's `?sort=upvoted`.
+    expect(wire).toContain('path: "/products?sort=upvoted"');
   });
 
   it("counts compressed bytes, and keeps counting after load so a prefetch is seen", () => {

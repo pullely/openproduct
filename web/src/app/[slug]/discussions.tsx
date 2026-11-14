@@ -55,22 +55,22 @@ function ThreadCard({ thread }: { thread: PublicThread }) {
   return (
     <li className="border-t border-line py-3 first:border-t-0">
       <div className="flex flex-wrap items-center gap-2.5">
-        <span className="inline-flex h-[22px] items-center rounded-[6px] bg-secondary px-2 font-mono text-[11.5px] text-copy">
+        <span className="inline-flex h-[22px] items-center rounded-full bg-secondary px-2 font-mono text-[11px] text-copy">
           {THREAD_TAG_LABELS[thread.tag]}
         </span>
         <Link
           href={`/threads/${thread.id}`}
-          className="tap-h text-[14.5px] font-semibold text-foreground no-underline hover:underline hover:underline-offset-[3px]"
+          className="tap-h text-[15px] font-semibold text-foreground no-underline hover:underline hover:underline-offset-[3px]"
         >
           {thread.title}
         </Link>
         {thread.state === "answered" ? (
-          <span className="font-mono text-[12px] uppercase tracking-[0.05em] text-muted-foreground">
+          <span className="font-mono text-[13px] uppercase tracking-[0.05em] text-muted-foreground">
             answered
           </span>
         ) : null}
         {thread.state === "locked" ? (
-          <span className="font-mono text-[12px] uppercase tracking-[0.05em] text-muted-foreground">
+          <span className="font-mono text-[13px] uppercase tracking-[0.05em] text-muted-foreground">
             locked
           </span>
         ) : null}

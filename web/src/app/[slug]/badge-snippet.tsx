@@ -62,19 +62,19 @@ export function BadgeSnippet({ choices }: { choices: readonly BadgeChoice[] }) {
               }}
               aria-pressed={choice.id === option.id}
               title={option.value}
-              className={`tap inline-flex h-[28px] items-center gap-1.5 rounded-[6px] border px-2 text-[12.5px] transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-ring ${
+              className={`tap inline-flex h-[28px] items-center gap-1.5 rounded-full border px-2 text-[13px] transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-ring ${
                 choice.id === option.id
                   ? "border-border-strong bg-card text-foreground"
                   : "border-transparent text-muted-foreground hover:text-foreground"
               }`}
             >
               <span className="font-medium">{option.label}</span>
-              <span className="font-mono text-[11.5px] text-muted-foreground">{option.value}</span>
+              <span className="font-mono text-[11px] text-muted-foreground">{option.value}</span>
             </button>
           ))}
         </div>
       ) : null}
-      <div role="group" aria-label="Snippet format" className="mb-2 inline-flex gap-0.5 rounded-[8px] bg-surface-2 p-0.5">
+      <div role="group" aria-label="Snippet format" className="mb-2 inline-flex gap-0.5 rounded-[14px] bg-surface-2 p-0.5">
         {(["markdown", "html"] as const).map((option) => (
           <button
             key={option}
@@ -84,9 +84,9 @@ export function BadgeSnippet({ choices }: { choices: readonly BadgeChoice[] }) {
               setCopied(false);
             }}
             aria-pressed={form === option}
-            className={`tap h-[26px] rounded-[6px] px-2.5 text-[12.5px] font-medium capitalize transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-ring ${
+            className={`tap h-[26px] rounded-full px-2.5 text-[13px] font-medium capitalize transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-ring ${
               form === option
-                ? "bg-card text-foreground shadow-[0_1px_2px_rgba(0,0,0,0.06)]"
+                ? "bg-card text-foreground"
                 : "text-muted-foreground hover:text-foreground"
             }`}
           >
@@ -107,7 +107,7 @@ export function BadgeSnippet({ choices }: { choices: readonly BadgeChoice[] }) {
           role="region"
           aria-label="The badge snippet"
           tabIndex={0}
-          className="block select-all overflow-x-auto rounded-[8px] border border-border bg-surface-2 px-3 py-2 font-mono text-[12px] leading-[1.6] text-copy focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+          className="block select-all overflow-x-auto rounded-[14px] bg-well px-3 py-2 font-mono text-[13px] leading-[1.6] text-copy focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
         >
           {value}
         </code>

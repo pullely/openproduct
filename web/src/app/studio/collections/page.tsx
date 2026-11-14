@@ -9,7 +9,7 @@ import {
 import { readSession } from "../../auth/session-server";
 import { BTN_OUTLINE, BTN_PRIMARY, FIELD, LABEL, TEXTAREA } from "../../ui/design";
 import { FailurePanel } from "../../ui/failure";
-import { StudioFrame, StudioPanel, StudioSection } from "../frame";
+import { STUDIO_RECORD, StudioFrame, StudioPanel, StudioSection } from "../frame";
 import { noticeFrom, COLLECTION_VOCABULARY } from "../notices";
 import { fetchMyCollections } from "../studio-api";
 
@@ -148,15 +148,15 @@ function CollectionRow({
   action: string;
 }) {
   return (
-    <div className="mb-3 max-w-[74ch] rounded-[12px] border border-border bg-card px-4 py-3.5 last:mb-0">
+    <div className={STUDIO_RECORD}>
       <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
-        <span className="text-[15.5px] font-semibold text-foreground">{collection.title}</span>
-        <span className="font-mono text-[12.5px] text-muted-foreground">
+        <span className="text-[15px] font-semibold text-foreground">{collection.title}</span>
+        <span className="font-mono text-[13px] text-muted-foreground">
           /collections/{collection.slug}
         </span>
       </div>
 
-      <p className="m-0 mt-2 text-[12.5px] text-muted-foreground">
+      <p className="m-0 mt-2 text-[13px] text-muted-foreground">
         {collection.state === "published" ? "Published" : collection.state === "retired" ? "Retired" : "Draft"}
         {" · "}
         {collectionSummary(collection.visible)}

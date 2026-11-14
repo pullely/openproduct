@@ -325,7 +325,7 @@ export default async function ChecksPage() {
 
         <p className="m-0 max-w-[68ch] text-[15.5px] leading-[1.7] text-copy">
           If something here happened to a listing you maintain and you think it was wrong,{" "}
-          <AppLink href="/docs" className="tap underline underline-offset-4">
+          <AppLink href="/docs" className="tap text-link underline underline-offset-4">
             every act is appealable
           </AppLink>{" "}
           — including the automatic ones, which is why each of them leaves a record with a reason

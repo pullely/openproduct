@@ -289,10 +289,13 @@ describe("byte-identical anonymous pages", () => {
       // `list/directory.tsx` left the set with the directory itself: `/` is
       // the launches, and the feed's own modules are held below.
       "page.tsx",
-      "feed/builds.tsx",
+      "feed/products-view.tsx",
       "feed/feed-row.tsx",
-      "feed/build-tile.tsx",
-      "feed/more-builds.tsx",
+      "feed/product-card.tsx",
+      "feed/product-list.tsx",
+      "products/page.tsx",
+      "help-wanted/page.tsx",
+      "help-wanted/seat-card.tsx",
       "people/(index)/page.tsx",
       "people/[handle]/page.tsx",
       "ui/bits.tsx",

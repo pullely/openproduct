@@ -29,7 +29,7 @@ import {
 } from "@openproduct/contracts";
 
 import { GALLERY_SIZES, imageSourceOf } from "../../../[slug]/media";
-import { BTN_SMALL } from "../../../ui/design";
+import { BTN_SMALL, INSET, NOTICE, NOTICE_WARN } from "../../../ui/design";
 import { AppLink } from "../../../ui/link";
 import { LogoTile } from "../../../ui/logo-tile";
 import { CARD_RULE, CardSubhead, DashedAdd, Pencil, SectionCard, type StepHrefs } from "./editor";
@@ -62,8 +62,8 @@ export function AboutCard({
           <div className={CARD_RULE}>
             <CardSubhead>Install</CardSubhead>
             {profile.installLine ? (
-              <div className="mt-2 flex items-center justify-between gap-3 rounded-[8px] border border-border bg-surface-2 px-3 py-[9px]">
-                <code className="min-w-0 overflow-x-auto font-mono text-[13.5px] leading-[1.6] text-foreground">
+              <div className={`mt-2 flex items-center justify-between gap-3 px-3 py-[9px] ${INSET}`}>
+                <code className="min-w-0 overflow-x-auto font-mono text-[13px] leading-[1.6] text-foreground">
                   {profile.installLine}
                 </code>
               </div>
@@ -124,8 +124,8 @@ export function MediaRows({
             <div
               className={
                 kind === "logo"
-                  ? "grid aspect-square w-[120px] place-items-center overflow-hidden rounded-[14px] border border-border bg-card"
-                  : "overflow-hidden rounded-[8px] bg-muted"
+                  ? `grid aspect-square w-[120px] place-items-center overflow-hidden ${INSET}`
+                  : `overflow-hidden ${INSET}`
               }
             >
               <img
@@ -141,7 +141,7 @@ export function MediaRows({
               />
             </div>
             <div className="mt-2 flex items-start justify-between gap-2">
-              <p className="m-0 min-w-0 text-[12.5px] leading-[1.5] text-muted-foreground">
+              <p className="m-0 min-w-0 text-[13px] leading-[1.5] text-muted-foreground">
                 <span className="font-medium text-foreground">{label}</span> · {row.value.alt}
               </p>
               {/* A removal changes the page, so it keeps the `303` (OPP15). */}
@@ -194,7 +194,7 @@ export function MediaCard({
   return (
     <SectionCard id="media" title="Media" meta={mediaCount(media)}>
       {unreadable ? (
-        <p className="m-0 mt-3 rounded-[8px] bg-warning-soft px-3 py-2 text-[13px] text-warning-strong">
+        <p className={`m-0 mt-3 ${NOTICE_WARN}`}>
           Your images could not be read just now. You can still add one.
         </p>
       ) : null}
@@ -204,7 +204,7 @@ export function MediaCard({
           the words the media step's own island uses. On that step the island
           draws its own line, so the card stays quiet there. */}
       {media.length === 0 && !editing ? (
-        <p className="m-0 mt-2 text-[13.5px] text-muted-foreground">
+        <p className="m-0 mt-2 text-[13px] text-muted-foreground">
           No images yet — add a logo, a hero and up to {GALLERY_MAX} more.
         </p>
       ) : null}
@@ -215,7 +215,7 @@ export function MediaCard({
         {...(from ? { from } : {})}
         add={
           editing ? null : galleryFull && hero ? (
-            <span className="flex h-full min-h-[150px] flex-col items-center justify-center rounded-[8px] border border-dashed border-border px-3.5 py-3 text-center text-[14px] text-faint">
+            <span className={`flex h-full min-h-[150px] flex-col items-center justify-center px-3.5 py-3 text-center text-[15px] text-faint ${INSET}`}>
               {addLabel}
             </span>
           ) : (
@@ -237,7 +237,7 @@ export function MaintainerRows({ maintainers }: { maintainers: MaintainerProfile
   if (maintainers.length === 0) {
     // OSD7 — an empty state says what to do: people are named by handle.
     return (
-      <p className="m-0 mt-2 text-[13.5px] text-muted-foreground">
+      <p className="m-0 mt-2 text-[13px] text-muted-foreground">
         Nobody on the roster yet — name people by their @handle.
       </p>
     );
@@ -254,12 +254,12 @@ export function MaintainerRows({ maintainers }: { maintainers: MaintainerProfile
               {m.handle ? (
                 <AppLink
                   href={`/@${m.handle}`}
-                  className="text-[14.5px] font-medium text-foreground no-underline hover:text-copy"
+                  className="text-[15px] font-medium text-foreground no-underline hover:text-copy"
                 >
                   {name}
                 </AppLink>
               ) : (
-                <span className="text-[14.5px] font-medium text-foreground">{name}</span>
+                <span className="text-[15px] font-medium text-foreground">{name}</span>
               )}
               {line ? <p className="m-0 mt-[1px] text-[13px] text-muted-foreground">{line}</p> : null}
             </div>
@@ -282,15 +282,15 @@ export function OpeningRow({
   return (
     <li className="flex flex-wrap items-center gap-x-3 gap-y-2 border-t border-line py-2.5">
       <div className="min-w-[180px] flex-1">
-        <span className="text-[14.5px] font-medium text-foreground">{opening.title}</span>
+        <span className="text-[15px] font-medium text-foreground">{opening.title}</span>
         {opening.commitment ? (
           <span className="ml-2 text-[13px] text-muted-foreground">{opening.commitment}</span>
         ) : null}
       </div>
       {children ?? (
         <span
-          className={`inline-flex h-[24px] items-center rounded-full px-[9px] text-[12.5px] font-medium ${
-            opening.status === "open" ? "bg-success-soft text-success" : "bg-muted text-muted-foreground"
+          className={`inline-flex h-[24px] items-center rounded-full px-[9px] text-[13px] font-medium ${
+            opening.status === "open" ? "bg-seat-soft text-seat-ink" : "bg-muted text-muted-foreground"
           }`}
         >
           {opening.status}
@@ -388,12 +388,12 @@ export function LaunchRow({ launch, children }: { launch: StudioLaunch; children
   );
 }
 
-/** The scheduled launch, set apart on `--secondary`: the one row a maintainer can still move. */
+/** The scheduled launch, set apart on the sunken inset: the one row a maintainer can still move. */
 export function ScheduledBox({ launch, children }: { launch: StudioLaunch; children?: ReactNode }) {
   return (
-    <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 rounded-[12px] bg-secondary px-3.5 py-3">
-      <span className="font-mono text-[13.5px] font-medium text-foreground">{launch.versionLabel}</span>
-      <span className="flex-1 text-[13.5px] text-copy">Scheduled for {moment(launch.scheduledFor)}</span>
+    <div className={`mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 px-3.5 py-3 ${INSET}`}>
+      <span className="font-mono text-[13px] font-medium text-foreground">{launch.versionLabel}</span>
+      <span className="flex-1 text-[13px] text-copy">Scheduled for {moment(launch.scheduledFor)}</span>
       {children}
     </div>
   );
@@ -423,11 +423,11 @@ export function LaunchesCard({
       {editing ?? (
         <>
           {!published ? (
-            <p className="m-0 mt-2 rounded-[8px] bg-muted px-3 py-2 text-[13px] leading-[1.55] text-muted-foreground">
+            <p className={`m-0 mt-2 ${NOTICE}`}>
               {LAUNCH_REFUSALS["not-published"].says}
             </p>
           ) : read === null ? (
-            <p className="m-0 mt-2 text-[13.5px] text-muted-foreground">The launches could not be read just now.</p>
+            <p className="m-0 mt-2 text-[13px] text-muted-foreground">The launches could not be read just now.</p>
           ) : scheduled ? (
             <ScheduledBox launch={scheduled}>
               <AppLink prefetch="auto" href={hrefs.launches} className={`tap ${BTN_SMALL} no-underline`}>
@@ -462,7 +462,7 @@ export function ThreadRow({ thread, action }: { thread: PublicThread; action: st
       <div className="min-w-[200px] flex-1">
         <AppLink
           href={`/threads/${thread.id}`}
-          className="text-[14.5px] font-medium text-foreground no-underline hover:text-copy"
+          className="text-[15px] font-medium text-foreground no-underline hover:text-copy"
         >
           {thread.title}
         </AppLink>
@@ -510,11 +510,11 @@ export function DiscussionsCard({
       }
     >
       {threads === null ? (
-        <p className="m-0 mt-2 text-[13.5px] text-muted-foreground">The discussions could not be read just now.</p>
+        <p className="m-0 mt-2 text-[13px] text-muted-foreground">The discussions could not be read just now.</p>
       ) : threads.length === 0 ? (
         // OSD7 — "Nothing yet." left a maker wondering whether they were
         // meant to start one; they are not, and the line says so.
-        <p className="m-0 mt-2 text-[13.5px] text-muted-foreground">
+        <p className="m-0 mt-2 text-[13px] text-muted-foreground">
           No threads yet — they start when people ask on the listing's public page.
         </p>
       ) : (

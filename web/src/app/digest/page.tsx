@@ -8,7 +8,7 @@ import {
 } from "@openproduct/contracts";
 
 import { fetchDigestWeeks, publicApexOrigin } from "../public-api";
-import { H2_SECTION, PAGE_TITLE } from "../ui/design";
+import { BTN_QUIET, EYEBROW, H2_SECTION, PAGE_TITLE, TILE_LINK } from "../ui/design";
 import { JsonLd } from "../ui/json-ld";
 import { LIST_CARDS, listOpenGraph } from "../ui/og";
 import { DigestControl } from "../ui/digest-control";
@@ -41,14 +41,12 @@ export const metadata: Metadata = {
 const DIGEST_PAGE =
   "mx-auto box-border w-full max-w-[1000px] px-[44px] pb-[104px] pt-[80px] max-lg:px-7 max-sm:px-4 max-sm:pb-[72px] max-sm:pt-12";
 
-/** A feed button: a 34px pill, on `--input`. */
-const FEED_BTN =
-  "inline-flex h-[34px] items-center rounded-full border border-input bg-card px-3 text-[14px] font-medium text-foreground no-underline transition-colors hover:border-faint";
+/** A feed button (OPR1): the shared quiet pill, 40px. */
+const FEED_BTN = `${BTN_QUIET} no-underline`;
 
-/** A week is a tile (CP-R6): the tile's 20px radius and room, the border
- *  darkening on hover. */
-const WEEK_CARD =
-  "block rounded-[20px] border border-border bg-card px-8 py-6 no-underline transition-colors hover:border-border-strong max-sm:px-5 max-sm:py-5";
+/** A week is a tile (OPR1): the shared flat tile that is a link — no border,
+ *  `--accent` under the pointer. */
+const WEEK_CARD = `block px-6 py-5 no-underline ${TILE_LINK}`;
 
 export default async function DigestIndexPage() {
   const weeks = await fetchDigestWeeks();
@@ -79,7 +77,7 @@ export default async function DigestIndexPage() {
         <a href="/digest/feed.json" className={`tap-h ${FEED_BTN}`}>
           JSON Feed
         </a>
-        <span className="text-[13.5px] text-muted-foreground">No account, no address.</span>
+        <span className="text-[13px] text-muted-foreground">No account, no address.</span>
       </div>
 
       {/* LC5 — the email option, AFTER the feeds and saying so. The feed
@@ -108,10 +106,10 @@ export default async function DigestIndexPage() {
               return (
                 <li key={id}>
                   <AppLink href={`/digest/${id}`} className={WEEK_CARD}>
-                    <span className="font-mono text-[12px] uppercase tracking-[0.08em] text-muted-foreground">
+                    <span className={EYEBROW}>
                       {id}
                     </span>
-                    <span className="mt-1.5 block font-sans text-[20px] font-semibold leading-[1.25] tracking-[-0.015em] text-foreground">
+                    <span className="mt-1.5 block font-sans text-card-title font-semibold tracking-[-0.01em] text-foreground">
                       {parsed.ok ? `Week ${parsed.week.week} · ${weekDates(parsed.week)}` : id}
                     </span>
                   </AppLink>

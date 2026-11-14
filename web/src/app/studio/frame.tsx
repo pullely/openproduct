@@ -58,7 +58,7 @@ import { AppLink } from "../ui/link";
 
 import type { ReactNode } from "react";
 
-import { H2, PAGE_TITLE, TAB, TAB_OFF, TAB_ON } from "../ui/design";
+import { CHIP_BTN, CHIP_OFF, CHIP_ON, FOCUS, H2, INSET, PAGE_TITLE, PANEL, TILE } from "../ui/design";
 import { hueFor } from "../feed/tile";
 import { StudioLive } from "./live-save";
 import type { StudioNotice, StudioVocabulary } from "./notices";
@@ -214,7 +214,7 @@ export function StudioFrame({
 
           <div className="mt-4 flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1.5">
             <h1 className={PAGE_TITLE}>{title}</h1>
-            {status ? <div className="text-[13.5px] text-muted-foreground">{status}</div> : null}
+            {status ? <div className="text-[13px] text-muted-foreground">{status}</div> : null}
           </div>
           {lede ? (
             <p className="m-0 mt-2.5 max-w-[68ch] text-[15px] leading-[1.55] text-copy">{lede}</p>
@@ -234,7 +234,7 @@ export function StudioFrame({
 
 function StudioCrumbs({ crumbs }: { crumbs: readonly StudioCrumb[] }) {
   return (
-    <nav aria-label="Breadcrumb" className="flex flex-wrap items-center gap-2 text-[13.5px]">
+    <nav aria-label="Breadcrumb" className="flex flex-wrap items-center gap-2 text-[13px]">
       <AppLink prefetch="auto" href="/studio" className="text-muted-foreground no-underline hover:text-foreground">
         Studio
       </AppLink>
@@ -273,7 +273,7 @@ function StudioSectionNav({ crumbs }: { crumbs: readonly StudioCrumb[] }) {
   const last = crumbs[crumbs.length - 1]?.label;
   const current = STUDIO_SECTIONS.find((section) => section.label === last)?.href ?? "/studio";
   return (
-    <ul className="m-0 mt-5 flex list-none flex-wrap items-center gap-1 border-b border-border p-0">
+    <ul className="m-0 mt-5 flex list-none flex-wrap items-center gap-1.5 p-0">
       {STUDIO_SECTIONS.map((section) =>
         section.live ? (
           <li key={section.label}>
@@ -281,7 +281,7 @@ function StudioSectionNav({ crumbs }: { crumbs: readonly StudioCrumb[] }) {
               prefetch="auto"
               href={section.href}
               {...(section.href === current ? { "aria-current": "page" as const } : {})}
-              className={`${TAB} no-underline ${section.href === current ? TAB_ON : TAB_OFF}`}
+              className={`tap-h ${CHIP_BTN} ${FOCUS} no-underline ${section.href === current ? CHIP_ON : CHIP_OFF}`}
             >
               {section.label}
             </AppLink>
@@ -292,7 +292,7 @@ function StudioSectionNav({ crumbs }: { crumbs: readonly StudioCrumb[] }) {
               aria-disabled="true"
               title={`Not yet — ${section.then}`}
               data-pending="studio"
-              className={`${TAB} border-transparent text-muted-foreground`}
+              className={`${CHIP_BTN} text-muted-foreground`}
             >
               {section.label}
             </span>
@@ -315,9 +315,9 @@ export function StudioPanel({
   children: ReactNode;
 }) {
   return (
-    <div className="max-w-[70ch] rounded-[20px] border border-border bg-card px-6 py-5">
-      {title ? <div className="text-[14.5px] font-medium text-foreground">{title}</div> : null}
-      <div className={`text-[13.5px] leading-[1.5] text-muted-foreground ${title ? "mt-1" : ""}`}>
+    <div className={`max-w-[70ch] ${PANEL}`}>
+      {title ? <div className="text-[15px] font-semibold text-foreground">{title}</div> : null}
+      <div className={`text-[13px] leading-[1.5] text-muted-foreground ${title ? "mt-1" : ""}`}>
         {children}
       </div>
     </div>
@@ -341,7 +341,7 @@ export function StudioSection({ title, children }: { title: string; children: Re
 export function StatusChip({ published, children }: { published: boolean; children?: ReactNode }) {
   return (
     <span
-      className={`inline-flex h-[24px] shrink-0 items-center whitespace-nowrap rounded-full px-[9px] text-[12.5px] font-medium ${
+      className={`inline-flex h-[24px] shrink-0 items-center whitespace-nowrap rounded-full px-[9px] text-[12px] font-medium ${
         published ? "bg-success-soft text-success" : "bg-muted text-muted-foreground"
       }`}
     >
@@ -356,10 +356,10 @@ export const BTN_GHOST =
   "inline-flex h-[36px] shrink-0 items-center justify-center whitespace-nowrap rounded-full border border-transparent px-3 text-[14px] font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground";
 
 /** A rail panel on the editor: the design's `16px 20px 18px`. */
-export const RAIL_PANEL = "rounded-[20px] border border-border bg-card px-6 pb-5 pt-5";
+export const RAIL_PANEL = PANEL;
 
 /** The line under a rail panel's rows: 12.5px/1.55 in `--muted`. */
-export const RAIL_NOTE = "m-0 mt-3 text-[12.5px] leading-[1.55] text-muted-foreground";
+export const RAIL_NOTE = "m-0 mt-3 text-[13px] leading-[1.55] text-muted-foreground";
 
 /** The design's cover: 96px of the tile's own hue, forty degrees on at the
  *  far edge, in the same `--tile-fill` ramp the tile is painted from. */
@@ -402,3 +402,11 @@ export const GLYPH_PENCIL = "M11.3 2.7a1.4 1.4 0 0 1 2 2L5.5 12.5 2.5 13.5l1-3zM
 export const GLYPH_PLUS = "M8 3.5v9M3.5 8h9";
 export const GLYPH_CROSS = "M4 4l8 8M12 4l-8 8";
 export const GLYPH_LOCK = "M3.5 7h9v6.5h-9zM5.5 7V5a2.5 2.5 0 0 1 5 0v2";
+
+/** A moderation record (OPR1) — one act, one appeal, one report, one
+ *  collection: the shared flat tile at the reading measure, 12px apart. */
+export const STUDIO_RECORD = `mb-3 max-w-[74ch] px-5 py-4 last:mb-0 ${TILE}`;
+
+/** A record set inside a record — an appeal's standing under its act: the
+ *  shared sunken inset. */
+export const STUDIO_INSET = `px-3.5 py-3 ${INSET}`;

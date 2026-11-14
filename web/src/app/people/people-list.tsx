@@ -20,6 +20,7 @@ import {
 
 import { initialsOf } from "../feed/tile";
 import { OpenPill } from "../ui/bits";
+import { EMPTY_NOTE } from "../ui/design";
 
 import { AppLink } from "../ui/link";
 
@@ -86,7 +87,7 @@ export function PeopleList({
         {peopleCountLine(visible.length, openCount, state)}
       </p>
       <div className="flex flex-wrap items-center gap-2">
-        <div className="box-border flex h-[44px] min-w-[220px] flex-1 items-center gap-2.5 rounded-full border border-transparent bg-card px-4 focus-within:border-border">
+        <div className="box-border flex h-[44px] min-w-[220px] flex-1 items-center gap-2.5 rounded-full bg-card px-4 focus-within:ring-[3px] focus-within:ring-endorse-soft">
           <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true" className="shrink-0 text-muted-foreground">
             <circle cx="6" cy="6" r="4.4" fill="none" stroke="currentColor" strokeWidth="1.4" />
             <path d="M9.4 9.4 12.4 12.4" stroke="currentColor" strokeWidth="1.4" fill="none" />
@@ -97,7 +98,7 @@ export function PeopleList({
             onChange={(e) => update({ q: e.target.value })}
             placeholder="Filter by name, handle, or product"
             aria-label="Filter people"
-            className="min-w-0 flex-1 border-0 bg-transparent text-[14.5px] text-foreground outline-none placeholder:text-muted-foreground"
+            className="min-w-0 flex-1 border-0 bg-transparent text-[15px] text-foreground outline-none placeholder:text-muted-foreground"
           />
         </div>
         <FilterPill
@@ -118,13 +119,13 @@ export function PeopleList({
           {PEOPLE_FILTER_LABELS.maintains}
         </FilterPill>
         {topics.length > 0 ? (
-          <label className="inline-flex h-[40px] shrink-0 items-center gap-2 rounded-full bg-secondary px-4 text-[14.5px] text-copy max-sm:min-h-[44px]">
+          <label className="inline-flex h-[40px] shrink-0 items-center gap-2 rounded-full bg-secondary px-4 text-[15px] text-copy max-sm:min-h-[44px]">
             <span>Topic</span>
             <select
               value={state.topic}
               onChange={(e) => update({ topic: e.target.value })}
               aria-label="Filter by topic"
-              className="bg-transparent text-[14px] text-foreground outline-none"
+              className="bg-transparent text-[15px] text-foreground outline-none"
             >
               <option value="">Any</option>
               {topics.map((topic) => (
@@ -138,7 +139,7 @@ export function PeopleList({
       </div>
 
       {visible.length === 0 ? (
-        <p className="m-0 mt-6 rounded-[20px] border border-dashed border-border px-6 py-12 text-center text-[15px] text-muted-foreground">
+        <p className={`mt-6 ${EMPTY_NOTE}`}>
           Nobody matches that. Clear the field, or switch back to everyone.
         </p>
       ) : (
@@ -170,7 +171,7 @@ function FilterPill({
       type="button"
       aria-pressed={on}
       onClick={onPick}
-      className={`inline-flex h-[40px] shrink-0 items-center rounded-full px-4 text-[14.5px] transition-colors max-sm:min-h-[44px] ${
+      className={`inline-flex h-[40px] shrink-0 items-center rounded-full px-4 text-[15px] transition-colors max-sm:min-h-[44px] ${
         on ? "bg-foreground font-medium text-background" : "bg-secondary text-copy hover:bg-border"
       }`}
     >
@@ -195,18 +196,18 @@ function PersonTile({ person }: { person: PublicContributorCard }) {
     <li className="list-none">
       <AppLink
         href={`/@${person.handle}`}
-        className="flex items-center gap-5 rounded-[20px] border border-border bg-card px-8 py-6 no-underline transition-colors hover:border-border-strong focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring max-sm:gap-4 max-sm:px-5 max-sm:py-5"
+        className="flex items-center gap-5 rounded-[16px] bg-card px-[22px] py-5 no-underline transition-colors hover:bg-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring max-sm:gap-3 max-sm:p-[14px]"
       >
         <span
           aria-hidden="true"
-          className="grid h-[56px] w-[56px] shrink-0 place-items-center rounded-full bg-secondary font-mono text-[15px] text-copy"
+          className="grid h-[56px] w-[56px] shrink-0 place-items-center rounded-full bg-sunken text-[15px] font-semibold text-copy"
         >
           {initialsOf(title)}
         </span>
         <span className="grid min-w-0 flex-1 gap-1">
           <span className="flex flex-wrap items-center gap-x-2.5 gap-y-1">
-            <span className="text-[20px] font-semibold tracking-[-0.015em] text-foreground max-sm:text-[18px]">{title}</span>
-            <span className="font-mono text-[13.5px] text-faint">@{person.handle}</span>
+            <span className="text-card-title font-semibold tracking-[-0.015em] text-foreground">{title}</span>
+            <span className="font-mono text-[13px] text-faint">@{person.handle}</span>
             {/* Authored, and false by default — nobody is advertised as
                 looking for work without having said so. AG3 — the label
                 from the contract, not a string here. */}
@@ -215,9 +216,9 @@ function PersonTile({ person }: { person: PublicContributorCard }) {
             ) : null}
           </span>
           {person.bio ? (
-            <span className="truncate text-[15.5px] text-copy">{person.bio}</span>
+            <span className="truncate text-[15px] text-copy">{person.bio}</span>
           ) : null}
-          <span className="mt-1 flex flex-wrap items-center gap-1.5 text-[13.5px] text-faint">
+          <span className="mt-1 flex flex-wrap items-center gap-1.5 text-[13px] text-faint">
             <span>Maintains {person.maintains.length}</span>
             {/* CG4 — REAL, and rendered ONLY WHEN THERE IS SOMETHING TO SAY.
                 `contributes to 0` is a true sentence — we hold every edge —
@@ -232,7 +233,7 @@ function PersonTile({ person }: { person: PublicContributorCard }) {
             {person.maintains.length > 0 ? (
               <>
                 <span>·</span>
-                <span className="font-mono text-[12.5px]">{person.maintains.join(" · ")}</span>
+                <span className="font-mono text-[13px]">{person.maintains.join(" · ")}</span>
               </>
             ) : null}
           </span>

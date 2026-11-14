@@ -13,7 +13,7 @@ import {
 import { readSession } from "../../auth/session-server";
 import { BTN_OUTLINE, BTN_PRIMARY, LABEL, TEXTAREA } from "../../ui/design";
 import { FailurePanel } from "../../ui/failure";
-import { StudioFrame, StudioPanel, StudioSection } from "../frame";
+import { STUDIO_INSET, STUDIO_RECORD, StudioFrame, StudioPanel, StudioSection } from "../frame";
 import { noticeFrom, APPEAL_VOCABULARY } from "../notices";
 import { fetchAppealQueue, fetchMyAppealableActs, type QueuedAppealView } from "../studio-api";
 
@@ -130,23 +130,23 @@ export default async function AppealsPage(props: PageProps) {
  */
 function ActRow({ act, action }: { act: AppealableAct; action: string }) {
   return (
-    <div className="mb-3 max-w-[74ch] rounded-[12px] border border-border bg-card px-4 py-3.5 last:mb-0">
+    <div className={STUDIO_RECORD}>
       <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
-        <span className="text-[15.5px] font-semibold text-foreground">
+        <span className="text-[15px] font-semibold text-foreground">
           {ACT_LABELS[act.act] ?? act.act}
         </span>
-        <span className="font-mono text-[12.5px] text-muted-foreground">{act.subjectRef}</span>
+        <span className="font-mono text-[13px] text-muted-foreground">{act.subjectRef}</span>
       </div>
 
-      <p className="m-0 mt-2 text-[12.5px] text-muted-foreground">{dateOf(act.occurredAt)}</p>
+      <p className="m-0 mt-2 text-[13px] text-muted-foreground">{dateOf(act.occurredAt)}</p>
 
       {/* The reason, shown to the person it is about. Rendered as text by
           React, like every other operator-authored string on this estate. */}
-      <p className="m-0 mt-2 text-[13.5px] leading-[1.55] text-foreground">{act.reason}</p>
+      <p className="m-0 mt-2 text-[13px] leading-[1.55] text-foreground">{act.reason}</p>
 
       {act.appeal ? (
-        <div className="mt-3 rounded-[8px] border border-line-soft px-3 py-2.5">
-          <p className="m-0 text-[13.5px] font-medium text-foreground">
+        <div className={`mt-3 ${STUDIO_INSET}`}>
+          <p className="m-0 text-[13px] font-medium text-foreground">
             {APPEAL_STATE_COPY[act.appeal.state].title}
           </p>
           <p className="m-0 mt-1 text-[13px] leading-[1.55] text-muted-foreground">
@@ -154,7 +154,7 @@ function ActRow({ act, action }: { act: AppealableAct; action: string }) {
               ? APPEAL_UPHELD_ALREADY_REVERSED
               : APPEAL_STATE_COPY[act.appeal.state].says}
           </p>
-          <p className="m-0 mt-2 text-[12.5px] text-muted-foreground">
+          <p className="m-0 mt-2 text-[13px] text-muted-foreground">
             Filed {dateOf(act.appeal.filedAt)}
             {act.appeal.decidedAt ? ` · decided ${dateOf(act.appeal.decidedAt)}` : ""}
           </p>
@@ -183,7 +183,7 @@ function ActRow({ act, action }: { act: AppealableAct; action: string }) {
           </button>
         </form>
       ) : (
-        <p className="m-0 mt-3 text-[12.5px] leading-[1.5] text-muted-foreground">
+        <p className="m-0 mt-3 text-[13px] leading-[1.5] text-muted-foreground">
           {APPEAL_REFUSALS["not-appealable"].says}
         </p>
       )}
@@ -201,17 +201,17 @@ function ActRow({ act, action }: { act: AppealableAct; action: string }) {
  */
 function QueueRow({ appeal, action }: { appeal: QueuedAppealView; action: string }) {
   return (
-    <div className="mb-3 max-w-[74ch] rounded-[12px] border border-border bg-card px-4 py-3.5 last:mb-0">
+    <div className={STUDIO_RECORD}>
       <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
-        <span className="text-[15.5px] font-semibold text-foreground">
+        <span className="text-[15px] font-semibold text-foreground">
           {ACT_LABELS[appeal.act] ?? appeal.act}
         </span>
-        <span className="font-mono text-[12.5px] text-muted-foreground">
+        <span className="font-mono text-[13px] text-muted-foreground">
           {appeal.subjectKind} · {appeal.subjectRef}
         </span>
       </div>
 
-      <p className="m-0 mt-2 text-[12.5px] text-muted-foreground">
+      <p className="m-0 mt-2 text-[13px] text-muted-foreground">
         Act taken {dateOf(appeal.actOccurredAt)} · appealed {dateOf(appeal.filedAt)}
       </p>
 
@@ -220,7 +220,7 @@ function QueueRow({ appeal, action }: { appeal: QueuedAppealView; action: string
         {appeal.actReason}
       </p>
 
-      <blockquote className="m-0 mt-2.5 border-l-2 border-border pl-3 text-[13.5px] leading-[1.55] text-foreground">
+      <blockquote className="m-0 mt-2.5 border-l-2 border-line pl-3 text-[13px] leading-[1.55] text-foreground">
         {appeal.says}
       </blockquote>
 

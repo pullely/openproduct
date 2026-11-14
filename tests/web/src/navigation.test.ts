@@ -169,7 +169,7 @@ describe("viewport prefetch on the fixed set", () => {
   });
 
   it("stays off on a list row, whose cardinality is the catalogue's", () => {
-    for (const file of ["feed/feed-row.tsx", "feed/build-tile.tsx", "feed/more-builds.tsx", "people/people-list.tsx"]) {
+    for (const file of ["feed/feed-row.tsx", "feed/product-card.tsx", "feed/product-list.tsx", "help-wanted/seat-card.tsx", "people/people-list.tsx"]) {
       const links = code(file).match(/<AppLink\b[\s\S]*?>/g) ?? [];
       for (const link of links) {
         expect([file, /\bprefetch\b/.test(link)]).toEqual([file, false]);

@@ -184,8 +184,8 @@ describe("the rows the layer traverses", () => {
   it.each([
     // The row's markup, `data-keyrow` included, is `row-shell.tsx` since IN0.
     "feed/row-shell.tsx",
-    // CL2 — the build tile replaced the card row.
-    "feed/build-tile.tsx",
+    // OPR1 — the product card replaced the build tile.
+    "feed/product-card.tsx",
     "launches/board.tsx",
     "[slug]/page.tsx",
   ])("%s marks its row", (file) => {

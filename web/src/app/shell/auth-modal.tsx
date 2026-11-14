@@ -12,11 +12,13 @@ import {
 
 import { Logomark } from "./logomark";
 
-import { FIELD, LABEL, PAGE_TITLE, TAB, TAB_OFF, TAB_ON } from "../ui/design";
+import { FIELD, FOCUS, LABEL, PAGE_TITLE } from "../ui/design";
+import { BackIcon, MailIcon } from "../ui/icons";
 
 /**
- * The design's sign-in card (openproduct-launch AC2c) — 400px, two tabs,
- * email and password, or Continue with Orunbase.
+ * The sign-in card (openproduct-launch AC2c; boards `SignIn` and
+ * `PhoneSignIn` since openproduct-redesign OPR1) — one flat card: Continue
+ * with Orunbase, or email and password.
  *
  * TWO SURFACES, ONE CARD. `AuthPanel` is the card; `AuthModal` is that card
  * over a scrim, opened from the top panel's `Sign in`. The same card is the
@@ -81,13 +83,37 @@ import { FIELD, LABEL, PAGE_TITLE, TAB, TAB_OFF, TAB_ON } from "../ui/design";
  * instead. Middle-click, a copied link and a visitor with no JavaScript all
  * still reach the platform's door.
  *
- * ─── THE DESIGN'S GEOMETRY ───────────────────────────────────────────────
+ * ─── THE BOARD, AND WHERE THIS DOOR DIFFERS FROM IT ──────────────────────
  *
- * The wordmark and the 26px sans title stand ABOVE the card on `/signin`; the card itself — a 12px-radius hairline panel with 20px
- * of padding — holds the tabs, the two fields, the 40px accent button, the
- * `or` rule and the outlined `Continue with Orunbase`. In the modal there is
- * no page for the heading to stand on, so the whole thing is one card over
- * the scrim; the markup inside is the same either way.
+ * One flat card, 420px, with the amber glow in its top corner: the title,
+ * `Continue with Orunbase` as the ink button, an `OR` rule in the mono face,
+ * then the email door, and one line that switches between signing in and
+ * creating an account. After a sign-up the card becomes `Check your inbox`:
+ * the envelope disc, the address, and a way back to use a different one.
+ *
+ * THE EMAIL DOOR IS A PASSWORD, AND IT SAYS SO. The board's second door is
+ * "Email me a sign-in link". That is not what happens here: sign-in is an
+ * email and a password, and creating an account emails a six-digit CODE,
+ * not a link. So the card keeps the board's shape and says what is true:
+ * two fields and `Sign in`; and on the inbox screen a code field, because
+ * the mail carries a code to type rather than a link to press.
+ *
+ * WHAT THE BOARD DRAWS THAT IS NOT HERE: the illustration panel beside the
+ * card and the line "Same Orunbase account, not a second one" (an account
+ * made with a password here is openproduct's own, so the sentence would be
+ * false for it).
+ *
+ * THE MODES ARE A LINE, NOT TABS. The old card had a two-tab strip; the
+ * board has `New here? Create an account` under the form, and that is what
+ * switches. The state is still called `tab`.
+ *
+ * A REFUSAL IS RED AND NOTHING ELSE IS (design.md §2 rule 8): the gateway's
+ * sentence for a failed sign-in or a wrong code is drawn in the danger ink;
+ * the reset's explanation and "check your inbox" are not failures and keep
+ * the body ink. Both arrive in the same `aria-live` region.
+ *
+ * In the modal the mark and the wordmark head the card, because the page
+ * behind is dimmed; on `/signin` the header above already carries them.
  */
 
 type Tab = "signin" | "create";
@@ -102,14 +128,29 @@ interface Answer {
   credentialSet?: boolean;
 }
 
-/** The 40px, full-width act — the one thing this card asks for, in ink like
- *  every act (CP-R1), not the upvote's accent. */
-const SUBMIT =
-  "mt-5 flex h-[40px] w-full items-center justify-center rounded-full bg-primary text-[14.5px] font-medium text-primary-foreground transition-opacity hover:opacity-90 disabled:opacity-60";
+/** The card: flat white at 16px, the amber glow in its top right corner
+ *  (the board's radial wash), `36px 32px 30px` inside and 18px between its
+ *  blocks; `22px 16px 16px` and 14px on a phone. */
+const CARD =
+  "box-border flex w-full max-w-[420px] flex-col gap-[18px] rounded-[16px] bg-card bg-[radial-gradient(420px_200px_at_100%_0%,oklch(var(--amber)/0.2),transparent_70%)] px-8 pb-[30px] pt-9 max-sm:gap-[14px] max-sm:px-4 max-sm:pb-4 max-sm:pt-[22px]";
 
-/** The 40px, full-width outlined button — the platform's door. */
+/** The platform's door, and the card's first act: the ink pill, 40px (48px
+ *  on a phone), full width. */
 const PLATFORM =
-  "flex h-[40px] w-full items-center justify-center gap-2 rounded-full border border-border bg-card text-[14.5px] font-medium text-foreground no-underline transition-colors hover:border-faint";
+  "flex min-h-[40px] w-full items-center justify-center gap-[10px] rounded-full bg-primary text-[15px] font-semibold text-primary-foreground no-underline transition-opacity hover:opacity-90 max-sm:min-h-[48px]";
+
+/** The email door's act: the amber tint under its ink once it can be
+ *  pressed, the 5% ink wash while it cannot (the board's two states). */
+const SUBMIT =
+  "flex min-h-[40px] w-full items-center justify-center rounded-full border-0 bg-amber-soft px-5 text-[15px] font-semibold text-endorse-ink ring-1 ring-inset ring-amber/[0.35] transition-colors disabled:bg-foreground/[0.05] disabled:text-muted-foreground disabled:ring-0 max-sm:min-h-[48px]";
+
+/** The one act of the inbox screen: confirm the code. Ink, like every act. */
+const CONFIRM =
+  "flex min-h-[40px] w-full items-center justify-center rounded-full border-0 bg-primary px-5 text-[15px] font-semibold text-primary-foreground transition-opacity hover:opacity-90 disabled:opacity-60 max-sm:min-h-[48px]";
+
+/** A text control inside the card: amber ink, 40px (44px on a phone). */
+const TEXT_ACT =
+  "inline-flex min-h-[40px] items-center gap-[6px] border-0 bg-transparent p-0 font-semibold text-amber-ink hover:text-foreground max-sm:min-h-[44px]";
 
 /**
  * The card, with nothing around it — the whole of `/signin`, and what the
@@ -136,6 +177,9 @@ export function AuthPanel({
   const [challengeId, setChallengeId] = React.useState<string | null>(null);
   const [busy, setBusy] = React.useState(false);
   const [note, setNote] = React.useState<string | null>(null);
+  // Whether `note` is a REFUSAL (drawn in the danger ink) rather than an
+  // explanation. Red is for a failure and for nothing else.
+  const [refused, setRefused] = React.useState(false);
 
   const dialog = React.useRef<HTMLDivElement | null>(null);
   const firstField = React.useRef<HTMLInputElement | null>(null);
@@ -168,7 +212,30 @@ export function AuthPanel({
    */
   function offerReset(): void {
     setTab("create");
+    setRefused(false);
     setNote(PASSWORD_RESET_NOTE);
+  }
+
+  /** Between signing in and creating an account: the line under the form. */
+  function switchTo(next: Tab): void {
+    setTab(next);
+    setRefused(false);
+    setNote(null);
+  }
+
+  /** Back from the inbox screen to the form, to use a different address. */
+  function startOver(): void {
+    setStage("form");
+    setCode("");
+    setChallengeId(null);
+    setRefused(false);
+    setNote(null);
+  }
+
+  /** The gateway's refusal, as the card's message — in red. */
+  function refuse(sentence: string): void {
+    setRefused(true);
+    setNote(sentence);
   }
 
   async function post(body: Record<string, unknown>): Promise<Answer> {
@@ -188,12 +255,13 @@ export function AuthPanel({
     event.preventDefault();
     if (busy) return;
     setBusy(true);
+    setRefused(false);
     setNote(null);
     try {
       if (stage === "code") {
         const answer = await post({ act: "verify", challengeId, code });
         if (answer.ok) return land();
-        setNote(answer.note ?? SIGN_IN_REFUSAL);
+        refuse(answer.note ?? SIGN_IN_REFUSAL);
         return;
       }
       if (creating) {
@@ -209,7 +277,7 @@ export function AuthPanel({
       }
       const answer = await post({ act: "sign-in", email, password });
       if (answer.ok) return land();
-      setNote(answer.note ?? SIGN_IN_REFUSAL);
+      refuse(answer.note ?? SIGN_IN_REFUSAL);
     } finally {
       setBusy(false);
     }
@@ -221,67 +289,55 @@ export function AuthPanel({
     window.location.assign(returnTo && returnTo.startsWith("/") ? returnTo : "/");
   }
 
-  const title = stage === "code" ? "Check your email" : creating ? "Create an account" : "Sign in";
-  const hint = stage === "code" ? "Enter the six-digit code we sent." : null;
+  const title = stage === "code" ? "Check your inbox" : creating ? "Create an account" : "Sign in";
+  // ONE `h1` PER PAGE: on `/signin` the title is the page's; over a scrim the
+  // page behind already has one, so the dialog's title is an `h2`.
+  const Title = inDialog ? "h2" : "h1";
+  const ready =
+    stage === "code" ? code.trim().length > 0 : email.trim().length > 0 && password.length > 0;
+
+  // The card's one message. `aria-live` because somebody using a screen
+  // reader must hear a refusal that appeared without the page moving.
+  const message = note ? (
+    <p
+      role="status"
+      aria-live="polite"
+      className={`m-0 text-[13px] leading-[1.45] ${refused ? "text-destructive" : "text-copy"}`}
+    >
+      {note}
+    </p>
+  ) : null;
 
   return (
     <div
       ref={dialog}
       {...(onClose ? { role: "dialog", "aria-modal": "true", "aria-label": title } : {})}
-      className={`box-border w-full max-w-[400px] ${
-        inDialog ? "rounded-[20px] border border-border bg-card p-7" : ""
-      } ${className}`}
+      className={`${CARD} ${className}`}
     >
       {/* The mark names the site over a scrim, where the page behind is
-          dimmed. On `/signin` the bar above already says it (CP1, words
-          once), so the page opens on the title. */}
+          dimmed. On `/signin` the header above already says it. */}
       {inDialog ? (
-        <div className="mb-6 flex items-center gap-[9px]">
-          <Logomark size={26} />
-          <span className="font-serif text-[22px] font-normal leading-none tracking-[-0.02em] text-foreground">
-            openproduct
-          </span>
+        <div className="flex items-center gap-[10px] text-[18px] font-semibold leading-none tracking-[-0.02em] text-foreground">
+          <Logomark size={24} />
+          openproduct
         </div>
       ) : null}
 
-      <h2 className={PAGE_TITLE}>{title}</h2>
-      {hint ? (
-        <p className="m-0 mt-2 text-[14px] leading-[1.6] text-muted-foreground">{hint}</p>
-      ) : null}
-
-      {/* The card proper. On the page it is its own hairline panel under the
-          heading; in the dialog the outer box is already that panel. */}
-      <div className={inDialog ? "mt-5" : "mt-8 rounded-[20px] border border-border bg-card p-7 max-sm:p-5"}>
-        {stage === "form" ? (
-          // ONE KIND OF TAB (CP-R2): the two modes are the underline strip
-          // every list's sorts use, not a pill in a tray.
-          <div className="-mt-1 flex gap-4 border-b border-line">
-            {(
-              [
-                ["signin", "Sign in"],
-                ["create", "Create account"],
-              ] as const
-            ).map(([value, label]) => (
-              <button
-                key={value}
-                type="button"
-                onClick={() => {
-                  setTab(value);
-                  setNote(null);
-                }}
-                aria-pressed={tab === value}
-                className={`${TAB} px-0 ${tab === value ? TAB_ON : TAB_OFF}`}
-              >
-                {label}
-              </button>
-            ))}
-          </div>
-        ) : null}
-
-        <form onSubmit={submit} className={stage === "form" ? "mt-4 grid gap-4" : "grid gap-4"}>
-          {stage === "code" ? (
+      {stage === "code" ? (
+        <>
+          <span
+            aria-hidden="true"
+            className="grid h-[64px] w-[64px] place-items-center rounded-full bg-amber-soft text-endorse-ink max-sm:h-[52px] max-sm:w-[52px]"
+          >
+            <MailIcon className="h-[28px] w-[28px] max-sm:h-[24px] max-sm:w-[24px]" />
+          </span>
+          <Title className={PAGE_TITLE}>{title}</Title>
+          {/* The address the code went to, so a typo is caught here and not
+              after ten minutes of waiting for mail. */}
+          <p className="m-0 break-all text-[15px] font-semibold text-foreground">{email}</p>
+          <form onSubmit={submit} className="grid gap-[10px]">
             <label className="block">
-              <span className={LABEL}>Code</span>
+              <span className={LABEL}>Six-digit code</span>
               <input
                 ref={firstField}
                 value={code}
@@ -292,79 +348,111 @@ export function AuthPanel({
                 className={FIELD}
               />
             </label>
-          ) : (
-            <>
-              <label className="block">
-                <span className={LABEL}>Email</span>
-                <input
-                  ref={firstField}
-                  value={email}
-                  onChange={(event) => setEmail(event.target.value)}
-                  type="email"
-                  autoComplete="email"
-                  placeholder="you@example.com"
-                  className={FIELD}
-                />
-              </label>
-              <label className="block">
-                <span className={LABEL}>Password</span>
-                <input
-                  value={password}
-                  onChange={(event) => setPassword(event.target.value)}
-                  type="password"
-                  autoComplete={creating ? "new-password" : "current-password"}
-                  minLength={creating ? PASSWORD_MIN_LENGTH : undefined}
-                  placeholder="••••••••"
-                  className={FIELD}
-                />
-              </label>
-              {creating ? (
-                <p className="m-0 text-[12.5px] leading-[1.45] text-muted-foreground">
-                  At least {PASSWORD_MIN_LENGTH} characters.
-                </p>
-              ) : (
-                <button
-                  type="button"
-                  onClick={offerReset}
-                  className="justify-self-start text-[12.5px] leading-[1.45] text-muted-foreground underline decoration-border underline-offset-[3px] hover:text-foreground"
-                >
-                  {PASSWORD_RESET_PROMPT}
-                </button>
-              )}
-            </>
-          )}
-
-          {note ? (
-            // The gateway's sentence, rendered and not rewritten. `aria-live`
-            // because somebody using a screen reader must hear a refusal that
-            // appeared without the page moving.
-            <p role="status" aria-live="polite" className="m-0 text-[13px] leading-[1.45] text-copy">
-              {note}
-            </p>
-          ) : null}
-
-          <button type="submit" disabled={busy} className={`${SUBMIT} -mt-1`}>
-            {stage === "code" ? "Confirm" : creating ? "Create account" : "Sign in"}
+            {message}
+            <button type="submit" disabled={busy || !ready} className={CONFIRM}>
+              Confirm
+            </button>
+          </form>
+          <button type="button" onClick={startOver} className={`self-start text-[15px] ${TEXT_ACT} ${FOCUS}`}>
+            <BackIcon className="h-[14px] w-[14px]" />
+            Use a different email
           </button>
-        </form>
+        </>
+      ) : (
+        <>
+          <Title className={PAGE_TITLE}>{title}</Title>
 
-        {stage === "form" ? (
-          <>
-            <div className="my-[18px] flex items-center gap-3">
-              <span className="h-px flex-1 bg-border" />
-              <span className="text-[12px] uppercase tracking-[0.08em] text-muted-foreground">or</span>
-              <span className="h-px flex-1 bg-border" />
-            </div>
-            <a
-              href={returnTo ? `/auth/start?return_to=${encodeURIComponent(returnTo)}` : "/auth/start"}
-              className={PLATFORM}
+          <a
+            href={returnTo ? `/auth/start?return_to=${encodeURIComponent(returnTo)}` : "/auth/start"}
+            className={PLATFORM}
+          >
+            <OrunbaseGlyph />
+            Continue with Orunbase
+          </a>
+
+          <div aria-hidden="true" className="flex items-center gap-3">
+            <span className="h-px flex-1 bg-foreground/10" />
+            <span className="font-mono text-mono-label uppercase text-muted-foreground">or</span>
+            <span className="h-px flex-1 bg-foreground/10" />
+          </div>
+
+          <form onSubmit={submit} className="grid gap-[10px]">
+            <label className="block">
+              <span className={LABEL}>Email</span>
+              <input
+                ref={firstField}
+                value={email}
+                onChange={(event) => setEmail(event.target.value)}
+                type="email"
+                autoComplete="email"
+                placeholder="you@example.com"
+                className={FIELD}
+              />
+            </label>
+            <label className="block">
+              <span className={LABEL}>Password</span>
+              <input
+                value={password}
+                onChange={(event) => setPassword(event.target.value)}
+                type="password"
+                autoComplete={creating ? "new-password" : "current-password"}
+                minLength={creating ? PASSWORD_MIN_LENGTH : undefined}
+                // The floor, said where somebody is about to choose one, in
+                // the field itself: no line under the control.
+                placeholder={creating ? `At least ${PASSWORD_MIN_LENGTH} characters` : "••••••••"}
+                className={FIELD}
+              />
+            </label>
+            {creating ? null : (
+              <button
+                type="button"
+                onClick={offerReset}
+                className={`justify-self-start text-[13px] ${TEXT_ACT} ${FOCUS}`}
+              >
+                {PASSWORD_RESET_PROMPT}
+              </button>
+            )}
+            {message}
+            <button type="submit" disabled={busy || !ready} className={SUBMIT}>
+              {creating ? "Create account" : "Sign in"}
+            </button>
+          </form>
+
+          <p className="m-0 flex flex-wrap items-center gap-x-[6px] text-[13px] text-muted-foreground">
+            {creating ? "Have an account?" : "New here?"}
+            <button
+              type="button"
+              onClick={() => switchTo(creating ? "signin" : "create")}
+              className={`${TEXT_ACT} ${FOCUS}`}
             >
-              Continue with Orunbase
-            </a>
-          </>
-        ) : null}
-      </div>
+              {creating ? "Sign in" : "Create an account"}
+            </button>
+          </p>
+        </>
+      )}
     </div>
+  );
+}
+
+/** Orunbase's mark on its own door: the cube, in the amber. Decorative — the
+ *  words beside it name the control. */
+function OrunbaseGlyph(): React.ReactElement {
+  return (
+    <svg
+      width="18"
+      height="18"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinejoin="round"
+      aria-hidden="true"
+      focusable="false"
+      className="shrink-0 text-amber"
+    >
+      <path d="M12 3l8 4.5v9L12 21l-8-4.5v-9z" />
+      <path d="M12 12l8-4.5M12 12v9M12 12L4 7.5" />
+    </svg>
   );
 }
 
@@ -407,7 +495,9 @@ export function AuthModal({
       <AuthPanel
         returnTo={returnTo}
         onClose={onClose}
-        className="shadow-[0_24px_60px_rgba(20,18,15,0.25)]"
+        // An edge, not a drop shadow (design.md §2 rule 11): the one-pixel
+        // inset ring the header's search card wears over the page.
+        className="ring-1 ring-inset ring-foreground/10"
       />
     </div>
   );

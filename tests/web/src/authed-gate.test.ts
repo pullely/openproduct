@@ -59,6 +59,11 @@ describe("OV4 — the authenticated walk is a gate", () => {
       ...pagesUnder(resolve(APP, "activity")),
     ];
     expect(pages).toContain("/activity");
+    // OPR1 — the settings page is new, and joined the list with the change
+    // that added it; the two old addresses under `/me` are still pages.
+    expect(pages).toContain("/me/settings");
+    expect(pages).toContain("/me/saved");
+    expect(pages).toContain("/me/applications");
     expect(pages.length).toBeGreaterThanOrEqual(16);
     const unwalked = pages.filter((p) => !listed.includes(p));
     expect(unwalked).toEqual([]);
@@ -69,7 +74,10 @@ describe("OV4 — the authenticated walk is a gate", () => {
 
   it("checks the door as well as the rooms: signed out, the addresses keep the visitor's return address", () => {
     const lane = read(resolve(PERF, "authed.mjs"));
-    expect(lane).toContain('for (const path of ["/me", "/me/saved", "/me/export", "/studio", "/studio/reports"])');
+    // `/me/settings` since openproduct-redesign OPR1: the saved list became a
+    // section of `/me`, and its old address returns a signed-out visitor to
+    // the section, not to itself — so it is no longer a door of its own.
+    expect(lane).toContain('for (const path of ["/me", "/me/settings", "/me/export", "/studio", "/studio/reports"])');
     expect(lane).toContain('landed.pathname === "/signin" && returnTo === path');
     expect(lane).toContain("the gate rendered as a page");
   });
