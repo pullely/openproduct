@@ -20,7 +20,7 @@ const code = (file: string) =>
 
 describe("the page", () => {
   it("renders marks from the contract, never a literal badge", () => {
-    const page = code("[slug]/page.tsx");
+    const page = code("[slug]/product-page.tsx");
     expect(page).toContain("const marks = rankMarks(profile.launch, dayOf(now));");
     expect(page).toMatch(/\{marks\.map\(\(mark\) => \(/);
     expect(page).toContain("href={mark.href}");
@@ -33,7 +33,7 @@ describe("the page", () => {
   });
 
   it("hands the share card's alt the same dated mark the card draws", () => {
-    const page = code("[slug]/page.tsx");
+    const page = code("[slug]/product-page.tsx");
     expect(page).toContain("productCopy(profile.slug, profile.tagline, cardMark(profile.launch))");
   });
 });

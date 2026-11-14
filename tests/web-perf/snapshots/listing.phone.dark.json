@@ -25,12 +25,12 @@
   "firstRow": {
     "left": 11,
     "width": 344,
-    "height": 464
+    "height": 480
   },
   "footer": {
     "left": 0,
     "width": 365,
-    "height": 300
+    "height": 344
   },
   "themeControl": {
     "width": 64,

@@ -19,6 +19,7 @@
 import type { MediaFact } from "./media.js";
 import type { Fact } from "./provenance.js";
 import type { Change } from "./snapshots.js";
+import type { MilestoneCounts, ProductStage, PublicMilestone } from "./product-posts.js";
 
 /** One row of the catalog, as a machine reads it. */
 export interface CatalogCard {
@@ -67,6 +68,17 @@ export interface CatalogCard {
    * not indexed" is a question with an answer rather than a support ticket.
    */
   indexable: Fact<boolean>;
+  /** OPR-3 — `idea` until the product's first milestone ships, then
+   *  `shipping`. Derived from the milestones (`product.stage`). */
+  stage: Fact<ProductStage>;
+  /** OPR-3 — how many milestones have shipped, of how many
+   *  (`product.milestones-shipped`). On the card, so a list draws progress
+   *  without a read per product. */
+  milestoneCounts: Fact<MilestoneCounts>;
+  /** OPR-3 — how many people the product's page lists as its crew
+   *  (`product.crew-count`). The value is `null` while the catalogue row
+   *  predates the count. */
+  crewCount: Fact<number | null>;
   /**
    * MD0 — the listing's media, in document order: the hero, then the gallery
    * in the maker's order, then the capture.
@@ -147,6 +159,11 @@ export interface CatalogProduct extends CatalogCard {
    */
   workspaceRef: string | null;
   liveUrl: Fact<string | null>;
+  /** OPR-3 — the address of the running product, as the crew declared it. */
+  tryUrl: Fact<string | null>;
+  /** OPR-3 — the product's milestones in the crew's order: a code, a title,
+   *  a summary, and the moment each shipped (null until it has). */
+  milestones: Fact<PublicMilestone[]>;
   components: Fact<Array<{ name: string; kind: string | null }>> | null;
   maintainers: Array<{ displayName: Fact<string | null>; roleLabel: Fact<string | null> }>;
   openings: Array<{
@@ -219,7 +236,7 @@ export interface CatalogFacetGroup {
 // CS0 — bumped with the changelog: `api-changelog.ts` is the record of what
 // changed under which version, and a test holds this literal to its newest
 // release. `1.1.0` is everything the worldclass epic added to `1.0.0`.
-export const CATALOG_API_VERSION = "1.3.0";
+export const CATALOG_API_VERSION = "1.4.0";
 
 /**
  * The keys `/v1/products` and `/v1/products/{slug}` serialize.
@@ -231,6 +248,9 @@ export const CATALOG_API_VERSION = "1.3.0";
  */
 export const CATALOG_CARD_KEYS = [
   "category",
+  // OPR-3 — how many people are on the crew; I8, an idea's card says it
+  // needs its first builder from this count.
+  "crewCount",
   "hasLiveUrl",
   "hosting",
   "indexable",
@@ -246,6 +266,8 @@ export const CATALOG_CARD_KEYS = [
   // exist is not a first-class consumer (WC-9).
   "media",
   "metrics",
+  // OPR-3 — shipped of total; I8, a list's card draws its progress from it.
+  "milestoneCounts",
   "openIssues",
   "openRoles",
   "openingCommitments",
@@ -254,6 +276,8 @@ export const CATALOG_CARD_KEYS = [
   "slug",
   "stack",
   "stackCanonical",
+  // OPR-3 — idea or shipping; I8, the lists label by it.
+  "stage",
   "tagline",
 ] as const;
 
@@ -286,6 +310,10 @@ export const CATALOG_PRODUCT_KEYS = [
   "repoUrl",
   // OPR5 — the attested workspace's console ref (seam S12); I8 again.
   "workspaceRef",
+  // OPR-3 — the product page shows both; I8 again. (`milestoneCounts` is on
+  // the card, so it arrives through `CATALOG_CARD_KEYS` above.)
+  "tryUrl",
+  "milestones",
 ]
   .slice()
   .sort() as readonly string[];

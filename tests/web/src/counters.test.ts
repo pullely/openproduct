@@ -70,7 +70,7 @@ describe("a number that cannot agree says why", () => {
     const view = code("people/[handle]/maker-view.tsx");
     expect(page).not.toContain("launchedVsMaintainsNote(");
     // (OPR1: the list is the board's product rows.)
-    expect(page).toContain("<ProductRows listings={profile.maintains} />");
+    expect(page).toContain("<ProductRows listings={profile.maintains} stages={stages} />");
     expect(view).toContain("value={person.maintains.length}");
     expect(view).toContain("builds={person.maintains.length}");
   });

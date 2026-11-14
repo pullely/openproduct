@@ -34,8 +34,9 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
   const session = decodeSession(request.cookies.get(SESSION_COOKIE)?.value);
   if (!session) return absent();
 
-  // EVERY BOUND THE PAGE SENT, AND ONLY THOSE. `overlayPath()` sends three
-  // (`ids`, `follows`, `posts`) and core parses three; this hop used to read
+  // EVERY BOUND THE PAGE SENT, AND ONLY THOSE. `overlayPath()` sends five
+  // (`ids`, `follows`, `posts`, and since OPR-3 `productPosts` and
+  // `openings`) and core parses each; this hop used to read
   // `ids` alone, which is why follow buttons and comment votes never
   // personalised for anybody (OPP8). Built from the closed key list rather
   // than by naming three strings here, so a fourth bound cannot be added to

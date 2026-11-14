@@ -143,6 +143,36 @@ export function propsFor(keys: readonly string[], deprecations: readonly ApiDepr
         description:
           "What changed on this listing in the last week, oldest snapshot to newest. Each entry carries its OWN provenance: a maintainer's edit is `authored` and carries NO moment — we know it happened between two daily snapshots and a timestamp would be inventing precision — while a licence or language change is `observed` and carries the moment of the read that found it. `null` means there is no earlier snapshot to compare against and NOT that nothing changed; `[]` means we compared and nothing moved. Nothing here is an ordering input and no formula id names one: \"recently updated\" rewards touching a listing rather than improving a product.",
       };
+    } else if (key === "stage") {
+      out[key] = {
+        $ref: "#/components/schemas/Fact",
+        description:
+          "Whether the product is an idea or is shipping: `idea` until its crew marks its first milestone shipped, `shipping` while at least one is. Derived from the milestones (`product.stage`), never set by hand, and not an ordering input.",
+      };
+    } else if (key === "tryUrl") {
+      out[key] = {
+        $ref: "#/components/schemas/Fact",
+        description:
+          "The address of the running product, as the crew declared it. ALWAYS `authored` — nothing here has checked that the address answers. `null` means the crew gave none.",
+      };
+    } else if (key === "milestones") {
+      out[key] = {
+        $ref: "#/components/schemas/Fact",
+        description:
+          "The product's milestones in the crew's order, as one authored list: each entry is `{code, title, summary, shippedAt}`, where `code` is the crew's own short label and `shippedAt` is the moment the crew marked it shipped — `null` until they have. An empty list means the crew has written none.",
+      };
+    } else if (key === "milestoneCounts") {
+      out[key] = {
+        $ref: "#/components/schemas/Fact",
+        description:
+          "`{shipped, total}`: how many of the product's milestones are marked shipped, and how many it has. Derived from `milestones` (`product.milestones-shipped`).",
+      };
+    } else if (key === "crewCount") {
+      out[key] = {
+        $ref: "#/components/schemas/Fact",
+        description:
+          "How many people the product's page lists as its crew: its published maintainers, counted (`product.crew-count`). `null` while the catalogue row predates the count — never a zero nobody counted. Not an ordering input.",
+      };
     } else if (key === "maintainers" || key === "openings") {
       out[key] = { type: "array", items: { type: "object" } };
     } else {

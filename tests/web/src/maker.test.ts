@@ -301,12 +301,12 @@ describe("the profile card is the board's", () => {
     // Both are variants of the control itself (`size="hero"` and a `tone`),
     // not selectors wrapped round it from outside.
     expect(follows[0]).toMatch(/size="hero"\s+tone="ink"/);
-    expect(markupOf("[slug]/page.tsx")).toMatch(/size="hero"\s+tone="outline"/);
+    expect(markupOf("[slug]/product-page.tsx")).toMatch(/size="hero"\s+tone="outline"/);
     expect(read("ui/design.ts")).not.toContain("FOLLOW_PILL");
     const control = markupOf("ui/follow-button.tsx");
     expect(control).toContain('"h-[40px] justify-center px-5 text-[15px] font-semibold max-sm:h-[44px] max-sm:w-full"');
     expect(control).toContain('tone?: "plain" | "outline" | "ink";');
-    expect(markupOf("[slug]/page.tsx")).toMatch(/<FollowButton\s+kind="listing"\s+value=\{profile\.slug\}/);
+    expect(markupOf("[slug]/product-page.tsx")).toMatch(/<FollowButton\s+kind="listing"\s+value=\{slug\}/);
   });
 
   it("puts the sections in the card's bottom edge, and keeps every address the page had", () => {
@@ -343,7 +343,21 @@ describe("what a person did is flat cards, and what they run is rows", () => {
     // card (board `Person`), under one heading.
     const view = markupOf(VIEW);
     expect(view).toMatch(/<h2 id="maker-products" className=\{SIDE_TITLE\}>\s*Products\s*<\/h2>/);
-    expect(view).toContain("<ProductRows listings={person.maintains} />");
+    // The bare page draws their posts first (board `Person`): the per-author
+    // read's first page, each card in the `person` variant, which names the
+    // product. Absent when they have posted nothing or the read failed.
+    const bare = markupOf("people/[handle]/page.tsx");
+    expect(bare).toContain("fetchAuthorPosts(profile.handle),");
+    expect(bare).toContain("const posts = authored?.posts ?? [];");
+    expect(bare).toMatch(/\{posts\.length > 0 \? \(\s*<section aria-labelledby="person-posts" data-person-posts/);
+    expect(bare).toContain('<ProductPostCard key={post.id} post={post} variant="person" returnTo={here} />');
+    expect(bare).toMatch(/<h2 id="person-posts"[^>]*>\s*Posts\s*<\/h2>/);
+    // The tabs' pages read the stage lines too, for the side card.
+    expect(markupOf("people/[handle]/[tab]/page.tsx")).toContain(
+      "const stages = await readStageLines(doc.contributor.maintains.map((listing) => listing.slug));",
+    );
+    // …with where each product stands, when the page read it.
+    expect(view).toContain("<ProductRows listings={person.maintains} {...(stages ? { stages } : {})} />");
   });
 
   it("copies no placeholder off the board", () => {

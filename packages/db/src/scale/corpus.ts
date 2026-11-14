@@ -365,6 +365,55 @@ export async function loadCorpus(sql: SqlExecutor, shape: CorpusShape): Promise<
        FROM generate_series(1, ${N}) AS n WHERE n % 4 = 0`,
   );
 
+  // ── OPR-3: milestones on every fifth listing (four each, the first two
+  //    shipped, so those listings are `shipping`), and product posts on
+  //    every other listing — two published and one draft each, every
+  //    published one with its comment thread, a comment, and reactions.
+  await step(
+    "product_milestones",
+    `INSERT INTO openproduct.product_milestones (id, profile_id, code, title, summary, position, shipped_at)
+     SELECT md5('ms' || n || '-' || k)::uuid, md5('p' || n)::uuid, 'M' || k, 'Milestone ' || k, 'What milestone ' || k || ' delivers.',
+            k - 1, CASE WHEN k <= 2 THEN $1::timestamptz - ((30 - k) || ' days')::interval ELSE NULL END
+       FROM generate_series(1, ${N}) AS n, generate_series(1, 4) AS k WHERE n % 5 = 0`,
+  );
+  await step(
+    "profiles.stage",
+    `UPDATE openproduct.profiles p SET stage = 'shipping'
+      WHERE EXISTS (SELECT 1 FROM openproduct.product_milestones m WHERE m.profile_id = p.id AND m.shipped_at IS NOT NULL)`,
+  );
+  await step(
+    "threads (product posts)",
+    `INSERT INTO openproduct.threads (id, profile_id, tag, title, author_subject_id, state, last_post_at, created_at)
+     SELECT md5('ppt' || n || '-' || k)::uuid, md5('p' || n)::uuid, 'post', 'Feature shipped on product-' || n, 'usr_maker', 'open',
+            $1::timestamptz - ((n % 300) + k || ' hours')::interval, $1::timestamptz - ((n % 300) + k || ' hours')::interval
+       FROM generate_series(1, ${N}) AS n, generate_series(1, 2) AS k WHERE n % 2 = 0`,
+  );
+  await step(
+    "product_posts",
+    `INSERT INTO openproduct.product_posts (id, profile_id, kind, author_subject_id, blocks, state, published_at, thread_id, created_at, updated_at)
+     SELECT md5('pp' || n || '-' || k)::uuid, md5('p' || n)::uuid,
+            CASE WHEN k = 1 THEN 'feature' ELSE 'version' END, 'usr_' || md5('c' || (1 + n % ${shape.contributors})),
+            '[{"block":"feature","value":"A feature"},{"block":"what","value":"What it does."}]'::jsonb,
+            CASE WHEN k <= 2 THEN 'published' ELSE 'draft' END,
+            CASE WHEN k <= 2 THEN $1::timestamptz - ((n % 300) + k || ' hours')::interval ELSE NULL END,
+            CASE WHEN k <= 2 THEN md5('ppt' || n || '-' || k)::uuid ELSE NULL END,
+            $1::timestamptz - ((n % 300) + k + 1 || ' hours')::interval, $1::timestamptz - ((n % 300) + k || ' hours')::interval
+       FROM generate_series(1, ${N}) AS n, generate_series(1, 3) AS k WHERE n % 2 = 0`,
+  );
+  await step(
+    "posts (product posts)",
+    `INSERT INTO openproduct.posts (id, thread_id, author_subject_id, body, created_at)
+     SELECT md5('ppc' || t.id)::uuid, t.id, 'usr_' || md5('u' || 7), 'A comment on ' || t.title, t.created_at + interval '1 hour'
+       FROM openproduct.threads t WHERE t.tag = 'post'`,
+  );
+  await step(
+    "product_post_reactions",
+    `INSERT INTO openproduct.product_post_reactions (post_id, subject_id, reaction, created_at)
+     SELECT pp.id, 'usr_' || md5('u' || j), (ARRAY['useful','would_use','impressive','curious'])[1 + (j % 4)], pp.published_at + (j || ' minutes')::interval
+       FROM openproduct.product_posts pp, generate_series(1, 3) AS j
+      WHERE pp.state = 'published'`,
+  );
+
   const t = Date.now();
   await sql.execute(`ANALYZE`);
   steps.push({ table: "ANALYZE", rows: 0, ms: Date.now() - t });

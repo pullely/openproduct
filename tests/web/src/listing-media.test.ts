@@ -122,7 +122,7 @@ describe("the panel holds its column", () => {
     // OPR1 — the column is the boards' stack of cards, spelt once in
     // `ui/design.ts`; the track is still explicit, in the stack and in the
     // two-column grid it sits in.
-    expect(read("page.tsx")).toContain("<div className={BOARD_STACK}>");
+    expect(read("product-page.tsx")).toContain("<div className={BOARD_STACK} data-tab-panel={tab}>");
     const design = readFileSync(resolve(APP, "../ui/design.ts"), "utf-8");
     expect(design).toMatch(/export const BOARD_STACK = "grid min-w-0 grid-cols-\[minmax\(0,1fr\)\] /);
     expect(design).toMatch(/export const BOARD_COLUMNS =\s*"grid grid-cols-\[minmax\(0,1fr\)_300px\] /);

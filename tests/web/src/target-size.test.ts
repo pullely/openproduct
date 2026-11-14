@@ -141,7 +141,11 @@ describe("the product card is the target, and its two controls are their own (OP
   it("a seat's button is 40px, 44px on a phone, and the ticket's product link is 44px there", () => {
     expect(read("ui/design.ts")).toMatch(/export const BTN_SEAT =\s*"inline-flex h-\[40px\][^"]*max-sm:h-\[44px\]/);
     const seat = read("help-wanted/seat-card.tsx");
-    expect(seat).toContain("className={`${BTN_SEAT} ");
+    // OPR-3 — the button is the ticket's island (it learns "Requested" from
+    // the overlay); the sizes are the same.
+    const button = read("help-wanted/seat-button.tsx");
+    expect(button).toContain("className={`${BTN_SEAT} ");
+    expect(button).toMatch(/data-seat-action="requested"\s+className=\{`inline-flex h-\[40px\][^`]*max-sm:h-\[44px\]/);
     expect(seat).toMatch(/flex min-h-\[44px\] min-w-0 flex-1 items-center[^`]*sm:hidden/);
   });
 });
@@ -226,7 +230,7 @@ describe("the standalone links that had to be told", () => {
     "topics/page.tsx",
     "collections/page.tsx",
     "submit/page.tsx",
-    "[slug]/page.tsx",
+    "[slug]/product-page.tsx",
   ])("%s carries it too", (file) => {
     expect(read(file)).toMatch(/\btap(-h)?\b|max-sm:min-w-\[44px\]/);
   });

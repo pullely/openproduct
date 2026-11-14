@@ -207,11 +207,34 @@ import {
   type SeamEventDeps,
   type SeamWorkspaceDeps,
 } from "./handlers/seam-events.js";
+import {
+  handleCreateMilestone,
+  handleCreateProductPost,
+  handleDeleteMilestone,
+  handleGetFollowing,
+  handleListCrewProductPosts,
+  handleListMilestones,
+  handleNeedsYou,
+  handleProductPostReaction,
+  handleProductPostsFeed,
+  handleProductPostsOfAuthor,
+  handleProductPostsOfProduct,
+  handlePublicProductPost,
+  handlePublishProductPost,
+  handleRemoveProductPost,
+  handleReorderMilestones,
+  handleSetMilestoneShipped,
+  handleUpdateMilestone,
+  handleUpdateProductPost,
+  type ProductPostHandlerDeps,
+} from "./handlers/product-posts.js";
 import { errorResponse, methodNotAllowed, notFound, withTimings } from "./http.js";
 import { handleOpenproductWorkspacePurge } from "./handlers/workspace-purge.js";
 import {
   parseLaunchPublicId,
+  parseMilestonePublicId,
   parseOrgPublicId,
+  parseProductPostPublicId,
   parseProfilePublicId,
   parseRoleOpeningPublicId,
   roleOpeningPublicId,
@@ -234,6 +257,23 @@ const PROFILE_MEDIA_ITEM_RE =
 const PROFILE_OPENINGS_RE = /^\/internal\/openproduct\/orgs\/([^/]+)\/profiles\/([^/]+)\/role-openings$/;
 const PROFILE_OPENING_RE =
   /^\/internal\/openproduct\/orgs\/([^/]+)\/profiles\/([^/]+)\/role-openings\/([^/]+)$/;
+// OPR-3 — the crew's door for a product's posts, its milestones and "Needs
+// you". PRODUCT posts: `/product-posts`, never `/posts`, which is a thread's
+// replies (CB1). Same authority family as the role openings above.
+const PROFILE_PRODUCT_POSTS_RE =
+  /^\/internal\/openproduct\/orgs\/([^/]+)\/profiles\/([^/]+)\/product-posts$/;
+const PROFILE_PRODUCT_POST_RE =
+  /^\/internal\/openproduct\/orgs\/([^/]+)\/profiles\/([^/]+)\/product-posts\/([^/]+)$/;
+const PROFILE_PRODUCT_POST_PUBLISH_RE =
+  /^\/internal\/openproduct\/orgs\/([^/]+)\/profiles\/([^/]+)\/product-posts\/([^/]+)\/publish$/;
+const PROFILE_MILESTONES_RE =
+  /^\/internal\/openproduct\/orgs\/([^/]+)\/profiles\/([^/]+)\/milestones$/;
+const PROFILE_MILESTONE_RE =
+  /^\/internal\/openproduct\/orgs\/([^/]+)\/profiles\/([^/]+)\/milestones\/([^/]+)$/;
+const PROFILE_MILESTONE_SHIPPED_RE =
+  /^\/internal\/openproduct\/orgs\/([^/]+)\/profiles\/([^/]+)\/milestones\/([^/]+)\/shipped$/;
+const PROFILE_NEEDS_YOU_RE =
+  /^\/internal\/openproduct\/orgs\/([^/]+)\/profiles\/([^/]+)\/needs-you$/;
 
 /** TS0 — the report door and its queue. Live before any public write surface
  *  exists, because OPC-8 makes every later surface wait on it. */
@@ -296,6 +336,13 @@ const ME_ENDORSEMENTS_PATH = "/internal/openproduct/me/endorsements";
  *  cannot bound. */
 const ME_FOLLOW_RE = /^\/internal\/openproduct\/me\/follows\/([a-z]+)\/([^/]+)$/;
 const ME_ENDORSEMENT_SLUG_RE = /^\/internal\/openproduct\/me\/endorsements\/([^/]+)$/;
+/** OPR-3 — my reaction on one product post. THE POST IS IN THE PATH, for the
+ *  reason EN1's slug is: the gateway bounds a write per target, and it never
+ *  reads a body. */
+const ME_PRODUCT_POST_REACTION_RE = /^\/internal\/openproduct\/me\/product-post-reactions\/([^/]+)$/;
+/** OPR-3 — the products and people I follow. A literal beside `/me/follows/…`,
+ *  which is the act; this is the list. */
+const ME_FOLLOWING_PATH = "/internal/openproduct/me/following";
 const ME_SAVED_SLUG_RE = /^\/internal\/openproduct\/me\/saved\/([^/]+)$/;
 
 /** S6 — the seam event receivers; reached only through the gateway, which
@@ -346,6 +393,9 @@ const PUBLIC_PEOPLE_RE = /^\/internal\/public\/openproduct\/people\/([^/]+)$/;
 // second one, so a handle can never be mistaken for a tab or a tab for a
 // handle no matter how either grammar is relaxed later.
 const PUBLIC_MAKER_TAB_RE = /^\/internal\/public\/openproduct\/people\/([^/]+)\/tab\/([^/]+)$/;
+// OPR-3 — the published product posts one person wrote. A literal third
+// segment, so it is neither a handle nor a tab.
+const PUBLIC_PERSON_PRODUCT_POSTS_RE = /^\/internal\/public\/openproduct\/people\/([^/]+)\/product-posts$/;
 // DS4 — the ADDRESSES of every public profile, for the sitemap. Handles and
 // dates only; the page is where a person's details live.
 const PUBLIC_PEOPLE_INDEX_PATH = "/internal/public/openproduct/people";
@@ -474,6 +524,14 @@ const PUBLIC_BOARD_RE = /^\/internal\/public\/openproduct\/launches\/([^/]+)$/;
 const PUBLIC_COLLECTIONS_PATH = "/internal/public/openproduct/collections";
 const PUBLIC_COLLECTION_RE = /^\/internal\/public\/openproduct\/collections\/([^/]+)$/;
 
+// OPR-3 — product posts. Public and anonymous like every other read on this
+// branch: the feed is the same document for everybody, which is what lets it
+// be the front page. `product-posts`, never `posts`.
+const PUBLIC_PRODUCT_POSTS_PATH = "/internal/public/openproduct/product-posts";
+const PUBLIC_PRODUCT_POST_RE = /^\/internal\/public\/openproduct\/product-posts\/([^/]+)$/;
+const PUBLIC_PROFILE_PRODUCT_POSTS_RE =
+  /^\/internal\/public\/openproduct\/projects\/([^/]+)\/product-posts$/;
+
 const PUBLIC_DIRECTORY_PATH = "/internal/public/openproduct/projects";
 const PUBLIC_PROFILE_RE = /^\/internal\/public\/openproduct\/projects\/([^/]+)$/;
 
@@ -581,7 +639,7 @@ export async function route(
  */
 export function routeLabel(pathname: string): string {
   return pathname
-    .replace(/\/(?:prf|org|prj|usr|sub|thr|pst|inb|rep|apl)_[A-Za-z0-9]+/g, "/:id")
+    .replace(/\/(?:prf|org|prj|usr|sub|thr|pst|inb|rep|apl|ppo|pms)_[A-Za-z0-9]+/g, "/:id")
     .replace(/\/\d{4}-w\d{1,2}\b/gi, "/:week")
     .replace(/\/\d{4}-\d{2}-\d{2}\b/g, "/:day")
     .replace(/(\/projects|\/collections|\/topics)\/[^/]+/g, "$1/:slug")
@@ -998,6 +1056,16 @@ async function publicRoutes(
       deps as unknown as MakerHandlerDeps,
     );
   }
+  const personPosts = PUBLIC_PERSON_PRODUCT_POSTS_RE.exec(url.pathname);
+  if (personPosts) {
+    return handleProductPostsOfAuthor(
+      env,
+      url,
+      requestId,
+      decodeURIComponent(personPosts[1]!),
+      deps as unknown as ProductPostHandlerDeps,
+    );
+  }
   const person = PUBLIC_PEOPLE_RE.exec(url.pathname);
   if (person) {
     return handlePublicContributor(env, requestId, decodeURIComponent(person[1]!), deps);
@@ -1015,6 +1083,32 @@ async function publicRoutes(
 
   if (url.pathname === PUBLIC_DIRECTORY_PATH) {
     return handlePublicDirectory(env, requestId, url, deps);
+  }
+
+  // OPR-3 — the feed of product posts, one product's posts, and one post.
+  // Before the profile matcher; `projects/{slug}/product-posts` is two
+  // segments deep, so it can never be read as a slug either way.
+  if (url.pathname === PUBLIC_PRODUCT_POSTS_PATH) {
+    return handleProductPostsFeed(env, url, requestId, deps as unknown as ProductPostHandlerDeps);
+  }
+  const productPost = PUBLIC_PRODUCT_POST_RE.exec(url.pathname);
+  if (productPost) {
+    return handlePublicProductPost(
+      env,
+      requestId,
+      decodeURIComponent(productPost[1]!),
+      deps as unknown as ProductPostHandlerDeps,
+    );
+  }
+  const productPostsOf = PUBLIC_PROFILE_PRODUCT_POSTS_RE.exec(url.pathname);
+  if (productPostsOf) {
+    return handleProductPostsOfProduct(
+      env,
+      url,
+      requestId,
+      decodeURIComponent(productPostsOf[1]!),
+      deps as unknown as ProductPostHandlerDeps,
+    );
   }
 
   // TS5 — before the profile matcher, so `transparency` never parses as a slug.
@@ -1344,6 +1438,23 @@ async function meRoutes(
       deps as unknown as FollowsHandlerDeps,
     );
   }
+  // OPR-3 — my reaction on a product post, and the list of what I follow.
+  const productPostReaction = ME_PRODUCT_POST_REACTION_RE.exec(path);
+  if (productPostReaction) {
+    if (request.method !== "PUT" && request.method !== "DELETE") return methodNotAllowed(requestId);
+    return handleProductPostReaction(
+      env,
+      request,
+      requestId,
+      actor,
+      decodeURIComponent(productPostReaction[1]!),
+      deps as unknown as ProductPostHandlerDeps,
+    );
+  }
+  if (path === ME_FOLLOWING_PATH) {
+    if (request.method !== "GET") return methodNotAllowed(requestId);
+    return handleGetFollowing(env, requestId, actor, deps as unknown as ProductPostHandlerDeps);
+  }
   if (path === ME_ENDORSEMENTS_PATH) {
     // The COLLECTION has no verbs: an endorsement is always about one
     // listing, so there is nothing to do here that is not done above.
@@ -1519,6 +1630,92 @@ async function maintainerRoutes(
       return handleListLaunches(env, requestId, actor, profileId, launchDeps);
     }
     return methodNotAllowed(requestId);
+  }
+
+  // OPR-3 — a product's posts, its milestones and "Needs you". Every route
+  // resolves its org and listing from the URL; an id that does not parse is
+  // the same 404 as one that does not exist.
+  const postDeps = deps as unknown as ProductPostHandlerDeps;
+  const postPublish = PROFILE_PRODUCT_POST_PUBLISH_RE.exec(path);
+  if (postPublish) {
+    const orgId = parseOrgPublicId(postPublish[1]!);
+    const profileId = parseProfilePublicId(postPublish[2]!);
+    const postId = parseProductPostPublicId(postPublish[3]!);
+    if (!orgId || !profileId || !postId) return notFound(requestId, path);
+    if (request.method !== "POST") return methodNotAllowed(requestId);
+    return handlePublishProductPost(env, request, requestId, actor, orgId, profileId, postId, postDeps);
+  }
+  const postMember = PROFILE_PRODUCT_POST_RE.exec(path);
+  if (postMember) {
+    const orgId = parseOrgPublicId(postMember[1]!);
+    const profileId = parseProfilePublicId(postMember[2]!);
+    const postId = parseProductPostPublicId(postMember[3]!);
+    if (!orgId || !profileId || !postId) return notFound(requestId, path);
+    if (request.method === "PATCH") {
+      return handleUpdateProductPost(env, request, requestId, actor, orgId, profileId, postId, postDeps);
+    }
+    if (request.method === "DELETE") {
+      return handleRemoveProductPost(env, requestId, actor, orgId, profileId, postId, postDeps);
+    }
+    return methodNotAllowed(requestId);
+  }
+  const postCollection = PROFILE_PRODUCT_POSTS_RE.exec(path);
+  if (postCollection) {
+    const orgId = parseOrgPublicId(postCollection[1]!);
+    const profileId = parseProfilePublicId(postCollection[2]!);
+    if (!orgId || !profileId) return notFound(requestId, path);
+    if (request.method === "GET") {
+      return handleListCrewProductPosts(env, requestId, actor, orgId, profileId, postDeps);
+    }
+    if (request.method === "POST") {
+      return handleCreateProductPost(env, request, requestId, actor, orgId, profileId, postDeps);
+    }
+    return methodNotAllowed(requestId);
+  }
+  const milestoneShipped = PROFILE_MILESTONE_SHIPPED_RE.exec(path);
+  if (milestoneShipped) {
+    const orgId = parseOrgPublicId(milestoneShipped[1]!);
+    const profileId = parseProfilePublicId(milestoneShipped[2]!);
+    const milestoneId = parseMilestonePublicId(milestoneShipped[3]!);
+    if (!orgId || !profileId || !milestoneId) return notFound(requestId, path);
+    if (request.method !== "PUT" && request.method !== "DELETE") return methodNotAllowed(requestId);
+    return handleSetMilestoneShipped(env, request, requestId, actor, orgId, profileId, milestoneId, postDeps);
+  }
+  const milestoneMember = PROFILE_MILESTONE_RE.exec(path);
+  if (milestoneMember) {
+    const orgId = parseOrgPublicId(milestoneMember[1]!);
+    const profileId = parseProfilePublicId(milestoneMember[2]!);
+    const milestoneId = parseMilestonePublicId(milestoneMember[3]!);
+    if (!orgId || !profileId || !milestoneId) return notFound(requestId, path);
+    if (request.method === "PATCH") {
+      return handleUpdateMilestone(env, request, requestId, actor, orgId, profileId, milestoneId, postDeps);
+    }
+    if (request.method === "DELETE") {
+      return handleDeleteMilestone(env, requestId, actor, orgId, profileId, milestoneId, postDeps);
+    }
+    return methodNotAllowed(requestId);
+  }
+  const milestoneCollection = PROFILE_MILESTONES_RE.exec(path);
+  if (milestoneCollection) {
+    const orgId = parseOrgPublicId(milestoneCollection[1]!);
+    const profileId = parseProfilePublicId(milestoneCollection[2]!);
+    if (!orgId || !profileId) return notFound(requestId, path);
+    if (request.method === "GET") return handleListMilestones(env, requestId, actor, orgId, profileId, postDeps);
+    if (request.method === "POST") {
+      return handleCreateMilestone(env, request, requestId, actor, orgId, profileId, postDeps);
+    }
+    if (request.method === "PUT") {
+      return handleReorderMilestones(env, request, requestId, actor, orgId, profileId, postDeps);
+    }
+    return methodNotAllowed(requestId);
+  }
+  const needsYou = PROFILE_NEEDS_YOU_RE.exec(path);
+  if (needsYou) {
+    const orgId = parseOrgPublicId(needsYou[1]!);
+    const profileId = parseProfilePublicId(needsYou[2]!);
+    if (!orgId || !profileId) return notFound(requestId, path);
+    if (request.method !== "GET") return methodNotAllowed(requestId);
+    return handleNeedsYou(env, requestId, actor, orgId, profileId, postDeps);
   }
 
   const collection = ORG_PROFILES_RE.exec(path);

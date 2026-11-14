@@ -83,7 +83,7 @@ describe("the line a maker pastes is on the listing", () => {
   it("is where the person who would paste it already is", () => {
     // A badge is worth nothing unless the maintainer can find the line
     // without reading documentation.
-    const page = code("[slug]/page.tsx");
+    const page = code("[slug]/product-page.tsx");
     expect(page).toContain("<BadgeSnippet");
     // OB7 — one line per badge the maker can choose, each at its own path.
     expect(page).toContain("badgeMarkdown(apex, profile.slug, variant)");
@@ -108,12 +108,12 @@ describe("the line a maker pastes is on the listing", () => {
   it("shows nothing at all without a canonical origin", () => {
     // A snippet copied off a preview host would put that host in somebody's
     // README permanently.
-    expect(code("[slug]/page.tsx")).toContain("if (!apex) return null;");
-    expect(code("[slug]/page.tsx")).toContain("badgeChoices ? (");
+    expect(code("[slug]/product-page.tsx")).toContain("if (!apex) return null;");
+    expect(code("[slug]/product-page.tsx")).toContain("if (choices.length === 0) return null;");
   });
 
   it("tells the reader what the badge will say before they paste it", () => {
-    expect(code("[slug]/page.tsx")).toContain("badgeValue(profile)");
+    expect(code("[slug]/product-page.tsx")).toContain("badgeValue(profile)");
     // `{}` rather than `{ launch: undefined }`: this lane runs with
     // `exactOptionalPropertyTypes`, under which an explicit `undefined` is
     // not the same as an absent key — which is the same distinction the field
@@ -150,7 +150,7 @@ describe("OB7 — the variants are served as the bare badge is", () => {
   });
 
   it("offers each variant on the listing only when it has something true to say", () => {
-    const page = code("[slug]/page.tsx");
+    const page = code("[slug]/product-page.tsx");
     expect(page).toContain('if (variant !== "listed" && value === "listed") continue;');
     expect(code("[slug]/badge-snippet.tsx")).toContain('aria-label="Which badge"');
   });

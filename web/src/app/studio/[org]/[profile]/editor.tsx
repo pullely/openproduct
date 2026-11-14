@@ -23,7 +23,7 @@
 
 import type { ReactNode } from "react";
 
-import { canonicaliseStack, labelOf, listingBasePath, topicPath } from "@openproduct/contracts";
+import { canonicaliseStack, labelOf, listingBasePath, listingSettingsPath, topicPath } from "@openproduct/contracts";
 import type { MaintainerProfile } from "@openproduct/contracts";
 
 import { AppLink } from "../../../ui/link";
@@ -56,7 +56,9 @@ export interface StepHrefs {
 export function stepHrefs(org: string, profileId: string): StepHrefs {
   const base = listingBasePath(org, profileId);
   return {
-    overview: base,
+    // OPR-3 — the overview is the listing's settings page; the base address
+    // only forwards (to the product's page once it is published).
+    overview: listingSettingsPath(org, profileId),
     details: `${base}/details`,
     media: `${base}/media`,
     topics: `${base}/topics`,

@@ -25,6 +25,7 @@
 
 import type { CatalogCard } from "./catalog-api.js";
 import type { MediaThumbnail } from "./media.js";
+import type { ProductStage } from "./product-posts.js";
 
 /** What one row of the index holds. Every field is a copy of a public one. */
 export interface IndexDocument {
@@ -58,9 +59,16 @@ export interface SearchResult {
    * the rank, in one batch — NEVER AN ORDERING INPUT.
    */
   readonly thumbnail: MediaThumbnail | null;
+  /**
+   * A product hit's stage (OPR-3) — `idea` or `shipping` — so a row can say
+   * which; `null` for every non-product hit and for a product the batched
+   * read no longer finds. Read after the rank, like the logo: NEVER AN
+   * ORDERING INPUT.
+   */
+  readonly stage: ProductStage | null;
 }
 
-export const SEARCH_RESULT_KEYS = ["entityId", "kind", "matched", "summary", "thumbnail", "title"] as const;
+export const SEARCH_RESULT_KEYS = ["entityId", "kind", "matched", "stage", "summary", "thumbnail", "title"] as const;
 
 /**
  * The clauses of `search.relevance`, strongest first. The numeric values ARE
@@ -223,6 +231,8 @@ export function rankSearch(
         // Filled by the handler after the rank, in one batched read
         // (openproduct-studio OSD3) — the rank is pure and never sees it.
         thumbnail: null,
+        // OPR-3 — likewise filled after the rank, in one batched read.
+        stage: null,
       },
       rank: CLAUSE_RANK[clause],
       activity: candidate.activity,

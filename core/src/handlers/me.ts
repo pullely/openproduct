@@ -22,6 +22,8 @@ import {
   parseOverlayIds,
   parseFollowKeys,
   parseOverlayPostIds,
+  parseOverlayProductPostIds,
+  parseOverlayOpeningIds,
   followKey,
   type FollowTarget,
   parseProfileLink,
@@ -38,7 +40,16 @@ import type {
 import type { ActorContext } from "../authorize.js";
 import type { Env } from "../env.js";
 import { errorResponse, successResponse, validationError } from "../http.js";
-import { orgPublicId, profilePublicId, projectPublicId, type Uuid } from "../ids.js";
+import {
+  orgPublicId,
+  parseProductPostPublicId,
+  parseRoleOpeningPublicId,
+  productPostPublicId,
+  profilePublicId,
+  projectPublicId,
+  roleOpeningPublicId,
+  type Uuid,
+} from "../ids.js";
 import { publishEndorsementCounts } from "./endorsement-counts.js";
 import { mediaFactOf, thumbnailsForSlugs } from "./media.js";
 
@@ -79,6 +90,12 @@ export interface MeHandlerDeps {
     // the studio list (the maintainer's own rows, drafts included).
     | "listPublicMediaForSlugs"
     | "listMediaForProfiles"
+    // OPR-3 — the overlay's three new bounded questions: my reaction on the
+    // page's product posts, which of its products I am on the crew of, and
+    // which of its seats I have asked for.
+    | "listProductPostReactionsBy"
+    | "listCrewOf"
+    | "listPendingApplicationOpenings"
   >;
   /** The moment an exit's kept rows are stamped with (the handle's release). */
   now?: () => Date;
@@ -515,10 +532,22 @@ export async function handleGetOverlay(
   // DQ1 — the post ids the page rendered. Bounded by what it drew, like
   // every other overlay question.
   const postIds = parseOverlayPostIds(url.searchParams.get("posts"));
+  // OPR-3 — three more bounded questions. PRODUCT posts are their own
+  // parameter and their own answer: a product post's id (`ppo_…`) and a
+  // comment's are different namespaces, as a comment's and a slug's are.
+  // Public ids on the wire, both ways; the table's ids stop here.
+  const productPostIds = parseOverlayProductPostIds(url.searchParams.get("productPosts")).flatMap((id) => {
+    const uuid = parseProductPostPublicId(id);
+    return uuid ? [uuid] : [];
+  });
+  const openingIds = parseOverlayOpeningIds(url.searchParams.get("openings")).flatMap((id) => {
+    const uuid = parseRoleOpeningPublicId(id);
+    return uuid ? [uuid] : [];
+  });
   // Four reads, one round trip: the counts, the follows, and — for the account
   // menu's identity block — the visitor's own handle and whether their page is
   // on.
-  const [record, handle, contributor, followed, postVotes, unread] = await Promise.all([
+  const [record, handle, contributor, followed, postVotes, unread, reacted, crew, requested] = await Promise.all([
     deps.repo.overlayFor(actor.subjectId, ids),
     deps.repo.getActiveHandleForSubject(actor.subjectId),
     deps.repo.getContributor(actor.subjectId),
@@ -537,7 +566,23 @@ export async function handleGetOverlay(
     // to take from the page — and a second fetch for one number on every page
     // would double the personalisation traffic of the whole site.
     deps.repo.countUnreadNotifications(actor.subjectId),
+    // OPR-3 — each asked only when the page named something to ask about, so
+    // a page with no product posts, no slugs or no seats pays nothing for it.
+    productPostIds.length === 0
+      ? Promise.resolve([] as Awaited<ReturnType<MeHandlerDeps["repo"]["listProductPostReactionsBy"]>>)
+      : deps.repo.listProductPostReactionsBy(actor.subjectId, productPostIds),
+    // The same slugs `saved` and `endorsed` are asked about: a product page
+    // asks about itself, and the answer is what lets a cached page show its
+    // maker view.
+    ids.length === 0
+      ? Promise.resolve([] as Awaited<ReturnType<MeHandlerDeps["repo"]["listCrewOf"]>>)
+      : deps.repo.listCrewOf(actor.subjectId, ids),
+    openingIds.length === 0
+      ? Promise.resolve([] as string[])
+      : deps.repo.listPendingApplicationOpenings(actor.subjectId, openingIds),
   ]);
+  const reactions: Record<string, MeOverlay["reactions"][string]> = {};
+  for (const row of reacted) reactions[productPostPublicId(row.postId)] = row.reaction;
   const overlay: MeOverlay = {
     saved: record.savedSlugs,
     endorsed: record.endorsedSlugs,
@@ -549,6 +594,16 @@ export async function handleGetOverlay(
     follows: followed,
     postVotes,
     unread,
+    reactions,
+    // The ids the crew routes are addressed by — public ids, and only for a
+    // listing this subject is already on the crew of, so nothing here is
+    // news to them.
+    crew: crew.map((entry) => ({
+      slug: entry.slug,
+      org: orgPublicId(entry.orgId as Uuid),
+      profile: profilePublicId(entry.profileId as Uuid),
+    })),
+    requestedOpenings: requested.map((id) => roleOpeningPublicId(id)),
   };
   return successResponse({ overlay }, requestId, 200);
 }

@@ -9,8 +9,11 @@
  * has no JSX — can hold what a seat says and what its button does.
  */
 import {
+  PRODUCT_STAGE_LABELS,
   demandLine,
+  isProductStage,
   type MediaThumbnail,
+  type ProductStage,
   type PublicProfileCard,
   type PublicRoleOpening,
 } from "@openproduct/contracts";
@@ -24,7 +27,13 @@ export interface Seat {
   /** The apply door's token, or null before the maintainers minted one. */
   readonly joinLinkRef: string | null;
   readonly demand: PublicRoleOpening["demand"];
-  readonly product: { readonly slug: string; readonly thumbnail: MediaThumbnail | null };
+  readonly product: {
+    readonly slug: string;
+    readonly thumbnail: MediaThumbnail | null;
+    /** OPR-3 — whether the seat is on a shipping product or on an idea; null
+     *  when the catalogue did not say. */
+    readonly stage: ProductStage | null;
+  };
 }
 
 /** How many seats the page shows before *Show more*, and how many each press
@@ -44,7 +53,7 @@ export const SEAT_PRODUCT_LIMIT = 40;
 
 /** A product's open seats, in the order its maintainers keep them. */
 export function seatsOf(
-  product: Pick<PublicProfileCard, "slug" | "thumbnail">,
+  product: Pick<PublicProfileCard, "slug" | "thumbnail"> & { stage?: unknown },
   openings: readonly PublicRoleOpening[],
 ): Seat[] {
   return openings
@@ -55,7 +64,11 @@ export function seatsOf(
       commitment: opening.commitment,
       joinLinkRef: opening.joinLinkRef,
       demand: opening.demand,
-      product: { slug: product.slug, thumbnail: product.thumbnail },
+      product: {
+        slug: product.slug,
+        thumbnail: product.thumbnail,
+        stage: isProductStage(product.stage) ? product.stage : null,
+      },
     }));
 }
 
@@ -91,9 +104,70 @@ export function seatTotals(cards: readonly Pick<PublicProfileCard, "roleOpeningC
  * only in that one case. Empty when neither half exists; the card then draws
  * no line rather than an empty one.
  */
-export function seatSub(seat: Pick<Seat, "commitment" | "demand">): string {
-  return [seat.commitment?.trim() ?? "", demandLine(seat.demand) ?? ""].filter((part) => part.length > 0).join(" · ");
+export function seatSub(seat: Pick<Seat, "commitment" | "demand"> & { product?: { stage?: ProductStage | null } }): string {
+  // OPR-3 — the line opens with the stage of the seat's product (board
+  // `Seats`: "Shipping · …", "Idea · …") when the catalogue said it.
+  const stage = seat.product?.stage ? PRODUCT_STAGE_LABELS[seat.product.stage] : "";
+  return [stage, seat.commitment?.trim() ?? "", demandLine(seat.demand) ?? ""].filter((part) => part.length > 0).join(" · ");
 }
+
+/**
+ * The filter (openproduct-redesign OPR-3; boards `Seats`, `PhoneSeats`):
+ * every seat, the seats on shipping products, the seats on ideas.
+ */
+export const SEAT_STAGE_FILTERS = ["all", "shipping", "idea"] as const satisfies readonly ("all" | ProductStage)[];
+export type SeatStageFilter = (typeof SEAT_STAGE_FILTERS)[number];
+
+export const SEAT_STAGE_FILTER_LABEL: Record<SeatStageFilter, string> = {
+  all: "All",
+  shipping: "On shipping products",
+  idea: "On ideas",
+};
+
+/** The segment the filtered lists live under, and each stage's word in it —
+ *  the Products page's own (`/products/stage/shipping`, `…/ideas`). */
+export const SEATS_STAGE_SEGMENT = "stage";
+export const SEAT_STAGE_SEGMENT: Record<Exclude<SeatStageFilter, "all">, string> = {
+  shipping: "shipping",
+  idea: "ideas",
+};
+export const SEAT_STAGE_SEGMENTS = Object.values(SEAT_STAGE_SEGMENT);
+
+/**
+ * Where a filter lives: `/help-wanted`, `/help-wanted/stage/shipping`,
+ * `/help-wanted/stage/ideas`. A PATH, NEVER A QUERY STRING — a page that
+ * reads `?stage=` is rendered per request and goes out `no-store`; each of
+ * these three is one static document (design.md §4, I6).
+ */
+export function seatsPath(stage: SeatStageFilter = "all"): string {
+  return stage === "all" ? "/help-wanted" : `/help-wanted/${SEATS_STAGE_SEGMENT}/${SEAT_STAGE_SEGMENT[stage]}`;
+}
+
+/** The filter a `/help-wanted/stage/<segment>` address names, or null (a 404). */
+export function seatStageOfSegment(segment: unknown): Exclude<SeatStageFilter, "all"> | null {
+  if (segment === SEAT_STAGE_SEGMENT.shipping) return "shipping";
+  if (segment === SEAT_STAGE_SEGMENT.idea) return "idea";
+  return null;
+}
+
+/** How many seats are open under each filter, from the catalogue's cards —
+ *  whole even when the list below is bounded. */
+export function seatStageCounts(
+  cards: readonly (Pick<PublicProfileCard, "roleOpeningCount"> & { stage?: unknown })[],
+): Record<SeatStageFilter, number> {
+  const sum = (list: typeof cards) => list.reduce((total, card) => total + Math.max(card.roleOpeningCount, 0), 0);
+  return {
+    all: sum(cards),
+    shipping: sum(cards.filter((card) => card.stage === "shipping")),
+    idea: sum(cards.filter((card) => card.stage === "idea")),
+  };
+}
+
+/** What a filtered list says when it holds no seat. */
+export const SEATS_EMPTY_AT_STAGE: Record<Exclude<SeatStageFilter, "all">, string> = {
+  shipping: "No shipping product has an open seat right now.",
+  idea: "No idea has an open seat right now.",
+};
 
 /** The request-to-join door for a seat: the console's `/join/{token}` (OD4,
  *  OX2), told where the visitor came from. */
@@ -123,13 +197,15 @@ export type SeatAction =
 
 export const SEAT_TAKE_LABEL = "Take the seat";
 export const SEAT_REQUESTED_LABEL = "Requested";
+/** Where a requested seat's button goes: the visitor's own requests. */
+export const SEAT_REQUESTED_HREF = "/me?section=seats";
 export const SEAT_CLOSED_LABEL = "Not accepting offers yet";
 
 export function seatAction(
   seat: Pick<Seat, "joinLinkRef">,
   options: { readonly consoleOrigin: string; readonly requested?: boolean },
 ): SeatAction {
-  if (options.requested === true) return { state: "requested", label: SEAT_REQUESTED_LABEL, href: "/me?section=seats" };
+  if (options.requested === true) return { state: "requested", label: SEAT_REQUESTED_LABEL, href: SEAT_REQUESTED_HREF };
   if (seat.joinLinkRef === null) return { state: "closed", label: SEAT_CLOSED_LABEL, href: null };
   return { state: "open", label: SEAT_TAKE_LABEL, href: seatDoorHref(options.consoleOrigin, seat.joinLinkRef) };
 }

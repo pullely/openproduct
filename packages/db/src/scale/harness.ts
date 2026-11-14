@@ -48,6 +48,10 @@ export async function contextFor(repo: OpenproductRepository): Promise<ProbeCont
   const thread = await repo.getLaunchThread(profileId);
   if (!thread) throw new Error(`corpus listing ${slug} has no launch thread`);
   const slugs = (await repo.listPublicCards(100)).map((c) => c.slug);
+  // OPR-3 — listing 60 is even, so the corpus gave it product posts.
+  const productPost = (await repo.listPublicProductPostsForProfile(profileId, { cursor: null, limit: 1 })).posts[0];
+  if (!productPost) throw new Error(`corpus listing ${slug} has no published product post`);
+  if (!productPost.authorSubjectId) throw new Error(`corpus listing ${slug}'s product post has no author`);
   // OS5 — the catalogue, computed at the corpus's instant with the same
   // freshness rule the live read is probed with, so the materialised page is
   // a probe against a table the sweep would have written.
@@ -69,5 +73,7 @@ export async function contextFor(repo: OpenproductRepository): Promise<ProbeCont
     threadId: thread.id,
     handle: "maker-1",
     collectionSlug: "collection-1",
+    productPostId: productPost.id,
+    productPostAuthor: productPost.authorSubjectId,
   };
 }

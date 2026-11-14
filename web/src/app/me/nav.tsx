@@ -1,6 +1,6 @@
 import { EYEBROW } from "../ui/design";
 import { AppLink } from "../ui/link";
-import { GLYPH_PRODUCTS, GLYPH_SAVED, GLYPH_SEATS, Glyph } from "./glyph";
+import { GLYPH_EDIT, GLYPH_FOLLOWING, GLYPH_PRODUCTS, GLYPH_SAVED, GLYPH_SEATS, Glyph } from "./glyph";
 import { meSectionHref, type MeSection } from "./section";
 
 // The switcher between the sections of `/me`, and the columns the signed-in
@@ -19,8 +19,9 @@ interface SectionDef {
 
 /**
  * The switcher's rows, in the board's order. A colour here is a KIND
- * (design.md §3): amber is what shipped — your products; ink is what you
- * kept; teal is seats.
+ * (design.md §3): amber is what shipped — your products; slate is what you
+ * follow; ink is what you kept; teal is seats; lavender is what is not out
+ * yet — your drafts.
  */
 export const ME_SECTIONS: readonly SectionDef[] = [
   {
@@ -29,6 +30,13 @@ export const ME_SECTIONS: readonly SectionDef[] = [
     glyph: GLYPH_PRODUCTS,
     tile: "bg-amber-soft text-amber-ink",
     tileOn: "bg-amber text-card",
+  },
+  {
+    key: "following",
+    label: "Following",
+    glyph: GLYPH_FOLLOWING,
+    tile: "bg-version-soft text-version",
+    tileOn: "bg-version text-card",
   },
   {
     key: "saved",
@@ -43,6 +51,13 @@ export const ME_SECTIONS: readonly SectionDef[] = [
     glyph: GLYPH_SEATS,
     tile: "bg-seat-soft text-seat-ink",
     tileOn: "bg-seat text-card",
+  },
+  {
+    key: "drafts",
+    label: "Drafts",
+    glyph: GLYPH_EDIT,
+    tile: "bg-idea-soft text-idea",
+    tileOn: "bg-idea text-card",
   },
 ];
 

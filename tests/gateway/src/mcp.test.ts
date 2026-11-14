@@ -15,6 +15,7 @@ import {
   AGENT_TOOLS,
   CATALOG_CARD_KEYS,
   authored,
+  derived,
   observed,
 } from "@openproduct/contracts";
 import { route } from "@openproduct-gateway/router";
@@ -45,6 +46,10 @@ function card(slug: string, over: Partial<{ category: string; licence: string; o
     openingCommitments: authored([], "maintainer"),
     hasLiveUrl: authored(false, "maintainer"),
     indexable: observed(true, "linked_repo", AT),
+    // OPR-3 — idea or shipping, derived from the milestones.
+    stage: derived("idea", "product.stage", ["product_milestones"], AT),
+    milestoneCounts: derived({ shipped: 0, total: 0 }, "product.milestones-shipped", ["product_milestones"], AT),
+    crewCount: derived(1, "product.crew-count", ["published_maintainers"], AT),
     // MD0 — the media plane on the wire. Empty on every listing until MD1
     // (gated on WC-C) gives a maker somewhere to put a picture; the key is
     // here regardless, because an MCP client parses the same key set the API

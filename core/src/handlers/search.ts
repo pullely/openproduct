@@ -25,6 +25,7 @@ import {
   MAX_SEARCH_LIMIT,
   DEFAULT_SEARCH_LIMIT,
   SEARCH_MAKER_LIMIT,
+  SEARCH_MAKER_PRODUCT_LIMIT,
   SEARCH_TOPIC_LIMIT,
   buildProductIndex,
   makerMatchField,
@@ -32,7 +33,7 @@ import {
   queryTerms,
   rankSearch,
   type Candidate,
-  type SearchMakerHit,
+  type SearchPersonHit,
 } from "@openproduct/contracts";
 import type { OpenproductRepository } from "@openproduct/db";
 
@@ -65,6 +66,10 @@ export interface SearchHandlerDeps {
     | "markSearchIndexChecked"
     // SR0 — makers, read LIVE rather than from the index.
     | "searchPublicContributors"
+    // OPR-3 — a product hit's stage and a person's products, each one
+    // batched read made after the rank.
+    | "listStagesForSlugs"
+    | "listProductsForHandles"
   >;
   now?: () => number;
 }
@@ -151,11 +156,11 @@ export async function handleSearch(
   // only way that happens is a query that matched through SQL folding this
   // function does not do, and "we found you but cannot say why" is not a
   // sentence worth shipping.
-  const makers: SearchMakerHit[] = [];
+  const matchedPeople: Array<Omit<SearchPersonHit, "products">> = [];
   for (const row of people) {
     const matched = makerMatchField(row, raw);
     if (matched === null) continue;
-    makers.push({ handle: row.handle, displayName: row.displayName, matched });
+    matchedPeople.push({ handle: row.handle, displayName: row.displayName, matched });
   }
 
   // openproduct-studio OSD3 — THE LOGO, AFTER THE RANK. The index carries no
@@ -165,10 +170,42 @@ export async function handleSearch(
   // rather than failing the search.
   const ranked = rankSearch(candidates, terms, limit);
   const productSlugs = ranked.filter((hit) => hit.kind === "product").map((hit) => hit.entityId);
-  const thumbnailFor = await thumbnailsForSlugs(deps.repo, productSlugs).catch(() => () => null);
+  // OPR-3 — AND THE STAGE, AND EACH PERSON'S PRODUCTS, the same way: after
+  // the rank, one batched read each, bounded by the page (at most `limit`
+  // slugs, at most eight people with six products apiece). Neither enters
+  // the order, and either read failing costs its own decoration — a row
+  // without its stage word, a person row with nothing to open — never the
+  // search.
+  const [thumbnailFor, stages, productsOf] = await Promise.all([
+    thumbnailsForSlugs(deps.repo, productSlugs).catch(() => () => null),
+    productSlugs.length === 0
+      ? Promise.resolve(new Map<string, "idea" | "shipping">())
+      : decoration(() => deps.repo.listStagesForSlugs(productSlugs), new Map<string, "idea" | "shipping">()),
+    matchedPeople.length === 0
+      ? Promise.resolve(new Map<string, Array<{ slug: string; stage: "idea" | "shipping" }>>())
+      : decoration(
+          () =>
+            deps.repo.listProductsForHandles(
+              matchedPeople.map((person) => person.handle),
+              SEARCH_MAKER_PRODUCT_LIMIT,
+            ),
+          new Map<string, Array<{ slug: string; stage: "idea" | "shipping" }>>(),
+        ),
+  ]);
   const results = ranked.map((hit) =>
-    hit.kind === "product" ? { ...hit, thumbnail: thumbnailFor(hit.entityId) } : hit,
+    hit.kind === "product"
+      ? { ...hit, thumbnail: thumbnailFor(hit.entityId), stage: stages.get(hit.entityId.toLowerCase()) ?? null }
+      : hit,
   );
+  const makers: SearchPersonHit[] = matchedPeople.map((person) => ({
+    ...person,
+    // `{slug, name, stage}` and nothing else — a listing is named by its slug.
+    products: (productsOf.get(person.handle) ?? []).map((product) => ({
+      slug: product.slug,
+      name: product.slug,
+      stage: product.stage,
+    })),
+  }));
 
   return successResponse(
     {
@@ -184,6 +221,18 @@ export async function handleSearch(
     requestId,
     200,
   );
+}
+
+/**
+ * A read whose failure costs only what it would have drawn. However it fails
+ * — a rejected promise or a throw before one exists — the search answers.
+ */
+async function decoration<T>(read: () => Promise<T>, fallback: T): Promise<T> {
+  try {
+    return await read();
+  } catch {
+    return fallback;
+  }
 }
 
 function boundedLimit(raw: string | null): number {

@@ -187,7 +187,7 @@ describe("the rows the layer traverses", () => {
     // OPR1 — the product card replaced the build tile.
     "feed/product-card.tsx",
     "launches/board.tsx",
-    "[slug]/page.tsx",
+    "[slug]/product-page.tsx",
   ])("%s marks its row", (file) => {
     expect(read(file)).toContain("data-keyrow");
   });

@@ -12,7 +12,7 @@
 import { redirect } from "next/navigation";
 import { cache } from "react";
 
-import { listingBasePath, type MaintainerProfile } from "@openproduct/contracts";
+import { listingBasePath, listingSettingsPath, type MaintainerProfile } from "@openproduct/contracts";
 
 import { readSession } from "../../../auth/session-server";
 import { LISTING_VOCABULARY, noticeFrom } from "../../notices";
@@ -121,7 +121,7 @@ export async function loadListing<T = never>(
         <FailurePanel
           kind="missing"
           what="There is no listing here that you maintain. It may have been removed, the address may be wrong, or it may belong to somebody else."
-          actions={[{ label: "Your listings", href: "/studio" }]}
+          actions={[{ label: "Your products", href: "/me" }]}
         />
       ),
     };
@@ -135,7 +135,7 @@ export async function loadListing<T = never>(
           what="This listing could not be loaded. It is not something you did, and trying again in a moment usually works."
           actions={[
             { label: "Try again", href: here },
-            { label: "Your listings", href: "/studio" },
+            { label: "Your products", href: "/me" },
           ]}
         />
       ),
@@ -172,8 +172,8 @@ export async function loadListing<T = never>(
 
 /** The crumbs every step carries: listings → this listing → this step. */
 export function stepCrumbs(org: string, profileId: string, slug: string, label?: string) {
-  const base = [{ label: "Listings", href: "/studio" }];
+  const base = [{ label: "Your products", href: "/me" }];
   return label
-    ? [...base, { label: slug, href: listingBasePath(org, profileId) }, { label }]
+    ? [...base, { label: slug, href: listingSettingsPath(org, profileId) }, { label }]
     : [...base, { label: slug }];
 }

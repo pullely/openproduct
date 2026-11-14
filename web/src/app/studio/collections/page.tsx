@@ -59,7 +59,7 @@ export default async function StudioCollectionsPage(props: PageProps) {
         what="Your collections could not be loaded. It is not something you did, and trying again in a moment usually works."
         actions={[
           { label: "Try again", href: page },
-          { label: "Your listings", href: "/studio" },
+          { label: "Your products", href: "/me" },
         ]}
       />
     );
@@ -71,7 +71,7 @@ export default async function StudioCollectionsPage(props: PageProps) {
   return (
     <StudioFrame
       vocabulary={COLLECTION_VOCABULARY}
-      crumbs={[{ label: "Listings", href: "/studio" }, { label: "Collections" }]}
+      crumbs={[{ label: "Your products", href: "/me" }, { label: "Collections" }]}
       title="Collections"
       notice={noticeFrom(search, COLLECTION_VOCABULARY)}
     >

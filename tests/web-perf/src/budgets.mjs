@@ -40,7 +40,29 @@
 
 import { chromium } from "playwright";
 
-import { ABSENT, CARDS, MOVED, ROUTES, SAMPLE_SLUG } from "./fixture.mjs";
+import { ABSENT, CARDS, MOVED, ROUTES, SAMPLE_POST, SAMPLE_SLUG } from "./fixture.mjs";
+
+/**
+ * A `Location` on this app, as a path.
+ *
+ * A `redirects()` entry answers a path. A route handler answers an absolute
+ * URL built from `request.url`, and `next start` builds that from its own
+ * idea of the host (`localhost`) whatever address the request came in on —
+ * so the same destination reads `http://localhost:3187/me` here and
+ * `https://openproduct.live/me` deployed. Both are this app. Anything on
+ * another host or port is returned whole, and fails the comparison.
+ */
+function onThisApp(location, base) {
+  try {
+    const target = new URL(location, base);
+    const app = new URL(base);
+    const loopback = (host) => host === "localhost" || host === "127.0.0.1" || host === "[::1]";
+    const same = target.port === app.port && (target.hostname === app.hostname || (loopback(target.hostname) && loopback(app.hostname)));
+    return same ? target.pathname + target.search : location;
+  } catch {
+    return location;
+  }
+}
 
 /** CI headroom for the timing budgets only. The guarded quantity is the same;
  *  a shared runner just gets room. Deterministic budgets ignore this. */
@@ -137,6 +159,34 @@ const RUNS = Number(process.env.XP4_RUNS ?? 3);
  * experiences.
  */
 const FONTS = { bytes: 82_000, files: 4 };
+
+/**
+ * OPR-3 — THE FIFTH FILE, ON THE PAGES THAT DRAW IT, AND ONLY THERE.
+ *
+ * An idea is quoted in Lora's italic (boards `Feed`, `ProductIdea`: the
+ * quote on a New idea post, the idea's page). OPR1 declared the italic with
+ * `preload: false` so that the browser takes it only on a page that draws a
+ * quote in it — and until OPR2 no walked route did. Now three do, and each
+ * fetches the one file the design asks for:
+ *
+ *   /                    5 files   98,664 B   an idea post is in the feed
+ *   /feed/{page two}     5 files   98,664 B   one is on its second page too
+ *   /product-01          5 files   98,664 B   an idea's own page
+ *   every other route    4 files   75,924 B   as before
+ *
+ * 98,664 is the four above plus the italic's 22,740 — measured by this lane,
+ * and the same five files OPR1's arithmetic named.
+ *
+ * NOT A LIST OF ROUTES: a page may fetch the italic IF IT DRAWS ITALIC SERIF
+ * TEXT, which the measurement reads off the page itself (`drawsSerifItalic`).
+ * So a route that starts quoting an idea is allowed its file without an edit
+ * here, and a route that fetches the italic WITHOUT drawing a word in it —
+ * the italic preloaded again, which is the regression `FONTS.files` was
+ * written to catch — still fails, on every route, as it did.
+ *
+ * The same thin headroom as above, to the byte: 98,664 + 6,076.
+ */
+const FONTS_WITH_ITALIC = { bytes: 104_740, files: 5 };
 
 /**
  * OPP11 — THE JS BUDGETS CAME DOWN BY 1,107 BYTES, ON EVERY ROUTE.
@@ -387,7 +437,42 @@ const BUDGETS = {
   // assertion over a launch-day fixture: the fixture's board carries a hero
   // thumbnail on the listings that have one. The document grew by the
   // thumbnails' markup; measured and named in the MD3 entry.
-  "/": { js: 173_858, doc: 17_500, cls: 0.02, lcp: 2000, reads: 3, images: 400_000 },
+  //
+  // OPR-3 — `/` IS THE FEED OF POSTS, AND IT MAKES TWO READS: the feed's
+  // first page and the directory's first page (the right column's "Worth
+  // following" and "Open seats"), issued concurrently. `reads` says 2.
+  //
+  // RE-MEASURED AS THE FEED, WITH THE NUMBERS NAMED (2026-11-15). The limits
+  // above were the product list's. On the first full build of the feed this
+  // lane read 184,327 B of JS against 173,858 — and every other archetype
+  // was over by the same ten kilobytes, which is what said the weight was not
+  // the feed's own. Four things, each measured by this lane on a full build:
+  //
+  //   the contracts package declares `sideEffects: false`, so a page carries
+  //   the modules it uses rather than every one the barrel re-exports; the
+  //   maker view is fetched for a product's crew and the two personal
+  //   columns for a session, and nobody else downloads either
+  //                                                      184,327 → 173,314
+  //   the post templates (the block catalogue and its validator) are a
+  //   module of their own, so the shell's ids and labels do not drag them
+  //   along; and the feed's cards are drawn on the server and handed to the
+  //   client list as children — the card's code is fetched when Show more is
+  //   pressed                                            173,314 → 167,982
+  //   the list's own filter no longer imports the block catalogue, and the
+  //   full card's footer (the reaction controls) is a module only the pages
+  //   that draw full cards import                        167,982 → 166,205
+  //   the six class strings every page's bundle draws with are a file of
+  //   their own (`ui/design-core.ts`), so the layout, the error boundary and
+  //   the feed's list stop carrying a copy of all of `ui/design.ts` each
+  //                                                      166,205 → 164,296
+  //
+  // 164,296 B across 14 chunks, and a document of 16,542 B
+  // (the cards are in the document now, where the list used to draw them
+  // from its props: 14,761 B before the cards moved to the server). 168,100
+  // and 17,100 are those plus the ~2.3% and ~2.8% this table carries —
+  // BOTH LOWER than the product list's limits they replace (173,858 and
+  // 17,500): the feed is the lighter page.
+  "/": { js: 168_100, doc: 17_100, cls: 0.02, lcp: 2000, reads: 2, images: 400_000 },
   // THREE, AND IT HAS BEEN THREE SINCE CB1 — the number here was stale, and
   // it took a lane that failed on one run and passed on the next to notice.
   //
@@ -415,6 +500,37 @@ const BUDGETS = {
   // old number had over the old document — 23,000 left a hundred bytes, which
   // is a flake waiting for a longer tagline.
   [`/${SAMPLE_SLUG}`]: { js: 177_314, doc: 24_997, cls: 0.02, lcp: 2000, reads: 3, images: 400_000 },
+  // OPR-3 — THE PRODUCT PAGE'S OTHER THREE TABS, each an address of its own
+  // (design §5), budgeted the day they were added (2026-11-15).
+  //
+  // ONE PAGE, ONE BUNDLE: every tab is `product-page.tsx` drawn with a
+  // different `tab`, so all four fetch the same 175,888 B of JS across
+  // 17 chunks, and all four are held to the product page's own limit —
+  // which did not move in OPR2. (The first full build read 192,932 B; the
+  // maker view is fetched for the crew only now, and a visitor's bundle
+  // carries its gates. `/` above lists the rest.)
+  //
+  // The documents differ, and each is its measurement plus ~2.6%:
+  //   About   24,241 B   the pictures, the pitch, the milestones, the tiles
+  //   Crew    21,099 B   the people and the open seats
+  //   Talk    23,414 B   the conversation
+  //
+  // READS: the listing and the directory on every tab; Updates adds the
+  // product's posts and Talk the discussion, so About and Crew read twice
+  // and Talk three times — concurrently, as the note above says of Updates.
+  [`/${SAMPLE_SLUG}/about`]: { js: 177_314, doc: 24_900, cls: 0.02, lcp: 2000, reads: 2, images: 400_000 },
+  [`/${SAMPLE_SLUG}/crew`]: { js: 177_314, doc: 21_700, cls: 0.02, lcp: 2000, reads: 2, images: 400_000 },
+  [`/${SAMPLE_SLUG}/talk`]: { js: 177_314, doc: 24_100, cls: 0.02, lcp: 2000, reads: 3, images: 400_000 },
+  // OPR-3 — A POST'S OWN PAGE (design §5: `/{slug}/posts/{id}`), budgeted the
+  // day it was added. 183,214 B across 19 chunks: the full card with its
+  // reaction controls, and the live thread under it (the comment field, the
+  // optimistic list) — the two things no other page has together. A document
+  // of 14,699 B. 187,500 and 15,200 are those plus ~2.3% and ~2.8%.
+  //
+  // FOUR READS, issued together once the post has said which product it is
+  // for: the post, the product's document (the side card), the post's thread
+  // and the product's other posts ("More from").
+  [`/${SAMPLE_SLUG}/posts/${SAMPLE_POST}`]: { js: 187_500, doc: 15_200, cls: 0.02, lcp: 2000, reads: 4, images: 400_000 },
   // OPP1 RE-BASELINED THE JS HERE, AND ONLY HERE, WITH THE NUMBER NAMED.
   //
   // Converting the public surface to `next/link` pulls the App Router's
@@ -469,7 +585,27 @@ const BUDGETS = {
   // So 130,000 — that measurement plus ~2.3%, the same headroom `/people`
   // carries above and the same treatment OL1 gave the webfont: a rise that is
   // expected is recorded with its number and bounded here, never left to grow.
-  "/people/ada": { js: 177_966, doc: 15_000, cls: 0.02, lcp: 2000, reads: 1 },
+  //
+  // OPR-3 RE-BASELINED THE DOCUMENT AND THE READS HERE, WITH THE NUMBERS NAMED
+  // (2026-11-15). The JS limit did not move (168,030 B measured).
+  //
+  //   THE DOCUMENT  15,000 → 17,500. A person's page draws the posts they
+  //   pressed Post on (board `Person`) — three cards for the fixture's Ada —
+  //   and a stage line under each product. Measured at 16,912 B against
+  //   15,000; 17,500 is that plus ~2.9%.
+  //
+  //   THE READS  1 → 5. One was the person's document. The page now also
+  //   reads their posts (one read, the per-author feed) and, for the stage
+  //   line, each of their products' own public documents — three distinct
+  //   products for the fixture's Ada, so five in all, issued together. This
+  //   lane counted 4 on a run where one of the product documents was still
+  //   in Next's data cache; 5 is what the code asks for, and a budget that
+  //   depends on a cache hit is a coin toss (the note on `/product-00`).
+  //   BOUNDED: at most twelve product documents (`PERSON_STAGE_READ_LIMIT`),
+  //   each the same cached read a product page makes. Carrying the stage on
+  //   the person document's own listings would bring this back to two, and
+  //   is the change to make if this number ever needs to fall.
+  "/people/ada": { js: 177_966, doc: 17_500, cls: 0.02, lcp: 2000, reads: 5 },
   // IN0 ADDED THIS ROUTE TO THE TABLE, because IN0 is what made the page worth
   // measuring: `/submit` was a three-field form, and it now renders the feed's
   // own row as a live preview — the row shell, the logo tile and the tile
@@ -709,6 +845,14 @@ async function measure(context, base, path, { warm = true } = {}) {
       // The FACES a page actually pulled, so a new one is visible as a name
       // rather than only as a number that moved.
       fontFiles: fonts.map((r) => r.name.split("/").pop()),
+      // Whether the page draws a word in the serif's italic (an idea's
+      // quote): the one case in which the fifth font file is the design
+      // rather than a regression. Read off what is painted, not off a list.
+      drawsSerifItalic: [...document.querySelectorAll("main *")].some((el) => {
+        if (el.children.length > 0 && ![...el.childNodes].some((n) => n.nodeType === 3 && n.textContent.trim().length > 0)) return false;
+        const cs = getComputedStyle(el);
+        return cs.fontStyle === "italic" && /lora/i.test(cs.fontFamily) && (el.textContent ?? "").trim().length > 0;
+      }),
       imageBytes: size(images),
       imageCount: images.length,
       docBytes: Math.round(nav?.encodedBodySize || 0),
@@ -842,8 +986,7 @@ export async function runBudgets(base, gateway) {
       const res = await context.request.get(base + moved.from, { maxRedirects: 0 });
       check(
         `moved: ${moved.from} → ${moved.to}`,
-        res.status() === moved.status &&
-          (res.headers()["location"] ?? "").replace(base, "") === moved.to,
+        res.status() === moved.status && onThisApp(res.headers()["location"] ?? "", base) === moved.to,
         `${res.status()} → ${res.headers()["location"] ?? "(no location)"}`,
       );
     }
@@ -1093,14 +1236,17 @@ export async function runBudgets(base, gateway) {
     // everywhere, catches both that and an estate-wide regression.
     for (const [path, m] of measured) {
       const kb = (n) => `${(n / 1024).toFixed(1)}KB`;
+      // A page that draws an idea's quote takes the italic; no other does.
+      const fonts = m.drawsSerifItalic ? FONTS_WITH_ITALIC : FONTS;
+      const why = m.drawsSerifItalic ? " (this page draws serif italic: an idea's quote)" : "";
       check(
-        `${path}: font files ≤ ${FONTS.files}`,
-        m.fontCount <= FONTS.files,
+        `${path}: font files ≤ ${fonts.files}${why}`,
+        m.fontCount <= fonts.files,
         `${m.fontCount} file(s): ${m.fontFiles.join(", ")} — one file more: a fourth face, another weight, or the italic preloaded again`,
       );
       check(
-        `${path}: font bytes ≤ ${kb(FONTS.bytes)}`,
-        m.fontBytes <= FONTS.bytes,
+        `${path}: font bytes ≤ ${kb(fonts.bytes)}${why}`,
+        m.fontBytes <= fonts.bytes,
         `${kb(m.fontBytes)} — an unsubsetted face keeps the count and multiplies the payload`,
       );
     }

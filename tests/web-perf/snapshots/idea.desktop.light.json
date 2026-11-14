@@ -12,15 +12,15 @@
     "width": 1180
   },
   "h1": {
-    "top": 85,
-    "left": 66,
-    "width": 163,
+    "top": 132,
+    "left": 182,
+    "width": 202,
     "height": 44
   },
   "firstRow": {
     "left": 66,
-    "width": 271,
-    "height": 205
+    "width": 1138,
+    "height": 344
   },
   "footer": {
     "left": 45,

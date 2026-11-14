@@ -18,7 +18,7 @@
 
 import type { ReactNode } from "react";
 
-import { logoOf, thumbnailOf } from "@openproduct/contracts";
+import { listingSettingsPath, logoOf, thumbnailOf } from "@openproduct/contracts";
 
 import { publicApiBase } from "../../../public-api";
 import { EditorHead, ListingHero, stepHrefs } from "./editor";
@@ -39,7 +39,7 @@ export default async function ListingLayout(props: {
   // the same profile through the same `cache`, so this is one round trip.
   // The media rows leave beside the profile (OPP15's rule): the hero's tile
   // is the logo control, and it draws the logo it would replace (OSD4).
-  const loaded = await loadListing(org, profileId, {}, `/studio/${org}/${profileId}`, (token) =>
+  const loaded = await loadListing(org, profileId, {}, listingSettingsPath(org, profileId), (token) =>
     readMedia(token, org, profileId),
   );
   if (loaded.kind === "failed") return loaded.element;
@@ -53,7 +53,7 @@ export default async function ListingLayout(props: {
   return (
     <main className={EDITOR_MAIN}>
       <EditorHead
-        back={{ href: "/studio", label: "Your listings" }}
+        back={{ href: "/me", label: "Your products" }}
         profile={profile}
         action={action}
         publishHref={`${hrefs.overview}#publish`}

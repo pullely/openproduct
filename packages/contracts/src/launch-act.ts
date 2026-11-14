@@ -19,7 +19,7 @@
 // (`core/src/handlers/launches.ts`); the studio schedules, the sweep fires.
 // The checklist's last row therefore links the scheduler, not an act.
 
-import { listingBasePath } from "./intake.js";
+import { listingBasePath, listingSettingsPath } from "./intake.js";
 
 /** The fact, in one sentence. Every surface that names the act says this. */
 export const LAUNCH_ACT_NOTE = "A listing launches when its maintainer says so.";
@@ -52,7 +52,7 @@ export function launchStepHref(org: string, profile: string): string {
 /** The checklist's last row (OB6). */
 export const PUBLISH_STEP_LABEL = "Publish it";
 
-/** The overview's publish panel — where the act is. */
+/** The settings page's publish panel — where the act is. */
 export function publishStepHref(org: string, profile: string): string {
-  return `${listingBasePath(org, profile)}#publish`;
+  return `${listingSettingsPath(org, profile)}#publish`;
 }

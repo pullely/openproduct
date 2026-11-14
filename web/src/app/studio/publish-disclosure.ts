@@ -99,6 +99,24 @@ const PROFILE_COPY: Record<string, Omit<DisclosureLine, "key">> = {
     label: "What you said it costs to use",
     note: "Free, open core, paid, or free to self-host — your words, not a price this directory checks; blank if you left it unanswered",
   },
+  // OPR-3 — the four the redesign's product page reads. A stage nobody
+  // types: it follows the milestones, so the line says what moves it.
+  stage: {
+    label: "Whether the product is an idea or shipping",
+    note: "Not something you set: it is an idea until its first milestone ships, and shipping from then on",
+  },
+  tryUrl: {
+    label: "The address people can try it at",
+    note: "The \"Try it\" button on your page and your posts goes there",
+  },
+  milestones: {
+    label: "Your milestones",
+    note: "Each one's code, title and summary, in your order, and the date it shipped",
+  },
+  milestoneCounts: {
+    label: "How many milestones have shipped, of how many",
+    note: "Counted from the list above, never typed",
+  },
   repoUrl: { label: "A link to the repository" },
   liveUrl: { label: "A link to the running product" },
   // OPR5 (seam S12) — the door INTO the workspace, which exists because the

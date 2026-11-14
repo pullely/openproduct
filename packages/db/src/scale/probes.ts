@@ -35,6 +35,10 @@ export interface ProbeContext {
   readonly threadId: string;
   readonly handle: string;
   readonly collectionSlug: string;
+  /** OPR-3 — a published product post of the corpus listing. */
+  readonly productPostId: string;
+  /** OPR-3 — who wrote that post: the author a person's page lists posts for. */
+  readonly productPostAuthor: string;
 }
 
 export interface ReadProbe {
@@ -88,6 +92,16 @@ export const PUBLIC_READS: readonly ReadProbe[] = [
   { name: "getPublicContributor(handle)", route: "/people/{handle}", run: (r, c) => r.getPublicContributor(c.handle) },
   { name: "searchPublicContributors('maker')", route: "/search", run: (r) => r.searchPublicContributors("maker", 10) },
   { name: "getPublicCollection(slug)", route: "/collections/{slug}", run: (r, c) => r.getPublicCollection(c.collectionSlug) },
+  // OPR-3 — the feed of product posts, a product's own, one post, the
+  // milestones on the product page, and search's two batched reads.
+  { name: "listPublicProductPosts(20)", route: "/", run: (r) => r.listPublicProductPosts({ cursor: null, limit: 20 }) },
+  { name: "listPublicProductPosts(20, next page)", route: "/", run: (r, c) => r.listPublicProductPosts({ cursor: { publishedAt: c.weekAgo, id: c.productPostId }, limit: 20 }) },
+  { name: "listPublicProductPostsForProfile(profile)", route: "/{slug}", run: (r, c) => r.listPublicProductPostsForProfile(c.profileId, { cursor: null, limit: 20 }) },
+  { name: "getPublicProductPost(id)", route: "/{slug}/posts/{id}", run: (r, c) => r.getPublicProductPost(c.productPostId) },
+  { name: "listPublicProductPostsByAuthor(author)", route: "/people/{handle}", run: (r, c) => r.listPublicProductPostsByAuthor(c.productPostAuthor, { cursor: null, limit: 20 }) },
+  { name: "listPublicProductMilestones(profile)", route: "/{slug}", run: (r, c) => r.listPublicProductMilestones(c.profileId) },
+  { name: "listStagesForSlugs(20)", route: "/search", run: (r, c) => r.listStagesForSlugs(c.slugs.slice(0, 20)) },
+  { name: "listProductsForHandles(8)", route: "/search", run: (r) => r.listProductsForHandles(Array.from({ length: 8 }, (_, i) => `maker-${i + 1}`), 6) },
 ];
 
 // ---------------------------------------------------------------------------
@@ -178,4 +192,8 @@ export const WATCHED_TABLES: readonly string[] = [
   "launches",
   "search_index",
   "follows",
+  // OPR-3 — the feed's own tables.
+  "product_posts",
+  "product_post_reactions",
+  "product_milestones",
 ];

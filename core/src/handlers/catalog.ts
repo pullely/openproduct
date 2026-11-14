@@ -26,6 +26,7 @@ import {
   derived,
   diffSnapshots,
   metricState,
+  milestoneCountsOf,
   observed,
   observedScreenshot,
   openingsFacetValues,
@@ -81,6 +82,8 @@ export interface CatalogHandlerDeps {
     // PV4 — I8 again: the website shows what changed, so the API answers for
     // it. The product read only; a card carries no history.
     | "latestSnapshotBefore"
+    // OPR-3 — I8 once more: the product page shows the milestones.
+    | "listPublicProductMilestones"
   >;
   now?: () => Date;
 }
@@ -199,6 +202,11 @@ function cardOf(
     openCommitments: string[];
     hasLiveUrl: boolean;
     indexable: boolean;
+    /** OPR-3 — idea or shipping. */
+    stage: "idea" | "shipping";
+    /** OPR-3 — shipped of total, and the crew counted (null when uncounted). */
+    milestoneCounts: { shipped: number; total: number };
+    crewCount: number | null;
     /** MD0 — the listing's media rows, in the repository's document order. */
     media: readonly ProductMediaRecord[];
   },
@@ -255,6 +263,19 @@ function cardOf(
     // TS1 — the ladder decided it, so it resolves to published prose rather
     // than to "we did something". Neither authored nor observed.
     indexable: derived(row.indexable, "listing.indexable", ["trust_levels", "reviewed_at"], computedAt),
+    // OPR-3 — DERIVED, and the formula says from what: the product is
+    // shipping while a milestone is. Nobody typed this word and nothing
+    // measured it.
+    stage: derived(row.stage, "product.stage", ["product_milestones"], computedAt),
+    // OPR-3 — two counts, each derived by a published rule. Field by field:
+    // the record's object is never passed through.
+    milestoneCounts: derived(
+      { shipped: row.milestoneCounts.shipped, total: row.milestoneCounts.total },
+      "product.milestones-shipped",
+      ["product_milestones"],
+      computedAt,
+    ),
+    crewCount: derived(row.crewCount, "product.crew-count", ["published_maintainers"], computedAt),
     // MD0 — every row carries its own provenance, because a hero and a
     // capture do not share one. Empty until MD1 gives a maker somewhere to
     // put a picture; the key is here regardless, so a client parses one shape
@@ -362,7 +383,7 @@ export async function handleCatalogProduct(
 
   const now = (deps.now ?? (() => new Date()))();
   const computedAt = now.toISOString();
-  const [openings, maintainers, metrics, media, placement, baseline, followerCounts, launches] =
+  const [openings, maintainers, metrics, media, placement, baseline, followerCounts, launches, milestoneRows] =
     await Promise.all([
     deps.repo.listPublicRoleOpenings(profile.id),
     deps.repo.listPublicMaintainers(profile.id),
@@ -380,7 +401,16 @@ export async function handleCatalogProduct(
     deps.repo.countFollowers("listing", [profile.slug]),
     // PP5 — the history. ONE FUNCTION, imported, for the reason above.
     launchHistoryOf(deps.repo, profile.id),
+    // OPR-3 — the milestones, in the same round.
+    deps.repo.listPublicProductMilestones(profile.id),
   ]);
+  // The same four fields the website's projection carries, and no more.
+  const milestones = milestoneRows.map((m) => ({
+    code: m.code,
+    title: m.title,
+    summary: m.summary,
+    shippedAt: m.shippedAt,
+  }));
 
   const open = openings.filter((o) => o.status === "open");
   const card = cardOf(
@@ -403,6 +433,11 @@ export async function handleCatalogProduct(
       openCommitments: open.map((o) => o.commitment).filter((c): c is string => c !== null),
       hasLiveUrl: profile.liveUrl !== null,
       indexable: profile.indexable,
+      stage: profile.stage,
+      // The product read has the milestones and the crew themselves, so it
+      // counts the rows the page renders rather than asking again.
+      milestoneCounts: milestoneCountsOf(milestones),
+      crewCount: maintainers.length,
       media,
       publishedAt: profile.publishedAt,
     },
@@ -451,6 +486,12 @@ export async function handleCatalogProduct(
     }),
     repoUrl: authored(profile.repoUrl, BY_MAINTAINER),
     liveUrl: authored(profile.liveUrl, BY_MAINTAINER),
+    // OPR-3 — authored, like the address above it: the crew said where the
+    // product can be tried, and nothing here has checked that it answers.
+    tryUrl: authored(profile.tryUrl, BY_MAINTAINER),
+    // OPR-3 — the crew's own list, in their order. `shippedAt` is the moment
+    // they marked it, which is authored too: nothing observed a release.
+    milestones: authored(milestones, BY_MAINTAINER),
     // OPR5 (seam S12) — the console ref of the attested public workspace,
     // exactly as the website's projection carries it; null without a grant.
     workspaceRef: profile.linkGrant ? orgPublicId(profile.orgId) : null,

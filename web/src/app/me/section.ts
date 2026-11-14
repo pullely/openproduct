@@ -11,20 +11,18 @@
 // render answers — so the switcher is links, and the page ships no script
 // for it. The first section is the bare `/me`.
 //
-// THREE SECTIONS, WHERE THE BOARD DRAWS FIVE. A section is listed only when
-// today's data can fill it:
-//   - Following has no list to read — the product answers "do I follow
-//     THIS?" (the overlay), never "what do I follow?";
-//   - Drafts has no draft to show — a post is published or it is not.
-// Both arrive with the reads that make them true, and neither is drawn empty
-// in the meantime: an empty section a person can never fill is a promise.
+// THE BOARD'S FIVE SECTIONS (OPR-3). OPR1 listed three, because a section is
+// listed only when the data can fill it. The two it left out have their reads
+// now: Following is `GET /me/following` (the products and people you
+// follow), and Drafts is the unpublished posts of the products you are on
+// the crew of (each product's `needs-you`).
 //
 // PURE, AND ON ITS OWN, so the old addresses, the act routes and the tests
 // can ask where a section lives without loading a component (the
 // `ui/keys.ts` lesson: a module imported for one function should not bring a
 // runtime with it).
 
-export const ME_SECTION_KEYS = ["products", "saved", "seats"] as const;
+export const ME_SECTION_KEYS = ["products", "following", "saved", "seats", "drafts"] as const;
 export type MeSection = (typeof ME_SECTION_KEYS)[number];
 
 /** The section the bare `/me` shows — the board's first. */

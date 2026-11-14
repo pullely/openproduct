@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { parseMakerTab, type MakerTab } from "@openproduct/contracts";
 
 import { MakerView, loadMaker, makerMetadata } from "../maker-view";
+import { readStageLines } from "../product-stages";
 
 import { BOARD_PAGE } from "../../../ui/design";
 
@@ -77,13 +78,16 @@ export async function MakerTabBody({
   // done nothing. An empty room and a locked door look nothing alike (OD5),
   // and the empty TAB is what says "nothing here yet".
   if (doc === null) notFound();
+  // OPR-3 — the side Products card says where each product stands, as the
+  // bare page's list does: each product's own public document, cached.
+  const stages = await readStageLines(doc.contributor.maintains.map((listing) => listing.slug));
 
   return (
     // The profile card's pills are how a reader gets from this section to
     // the others — the bare `/@handle` among them, the address somebody
     // actually handed out — so the page draws no crumb over the card.
     <main className={BOARD_PAGE}>
-      <MakerView doc={doc} now={Date.parse(doc.observedAt)} />
+      <MakerView doc={doc} now={Date.parse(doc.observedAt)} stages={stages} />
     </main>
   );
 }

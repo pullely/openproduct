@@ -54,7 +54,11 @@ export function ReportControl({
   const label = REPORT_CONTROL_LABELS[subjectKind];
 
   return (
-    <details id="report" className={bare ? "px-1" : "mt-10 border-t border-border pt-5"}>
+    // ONE ID PER PAGE. A product's page holds two of these — the listing's own
+    // and its conversation's — and both wore `report`. `#report` stays the
+    // page's own subject (the launch-health panel links to it, and the route
+    // returns there); a thread's control beside it wears its own.
+    <details id={subjectKind === "thread" ? "report-thread" : "report"} className={bare ? "px-1" : "mt-10 border-t border-border pt-5"}>
       {/* The design's quiet link: a flag glyph and the label, 13.5px in
           `--muted`, no rule of its own. */}
       <summary

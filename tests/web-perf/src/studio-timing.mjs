@@ -55,7 +55,9 @@ export const STUDIO_BUDGETS = {
 // OB6 (#1873) took Launches out of the strip (its page stays), so it is not a
 // tab to press. "People" matches "People and roles", OB6's word, and the old
 // one a baseline build says.
-const TABS = ["Details", "Media", "Topics and stack", "People", "Discussions", "Overview"];
+// The strip's first tab was "Overview" until openproduct-redesign OPR-3; the
+// editor's front page is the listing's settings page now, and its tab says so.
+const TABS = ["Details", "Media", "Topics and stack", "People", "Discussions", "Settings"];
 // The baseline's only boundary was the studio's own ("Loading your studio").
 const SKELETON = /Loading (this part of )?your (listing|studio)/;
 

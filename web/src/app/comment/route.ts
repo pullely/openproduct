@@ -47,13 +47,19 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     return json ? refused(422, COMMENT_INVALID_MESSAGE) : NextResponse.redirect(new URL("/", request.url), 303);
   }
 
+  // WHERE THE CONVERSATION IS (openproduct-redesign OPR-3). A shipping
+  // product's is on its Talk tab, so the form comes back to that tab's own
+  // address rather than to the bare page and a forward from it. An idea has
+  // one page and no tabs; its form says so (`at=page`). One of two fixed
+  // paths, chosen by a flag — never an address read out of the form.
+  const home = String(form.get("at") ?? "") === "page" ? `/${slug}` : `/${slug}/talk`;
   const back = (query: string) =>
-    NextResponse.redirect(new URL(`/${slug}${query}`, request.url), 303);
+    NextResponse.redirect(new URL(`${home}${query}`, request.url), 303);
   const signIn = () =>
     json
       ? new NextResponse(null, { status: 401, headers: NO_STORE })
       : NextResponse.redirect(
-          new URL(`/signin?return_to=${encodeURIComponent(`/${slug}#discussion`)}`, request.url),
+          new URL(`/signin?return_to=${encodeURIComponent(`${home}#discussion`)}`, request.url),
           303,
         );
 

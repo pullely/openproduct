@@ -56,7 +56,7 @@ describe("the addresses are the seam's (S12)", () => {
 });
 
 describe("the listing renders the door on workspaceRef alone, to the consent page", () => {
-  const page = code("[slug]/page.tsx");
+  const page = code("[slug]/product-page.tsx");
 
   it("one anchor, gated on the ref, pointing at this origin", () => {
     expect(page).toContain("profile.workspaceRef ? (");

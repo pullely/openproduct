@@ -31,7 +31,16 @@ import {
   PRODUCT_SORT_LABEL,
   isProductSort,
   PRODUCTS_ORDER_SEGMENT,
+  PRODUCTS_STAGE_SEGMENT,
   PRODUCT_ORDER_SEGMENTS,
+  PRODUCT_STAGE_FILTERS,
+  PRODUCT_STAGE_FILTER_LABEL,
+  PRODUCT_STAGE_SEGMENTS,
+  filterByStage,
+  productStageCounts,
+  productStageOfSegment,
+  productViews,
+  productsCountLine,
   productSortOfSegment,
   productsPath,
 } from "@openproduct-web/app/feed/products";
@@ -49,7 +58,13 @@ import {
   seatsCountLineShort,
   seatsOf,
   seatsShownLine,
+  SEAT_STAGE_FILTERS,
+  SEAT_STAGE_FILTER_LABEL,
+  seatStageCounts,
+  seatStageOfSegment,
+  seatsPath,
 } from "@openproduct-web/app/help-wanted/seats";
+import { needsFirstBuilder } from "@openproduct-web/app/ui/stage";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const APP_DIR = resolve(__dirname, "../../../web/src/app");
@@ -104,7 +119,12 @@ describe("a sort is an address", () => {
   });
 
   it("the sorted pages and `/products` are static, revalidated, and read no query string", () => {
-    for (const file of ["products/page.tsx", "products/by/[order]/page.tsx"]) {
+    for (const file of [
+      "products/page.tsx",
+      "products/by/[order]/page.tsx",
+      "products/stage/[stage]/page.tsx",
+      "products/stage/[stage]/by/[order]/page.tsx",
+    ]) {
       const page = code(file);
       expect(page).toMatch(/^export const revalidate = 60;$/m);
       expect(page).not.toContain("searchParams");
@@ -227,8 +247,11 @@ describe("a seat is today's open role", () => {
       commitment: null,
       joinLinkRef: "tok_abc",
       demand: { kind: "none" },
-      product: { slug: "ackstack", thumbnail: null },
+      // OPR-3 — the stage of the seat's product; null when the card said none.
+      product: { slug: "ackstack", thumbnail: null, stage: null },
     });
+    expect(seatsOf({ ...product, stage: "idea" }, [opening()])[0]?.product.stage).toBe("idea");
+    expect(seatsOf({ ...product, stage: "nonsense" }, [opening()])[0]?.product.stage).toBeNull();
     expect(seatsOf(product, [])).toEqual([]);
   });
 
@@ -251,6 +274,13 @@ describe("a seat is today's open role", () => {
     expect(seatSub({ commitment: "Part-time", demand: { kind: "few" } })).toBe(
       "Part-time · A few people are waiting on a decision.",
     );
+    // OPR-3 — the line opens with the stage of the seat's product (board
+    // `Seats`), when the catalogue said it.
+    expect(seatSub({ commitment: "Part-time", demand: { kind: "none" }, product: { stage: "shipping" } })).toBe(
+      "Shipping · Part-time",
+    );
+    expect(seatSub({ commitment: null, demand: { kind: "none" }, product: { stage: "idea" } })).toBe("Idea");
+    expect(seatSub({ commitment: null, demand: { kind: "none" }, product: { stage: null } })).toBe("");
   });
 
   it("shows ten, and ten more each time", () => {
@@ -312,15 +342,19 @@ describe("the seat card's three states", () => {
     // The product it belongs to links to the product's page.
     expect(card).toContain("const product = `/${seat.product.slug}`;");
     expect(card.match(/href=\{product\}/g)).toHaveLength(2);
+    // The button is the card's one island (`seat-button.tsx`, OPR-3): the
+    // card hands it the seat's id and the action the server decided.
+    expect(card).toContain("<SeatButton seatId={seat.id} action={action} />");
+    const button = code("help-wanted/seat-button.tsx");
     // open — the teal pill, a plain anchor (the door is another origin).
-    expect(card).toMatch(/<a href=\{action\.href\} data-seat-action="open" className=\{`\$\{BTN_SEAT\} /);
+    expect(button).toMatch(/<a href=\{action\.href\} data-seat-action="open" className=\{`\$\{BTN_SEAT\} /);
     expect(read("ui/design.ts")).toMatch(/export const BTN_SEAT =\s*"[^"]*bg-seat [^"]*text-card/);
     // requested — the teal tint under seat ink.
-    expect(card).toMatch(/data-seat-action="requested"\s+className=\{`[^`]*bg-seat-soft[^`]*text-seat-ink/);
+    expect(button).toMatch(/data-seat-action="requested"\s+className=\{`[^`]*bg-seat-soft[^`]*text-seat-ink/);
     // closed — words, not a control.
-    expect(card).toMatch(/<span data-seat-action="closed"[^>]*>\s*\{action\.label\}\s*<\/span>/);
+    expect(button).toMatch(/<span data-seat-action="closed"[^>]*>\s*\{action\.label\}\s*<\/span>/);
     // Red is danger only, and the accent is the upvote's.
-    expect(card).not.toMatch(/destructive|endorse/);
+    expect(card + button).not.toMatch(/destructive|endorse/);
     // The same bytes for every visitor: the card resolves nobody.
     expect(card).not.toMatch(/"use client"|useOverlay|cookies\(|headers\(/);
   });
@@ -336,18 +370,179 @@ describe("the seat card's three states", () => {
     expect(list).not.toMatch(/fetch\(|useOverlay|document\.cookie/);
   });
 
-  it("the page marks no seat as requested: the overlay holds a count, not which seats", () => {
-    // `MeOverlay.requests` is a number. Until the overlay names the openings
-    // a visitor asked about, lighting "Requested" on any ticket would be a
-    // guess — so the page passes no `requested`, and every ticket is the
-    // anonymous one (I6).
-    const page = code("help-wanted/page.tsx");
-    expect(page).toContain("seatAction(seat, { consoleOrigin: origin })");
-    expect(page).not.toMatch(/requested:|useOverlay|readSession/);
+  it("\"Requested\" comes only from the overlay: the server marks no seat, and the button asks about its own seat", () => {
+    // The server render is the anonymous one (I6): the view passes no
+    // `requested` and reads no session, so every ticket leaves the server
+    // un-requested, the same bytes for every visitor.
+    const view = code("help-wanted/seats-view.tsx");
+    expect(view).toContain("seatAction(seat, { consoleOrigin: origin })");
+    for (const file of ["help-wanted/page.tsx", "help-wanted/seats-view.tsx", "help-wanted/seat-card.tsx", "help-wanted/stage/[stage]/page.tsx"]) {
+      expect([file, /requested:|useOverlay|useOpeningRequested|readSession|cookies\(|headers\(/.test(code(file))]).toEqual([file, false]);
+    }
+    // OPR-3 — the overlay names the openings a visitor asked about
+    // (`requestedOpenings`). The button is a client island that asks it about
+    // THIS seat's id, and that answer is the only thing that lights the word.
+    const button = code("help-wanted/seat-button.tsx");
+    expect(button.startsWith('"use client";')).toBe(true);
+    expect(button).toContain("const requested = useOpeningRequested(seatId);");
+    expect(button.indexOf("if (requested) {")).toBeLessThan(button.indexOf('action.state === "closed"'));
+    expect(button).toContain("{SEAT_REQUESTED_LABEL}");
+    // Nothing else in the island can make it true: no prop, no storage, no read.
+    expect(button).not.toMatch(/requested=|localStorage|sessionStorage|document\.cookie|fetch\(/);
+    // The hook's server snapshot is "not known": pending is never requested.
+    const overlay = read("ui/use-overlay.ts");
+    expect(overlay).toContain('return state.status === "ready" && state.overlay.requestedOpenings.includes(openingId);');
+    expect(overlay).toContain("return isOpeningRequested(useOverlay(NONE, NONE, NONE, NONE, ids), openingId);");
   });
 
-  it("the stage filter is left out until a listing has a stage (OPR2)", () => {
-    const page = code("help-wanted/page.tsx");
-    expect(page).not.toMatch(/On shipping products|On ideas|aria-label="Seat filters"/);
+  it("the filter is three addresses, each a static page, and the counts are the catalogue's", () => {
+    expect([...SEAT_STAGE_FILTERS]).toEqual(["all", "shipping", "idea"]);
+    expect(SEAT_STAGE_FILTER_LABEL).toEqual({ all: "All", shipping: "On shipping products", idea: "On ideas" });
+    expect(SEAT_STAGE_FILTERS.map((stage) => seatsPath(stage))).toEqual([
+      "/help-wanted",
+      "/help-wanted/stage/shipping",
+      "/help-wanted/stage/ideas",
+    ]);
+    for (const stage of SEAT_STAGE_FILTERS) expect(seatsPath(stage)).not.toMatch(/[?=&#]/);
+    expect(seatStageOfSegment("shipping")).toBe("shipping");
+    expect(seatStageOfSegment("ideas")).toBe("idea");
+    for (const stray of ["idea", "all", "", "Shipping", undefined]) expect(seatStageOfSegment(stray)).toBeNull();
+    expect(
+      seatStageCounts([
+        { roleOpeningCount: 2, stage: "shipping" },
+        { roleOpeningCount: 1, stage: "idea" },
+        { roleOpeningCount: 3, stage: "idea" },
+        { roleOpeningCount: 1 },
+      ]),
+    ).toEqual({ all: 7, shipping: 2, idea: 4 });
+    // The filtered page: static, revalidated, prerendered, no query string.
+    const page = code("help-wanted/stage/[stage]/page.tsx");
+    expect(page).toMatch(/^export const revalidate = 60;$/m);
+    expect(page).toContain("return SEAT_STAGE_SEGMENTS.map((stage) => ({ stage }));");
+    expect(page).toContain("if (stage === null) notFound();");
+    expect(page).toContain("alternates: { canonical: `${origin}${seatsPath(stage)}` }");
+    expect(page).not.toMatch(/searchParams|cookies\(|headers\(|readSession|force-dynamic|dynamicParams/);
+    // The filter is links to those addresses, marked, and works with no script.
+    const filter = code("help-wanted/seat-filter.tsx");
+    expect(filter).not.toContain('"use client"');
+    expect(filter).toContain('aria-label="Seat filters"');
+    expect(filter).toContain("href={seatsPath(stage)}");
+    expect(filter).toContain('{ "aria-current": "page" as const }');
+    // One view draws all three, and filters by the card's own stage.
+    const view = code("help-wanted/seats-view.tsx");
+    expect(view).toContain("<SeatFilter current={stage} counts={counts} />");
+    expect(view).toContain("everyHiring.filter((card) => card.stage === stage)");
+    expect(view).not.toMatch(/searchParams/);
+    expect(read("sitemap.xml/route.ts")).toContain("path: seatsPath(stage).slice(1),");
+  });
+});
+
+describe("OPR-3 — the stage filter is an address, and it composes with the sort", () => {
+  it("offers Everything, Shipping and Ideas, and every view has exactly one static address", () => {
+    expect([...PRODUCT_STAGE_FILTERS]).toEqual(["all", "shipping", "idea"]);
+    expect(PRODUCT_STAGE_FILTER_LABEL).toEqual({ all: "Everything", shipping: "Shipping", idea: "Ideas" });
+    expect(productViews().map((view) => view.path)).toEqual([
+      "/products",
+      "/products/by/newest",
+      "/products/by/upvoted",
+      "/products/stage/shipping",
+      "/products/stage/shipping/by/newest",
+      "/products/stage/shipping/by/upvoted",
+      "/products/stage/ideas",
+      "/products/stage/ideas/by/newest",
+      "/products/stage/ideas/by/upvoted",
+    ]);
+    const paths = productViews().map((view) => view.path);
+    // One address per view, and never a query string: a page that reads
+    // `?stage=` is rendered per request and goes out `no-store`.
+    expect(new Set(paths).size).toBe(paths.length);
+    for (const path of paths) expect(path).not.toMatch(/[?=&#]/);
+    // The defaults are never spelt.
+    expect(productsPath("most-active", "all")).toBe("/products");
+    expect(productStageOfSegment("shipping")).toBe("shipping");
+    expect(productStageOfSegment("ideas")).toBe("idea");
+    for (const stray of ["idea", "all", "everything", "", "by", undefined]) expect(productStageOfSegment(stray)).toBeNull();
+  });
+
+  it("`stage` is not a cursor, and the continuation page refuses it by name", () => {
+    expect(PRODUCTS_STAGE_SEGMENT).toBe("stage");
+    for (const word of [PRODUCTS_STAGE_SEGMENT, ...PRODUCT_STAGE_SEGMENTS]) expect([word, decodeCursor(word)]).toEqual([word, null]);
+    const page = code("products/[cursor]/page.tsx");
+    const refuse = page.indexOf("if (cursor === PRODUCTS_STAGE_SEGMENT) notFound();");
+    expect(refuse).toBeGreaterThan(-1);
+    expect(refuse).toBeLessThan(page.indexOf("fetchDirectoryPage(cursor)"));
+  });
+
+  it("the filtered pages are prerendered, 404 on anything else, and canonical to themselves", () => {
+    const staged = code("products/stage/[stage]/page.tsx");
+    expect(staged).toContain("return PRODUCT_STAGE_SEGMENTS.map((stage) => ({ stage }));");
+    expect(staged).toContain("if (stage === null) notFound();");
+    expect(staged).toContain("alternates: { canonical: `${origin}${productsPath(DEFAULT_PRODUCT_SORT, stage)}` }");
+    expect(staged).toContain("<ProductsView sort={DEFAULT_PRODUCT_SORT} stage={stage} returnTo={path} retryHref={path} />");
+    const both = code("products/stage/[stage]/by/[order]/page.tsx");
+    expect(both).toContain(
+      "return PRODUCT_STAGE_SEGMENTS.flatMap((stage) => PRODUCT_ORDER_SEGMENTS.map((order) => ({ stage, order })));",
+    );
+    expect(both).toContain("if (stage === null || sort === null) notFound();");
+    expect(both).toContain("alternates: { canonical: `${origin}${productsPath(sort, stage)}` }");
+    for (const page of [staged, both]) expect(page).not.toContain("dynamicParams");
+    // And the sitemap lists them from the same enumeration.
+    expect(read("sitemap.xml/route.ts")).toContain("...productViews()");
+  });
+
+  it("the filter and the sort are links that keep each other", () => {
+    const filter = code("feed/products-stage.tsx");
+    expect(filter).not.toContain('"use client"');
+    expect(filter).toContain('aria-label="Product stages"');
+    expect(filter).toContain("href={productsPath(sort, stage)}");
+    expect(filter).toContain('{ "aria-current": "page" as const }');
+    // A count that could not be read is not drawn.
+    expect(filter).toContain("{counts === null ? null : (");
+    expect(code("feed/sort-control.tsx").match(/href=\{productsPath\(sort, stage\)\}/g)).toHaveLength(2);
+    const view = code("feed/products-view.tsx");
+    expect(view).toContain("<StageFilter current={stage} sort={sort} counts={products.stages} />");
+    expect(view).toContain("sort={<SortControl current={sort} stage={stage} />}");
+    expect(view).not.toMatch(/searchParams|cookies\(|headers\(|readSession/);
+  });
+
+  it("counts and filters by the card's own stage, and the count line says all three", () => {
+    const cards = [{ stage: "shipping" }, { stage: "idea" }, { stage: "idea" }, {}] as never[];
+    expect(productStageCounts(cards)).toEqual({ all: 4, shipping: 1, idea: 2 });
+    expect(filterByStage(cards, "all")).toHaveLength(4);
+    expect(filterByStage(cards, "idea")).toHaveLength(2);
+    expect(filterByStage(cards, "shipping")).toHaveLength(1);
+    expect(productsCountLine(30, 0, { all: 30, shipping: 9, idea: 21 })).toBe("30 products · 9 shipping · 21 ideas");
+    expect(productsCountLine(2, 3, { all: 2, shipping: 1, idea: 1 })).toBe(
+      "2 products · 1 shipping · 1 idea · 3 more below the floor",
+    );
+    // Stages that could not be counted are left unsaid, not said as zero.
+    expect(productsCountLine(30, 0, null)).toBe("30 products");
+  });
+
+  it("the card wears the stage: the mark under the name, and the idea's own shape", () => {
+    const card = code("feed/product-card.tsx");
+    expect(card).toContain("<StageMark stage={card.stage} counts={card.milestoneCounts} short />");
+    expect(card).toContain("data-product-stage={card.stage}");
+    expect(card).toContain('idea ? "rounded-[4px_16px_16px_16px] bg-idea-wash" : "rounded-[16px] bg-card"');
+    // THE CARD CARRIES ITS OWN PROGRESS AND CREW COUNT (OPR-3), so a list
+    // draws both with no read per card: a shipping product's "3 OF 4" and
+    // its bars, and "Needs a first builder" on an idea whose crew is only
+    // its maker — from the count of the people its page lists, not from
+    // whether a seat happens to be open.
+    expect(card).toContain("{!idea ? <MilestoneSegments counts={card.milestoneCounts} /> : null}");
+    expect(card).toMatch(/idea && needsFirstBuilder\(card\.crewCount\) \? \([\s\S]*?\{IDEA_NEEDS_BUILDER\}/);
+    expect(card).not.toMatch(/idea && card\.roleOpeningCount/);
+  });
+
+  it("an idea needs its first builder when its crew is at most one — and only from a count somebody made", () => {
+    expect(needsFirstBuilder(0)).toBe(true);
+    expect(needsFirstBuilder(1)).toBe(true);
+    expect(needsFirstBuilder(2)).toBe(false);
+    // A card that predates the count says nothing about a crew nobody counted.
+    expect(needsFirstBuilder(null)).toBe(false);
+    expect(needsFirstBuilder(undefined)).toBe(false);
+    expect(needsFirstBuilder(Number.NaN)).toBe(false);
+    // The same rule the product page draws its dashed slot by.
+    expect(code("[slug]/product-page.tsx")).toContain("needsBuilder={profile.maintainers.length <= 1}");
   });
 });

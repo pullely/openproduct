@@ -56,7 +56,7 @@ describe("the control", () => {
       // tabs. The control did not change; the file it sits in did.
       "people/[handle]/maker-view.tsx",
       // PP1 — the listing, the one social object the page lacked.
-      "[slug]/page.tsx",
+      "[slug]/product-page.tsx",
     ]) {
       expect([file, read(file).includes("<FollowButton")]).toEqual([file, true]);
     }
@@ -78,6 +78,30 @@ describe("the control", () => {
     expect(control).toContain('method="post"');
     expect(control).toContain("/me/follow?kind=");
     expect(control).toContain("return_to=");
+  });
+
+  it("gives every Follow control an id of its own, so a feed has no duplicate ids", () => {
+    // A feed holds several cards for one product, each with its own Follow;
+    // an id built from the product alone was on the page once per card.
+    // `useId` is a position in the tree: the same on the server and in the
+    // browser and for every visitor, so the page stays one document and the
+    // return from sign-in still lands on the control that was pressed.
+    const control = markupOf("ui/follow-button.tsx");
+    expect(control).toContain('const instance = React.useId().replace(/[^A-Za-z0-9_-]/g, "");');
+    expect(control).toContain("return `follow-${kind}-${value}-${instance}`;");
+    expect(control).toContain("const anchor = useFollowAnchor(kind, value);");
+    expect(control).toContain("const target = `${returnTo}#${anchor}`;");
+    expect(control).toContain("id={anchor}");
+    // The two product-only Follows (a Products card, a search row) use the
+    // same anchor, and none of the three builds an id from the target alone.
+    for (const file of ["feed/follow-product.tsx", "search/product-follow.tsx"]) {
+      const source = markupOf(file);
+      expect([file, source.includes('const anchor = useFollowAnchor("listing", slug);')]).toEqual([file, true]);
+      expect([file, source.includes("id={anchor}")]).toEqual([file, true]);
+    }
+    for (const file of ["ui/follow-button.tsx", "feed/follow-product.tsx", "search/product-follow.tsx"]) {
+      expect([file, /id=\{`follow-/.test(markupOf(file))]).toEqual([file, false]);
+    }
   });
 
   it("addresses a person by HANDLE, never by a subject id", () => {

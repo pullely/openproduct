@@ -63,6 +63,10 @@ function storedProfile(overrides: Partial<ProfileRecord> = {}): ProfileRecord {
     cleanVotes: false,
     repoUrl: "https://github.com/acme/thing",
     liveUrl: "https://acme.test",
+    // OPR-3 — an idea with no Try it address: what every listing is until a
+    // milestone ships and the crew says where to try it.
+    stage: "idea" as const,
+    tryUrl: null,
     stack: ["typescript", "Hand-rolled CRDT"],
     stackCanonical: ["typescript"],
     category: "dev-tools",
@@ -126,9 +130,13 @@ function publicDeps(profile: ProfileRecord | null = storedProfile()): PublicHand
                 pricing: profile.pricing,
                 licence: profile.repoLicence,
                 roleOpeningCount: 1,
+                milestoneCounts: { shipped: 2, total: 3 },
+                crewCount: 2,
                 openCommitments: ["One evening a week"],
                 hasLiveUrl: true,
                 publishedAt: profile.publishedAt,
+                // OPR-3 — the stage rides the card.
+                stage: profile.stage,
               },
             ]
           : [];
@@ -191,6 +199,10 @@ function publicDeps(profile: ProfileRecord | null = storedProfile()): PublicHand
         return { today: 12, week: 30, month: 60, total: 400 };
       },
       // MD2 — the media rows; none on these fixtures.
+      // OPR-3 — the milestones; none on these fixtures.
+      async listPublicProductMilestones() {
+        return [];
+      },
       async listPublicMedia() {
         return [];
       },
@@ -335,6 +347,15 @@ describe("the pinned key sets (design.md §4)", () => {
   it("PublicProfileCard serializes exactly its literal", async () => {
     const [card] = await fetchCards();
     expect(Object.keys(card!).sort()).toEqual([...PUBLIC_PROFILE_CARD_KEYS]);
+  });
+
+  it("the card carries its milestone counts and its crew count, field by field", async () => {
+    // OPR-3 — a list draws "2 of 3" and its bars, and says an idea needs its
+    // first builder, from the card: no read per product.
+    const [card] = await fetchCards();
+    expect(card!.milestoneCounts).toEqual({ shipped: 2, total: 3 });
+    expect(Object.keys(card!.milestoneCounts).sort()).toEqual(["shipped", "total"]);
+    expect(card!.crewCount).toBe(2);
   });
 
   it("PublicProfile serializes exactly its literal, minus what it has nothing to say about", async () => {
@@ -754,6 +775,10 @@ describe("I9 — an observed value never reaches the wire without its moment", (
             return storedProfile();
           },
           // MD2 — the media rows; none on these fixtures.
+          // OPR-3 — the milestones; none on these fixtures.
+          async listPublicProductMilestones() {
+            return [];
+          },
           async listPublicMedia() {
             return [];
           },
@@ -811,6 +836,10 @@ describe("I9 — an observed value never reaches the wire without its moment", (
             return storedProfile();
           },
           // MD2 — the media rows; none on these fixtures.
+          // OPR-3 — the milestones; none on these fixtures.
+          async listPublicProductMilestones() {
+            return [];
+          },
           async listPublicMedia() {
             return [];
           },

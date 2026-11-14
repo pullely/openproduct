@@ -176,7 +176,7 @@ describe("the feed row's topic", () => {
   });
 
   it("the PRODUCT page makes it a link, where there is room for one", () => {
-    const page = read("[slug]/page.tsx");
+    const page = read("[slug]/product-page.tsx");
     expect(page).toContain("href={topicPath(profile.category)}");
   });
 });

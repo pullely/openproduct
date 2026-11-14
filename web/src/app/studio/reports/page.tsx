@@ -74,7 +74,7 @@ export default async function ReportQueuePage(props: PageProps) {
       <FailurePanel
         kind="missing"
         what={MODERATION_REFUSALS["not-an-operator"].says}
-        actions={[{ label: "Your listings", href: "/studio" }]}
+        actions={[{ label: "Your products", href: "/me" }]}
       />
     );
   }
@@ -85,7 +85,7 @@ export default async function ReportQueuePage(props: PageProps) {
         what="The queue could not be loaded. It is not something you did, and trying again in a moment usually works."
         actions={[
           { label: "Try again", href: page },
-          { label: "Your listings", href: "/studio" },
+          { label: "Your products", href: "/me" },
         ]}
       />
     );
@@ -101,7 +101,7 @@ export default async function ReportQueuePage(props: PageProps) {
   return (
     <StudioFrame
       vocabulary={REPORT_VOCABULARY}
-      crumbs={[{ label: "Listings", href: "/studio" }, { label: "Reports" }]}
+      crumbs={[{ label: "Your products", href: "/me" }, { label: "Reports" }]}
       title="Reports"
       notice={noticeFrom(search, REPORT_VOCABULARY)}
     >

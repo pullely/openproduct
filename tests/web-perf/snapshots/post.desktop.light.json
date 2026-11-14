@@ -12,16 +12,12 @@
     "width": 1180
   },
   "h1": {
-    "top": 85,
-    "left": 66,
-    "width": 163,
-    "height": 44
+    "top": 163,
+    "left": 131,
+    "width": 288,
+    "height": 25
   },
-  "firstRow": {
-    "left": 66,
-    "width": 271,
-    "height": 205
-  },
+  "firstRow": null,
   "footer": {
     "left": 45,
     "width": 1180,
@@ -32,9 +28,9 @@
     "height": 26
   },
   "colours": {
-    "body": "oklch(0.18 0.004 95)",
-    "text": "oklch(0.96 0.005 95)",
-    "header": "oklch(0.225 0.005 95 / 0.62)",
-    "h1": "oklch(0.96 0.005 95)"
+    "body": "oklch(0.967 0.0082 91.48)",
+    "text": "oklch(0.1908 0.002 106.59)",
+    "header": "oklch(1 0 0 / 0.62)",
+    "h1": "oklch(0.1908 0.002 106.59)"
   }
 }

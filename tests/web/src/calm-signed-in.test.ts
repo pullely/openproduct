@@ -48,8 +48,10 @@ describe("every signed-in list is tiles (CP-R6)", () => {
     ["me/sections.tsx", "data-me-products", "rounded-[16px] bg-card p-[18px]"],
     ["me/sections.tsx", "data-me-saved", "rounded-[16px] bg-card p-[18px]"],
     ["me/sections.tsx", "data-me-seats", "rounded-[16px] bg-card px-[26px] py-4"],
-    // The studio's listings wear the shared flat tile (`TILE`, ui/design.ts).
-    ["studio/page.tsx", "data-studio-tiles", "px-6 py-5 max-sm:px-4 max-sm:py-4 ${TILE}"],
+    // OPR-3 — the studio's own list of listings is gone: it is "Your
+    // products" above (`/studio` redirects to `/me`). The new section, the
+    // drafts, wears the same flat card.
+    ["me/sections.tsx", "data-me-drafts", "rounded-[16px] bg-card p-[18px]"],
   ])("%s %s", (file, list, tile) => {
     const source = code(file);
     expect(source).toContain(list);

@@ -51,6 +51,10 @@ function profile(linkGrant: StoredLinkGrant | null = GRANT): ProfileRecord {
     cleanVotes: false,
     repoUrl: null,
     liveUrl: null,
+    // OPR-3 — an idea with no Try it address: what every listing is until a
+    // milestone ships and the crew says where to try it.
+    stage: "idea" as const,
+    tryUrl: null,
     stack: [],
     stackCanonical: [],
     category: null,

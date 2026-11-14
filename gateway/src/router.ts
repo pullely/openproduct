@@ -232,6 +232,28 @@ const PUBLIC_COLLECTION_RE =
  *  be seen by people who have signed up to that intermediary. */
 const PUBLIC_TRANSPARENCY_PATH = "/v1/public/openproduct/transparency";
 
+/**
+ * OPR-3 — product posts: the feed, one post, and one product's posts.
+ *
+ * Public and anonymous for the reason every read here is: a post is a page
+ * ABOUT a product, the feed is one document for everybody, and what is
+ * personal about it (my reaction, whether I follow the product) arrives after
+ * paint from the overlay. `product-posts`, never `posts` — a forum post is a
+ * reply in a thread, on the authenticated plane below.
+ *
+ * The id and the slug shapes are pinned HERE as well as in core, so a segment
+ * that could never be either never crosses the binding.
+ */
+const PUBLIC_PRODUCT_POSTS_PATH = "/v1/public/openproduct/product-posts";
+const PUBLIC_PRODUCT_POST_RE = /^\/v1\/public\/openproduct\/product-posts\/(ppo_[0-9a-f]{32})$/;
+const PUBLIC_PROFILE_PRODUCT_POSTS_RE =
+  /^\/v1\/public\/openproduct\/projects\/([A-Za-z0-9-]{1,64})\/product-posts$/;
+/** One person's published posts, for the Posts section of their page. The
+ *  handle grammar is CG0's, exactly as the person's own read pins it, and
+ *  `product-posts` is a literal third segment, so it is never a tab. */
+const PUBLIC_PERSON_PRODUCT_POSTS_RE =
+  /^\/v1\/public\/openproduct\/people\/([a-z0-9][a-z0-9-]{0,30}[a-z0-9])\/product-posts$/;
+
 const PUBLIC_DIRECTORY_PATH = "/v1/public/openproduct/projects";
 const PUBLIC_PROFILE_RE = /^\/v1\/public\/openproduct\/projects\/([^/]+)$/;
 
@@ -265,6 +287,9 @@ const ME_ENDORSE_RE = /^\/v1\/openproduct\/me\/endorsements\/([A-Za-z0-9-]{1,64}
 const ME_SAVED_RE = /^\/v1\/openproduct\/me\/saved(?:\/([A-Za-z0-9-]{1,64}))?$/;
 const ME_FOLLOW_RE = /^\/v1\/openproduct\/me\/follows\/([a-z]+)\/([a-z0-9][a-z0-9-]{0,63})$/;
 const ORG_PUBLISH_RE = /^\/v1\/organizations\/[^/]+\/openproduct\/profiles\/[^/]+\/(publish|unpublish)$/;
+/** OPR-3 — my reaction on one product post. THE POST IS IN THE PATH, which is
+ *  what lets a per-post bound exist: this layer never reads a body. */
+const ME_PRODUCT_POST_REACTION_RE = /^\/v1\/openproduct\/me\/product-post-reactions\/(ppo_[0-9a-f]{32})$/;
 
 interface WriteClassification {
   readonly action: WriteAction;
@@ -278,6 +303,12 @@ export function classifyWrite(pathname: string, method: string): WriteClassifica
 
   const endorse = ME_ENDORSE_RE.exec(pathname);
   if (endorse) return { action: "endorse", target: endorse[1]!.toLowerCase() };
+
+  // OPR-3 — a reaction on a product post, bounded PER POST like DQ1's upvote
+  // on a comment and under the same action: a public count one person moves
+  // with one click, and a brigade on one post is the shape to slow.
+  const reaction = ME_PRODUCT_POST_REACTION_RE.exec(pathname);
+  if (reaction) return { action: "endorse", target: reaction[1]! };
 
   // FL0 — a follow. NO TARGET BOUND, and that is the one place this departs
   // from the endorsement above: a target rule catches a brigade moving a
@@ -396,7 +427,13 @@ function isPublicRoute(pathname: string): boolean {
     PUBLIC_COLLECTION_RE.test(pathname) ||
     PUBLIC_ROSTER_RE.test(pathname) ||
     PUBLIC_THREADS_RE.test(pathname) ||
-    PUBLIC_THREAD_RE.test(pathname)
+    PUBLIC_THREAD_RE.test(pathname) ||
+    // OPR-3's product posts: the feed, one post, one product's posts, one
+    // person's posts.
+    pathname === PUBLIC_PRODUCT_POSTS_PATH ||
+    PUBLIC_PRODUCT_POST_RE.test(pathname) ||
+    PUBLIC_PROFILE_PRODUCT_POSTS_RE.test(pathname) ||
+    PUBLIC_PERSON_PRODUCT_POSTS_RE.test(pathname)
   );
 }
 
@@ -478,6 +515,9 @@ async function handlePublicRead(
   const boardDay = PUBLIC_BOARD_RE.exec(pathname);
   const publicCollection = PUBLIC_COLLECTION_RE.exec(pathname);
   const publicTopic = PUBLIC_TOPIC_RE.exec(pathname);
+  const productPost = PUBLIC_PRODUCT_POST_RE.exec(pathname);
+  const productPostsOf = PUBLIC_PROFILE_PRODUCT_POSTS_RE.exec(pathname);
+  const productPostsBy = PUBLIC_PERSON_PRODUCT_POSTS_RE.exec(pathname);
   const target =
     // TS5 — first in the chain because it is an exact path and the fallthrough
     // at the bottom is `PUBLIC_PROFILE_RE.exec(pathname)![1]`, which throws on
@@ -486,7 +526,17 @@ async function handlePublicRead(
     // exactly how this one was caught.
     pathname === PUBLIC_TRANSPARENCY_PATH
       ? "/internal/public/openproduct/transparency"
-      : publicCollection
+      : // OPR-3 — the cursor and the limit ride the query to core, which
+        // refuses a cursor it did not issue.
+        pathname === PUBLIC_PRODUCT_POSTS_PATH
+        ? `/internal/public/openproduct/product-posts${url.search}`
+        : productPost
+          ? `/internal/public/openproduct/product-posts/${productPost[1]}`
+          : productPostsOf
+            ? `/internal/public/openproduct/projects/${productPostsOf[1]}/product-posts${url.search}`
+            : productPostsBy
+              ? `/internal/public/openproduct/people/${productPostsBy[1]}/product-posts${url.search}`
+            : publicCollection
       ? `/internal/public/openproduct/collections/${publicCollection[1]}`
       : pathname === PUBLIC_COLLECTIONS_INDEX_PATH
       ? "/internal/public/openproduct/collections"

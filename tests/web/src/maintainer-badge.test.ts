@@ -72,7 +72,7 @@ describe("one rule, and it is not in the web layer", () => {
     // from a PUBLIC PROFILE somebody opted into, so a maintainer who never
     // published one was silently un-badged — an opt-in reported as a status,
     // which is the opposite of what OPC-5 is for.
-    for (const surface of [...SURFACES, "[slug]/page.tsx"]) {
+    for (const surface of [...SURFACES, "[slug]/page.tsx", "[slug]/product-page.tsx"]) {
       const src = code(surface);
       expect([surface, src.includes("makerHandles")]).toEqual([surface, false]);
       expect([surface, /maintainers.*\.handle/.test(src) && src.includes("includes(")]).toEqual([

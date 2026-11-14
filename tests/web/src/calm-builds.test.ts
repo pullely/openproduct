@@ -3,8 +3,8 @@
 //
 // What is pinned: every list of products draws the ONE card — the Products
 // board's (`feed/product-card.tsx`), under its old name where a page has not
-// been rebuilt yet; the Products view is one column with no margin until the
-// stage filter arrives (OPR2); the sort is a pill track of links, with no
+// been rebuilt yet; the Products view is the stage filter beside the list
+// (OPR-3 — it was one column until a listing had a stage); the sort is a pill track of links, with no
 // accent; and the list continues from the same paged address a crawler
 // follows, as a link that reads in place when pressed.
 
@@ -66,12 +66,16 @@ describe("every list of products draws the one card", () => {
 
   it("the card is flat: the card colour at a 16px radius, no border and no shadow", () => {
     const card = code("feed/product-card.tsx");
-    expect(card).toContain('className="flex min-w-0 list-none flex-col overflow-hidden rounded-[16px] bg-card"');
+    // OPR-3 — a shipping product is the flat card; an idea is the idea's own
+    // shape (the lavender wash with one square corner). Both are flat.
+    expect(card).toContain(
+      'className={`flex min-w-0 list-none flex-col overflow-hidden ${idea ? "rounded-[4px_16px_16px_16px] bg-idea-wash" : "rounded-[16px] bg-card"}`}',
+    );
     expect(card).not.toMatch(/border-border|(?:^|\s)shadow/);
   });
 });
 
-describe("the Products view is one column, on the board's frame", () => {
+describe("the Products view is the filter beside the list, on the board's frame", () => {
   it.each(["page.tsx", "products/page.tsx", "feed/products-view.tsx", "help-wanted/page.tsx"])("%s draws no margin", (file) => {
     const source = code(file);
     expect(source).not.toContain("<Sidebar");
@@ -79,13 +83,23 @@ describe("the Products view is one column, on the board's frame", () => {
     expect(source).not.toContain("fetchSidebar");
   });
 
-  it.each(["feed/products-view.tsx", "products/[cursor]/page.tsx", "help-wanted/page.tsx"])("%s is the board's page column", (file) => {
+  // OPR-3 — Help wanted's body moved to `help-wanted/seats-view.tsx`, which
+  // the page and its two filtered addresses all draw.
+  it.each(["feed/products-view.tsx", "products/[cursor]/page.tsx", "help-wanted/seats-view.tsx"])("%s is the board's page column", (file) => {
     expect(code(file)).toContain("<main className={BOARD_PAGE}>");
   });
 
-  it("leaves a named place for the stage filter (OPR2) beside the list", () => {
-    expect(code("feed/products-view.tsx")).toMatch(/<div data-products-body>\s*<ProductList/);
-    expect(code("help-wanted/page.tsx")).toContain("<div data-seats-body>");
+  it("puts the stage filter beside the list, in the place OPR1 named for it", () => {
+    // The board's two columns: the filter, then the list — one column with
+    // the filter on top on a phone. No margin of anything else.
+    const products = code("feed/products-view.tsx");
+    expect(products).toMatch(/<div data-products-body className="flex items-start gap-7 [^"]*max-md:flex-col[^"]*">/);
+    expect(products.indexOf("<StageFilter ")).toBeGreaterThan(products.indexOf("data-products-body"));
+    expect(products.indexOf("<StageFilter ")).toBeLessThan(products.indexOf("<ProductList"));
+    const seats = code("help-wanted/seats-view.tsx");
+    expect(seats).toMatch(/<div data-seats-body className="flex items-start gap-7 [^"]*max-md:flex-col[^"]*">/);
+    expect(seats.indexOf("<SeatFilter ")).toBeGreaterThan(seats.indexOf("data-seats-body"));
+    expect(seats.indexOf("<SeatFilter ")).toBeLessThan(seats.indexOf("<SeatList"));
   });
 });
 
@@ -174,7 +188,11 @@ describe("the list continues from a link", () => {
 
   it("only the default sort continues: the cursor is a position in that order", () => {
     const view = code("feed/products-view.tsx");
-    expect(view).toMatch(/if \(sort === DEFAULT_PRODUCT_SORT\) \{[\s\S]*?next: directory\.next,/);
+    // OPR-3 — and only with no stage filter: a filtered list needs every
+    // product first, like any other order.
+    expect(view).toMatch(
+      /if \(sort === DEFAULT_PRODUCT_SORT && stage === DEFAULT_PRODUCT_STAGE\) \{[\s\S]*?next: directory\.next,/,
+    );
     expect(view).toMatch(/const all = await fetchAllDirectoryProjects\(\);[\s\S]*?next: null,/);
   });
 });

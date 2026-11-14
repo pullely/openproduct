@@ -63,7 +63,10 @@ describe("the studio's checklist ends with Publish it (OB6)", () => {
     expect(panel).toContain("PUBLISH_STEP_LABEL");
     expect(panel).not.toContain("LAUNCH_STEP_LABEL");
     expect(panel).toContain("publishStepHref(org, profileId)");
-    expect(publishStepHref("acme", "opp_1")).toBe("/studio/acme/opp_1#publish");
+    // OPR-3 — the publish panel is on the listing's settings page; the base
+    // address only forwards (and a fragment on a forward is the browser's to
+    // keep, not ours to rely on).
+    expect(publishStepHref("acme", "opp_1")).toBe("/studio/acme/opp_1/settings#publish");
     // After the list and outside the empty/missing branch, so a fully
     // filled-in listing still ends with the act.
     const row = panel.indexOf("publishStepHref(org, profileId)");

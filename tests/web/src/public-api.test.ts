@@ -100,6 +100,11 @@ describe("the public read carries no credential", () => {
     for (const page of [
       "web/src/app/page.tsx",
       "web/src/app/[slug]/page.tsx",
+      // OPR-3 — a product's tabs are routes of their own, on the same window.
+      "web/src/app/[slug]/about/page.tsx",
+      "web/src/app/[slug]/crew/page.tsx",
+      "web/src/app/[slug]/talk/page.tsx",
+      "web/src/app/[slug]/updates/[cursor]/page.tsx",
     ]) {
       const source = readFileSync(resolve(root, page), "utf-8");
       expect(`${page}: ${source.includes(`export const revalidate = ${PUBLIC_REVALIDATE_SECONDS};`)}`).toBe(

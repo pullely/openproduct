@@ -20,7 +20,7 @@ export default function StudioError({ error, reset }: { error: Error & { digest?
       error={error}
       reset={reset}
       what="This screen stopped part way through. If you had just saved something, we cannot tell from here whether it went through — reload and check before doing it again."
-      actions={[{ label: "Your listings", href: "/studio" }]}
+      actions={[{ label: "Your products", href: "/me" }]}
     />
   );
 }

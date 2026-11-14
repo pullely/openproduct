@@ -252,6 +252,9 @@ describe("everything else — the launches page shows every product", () => {
     publishedAt,
     metrics: merges === null ? [] : [{ key: "merges.7d", value: merges, observedAt: publishedAt, state: "fresh" as const }],
     thumbnail: null,
+    stage: "idea" as const,
+    milestoneCounts: { shipped: 0, total: 0 },
+    crewCount: 1,
   });
 
   it("lists every product the week's groups do not already show, once", () => {
@@ -368,6 +371,9 @@ describe("the floor is visible (openproduct-worldclass-v2 HB0)", () => {
     publishedAt,
     metrics: merges === null ? [] : [{ key: "merges.7d", value: merges, observedAt: publishedAt, state: "fresh" as const }],
     thumbnail: null,
+    stage: "idea" as const,
+    milestoneCounts: { shipped: 0, total: 0 },
+    crewCount: 1,
   });
 
   it("counts what the directory holds below the floor, and it is the complement of the catalogue", () => {

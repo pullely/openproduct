@@ -25,6 +25,15 @@ import { fileURLToPath } from "node:url";
 
 import { fetchMyListings } from "@openproduct-web/app/me/listings";
 import {
+  draftProgress,
+  draftTitle,
+  editableDrafts,
+  fetchMyDrafts,
+  manageHref,
+  standingLine,
+  standingOf,
+} from "@openproduct-web/app/me/products";
+import {
   ME_DEFAULT_SECTION,
   ME_SECTION_KEYS,
   meSectionHref,
@@ -79,7 +88,7 @@ describe("a section of /me is an address", () => {
   });
 
   it("lands anything that is not a section on the first one — never a 404", () => {
-    for (const stray of [undefined, "", "nope", "SAVED", "drafts", "following", "applications"]) {
+    for (const stray of [undefined, "", "nope", "SAVED", "draft", "followers", "applications"]) {
       expect(meSectionOf(stray)).toBe("products");
     }
     // A repeated parameter is read once.
@@ -106,25 +115,32 @@ describe("a section of /me is an address", () => {
   });
 
   it("lists a section only when today's data can fill it", () => {
-    // Your products, Saved and Seats each have a read. The board also draws
-    // Following and Drafts: there is no list of what somebody follows to
-    // read, and no draft concept, so neither is a section yet.
-    expect([...ME_SECTION_KEYS]).toEqual(["products", "saved", "seats"]);
+    // OPR1 listed three and left the board's other two out, because there
+    // was no list of what somebody follows to read and no draft concept.
+    // OPR-3 added both reads, so the board's five are here, in its order —
+    // and each one still has a read behind it, which is the rule.
+    expect([...ME_SECTION_KEYS]).toEqual(["products", "following", "saved", "seats", "drafts"]);
     const nav = markupOf("me/nav.tsx");
-    for (const label of ['label: "Your products"', 'label: "Saved"', 'label: "Seats"']) {
+    for (const label of ['label: "Your products"', 'label: "Following"', 'label: "Saved"', 'label: "Seats"', 'label: "Drafts"']) {
       expect(nav).toContain(label);
     }
-    expect(nav).not.toMatch(/Following|Drafts/);
     const page = markupOf("me/page.tsx");
     expect(page).toContain("fetchMyListings(session.accessToken)");
+    expect(page).toContain("fetchFollowing(session.accessToken)");
     expect(page).toContain("fetchSaved(session.accessToken)");
     expect(page).toContain("fetchMyApplications(session.accessToken)");
+    // Drafts are the unpublished posts of the products you are on the crew
+    // of: each product's `needs-you`, read with your own token.
+    expect(page).toContain("fetchMyDrafts(session.accessToken, myListings)");
+    expect(markupOf("me/products.ts")).toContain("fetchNeedsYou(token, { org: listing.orgId, profile: listing.id }, fetchImpl)");
   });
 
   it("tells a failed read apart from an empty section, and prints no count for it (OD5)", () => {
     const page = markupOf("me/page.tsx");
     for (const branch of [
-      "myListings ? <ProductsSection listings={myListings} /> : <SectionUnavailable />",
+      "<ProductsSection listings={myListings} standings={standings} pickerUrl={pickerUrl} />",
+      "myFollowing ? <FollowingSection following={myFollowing} /> : <SectionUnavailable />",
+      "myDrafts ? <DraftsSection drafts={myDrafts} /> : <SectionUnavailable />",
       "mySaved ? <SavedSection products={mySaved} /> : <SectionUnavailable />",
       "mySeats ? <SeatsSection applications={mySeats} /> : <SectionUnavailable />",
     ]) {
@@ -220,11 +236,15 @@ describe("your products, read from this side of the wall", () => {
     expect((await fetchMyListings("t", throwing)).kind).toBe("unavailable");
   });
 
-  it("sends Manage to the studio, where a maker manages a product today", () => {
+  it("sends Manage to the product's own page, and a draft to its settings", () => {
+    // OPR-3 — the page is the dashboard (design §2.5), so Manage goes to the
+    // product. A listing that is still a draft has no public page, and is
+    // managed where it is set up.
+    expect(manageHref({ slug: "kettle", visibility: "public", orgId: "org_1", id: "opp_1" })).toBe("/kettle");
+    // …its settings page (OPR-3: the listing's base address only forwards).
+    expect(manageHref({ slug: "kettle", visibility: "private", orgId: "org_1", id: "opp_1" })).toBe("/studio/org_1/opp_1/settings");
     const sections = markupOf("me/sections.tsx");
-    expect(sections).toContain(
-      "const manage = `/studio/${encodeURIComponent(listing.orgId)}/${encodeURIComponent(listing.id)}`;",
-    );
+    expect(sections).toContain("const manage = manageHref(listing);");
     expect(sections).toMatch(/<AppLink href=\{manage\}[^>]*>\s*Manage\s*<\/AppLink>/);
     // Reached by address: the page does not pull the studio's module graph.
     for (const file of ["me/page.tsx", "me/sections.tsx", "me/listings.ts"]) {
@@ -437,5 +457,85 @@ describe("nothing here is cached for anybody else", () => {
       expect([file, /readSession|cookies\(|me-api|fetch\(/.test(src)]).toEqual([file, false]);
     }
     expect(existsSync(resolve(APP_DIR, "me/settings/loading.tsx"))).toBe(true);
+  });
+});
+
+describe("OPR-3 — your products say where they stand, and your drafts are listed", () => {
+  const draft = (over: Record<string, unknown> = {}) =>
+    ({
+      id: "ppo_00000000000000000000000000000001",
+      kind: "version",
+      state: "draft",
+      blocks: [{ block: "version", value: "1.4.0" }],
+      publishedAt: null,
+      milestoneId: null,
+      roleOpeningId: null,
+      threadId: null,
+      createdAt: "2026-11-01T00:00:00.000Z",
+      updatedAt: "2026-11-02T00:00:00.000Z",
+      ...over,
+    }) as never;
+
+  it("reads a product's standing from its public document, and says only what is true", () => {
+    expect(standingOf(null)).toBeNull();
+    const shipping = standingOf({
+      stage: "shipping",
+      milestoneCounts: { shipped: 3, total: 4 },
+      roleOpenings: [{ status: "open" }, { status: "open" }, { status: "closed" }],
+    } as never);
+    expect(shipping).toEqual({ stage: "shipping", milestoneCounts: { shipped: 3, total: 4 }, openSeats: 2 });
+    expect(standingLine(shipping!)).toBe("Shipping · 3 of 4 milestones · 2 open seats");
+    // No milestones to count and no seat open: neither is said.
+    expect(standingLine({ stage: "shipping", milestoneCounts: { shipped: 0, total: 0 }, openSeats: 0 })).toBe("Shipping");
+    expect(standingLine({ stage: "idea", milestoneCounts: null, openSeats: 1 })).toBe("Idea · 1 open seat");
+    const sections = markupOf("me/sections.tsx");
+    expect(sections).toContain("<MilestoneSegments counts={standing.milestoneCounts}");
+    // A draft listing has no public page, so no standing is read for it.
+    expect(markupOf("me/page.tsx")).toContain('.filter((listing) => listing.visibility === "public")');
+  });
+
+  it("names a draft by its kind and headline, counts its required blocks from the catalogue, and opens it in the builder", () => {
+    expect(draftTitle(draft())).toEqual({ kind: "New version", headline: "1.4.0" });
+    expect(draftTitle(draft({ blocks: [] }))).toEqual({ kind: "New version", headline: null });
+    // New version requires Version and Added.
+    expect(draftProgress(draft())).toBe("1 of 2 required");
+    expect(draftProgress(draft({ blocks: [{ block: "version", value: "1" }, { block: "added", value: "x" }] }))).toBe("2 of 2 required");
+    // Only what the builder can open: a draft, of an authored kind.
+    expect(editableDrafts("kettle", [draft(), draft({ state: "published" }), draft({ kind: "demo" })])).toHaveLength(1);
+    const sections = markupOf("me/sections.tsx");
+    expect(sections).toContain("<AppLink href={composeDraftPath(slug, post.id)}");
+    expect(sections).toContain("Continue");
+  });
+
+  it("reads the drafts of every product with the caller's token, and tells none-read from none", async () => {
+    const listings = [
+      { id: "opp_1", orgId: "org_1", slug: "kettle" },
+      { id: "opp_2", orgId: "org_2", slug: "teapot" },
+    ] as never;
+    const seen: string[] = [];
+    const answering = (async (url: string, init: { headers: Record<string, string> }) => {
+      seen.push(`${init.headers.authorization} ${new URL(url).pathname}`);
+      const ok = url.includes("org_1");
+      return new Response(JSON.stringify(ok ? { data: { needsYou: { requests: [], drafts: [draft()] } } } : {}), {
+        status: ok ? 200 : 503,
+      });
+    }) as unknown as typeof fetch;
+    const drafts = await fetchMyDrafts("tok", listings, answering);
+    expect(drafts?.map((entry) => entry.slug)).toEqual(["kettle"]);
+    expect(seen.sort()).toEqual([
+      "Bearer tok /v1/organizations/org_1/openproduct/profiles/opp_1/needs-you",
+      "Bearer tok /v1/organizations/org_2/openproduct/profiles/opp_2/needs-you",
+    ]);
+    const failing = (async () => new Response("{}", { status: 503 })) as unknown as typeof fetch;
+    expect(await fetchMyDrafts("tok", listings, failing)).toBeNull();
+    expect(await fetchMyDrafts("tok", [], failing)).toEqual([]);
+  });
+
+  it("unfollows by a form that comes back to the section, for a product and for a person", () => {
+    const sections = markupOf("me/sections.tsx");
+    expect(sections).toContain('const back = encodeURIComponent("/me?section=following");');
+    expect(sections).toContain("`/me/follow?kind=listing&value=${encodeURIComponent(product.slug)}&on=0&return_to=${back}`");
+    expect(sections).toContain("`/me/follow?kind=person&value=${encodeURIComponent(person.handle)}&on=0&return_to=${back}`");
+    expect(sections).toContain("You don’t follow anything yet.");
   });
 });

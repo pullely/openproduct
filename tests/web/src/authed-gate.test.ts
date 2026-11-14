@@ -6,7 +6,9 @@
 // runs in `all`, it signs in the way the studio walk does, it holds the
 // signed-in half to the public lane's own sweep and tag set, and — the part
 // that keeps it true — every `page.tsx` under `me/` and `studio/` is in its
-// route list, so a signed-in page added later cannot stay unwalked.
+// route list, so a signed-in page added later cannot stay unwalked. Since
+// openproduct-redesign OPR-3 that includes the post builder, the one
+// signed-in page that lives under a product's own address (`/{slug}/new`).
 
 import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
 import { dirname, join, relative, resolve } from "node:path";
@@ -50,7 +52,10 @@ describe("OV4 — the authenticated walk is a gate", () => {
     const block = fixture.slice(fixture.indexOf("export const AUTHED_ROUTES = ["), fixture.indexOf("];", fixture.indexOf("export const AUTHED_ROUTES = [")));
     const listed = [...block.matchAll(/\{ path: (?:"([^"]+)"|`([^`]+)`)/g)]
       .map((m) => m[1] ?? m[2] ?? "")
-      .map((p) => p.replace("${STUDIO_ORG}", "[org]").replace("${STUDIO_PROFILE}", "[profile]"));
+      .map((p) => p.replace("${STUDIO_ORG}", "[org]").replace("${STUDIO_PROFILE}", "[profile]"))
+      // OPR-3 — the post builder is walked on the product the walker is on
+      // the crew of; the page it is a view of is `[slug]/new`.
+      .map((p) => p.replace("${CREW_SLUG}", "[slug]").replace("${SAMPLE_DRAFT_POST}", "ppo"));
     // A section of `/me` is walked at its own address (`/me?section=saved`);
     // the PAGE it is a view of is the path before the query.
     const listedPages = [...new Set(listed.map((p) => p.split("?")[0] ?? p))];
@@ -60,7 +65,17 @@ describe("OV4 — the authenticated walk is a gate", () => {
       ...pagesUnder(resolve(APP, "me")),
       ...pagesUnder(resolve(APP, "studio")),
       ...pagesUnder(resolve(APP, "activity")),
+      // OPR-3 — crew-only, per-request: a signed-in page like the others.
+      ...pagesUnder(resolve(APP, "[slug]/new")),
     ];
+    expect(pages).toContain("/[slug]/new");
+    // OPR-3 — `/studio` is not a page any more: the list of your listings is
+    // "Your products" on `/me`, and the address is a redirect (`MOVED`).
+    expect(pages).not.toContain("/studio");
+    expect(existsSync(resolve(APP, "studio/route.ts"))).toBe(true);
+    expect(fixture).toContain('{ from: "/studio", to: "/me", status: 308 }');
+    expect(listed).toContain("/me?section=following");
+    expect(listed).toContain("/me?section=drafts");
     expect(pages).toContain("/activity");
     // OPR1 — the settings page is new, and joined the list with the change
     // that added it. The two old addresses under `/me` are redirects now
@@ -84,7 +99,9 @@ describe("OV4 — the authenticated walk is a gate", () => {
     // `/me/settings` since openproduct-redesign OPR1: the saved list became a
     // section of `/me`, and its old address returns a signed-out visitor to
     // the section, not to itself — so it is no longer a door of its own.
-    expect(lane).toContain('for (const path of ["/me", "/me/settings", "/me/export", "/studio", "/studio/reports"])');
+    // OPR-3 — `/studio` left the doors (it is a 308 to `/me`, so signed out
+    // it arrives at `/me`'s door); the post builder, crew-only, joined them.
+    expect(lane).toContain('for (const path of ["/me", "/me/settings", "/me/export", "/studio/reports", `/${CREW_SLUG}/new`])');
     expect(lane).toContain('landed.pathname === "/signin" && returnTo === path');
     expect(lane).toContain("the gate rendered as a page");
   });

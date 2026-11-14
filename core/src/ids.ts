@@ -64,4 +64,25 @@ export function parseLaunchPublicId(publicId: string): Uuid | null {
   return uuidFromPublicId(publicId, "lch");
 }
 
+/**
+ * OPR-3 — a PRODUCT post's public id. `ppo_`, never `pst_`: a forum post is a
+ * different object (CB1), and the two must not be confusable in a URL.
+ */
+export function productPostPublicId(uuid: string): string {
+  return `ppo_${uuidToHex(uuid)}`;
+}
+
+export function parseProductPostPublicId(publicId: string): Uuid | null {
+  return uuidFromPublicId(publicId, "ppo");
+}
+
+/** OPR-3 — a product milestone's public id. */
+export function milestonePublicId(uuid: string): string {
+  return `pms_${uuidToHex(uuid)}`;
+}
+
+export function parseMilestonePublicId(publicId: string): Uuid | null {
+  return uuidFromPublicId(publicId, "pms");
+}
+
 export { hexToUuid };

@@ -160,7 +160,7 @@ export default async function ContributorsPage() {
               >
                 <span className="min-w-0 flex-1">
                   <AppLink
-                    href={`/${listing.slug}#people-wanted`}
+                    href={`/${listing.slug}/crew#people-wanted`}
                     className="block text-[15px] font-semibold text-foreground after:absolute after:inset-0 after:content-[''] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
                   >
                     {listing.slug}

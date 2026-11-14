@@ -57,6 +57,9 @@ function card(
       ...(upvotes === undefined ? [] : [metric("endorsements.7d", upvotes)]),
     ],
     thumbnail: null,
+    stage: "idea" as const,
+    milestoneCounts: { shipped: 0, total: 0 },
+    crewCount: 1,
     ...rest,
   };
 }

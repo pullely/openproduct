@@ -197,7 +197,7 @@ export default async function DigestPage({ params }: PageProps) {
           <ul className="m-0 list-none p-0">
             {digest.changed.map((change) => (
               <li key={`${change.slug}-${change.field}`}>
-                <AppLink href={`/${change.slug}#changed`} className={`${ROW_LINK} flex-wrap items-baseline gap-x-3 gap-y-1`}>
+                <AppLink href={`/${change.slug}/about#changed`} className={`${ROW_LINK} flex-wrap items-baseline gap-x-3 gap-y-1`}>
                   <span className="text-[16px] font-semibold text-foreground">{change.slug}</span>
                   <span className="text-[15px] text-muted-foreground">{change.label}</span>
                   <span className="min-w-0 flex-1 truncate font-mono text-[13px] text-muted-foreground">

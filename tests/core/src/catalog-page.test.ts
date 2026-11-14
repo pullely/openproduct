@@ -35,6 +35,8 @@ const cardRow = (slug: string, publishedAt: string): ProfileCardRecord =>
     pricing: null,
     licence: "MIT",
     roleOpeningCount: 0,
+    milestoneCounts: { shipped: 0, total: 0 },
+    crewCount: 1,
     openCommitments: [],
     hasLiveUrl: false,
     publishedAt,

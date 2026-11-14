@@ -30,7 +30,7 @@ describe("the front page says how many listings the floor is holding back", () =
   it("renders the count through one line, beside the title, with the withheld number in it", () => {
     // Was the contract's `buildsMeta` beside the sort tabs; the board puts
     // the count beside the title, and the line still confesses the floor.
-    expect(code("feed/products-view.tsx")).toContain("{productsCountLine(products.count, products.belowFloor)}");
+    expect(code("feed/products-view.tsx")).toContain("{productsCountLine(products.count, products.belowFloor, products.stages)}");
     expect(productsCountLine(3, 2)).toBe("3 products · 2 more below the floor");
     expect(productsCountLine(3, 0)).toBe("3 products");
     // The contract's own line is unchanged for whoever still draws it.

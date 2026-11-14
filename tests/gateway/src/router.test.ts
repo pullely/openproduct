@@ -755,6 +755,12 @@ describe("OL2 — the feed, the front page's one read", () => {
       "/v1/public/openproduct/transparency",
       "/v1/public/openproduct/people",
       "/v1/public/openproduct/contributors",
+      // OPR-3 — product posts: the feed, one post, one product's posts.
+      "/v1/public/openproduct/product-posts",
+      "/v1/public/openproduct/product-posts/ppo_0d5e1f2a111142228333444455556666",
+      "/v1/public/openproduct/projects/acme-thing/product-posts",
+      // …and one person's posts, for the Posts section of their page.
+      "/v1/public/openproduct/people/ada/product-posts",
     ];
     for (const path of publicPaths) {
       const captured: CapturedFetch[] = [];
@@ -880,6 +886,16 @@ describe("a path the gateway can MAP is a path it DISPATCHES", () => {
     "/v1/openproduct/reports/appeals/decide",
     "/v1/organizations/org_1/openproduct/profiles",
     "/v1/organizations/org_1/openproduct/profiles/p_1/publish",
+    // OPR-3 — my reaction, what I follow, and the crew's door for a product's
+    // posts, milestones and "Needs you". In THIS table for the reason the
+    // comment box is: a new write family is the one that gets mapped and
+    // never dispatched.
+    "/v1/openproduct/me/product-post-reactions/ppo_0d5e1f2a111142228333444455556666",
+    "/v1/openproduct/me/following",
+    "/v1/organizations/org_1/openproduct/profiles/p_1/product-posts",
+    "/v1/organizations/org_1/openproduct/profiles/p_1/product-posts/ppo_1/publish",
+    "/v1/organizations/org_1/openproduct/profiles/p_1/milestones/pms_1/shipped",
+    "/v1/organizations/org_1/openproduct/profiles/p_1/needs-you",
   ];
 
   it("maps every path it dispatches, and dispatches every path it maps", () => {

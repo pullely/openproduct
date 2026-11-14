@@ -41,18 +41,36 @@ const VIEWPORT = { width: 375, height: 812 };
  * next pass knows exactly where to go. A name that stops being small stops
  * matching, and the entry can be deleted.
  */
+/** PV0's observed-frame labels in the product page's side column: four
+ *  formula links in a definition list, at label size. The side column is on
+ *  every tab of a shipping product (openproduct-redesign OPR-3 gave the page
+ *  tabs), so the same four names are listed for each tab's address. */
+const OBSERVED_LABELS = [
+  ["Licence", "PV0's observed-frame labels: four formula links in a definition list, at label size"],
+  ["Language", "PV0's observed-frame labels"],
+  ["Last commit", "PV0's observed-frame labels"],
+  ["Open issues", "PV0's observed-frame labels"],
+];
+
 const EXEMPT = new Map([
   [
     "/product-00",
     new Map([
-      ["AL", "the conversation's author avatar (36px), beside the name link that is the equivalent target"],
       ["Upvotes shown after the integrity discount", "PV3's formula sentence in the aside — a sentence-length link at text size"],
-      ["Licence", "PV0's observed-frame labels: four formula links in a definition list, at label size"],
-      ["Language", "PV0's observed-frame labels"],
-      ["Last commit", "PV0's observed-frame labels"],
-      ["Open issues", "PV0's observed-frame labels"],
+      ...OBSERVED_LABELS,
     ]),
   ],
+  // OPR-3 — the tabs. Nothing here is new: the side column is the one above,
+  // and the conversation (with its 36px author avatar, beside the name link
+  // that is the equivalent target) moved from the product's one page to its
+  // Talk tab — and stays on an idea's one page.
+  ["/product-00/about", new Map(OBSERVED_LABELS)],
+  ["/product-00/crew", new Map(OBSERVED_LABELS)],
+  [
+    "/product-00/talk",
+    new Map([["AL", "the conversation's author avatar (36px), beside the name link that is the equivalent target"], ...OBSERVED_LABELS]),
+  ],
+  ["/product-01", new Map([["AL", "the conversation's author avatar (36px), beside the name link"]])],
   ["/product-00/forum", new Map([["AL", "the conversation's author avatar, beside the name link"]])],
   [
     "/people/ada",
@@ -115,6 +133,12 @@ function smallTargets(min) {
     if (r.width === 0 && r.height === 0) return false;
     const cs = getComputedStyle(el);
     if (cs.visibility === "hidden" || cs.display === "none") return false;
+    // Inside a CLOSED disclosure: not on the page until the summary is
+    // pressed. The pinned Chromium hides a closed `<details>`' content with
+    // `content-visibility`, which leaves the element a stale box (a reply
+    // field measured 0×456) rather than none — `checkVisibility` answers for
+    // that and for every other way an ancestor can take an element away.
+    if (typeof el.checkVisibility === "function" && !el.checkVisibility()) return false;
     // Clipped out of view (the skip link's `sr-only`): not a target a finger
     // can meet until it is focused, and then it is 44px.
     if (cs.clip === "rect(0px, 0px, 0px, 0px)" || (cs.position === "absolute" && r.width <= 1 && r.height <= 1)) return false;

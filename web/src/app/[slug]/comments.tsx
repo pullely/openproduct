@@ -58,9 +58,14 @@ import { AppLink } from "../ui/link";
 export function Comments({
   slug,
   launch,
+  onPage = false,
 }: {
   slug: string;
   launch: { thread: PublicThread; posts: PublicPost[] } | null;
+  /** The conversation is on the product's own (single) page — an idea's —
+   *  rather than on the Talk tab. Decides where a comment, a vote and a
+   *  report come back to. */
+  onPage?: boolean;
   // CV2 TOOK A PROP AWAY FROM HERE, and the prop was the bug. This component
   // used to be handed the listing's maintainer HANDLES and compare each
   // comment's author against them — which quietly un-badged every maintainer
@@ -70,6 +75,8 @@ export function Comments({
 }) {
   const posts = launch?.posts ?? [];
   const locked = launch?.thread.state === "locked";
+  // The conversation's own address: the Talk tab, or an idea's one page.
+  const home = onPage ? `/${slug}` : `/${slug}/talk`;
 
   return (
     <div>
@@ -97,7 +104,7 @@ export function Comments({
             Closed to new comments.
           </p>
         ) : (
-          <Composer slug={slug} />
+          <Composer slug={slug} onPage={onPage} />
         )}
 
         {posts.length === 0 ? null : (
@@ -106,7 +113,7 @@ export function Comments({
               // CV2 — the projection decides. This page used to compare
               // handles here, which quietly un-badged every maintainer without
               // a public profile.
-              <Comment key={post.id} post={post} slug={slug} />
+              <Comment key={post.id} post={post} home={home} />
             ))}
           </ul>
         )}
@@ -121,7 +128,7 @@ export function Comments({
           <ReportControl
             subjectKind="thread"
             subjectRef={launch.thread.id}
-            returnTo={`/${slug}#discussion`}
+            returnTo={`${home}#discussion`}
             bare
           />
         </div>
@@ -130,7 +137,7 @@ export function Comments({
   );
 }
 
-function Comment({ post, slug }: { post: PublicPost; slug: string }) {
+function Comment({ post, home }: { post: PublicPost; home: string }) {
   const name = post.authorName ?? post.authorHandle ?? "Somebody";
   const avatar =
     "grid h-[36px] w-[36px] shrink-0 place-items-center rounded-full bg-secondary font-mono text-[11px] text-copy";
@@ -174,7 +181,7 @@ function Comment({ post, slug }: { post: PublicPost; slug: string }) {
             a tombstone would be a number about nothing. */}
         {post.state === "removed" ? null : (
           <div className="mt-1.5 flex items-center gap-3.5">
-            <CommentVote postId={post.id} votes={post.votes} returnTo={`/${slug}`} />
+            <CommentVote postId={post.id} votes={post.votes} returnTo={home} />
           </div>
         )}
       </div>
@@ -189,10 +196,13 @@ function Comment({ post, slug }: { post: PublicPost; slug: string }) {
  * this is the design's product-page box, and asking somebody to classify a
  * sentence before they may say it is the friction DQ0b removes.
  */
-function Composer({ slug }: { slug: string }) {
+function Composer({ slug, onPage }: { slug: string; onPage: boolean }) {
   return (
     <form method="post" action="/comment" data-live="post" className={COMPOSER}>
       <input type="hidden" name="slug" value={slug} />
+      {/* An idea's conversation is on its one page; everywhere else the form
+          comes back to the Talk tab (`comment/route.ts`). */}
+      {onPage ? <input type="hidden" name="at" value="page" /> : null}
       {/* NO AVATAR, as the design draws it — and the one this used to draw
           was blank anyway (I6): the initials would be the VISITOR's, and this
           document is the same bytes for everybody. */}

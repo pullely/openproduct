@@ -134,6 +134,10 @@ function harness(): Harness {
     async countUnreadNotifications() {
       return 0;
     },
+    // OPR-3 — the overlay's crew question, asked about the same slugs.
+    async listCrewOf() {
+      return [];
+    },
     async overlayFor(_subjectId: string, slugs: readonly string[]) {
       calls.push("overlayFor");
       const endorsed = slugs.filter((s) => {

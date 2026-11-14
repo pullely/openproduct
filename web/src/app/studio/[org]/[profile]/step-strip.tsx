@@ -16,7 +16,13 @@
 
 import { useSelectedLayoutSegment } from "next/navigation";
 
-import { STRIP_STEPS, listingBasePath, listingStepPath } from "@openproduct/contracts";
+import {
+  LISTING_SETTINGS_SEGMENT,
+  STRIP_STEPS,
+  listingBasePath,
+  listingSettingsPath,
+  listingStepPath,
+} from "@openproduct/contracts";
 
 import { CHIP_BTN, CHIP_OFF, CHIP_ON, FOCUS } from "../../../ui/design";
 import { AppLink } from "../../../ui/link";
@@ -26,11 +32,17 @@ import { AppLink } from "../../../ui/link";
 const STRIP_TAB = `tap-h ${CHIP_BTN} ${FOCUS}`;
 
 export function StepStrip({ org, profileId }: { org: string; profileId: string }) {
-  // `null` on the overview — the layout's own page.
+  // The settings page is the strip's home (OPR-3): the layout's own address
+  // only forwards, so no tab is ever "current" on it.
   const segment = useSelectedLayoutSegment();
   const base = listingBasePath(org, profileId);
   const tabs = [
-    { key: "overview", label: "Overview", href: base, current: segment === null },
+    {
+      key: "overview",
+      label: "Settings",
+      href: listingSettingsPath(org, profileId),
+      current: segment === LISTING_SETTINGS_SEGMENT,
+    },
     // OB6 — `STRIP_STEPS`: the Launches step left the strip; its page stays.
     ...STRIP_STEPS.map((step) => ({
       key: step.id,

@@ -51,7 +51,7 @@ export default async function LaunchesPage(props: PageProps) {
       <FailurePanel
         kind="missing"
         what="There is no listing here that you maintain. It may have been removed, the address may be wrong, or it may belong to somebody else."
-        actions={[{ label: "Your listings", href: "/studio" }]}
+        actions={[{ label: "Your products", href: "/me" }]}
       />
     );
   }
@@ -62,7 +62,7 @@ export default async function LaunchesPage(props: PageProps) {
         what="This listing's launches could not be loaded. It is not something you did, and trying again in a moment usually works."
         actions={[
           { label: "Try again", href: page },
-          { label: "Your listings", href: "/studio" },
+          { label: "Your products", href: "/me" },
         ]}
       />
     );

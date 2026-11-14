@@ -3,7 +3,7 @@
 import * as React from "react";
 
 import { AUTH_ERROR_COPY } from "./auth/auth";
-import { FOCUS } from "./ui/design";
+import { FOCUS } from "./ui/design-core";
 import { CloseIcon } from "./ui/icons";
 
 /**

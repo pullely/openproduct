@@ -38,6 +38,9 @@ export function Glyph({
 
 /** Your products: a box. */
 export const GLYPH_PRODUCTS = "M4 7l8-4 8 4-8 4zM4 7v10l8 4 8-4V7M12 11v10";
+/** Two people: what you follow. */
+export const GLYPH_FOLLOWING =
+  "M16 11a3 3 0 100-6 3 3 0 000 6zM8 11a3 3 0 100-6 3 3 0 000 6zM2 20c.8-3 3-5 6-5s5.2 2 6 5M14.5 15.2c.5-.1 1-.2 1.5-.2 3 0 5.2 2 6 5";
 /** Saved: a bookmark. */
 export const GLYPH_SAVED = "M6 3h12v18l-6-4-6 4z";
 /** Seats: a person, and a place beside them. */

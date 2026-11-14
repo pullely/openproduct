@@ -490,6 +490,24 @@ export const FORMULAS = {
       "Distinct people who upvoted this comment and have not withdrawn. One person counts once, an author cannot upvote their own comment, and the number is the same for every reader. IT ORDERS NOTHING: comments appear in the order they were written, and no ranking anywhere on this site takes this figure as an input. That is also why it carries no integrity discount, unlike a listing's upvotes — the discount exists to protect an ordering that decides what other people are shown, and a brigaded comment count is a wrong number beside one comment rather than a wrong page. If comments are ever ordered by it, the discount comes with that change and not before.",
     computedBy: "DQ1",
   },
+  "product.stage": {
+    id: "product.stage",
+    sentence:
+      "Whether a product is an idea or is shipping. A product is an idea until its crew marks its first milestone shipped, and shipping for as long as at least one milestone is. It is read from the milestones and never set by hand, and it orders nothing.",
+    computedBy: "OPR2",
+  },
+  "product.milestones-shipped": {
+    id: "product.milestones-shipped",
+    sentence:
+      "How many of a product's milestones its crew has marked shipped, and how many it has. A milestone counts as shipped from the moment it was marked and stops counting if the mark is taken back.",
+    computedBy: "OPR2",
+  },
+  "product.crew-count": {
+    id: "product.crew-count",
+    sentence:
+      "How many people a product's page lists as its crew: the maintainers its crew published, counted. A count and never a list here; the names are on the product's page. It orders nothing.",
+    computedBy: "OPR2",
+  },
 } as const satisfies Record<string, Formula>;
 
 export type FormulaId = keyof typeof FORMULAS;

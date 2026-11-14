@@ -1,21 +1,30 @@
-import type { ContributorApplication, PublicProfileCard } from "@openproduct/contracts";
+import { makerPath, type ContributorApplication, type MeFollowing, type PublicProfileCard } from "@openproduct/contracts";
 
-import { BTN_INK, BTN_SOFT_SMALL, FOCUS, NOTICE, SEAT_RING } from "../ui/design";
+import { composeDraftPath } from "../[slug]/new/compose";
+import { initialsOf } from "../shell/shell";
+
+import { BTN_INK, BTN_SOFT, BTN_SOFT_SMALL, FOCUS, NOTICE, SEAT_RING } from "../ui/design";
 import { AppLink } from "../ui/link";
 import { ProductTile } from "../ui/product-tile";
 import { absoluteOf } from "../ui/time";
-import { GLYPH_CLOCK, GLYPH_SAVED, Glyph } from "./glyph";
+import { LINK_WORKSPACE_LABEL } from "../ui/workspace-picker";
+import { MilestoneSegments } from "../ui/stage-mark";
+import { stageWord } from "../ui/stage";
+
+import { GLYPH_CLOCK, GLYPH_EDIT, GLYPH_SAVED, Glyph } from "./glyph";
 import type { MyListing } from "./listings";
 import { ME_EMPTY, ME_LIST } from "./nav";
+import { draftProgress, draftTitle, manageHref, standingLine, type MyDraft, type MyProductStanding } from "./products";
 
 /**
- * The three sections of `/me`, each a list of the boards' flat cards
- * (openproduct-redesign OPR1, boards `Me` and `PhoneMe`).
+ * The five sections of `/me`, each a list of the boards' flat cards
+ * (openproduct-redesign OPR1 and OPR-3, boards `Me` and `PhoneMe`).
  *
- * EVERY ROW SHOWS WHAT THE READ HOLDS AND NOTHING ELSE. The boards draw a
- * product's stage and milestones, a saved post's new version, a seat's role
- * title: none of those is in today's reads (they arrive with OPR2 and OPR3),
- * so none is drawn — no bar at zero, no placeholder title.
+ * EVERY ROW SHOWS WHAT THE READ HOLDS AND NOTHING ELSE. A product's stage,
+ * its milestones and its open seats are drawn from its public document, and
+ * only for a product that has one; a saved post's new version and a seat's
+ * role title are not in any read, so neither is drawn — no bar at zero, no
+ * placeholder title.
  */
 
 /**
@@ -56,40 +65,187 @@ function draftNote(listing: MyListing): string | null {
  * Your products: every listing this person maintains — the studio's own
  * read, so the two can never disagree about what is yours.
  *
- * MANAGE GOES TO THE STUDIO. That is where a maker manages a product today;
- * OPR2 moves managing onto the product page itself, and this link moves with
- * it. The name goes to the public page once there is one, and to the same
- * studio page while the listing is a draft nobody else can open.
+ * THE ROW SAYS WHERE THE PRODUCT STANDS (OPR-3): its stage, how many of its
+ * milestones shipped — with the bar — and how many seats it has open, read
+ * from the product's own public document (`standings`, by slug). A draft has
+ * no public page and so no standing: its row says Draft, and what stands
+ * between it and publishing.
+ *
+ * MANAGE GOES TO THE PRODUCT'S PAGE (`manageHref`): the page is the
+ * dashboard. A draft, which has no page yet, goes to its settings.
+ *
+ * THE TWO DOORS TO A NEW PRODUCT sit under the list, as they did under the
+ * studio's (this section is what `/studio` was): link a workspace you
+ * already have — the console's picker — or open a build, which makes one.
  */
-export function ProductsSection({ listings }: { listings: MyListing[] }) {
-  if (listings.length === 0) return <p className={ME_EMPTY}>No products yet.</p>;
+export function ProductsSection({
+  listings,
+  standings = {},
+  pickerUrl,
+}: {
+  listings: MyListing[];
+  standings?: Readonly<Record<string, MyProductStanding | null>>;
+  /** The console's workspace picker (seam edge S13). */
+  pickerUrl?: string;
+}) {
+  const doors = (
+    <div className="flex flex-wrap items-center gap-2.5" data-me-product-doors>
+      {pickerUrl ? (
+        <a href={pickerUrl} className={`${BTN_SOFT} ${FOCUS}`}>
+          {LINK_WORKSPACE_LABEL}
+        </a>
+      ) : null}
+      <AppLink href="/submit" className={`${BTN_SOFT} ${FOCUS}`}>
+        Open a build
+      </AppLink>
+    </div>
+  );
+  if (listings.length === 0) {
+    return (
+      <>
+        <p className={ME_EMPTY}>No products yet.</p>
+        {doors}
+      </>
+    );
+  }
   return (
+    <>
     <ul className={ME_LIST} data-me-products>
       {listings.map((listing) => {
-        const manage = `/studio/${encodeURIComponent(listing.orgId)}/${encodeURIComponent(listing.id)}`;
+        const manage = manageHref(listing);
         const published = listing.visibility === "public";
-        const view = published ? `/${listing.slug}` : manage;
+        const standing = published ? (standings[listing.slug] ?? null) : null;
         // The state rides the meta line — nothing takes its own row for it.
-        const meta = [published ? "Published" : "Draft", draftNote(listing), listing.tagline]
+        const meta = (
+          standing
+            ? [standingLine(standing)]
+            : [published ? "Published" : "Draft", draftNote(listing), listing.tagline]
+        )
           .filter((part): part is string => typeof part === "string" && part.length > 0)
           .join(" · ");
         return (
           <li
             key={listing.id}
+            data-me-product-stage={standing?.stage}
             className="relative flex flex-wrap items-center gap-3.5 rounded-[16px] bg-card p-[18px] max-sm:gap-3 max-sm:p-3.5"
           >
             <ProductTile slug={listing.slug} thumbnail={listing.thumbnail} size={52} />
             <div className="flex min-w-0 flex-[1_1_220px] flex-col gap-0.5 max-sm:flex-[1_1_0%]">
               <div className="flex flex-wrap items-center gap-x-2">
-                <AppLink href={view} className={NAME}>
+                <AppLink href={manage} className={NAME}>
                   {listing.slug}
                 </AppLink>
                 <span className="font-mono text-mono-label uppercase text-amber-ink">Maker</span>
               </div>
               <span className={`${META} line-clamp-2`}>{meta}</span>
+              {standing?.stage === "shipping" ? (
+                <MilestoneSegments counts={standing.milestoneCounts} className="max-w-[240px] pt-1.5" />
+              ) : null}
             </div>
             <AppLink href={manage} prefetch="auto" className={`${BTN_INK} ${ABOVE}`}>
               Manage
+            </AppLink>
+          </li>
+        );
+      })}
+    </ul>
+    {doors}
+    </>
+  );
+}
+
+/**
+ * Following: the products and the people this person follows (board `Me`) —
+ * one card, a row each: the tile (a disc for a person), the name, what it is,
+ * and Unfollow.
+ *
+ * UNFOLLOW IS A FORM, like every act on these pages: it posts to the route
+ * that reads the session and comes back to this section.
+ */
+export function FollowingSection({ following }: { following: MeFollowing }) {
+  if (following.products.length === 0 && following.people.length === 0) {
+    return <p className={ME_EMPTY}>You don’t follow anything yet.</p>;
+  }
+  const back = encodeURIComponent("/me?section=following");
+  const row = "flex items-center gap-3 px-3 py-2.5";
+  const unfollow = `${BTN_SOFT_SMALL} cursor-pointer border-0`;
+  return (
+    <ul className="m-0 list-none rounded-[16px] bg-card px-2 py-1.5" data-me-following>
+      {following.products.map((product) => (
+        <li key={`product:${product.slug}`} className={row}>
+          <ProductTile slug={product.slug} thumbnail={product.logo} size={40} />
+          <div className="flex min-w-0 flex-1 flex-col">
+            <AppLink href={`/${product.slug}`} className={`self-start font-semibold text-foreground no-underline hover:underline ${FOCUS}`}>
+              {product.name}
+            </AppLink>
+            <span className={META}>Product · {stageWord(product.stage)}</span>
+          </div>
+          <form method="post" action={`/me/follow?kind=listing&value=${encodeURIComponent(product.slug)}&on=0&return_to=${back}`} className="shrink-0">
+            <button type="submit" className={unfollow}>
+              Unfollow<span className="sr-only"> {product.name}</span>
+            </button>
+          </form>
+        </li>
+      ))}
+      {following.people.map((person) => {
+        const name = person.displayName ?? `@${person.handle}`;
+        return (
+          <li key={`person:${person.handle}`} className={row}>
+            <span
+              aria-hidden="true"
+              className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-sunken text-[13px] font-semibold text-foreground"
+            >
+              {initialsOf(person.displayName ?? person.handle)}
+            </span>
+            <div className="flex min-w-0 flex-1 flex-col">
+              <AppLink href={makerPath(person.handle)} className={`self-start font-semibold text-foreground no-underline hover:underline ${FOCUS}`}>
+                {name}
+              </AppLink>
+              <span className={META}>Person</span>
+            </div>
+            <form method="post" action={`/me/follow?kind=person&value=${encodeURIComponent(person.handle)}&on=0&return_to=${back}`} className="shrink-0">
+              <button type="submit" className={unfollow}>
+                Unfollow<span className="sr-only"> {name}</span>
+              </button>
+            </form>
+          </li>
+        );
+      })}
+    </ul>
+  );
+}
+
+/**
+ * Drafts: the posts that are written and not out, across the products this
+ * person is on the crew of (board `Me`). Each says what it is, which product
+ * it is for and how many of its required blocks are filled; Continue opens
+ * it in the builder.
+ */
+export function DraftsSection({ drafts }: { drafts: MyDraft[] }) {
+  if (drafts.length === 0) return <p className={ME_EMPTY}>No drafts.</p>;
+  return (
+    <ul className={ME_LIST} data-me-drafts>
+      {drafts.map(({ slug, post }) => {
+        const title = draftTitle(post);
+        return (
+          <li
+            key={post.id}
+            className="relative flex flex-wrap items-center gap-3.5 rounded-[16px] bg-card p-[18px] max-sm:gap-3 max-sm:p-3.5"
+          >
+            <span aria-hidden="true" className="grid h-[42px] w-[42px] shrink-0 place-items-center rounded-[12px] bg-idea-soft text-idea">
+              <Glyph d={GLYPH_EDIT} size={18} />
+            </span>
+            <div className="flex min-w-0 flex-[1_1_220px] flex-col max-sm:flex-[1_1_0%]">
+              <span className="font-semibold text-foreground [overflow-wrap:anywhere]">
+                {title.kind}
+                {title.headline ? <span className="font-normal text-copy"> {title.headline}</span> : null}
+              </span>
+              <span className={META}>
+                for {slug} · {draftProgress(post)}
+              </span>
+            </div>
+            <AppLink href={composeDraftPath(slug, post.id)} className={`${BTN_INK} ${ABOVE}`}>
+              Continue<span className="sr-only"> {title.kind} for {slug}</span>
             </AppLink>
           </li>
         );

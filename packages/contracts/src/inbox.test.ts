@@ -96,8 +96,10 @@ describe("where a row goes", () => {
     expect(inboxHref({ kind: "launch.topic", targetKind: "topic", targetRef: "dev-tools" })).toBe(
       "/topics/dev-tools",
     );
+    // The conversation is on the product's Talk tab: its own address, not
+    // the bare page and a forward from it (openproduct-redesign OPR-3).
     expect(inboxHref({ kind: "post.reply", targetKind: "post", targetRef: "acme-thing" })).toBe(
-      "/acme-thing#discussion",
+      "/acme-thing/talk#discussion",
     );
     expect(inboxHref({ kind: "rank.first", targetKind: "listing", targetRef: "acme-thing" })).toBe(
       "/acme-thing",

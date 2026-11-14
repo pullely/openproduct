@@ -1,11 +1,13 @@
 import { TOPIC_FACET, labelOf, type PublicProfileCard } from "@openproduct/contracts";
 
 import { FollowProduct } from "./follow-product";
-import { openSeatsLabel, productFacts } from "./products";
+import { openSeatsLabel } from "./products";
 
 import { FOCUS, SEAT_RING } from "../ui/design";
 import { AppLink } from "../ui/link";
 import { ProductTile } from "../ui/product-tile";
+import { IDEA_NEEDS_BUILDER, needsFirstBuilder } from "../ui/stage";
+import { MilestoneSegments, StageMark } from "../ui/stage-mark";
 
 /**
  * A product, as a card (openproduct-redesign OPR1; boards `Products`,
@@ -19,16 +21,24 @@ import { ProductTile } from "../ui/product-tile";
  * board draws it — and the foot holds the card's two other controls, outside
  * that link, so no control is nested in another.
  *
- * WHAT THE DATA DOES NOT HOLD, THE CARD DOES NOT DRAW:
+ * THE STAGE IS ON THE CARD (OPR-3). Under the name sits the stage mark —
+ * `SHIPPING` in the amber ink, `IDEA` in the lavender — and an idea is drawn
+ * as the idea's own card: the lavender wash with one square corner, the
+ * shape an idea has everywhere on the site.
  *
- *   stage     a listing is not yet "shipping" or "an idea", so the board's
- *             stage label, its milestone bar and the idea's lavender card
- *             are absent (they arrive with OPR2). The line of facts sits
- *             where the stage label does.
+ * WHAT THE CARD DRAWS, AND FROM WHAT:
+ *
+ *   progress  a shipping product's `SHIPPING · 3 OF 4` and its milestone
+ *             bars, from the card's own `milestoneCounts`. A product with no
+ *             milestones says `SHIPPING` and draws no bar.
+ *   builder   "Needs a first builder" is said of an idea whose crew is only
+ *             its maker — the card's `crewCount`, the same people the
+ *             product's page lists, at most one. A count nobody made (`null`
+ *             on a card that predates it) says nothing.
  *   seats     the link is drawn only when a seat is open: "0 open seats" is
  *             a link to a page with nothing on it for this product.
  *   upvote    the board's card carries no vote. The act lives on the
- *             product's own page; the week's count is in the line of facts.
+ *             product's own page.
  *
  * NO CLIENT DIRECTIVE, AND NOTHING SERVER-ONLY. The lists render it on the
  * server; `product-list.tsx` renders the same component in the browser for
@@ -37,11 +47,18 @@ import { ProductTile } from "../ui/product-tile";
  */
 export function ProductCard({ card, returnTo = "/products" }: { card: PublicProfileCard; returnTo?: string }) {
   const category = card.category ? (labelOf(TOPIC_FACET, card.category) ?? card.category) : null;
+  const idea = card.stage === "idea";
+  const staged = card.stage === "idea" || card.stage === "shipping";
   return (
-    <li data-keyrow data-product-card className="flex min-w-0 list-none flex-col overflow-hidden rounded-[16px] bg-card">
+    <li
+      data-keyrow
+      data-product-card
+      data-product-stage={card.stage}
+      className={`flex min-w-0 list-none flex-col overflow-hidden ${idea ? "rounded-[4px_16px_16px_16px] bg-idea-wash" : "rounded-[16px] bg-card"}`}
+    >
       <AppLink
         href={`/${card.slug}`}
-        className={`flex flex-1 flex-col gap-[10px] px-[18px] pb-3 pt-[18px] text-foreground no-underline transition-colors hover:bg-accent max-sm:gap-2 max-sm:px-[14px] max-sm:pb-1 max-sm:pt-[14px] ${FOCUS} focus-visible:-outline-offset-2`}
+        className={`flex flex-1 flex-col gap-[10px] px-[18px] pb-3 pt-[18px] text-foreground no-underline transition-colors hover:bg-foreground/[0.03] max-sm:gap-2 max-sm:px-[14px] max-sm:pb-1 max-sm:pt-[14px] ${FOCUS} focus-visible:-outline-offset-2`}
       >
         <span className="flex items-center gap-3">
           <ProductTile slug={card.slug} thumbnail={card.thumbnail} size={44} />
@@ -50,9 +67,18 @@ export function ProductCard({ card, returnTo = "/products" }: { card: PublicProf
             {category ? <span className="truncate text-[13px] text-muted-foreground">{category}</span> : null}
           </span>
         </span>
-        <span className="font-mono text-mono-label uppercase text-muted-foreground" data-product-facts>
-          {productFacts(card)}
-        </span>
+        {staged ? (
+          <span className="flex flex-col gap-1.5" data-product-stage-line>
+            <StageMark stage={card.stage} counts={card.milestoneCounts} short />
+            {!idea ? <MilestoneSegments counts={card.milestoneCounts} /> : null}
+            {idea && needsFirstBuilder(card.crewCount) ? (
+              <span className="flex items-center gap-1.5 text-[13px] text-idea">
+                <span aria-hidden="true" className="box-border h-3 w-3 rounded-full border-[1.5px] border-dashed border-idea" />
+                {IDEA_NEEDS_BUILDER}
+              </span>
+            ) : null}
+          </span>
+        ) : null}
         {/* TWO LINES at most; the product's page holds the rest. */}
         {card.tagline ? <span className="line-clamp-2 text-[15px] leading-[1.5] text-copy">{card.tagline}</span> : null}
       </AppLink>

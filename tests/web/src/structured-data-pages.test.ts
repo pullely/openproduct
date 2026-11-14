@@ -22,7 +22,7 @@ const code = (file: string) =>
   read(file).replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "");
 
 const TRAILED = [
-  "[slug]/page.tsx",
+  "[slug]/product-page.tsx",
   "topics/[topic]/page.tsx",
   "launches/[day]/page.tsx",
   "collections/[slug]/page.tsx",
@@ -83,7 +83,7 @@ describe("the escaping lives in one place", () => {
 
   it("is what every page uses, including the one that had its own", () => {
     for (const file of TRAILED) expect(code(file)).toContain("<JsonLd");
-    expect(code("[slug]/page.tsx")).not.toContain("dangerouslySetInnerHTML");
+    expect(code("[slug]/product-page.tsx")).not.toContain("dangerouslySetInnerHTML");
   });
 
   it("renders nothing without a canonical origin", () => {
@@ -118,7 +118,7 @@ describe("no page emits a rating, and the leaderboard least of all", () => {
     // `noindex` says do not amplify THIS page. A breadcrumb is about the pages
     // ABOVE it, which are indexable and whose relationship is true regardless
     // — so the trail is emitted either way and the rich record is not.
-    const source = code("[slug]/page.tsx");
+    const source = code("[slug]/product-page.tsx");
     expect(source).toMatch(/profile\.indexable \? <JsonLd data=\{listingJsonLd/);
     expect(source).toMatch(/<JsonLd\s+data=\{breadcrumbJsonLd/);
   });

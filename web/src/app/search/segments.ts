@@ -8,7 +8,7 @@
 // marked and whether a person row can open are rules about the product, not
 // about a React tree.
 
-import type { SearchMakerHit } from "@openproduct/contracts";
+import type { ProductRef, SearchMakerHit } from "@openproduct/contracts";
 
 /**
  * The classes of thing `/v1/search` answers with today, in the page's order.
@@ -135,20 +135,18 @@ export function highlightParts(text: string, query: string): TextPart[] {
 
 // ─── A PERSON ──────────────────────────────────────────────────────────────
 
-/** One of a person's products, as a row under them. */
-export interface SearchPersonProduct {
-  readonly slug: string;
-  readonly title: string;
-}
+/** One of a person's products, as a row under them: the contract's
+ *  `{slug, name, stage}`. */
+export type SearchPersonProduct = ProductRef;
 
 /**
- * A person as `/v1/search` returns one, plus the list the row can open.
+ * A person as `/v1/search` returns one (`SearchPersonHit`, OPR-3): the hit
+ * and the listed products they maintain, newest first, at most six.
  *
- * `products` IS NOT IN TODAY'S RESPONSE (the same finding as the header
- * card's, `shell/palette-rows.ts`): the read sends a handle, a name and
- * which field matched. The row takes the list when a response carries it;
- * without one there is nothing to open and the chevron is not drawn. The
- * page never makes up products for somebody.
+ * `products` is optional HERE though the wire always sends it: a response
+ * without the list (an older gateway behind a newer page) is a row with
+ * nothing to open and no chevron. The page never makes up products for
+ * somebody.
  */
 export interface SearchPerson extends SearchMakerHit {
   readonly products?: readonly SearchPersonProduct[];
@@ -172,7 +170,7 @@ export function personName(person: SearchPerson): string {
 /**
  * The one line under a person's name.
  *
- * `2 products` when the read sent their products (the board's line).
+ * `2 products` when they have listed products (the board's line).
  * Otherwise the handle and WHY they are in the list — a list of people with
  * no reason beside them leaves a reader wondering what was matched, and
  * "their bio" is a very different answer from "their handle".

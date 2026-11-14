@@ -27,11 +27,14 @@ import type {
 } from "@openproduct/db";
 import {
   DEFAULT_TRUST_LEVEL,
+  PRODUCT_TAGLINE_MAX,
+  ROLE_OPENING_TITLE_MAX,
   canonicalise,
   facet,
   installLineRefusal,
   normaliseInstallLine,
   parseHandle,
+  postUrl,
   promotionAfterReview,
   publishDecision,
   type PublishBlocker,
@@ -49,10 +52,12 @@ import { readRepoObservation } from "../repo-observation.js";
 import { verifyListingGrant } from "../seam.js";
 import type { Env } from "../env.js";
 import { errorResponse, successResponse, validationError } from "../http.js";
+import { offerSeatPost, writeIdeaPost, type SelfPostDeps } from "./self-posts.js";
 import {
   generateId,
   orgPublicId,
   parseProjectPublicId,
+  productPostPublicId,
   profilePublicId,
   projectPublicId,
   roleOpeningPublicId,
@@ -66,12 +71,16 @@ export interface ProfileHandlerDeps {
 }
 
 const MAX_SLUG = 64;
-const MAX_TAGLINE = 200;
+/** The contract's number, so the page's counter and this refusal agree. */
+const MAX_TAGLINE = PRODUCT_TAGLINE_MAX;
 const MAX_PITCH = 20_000;
 const MAX_STACK_TAGS = 12;
 const MAX_STACK_TAG = 32;
-const MAX_TITLE = 120;
+const MAX_TITLE = ROLE_OPENING_TITLE_MAX;
 const MAX_MAINTAINERS = 50;
+/** OPR-3 — the Feature shipped post's "Try it" block holds 200 characters,
+ *  and a post prefilled from this address has to fit it. */
+const MAX_TRY_URL = 200;
 
 /**
  * A slug is the public URL segment, so it is validated to the narrowest thing
@@ -236,6 +245,10 @@ function toMaintainerProfile(
     pricing: profile.pricing,
     repoUrl: profile.repoUrl,
     liveUrl: profile.liveUrl,
+    // OPR-3 — the stage follows the milestones (read-only here); the "Try
+    // it" address is the crew's to write.
+    stage: profile.stage,
+    tryUrl: profile.tryUrl,
     repoVisibility: profile.repoVisibility,
     repoLicence: profile.repoLicence,
     repoCheckedAt: profile.repoCheckedAt,
@@ -667,6 +680,21 @@ export async function handleUpdateProfile(
     if (liveUrl === undefined) fields.liveUrl = ["Must be an absolute https URL"];
   }
 
+  // OPR-3 — the address of the running product, shown as "Try it". An
+  // absolute http(s) URL, or null (or an emptied box) to clear it. http is
+  // allowed here, unlike `liveUrl`: a product somebody can try is sometimes a
+  // preview host that has no certificate yet, and the page says where it goes.
+  let tryUrl: string | null | undefined;
+  if (body.tryUrl !== undefined) {
+    if (body.tryUrl === null || body.tryUrl === "") tryUrl = null;
+    else {
+      const candidate = typeof body.tryUrl === "string" ? postUrl(body.tryUrl) : null;
+      if (candidate === null || candidate.length > MAX_TRY_URL) {
+        fields.tryUrl = [`Must be an absolute http(s) URL of at most ${MAX_TRY_URL} characters`];
+      } else tryUrl = candidate;
+    }
+  }
+
   const stack = parseStack(body.stack, fields);
   const category = parseFacet("category", body.category, fields);
   const hosting = parseFacet("hosting", body.hosting, fields);
@@ -675,6 +703,7 @@ export async function handleUpdateProfile(
 
   const updated = await deps.repo
     .updateProfile(orgId, profileId, {
+      tryUrl,
       slug,
       tagline,
       pitchBody,
@@ -891,6 +920,18 @@ export async function handlePublishProfile(
     payload: { publishedAt: published.publishedAt, pitchDigest: published.pitchDigest },
   });
 
+  // OPR-3 — THE FIRST PUBLISH WRITES THE PRODUCT'S NEW IDEA POST (design
+  // §6.2). First only: a listing unpublished and published again keeps the
+  // `published_at` it had, and has had its idea post. Best-effort — the
+  // listing is public whether or not the post could be written.
+  if (existing.publishedAt === null) {
+    try {
+      await writeIdeaPost(deps as unknown as SelfPostDeps, { orgId, profile: published, actor, requestId });
+    } catch {
+      // Deliberately swallowed — see `self-posts.ts`.
+    }
+  }
+
   const [openings, maintainers] = await Promise.all([
     deps.repo.listRoleOpenings(profileId),
     deps.repo.listMaintainers(profileId),
@@ -1070,6 +1111,24 @@ export async function handleUpsertRoleOpening(
     payload: { roleOpeningId: roleOpeningPublicId(opening.id), status: opening.status },
   });
 
+  // OPR-3 — OPENING A SEAT OFFERS A HELP WANTED POST (design §6.2): a draft
+  // prefilled from the opening, which the crew publishes or discards. On
+  // creation only, and only for a seat that is open. Best-effort — the seat
+  // is open whether or not the draft could be written.
+  let offeredPostId: string | null = null;
+  if (!openingId && opening.status === "open") {
+    try {
+      const offered = await offerSeatPost(
+        deps as unknown as SelfPostDeps,
+        { orgId, profile: existing, actor, requestId },
+        opening,
+      );
+      offeredPostId = offered ? productPostPublicId(offered.id) : null;
+    } catch {
+      // Deliberately swallowed — see `self-posts.ts`.
+    }
+  }
+
   return successResponse(
     {
       roleOpening: {
@@ -1080,6 +1139,9 @@ export async function handleUpsertRoleOpening(
         status: opening.status,
         joinLinkRef,
       },
+      // OPR-3 — the draft Help wanted post this act prepared, so the page
+      // that opened the seat can offer "Continue" on it. Null on an update.
+      offeredPostId,
     },
     requestId,
     openingId ? 200 : 201,

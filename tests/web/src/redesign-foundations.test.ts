@@ -177,6 +177,57 @@ describe("three faces, five files, self-hosted", () => {
     expect(limit - fetched).toBeLessThan(fetched * 0.1);
   });
 
+  it("what every page's bundle draws with is six class strings, in a file of their own (OPR-3)", () => {
+    // `design.ts` holds every shared class string, and a bundler keeps a
+    // module whole: a client component that imports one of them carries all
+    // the ones any client component anywhere uses. The files below are in
+    // EVERY page's bundle (the root layout's client piece, the error
+    // boundary's panel, the feed's list and the reaction control every page
+    // prefetches for the header's "Feed" link), so they import the small
+    // file — measured by the wire lane at about a kilobyte per copy.
+    const core = read("src/app/ui/design-core.ts");
+    expect([...core.matchAll(/^export const (\w+) =/gm)].map((m) => m[1]).sort()).toEqual([
+      "BTN_OUTLINE",
+      "BTN_PRIMARY",
+      "BTN_SOFT",
+      "FOCUS",
+      "PAGE_NARROW",
+      "PAGE_TITLE",
+    ]);
+    expect(code(core)).not.toMatch(/^import /m);
+    for (const file of ["src/app/auth-notice.tsx", "src/app/ui/failure.tsx", "src/app/feed/feed-posts.tsx", "src/app/posts/reaction-control.tsx"]) {
+      const source = code(read(file));
+      expect([file, /from "[./a-z]*\/design-core"/.test(source)]).toEqual([file, true]);
+      expect([file, /from "[./a-z]*\/design"/.test(source)]).toEqual([file, false]);
+    }
+    // There is still one place to import a class string from.
+    expect(code(read("src/app/ui/design.ts"))).toContain(
+      'export { BTN_OUTLINE, BTN_PRIMARY, BTN_SOFT, FOCUS, PAGE_NARROW, PAGE_TITLE } from "./design-core";',
+    );
+    for (const name of ["BTN_OUTLINE", "BTN_PRIMARY", "BTN_SOFT", "FOCUS", "PAGE_NARROW", "PAGE_TITLE"]) {
+      expect([name, (design as Record<string, unknown>)[name]]).toEqual([name, (core.match(new RegExp(`export const ${name} =\\s*"([^"]*)"`)) ?? [])[1]]);
+    }
+  });
+
+  it("a page that quotes an idea fetches the fifth, and only such a page may (OPR-3)", () => {
+    // The boards quote an idea in Lora's italic. A page that draws a word in
+    // it takes the italic's file; every other page is still held to four.
+    // The lane decides by what the page PAINTS, not by a list of routes.
+    const lane = readFileSync(resolve(PERF, "budgets.mjs"), "utf-8");
+    const italic = /const FONTS_WITH_ITALIC = \{ bytes: ([\d_]+), files: (\d+) \};/.exec(lane);
+    const plain = /const FONTS = \{ bytes: ([\d_]+), files: (\d+) \};/.exec(lane);
+    expect(italic).not.toBeNull();
+    const [limit, files] = [Number(italic![1]!.replace(/_/g, "")), Number(italic![2])];
+    expect(files).toBe(FILES.length);
+    // All five, plus exactly the headroom the four-file budget carries.
+    expect(limit - bytes).toBe(Number(plain![1]!.replace(/_/g, "")) - 75_924);
+    expect(lane).toContain("const fonts = m.drawsSerifItalic ? FONTS_WITH_ITALIC : FONTS;");
+    expect(lane).toContain('cs.fontStyle === "italic" && /lora/i.test(cs.fontFamily)');
+    // Still declared without a preload: the browser takes it only where a
+    // quote is drawn.
+    expect(LAYOUT).toMatch(/const loraItalic = localFont\(\{[\s\S]*?preload: false,/);
+  });
+
   it("says the same in the fonts README", () => {
     const readme = read("src/fonts/README.md");
     for (const file of FILES) expect(readme).toContain(`\`${file}\``);

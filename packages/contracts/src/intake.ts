@@ -199,6 +199,21 @@ export function listingBasePath(org: string, profile: string): string {
   return `/studio/${encodeURIComponent(org)}/${encodeURIComponent(profile)}`;
 }
 
+/** The segment of a listing's settings page under its base address. */
+export const LISTING_SETTINGS_SEGMENT = "settings";
+
+/**
+ * A listing's settings page (openproduct-redesign OPR-3): the page that
+ * publishes and unpublishes it, reviews it, checks its repository and links
+ * its workspace — what the overview at the base address did until a
+ * published product's own page became its dashboard. The base address now
+ * only forwards: to the product's page when it is published, here when it is
+ * still a draft.
+ */
+export function listingSettingsPath(org: string, profile: string): string {
+  return `${listingBasePath(org, profile)}/${LISTING_SETTINGS_SEGMENT}`;
+}
+
 /**
  * A step's address, or `null` when the step has no page.
  *

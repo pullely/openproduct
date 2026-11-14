@@ -103,13 +103,13 @@ const hit = (id: string, title = id) => ({
   matched: "name-prefix",
 });
 const ada = { handle: "ada", displayName: "Ada Lovelace", matched: "name" as const };
-/** A maker as a response WOULD carry one if the read returned their products.
- *  It does not today; the row model takes the list when it does. */
+/** A maker as the read carries one since OPR-3 (`SearchPersonHit`): their
+ *  listed products, each a name and a stage. */
 const adaWithProducts = {
   ...ada,
   products: [
-    { slug: "kettleworks", title: "kettleworks" },
-    { slug: "ackstack", title: "ackstack" },
+    { slug: "kettleworks", name: "kettleworks", stage: "shipping" as const },
+    { slug: "ackstack", name: "ackstack", stage: "idea" as const },
   ],
 };
 const NONE: ReadonlySet<string> = new Set();
@@ -127,13 +127,18 @@ describe("what the search read becomes", () => {
     });
   });
 
-  it("says what the read knows and no more: no stage, no logo, no summary", () => {
-    // The board prints "Shipping" or "Idea" on a product row and draws its
-    // logo. The index returns neither a stage nor an image, so the row has
-    // no field for either — a stage word here would be made up.
+  it("says what the read knows and no more: its stage when it has one, no logo, no summary", () => {
+    // OPR-3 — the result carries `stage`, so the row's word is the board's
+    // "Shipping" or "Idea". It is the CONTRACT's word (`ui/stage.ts`), never
+    // typed here; a hit with no stage, or one this page does not know, keeps
+    // the word "Product" rather than guessing.
     const [row] = toRows([hit("kettleworks")]);
     expect(Object.keys(row!).sort()).toEqual(["href", "id", "initials", "kind", "title", "type"]);
     expect(code("shell/palette-rows.ts")).not.toMatch(/"Shipping"|"Idea"/);
+    expect(toRows([{ ...hit("a"), stage: "shipping" }])[0]!.kind).toBe("Shipping");
+    expect(toRows([{ ...hit("a"), stage: "idea" }])[0]!.kind).toBe("Idea");
+    expect(toRows([{ ...hit("a"), stage: null }])[0]!.kind).toBe("Product");
+    expect(toRows([{ ...hit("a"), stage: "launched" }])[0]!.kind).toBe("Product");
   });
 
   it("answers people from the SAME read as the products", () => {
@@ -217,6 +222,8 @@ describe("a person is one row until somebody opens it", () => {
     // A product under a person and the same product as a hit of its own are
     // two rows with two ids.
     expect(child.id).not.toBe("kettleworks");
+    // OPR-3 — each product under a person says its stage word.
+    expect(shown.slice(2, 4).map((r) => r.kind)).toEqual(["Shipping", "Idea"]);
   });
 
   it("draws the chevron only on a row that can open, beside the link and never inside it", () => {
@@ -436,7 +443,7 @@ describe("the bar holds still", () => {
     // the box widening eats slack to its LEFT; the bell and the profile
     // control stay where they are.
     const panel = code("shell/top-panel.tsx");
-    expect(panel).toMatch(/<div className="flex min-w-0 flex-1 items-center justify-end gap-\[10px\]">\s*(?:\{\}\s*)?<HeaderSearch \/>/);
+    expect(panel).toMatch(/<div className="flex min-w-0 flex-1 items-center justify-end gap-\[10px\]">\s*(?:\{\}\s*)?(?:<div id="page-view-switch" data-header-slot="view-switch" className="contents" \/>\s*)?(?:\{\}\s*)?<HeaderSearch \/>/);
   });
 
   it("keeps the account control one disc wide in both of its branches", () => {

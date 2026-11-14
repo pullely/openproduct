@@ -115,6 +115,7 @@ export function MakerView({
   links,
   builds,
   aside,
+  stages,
 }: {
   doc: MakerDocument;
   now: number;
@@ -127,6 +128,8 @@ export function MakerView({
   /** The bare page's side card. Every other section shows the person's
    *  products there (board `Person`), which the bare page has as its list. */
   aside?: ReactNode;
+  /** Slug → stage line ("shipping, 3 of 4"), for the side Products card. */
+  stages?: Readonly<Record<string, string>>;
 }) {
   const person = doc.contributor;
   const title = profileTitle(person);
@@ -140,7 +143,7 @@ export function MakerView({
         <h2 id="maker-products" className={SIDE_TITLE}>
           Products
         </h2>
-        <ProductRows listings={person.maintains} />
+        <ProductRows listings={person.maintains} {...(stages ? { stages } : {})} />
       </section>
     ) : null;
 

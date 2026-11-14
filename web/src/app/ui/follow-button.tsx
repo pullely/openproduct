@@ -62,6 +62,21 @@ import { useToggle } from "./use-toggle";
  * anybody else's HTML. Nobody, including the followed, can turn the count
  * back into a list.
  */
+/**
+ * The DOM id of ONE Follow control, and the fragment sign-in returns to.
+ *
+ * UNIQUE PER INSTANCE. A feed holds several cards for one product, each with
+ * its own Follow, and an id built from the product alone was on the page as
+ * many times as the product was. `useId` is the same on the server and in
+ * the browser and the same for every visitor (it is a position in the tree),
+ * so the page stays one document and a return from sign-in still lands on
+ * the control that was pressed.
+ */
+export function useFollowAnchor(kind: string, value: string): string {
+  const instance = React.useId().replace(/[^A-Za-z0-9_-]/g, "");
+  return `follow-${kind}-${value}-${instance}`;
+}
+
 export function FollowButton({
   kind,
   value,
@@ -91,7 +106,8 @@ export function FollowButton({
   );
   const following = isFollowing(state, key);
   const { delta, pending, onSubmit } = useToggle("follows", key, !following);
-  const target = `${returnTo}#follow-${kind}-${value}`;
+  const anchor = useFollowAnchor(kind, value);
+  const target = `${returnTo}#${anchor}`;
 
   const hero = size === "hero";
   const geometry =
@@ -113,7 +129,7 @@ export function FollowButton({
   return (
     <form
       onSubmit={onSubmit}
-      id={`follow-${kind}-${value}`}
+      id={anchor}
       method="post"
       className={`flex shrink-0 items-center gap-2.5 ${hero ? "max-sm:w-full" : ""}`}
       action={`/me/follow?kind=${encodeURIComponent(kind)}&value=${encodeURIComponent(value)}&on=${

@@ -13,9 +13,8 @@
  */
 import {
   BUILD_ORDER_LABEL,
-  mergesOf,
-  recentEndorsementsOf,
   type BuildOrder,
+  type ProductStage,
   type PublicProfileCard,
 } from "@openproduct/contracts";
 
@@ -75,32 +74,124 @@ export function productSortOfSegment(segment: unknown): ProductSort | null {
 }
 
 /**
- * Where a sort lives: the default is the page itself, the others are a path
- * under it.
- *
- * A PATH, NEVER A QUERY STRING. A page that reads `?sort=` is rendered per
- * request and goes out `no-store`; a path is one static, revalidated
- * document the edge can keep (design.md §4, I6 — the rule the old
- * `/builds/{order}` pages recorded).
+ * The stage filter (openproduct-redesign OPR-3; boards `Products`,
+ * `PhoneProducts`): everything, the products that are shipping, the ideas.
+ * `all` is no filter; the other two are the contract's own stages.
  */
-export function productsPath(sort: ProductSort = DEFAULT_PRODUCT_SORT): string {
-  return sort === DEFAULT_PRODUCT_SORT ? "/products" : `/products/${PRODUCTS_ORDER_SEGMENT}/${sort}`;
+export const PRODUCT_STAGE_FILTERS = ["all", "shipping", "idea"] as const satisfies readonly ("all" | ProductStage)[];
+export type ProductStageFilter = (typeof PRODUCT_STAGE_FILTERS)[number];
+
+/** No filter: the page as it was before there were stages. */
+export const DEFAULT_PRODUCT_STAGE: ProductStageFilter = "all";
+
+/** The filter's words (board `Products`). */
+export const PRODUCT_STAGE_FILTER_LABEL: Record<ProductStageFilter, string> = {
+  all: "Everything",
+  shipping: "Shipping",
+  idea: "Ideas",
+};
+
+/**
+ * The path segment the filtered lists live under: `/products/stage/<stage>`.
+ *
+ * BESIDE `by`, AND FOR THE SAME REASON. It is a static segment next to
+ * `/products/[cursor]`: a cursor is one segment of base64url that begins with
+ * `W`, so it is never this word, and a filtered list's address is at least
+ * two segments, which a cursor's never is. The continuation page refuses the
+ * word outright, as it refuses `by`.
+ */
+export const PRODUCTS_STAGE_SEGMENT = "stage";
+
+/** A stage's word in an address: the filter's own label, lower-cased —
+ *  `/products/stage/shipping`, `/products/stage/ideas`. */
+export const PRODUCT_STAGE_SEGMENT: Record<Exclude<ProductStageFilter, "all">, string> = {
+  shipping: "shipping",
+  idea: "ideas",
+};
+
+/** The stages that have an address under `/products/stage/`: both of them.
+ *  Everything is `/products` and nowhere else. */
+export const PRODUCT_STAGE_SEGMENTS = Object.values(PRODUCT_STAGE_SEGMENT);
+
+/** The stage a `/products/stage/<segment>` address names, or null — and null
+ *  is a 404, as an unpublished order is (`productSortOfSegment`). */
+export function productStageOfSegment(segment: unknown): Exclude<ProductStageFilter, "all"> | null {
+  if (segment === PRODUCT_STAGE_SEGMENT.shipping) return "shipping";
+  if (segment === PRODUCT_STAGE_SEGMENT.idea) return "idea";
+  return null;
+}
+
+/**
+ * Where a view of the list lives: a sort, a stage, or both.
+ *
+ *   /products                               everything, most active
+ *   /products/by/<order>                    everything, another order
+ *   /products/stage/<stage>                 one stage, most active
+ *   /products/stage/<stage>/by/<order>      one stage, another order
+ *
+ * A PATH, NEVER A QUERY STRING. A page that reads `?sort=` or `?stage=` is
+ * rendered per request and goes out `no-store`; a path is one static,
+ * revalidated document the edge can keep (design.md §4, I6 — the rule the
+ * old `/builds/{order}` pages recorded). Two filters and three orders is nine
+ * addresses, every one of them enumerable (`productViews`), so every one is
+ * prerendered and none is unbounded. Each view has exactly ONE address: the
+ * defaults are never spelt.
+ */
+export function productsPath(
+  sort: ProductSort = DEFAULT_PRODUCT_SORT,
+  stage: ProductStageFilter = DEFAULT_PRODUCT_STAGE,
+): string {
+  const staged = stage === "all" ? "/products" : `/products/${PRODUCTS_STAGE_SEGMENT}/${PRODUCT_STAGE_SEGMENT[stage]}`;
+  return sort === DEFAULT_PRODUCT_SORT ? staged : `${staged}/${PRODUCTS_ORDER_SEGMENT}/${sort}`;
+}
+
+/** Every view of the list there is: each stage in each order. The sitemap
+ *  and the routes' `generateStaticParams` are both read from this. */
+export function productViews(): { sort: ProductSort; stage: ProductStageFilter; path: string }[] {
+  return PRODUCT_STAGE_FILTERS.flatMap((stage) =>
+    PRODUCT_SORTS.map((sort) => ({ sort, stage, path: productsPath(sort, stage) })),
+  );
+}
+
+/** How many products are at each stage. */
+export interface ProductStageCounts {
+  readonly all: number;
+  readonly shipping: number;
+  readonly idea: number;
+}
+
+/** Count a list of cards by stage. A card with no stage (a gateway deployed
+ *  before OPR-3) counts in `all` only: it is not guessed into either. */
+export function productStageCounts(cards: readonly Pick<PublicProfileCard, "stage">[]): ProductStageCounts {
+  return {
+    all: cards.length,
+    shipping: cards.filter((card) => card.stage === "shipping").length,
+    idea: cards.filter((card) => card.stage === "idea").length,
+  };
+}
+
+/** The cards a stage filter keeps. `all` keeps every one. */
+export function filterByStage<T extends Pick<PublicProfileCard, "stage">>(cards: readonly T[], stage: ProductStageFilter): T[] {
+  return stage === "all" ? [...cards] : cards.filter((card) => card.stage === stage);
 }
 
 const plural = (count: number, one: string, many: string) => `${count.toLocaleString("en-US")} ${count === 1 ? one : many}`;
 
 /**
- * The line beside the title: how many products there are.
- *
- * THE BOARD'S LINE HAS THREE PARTS ("30 products · 9 shipping · 21 ideas");
- * a listing has no stage yet, so only the first is said (the other two
- * arrive with OPR2). What the floor is holding back is still confessed here
- * (HB0, WC-7): a count that hides a filter is the one thing this line may
- * not be.
+ * The line beside the title: how many products there are, and how many of
+ * them are shipping and how many are ideas — the board's three parts
+ * ("30 products · 9 shipping · 21 ideas"). The two stage parts are said when
+ * the catalogue's stages were counted (`stages`), and left out when they
+ * were not. What the floor is holding back is still confessed here (HB0,
+ * WC-7): a count that hides a filter is the one thing this line may not be.
  */
-export function productsCountLine(count: number, belowFloor = 0): string {
-  const head = plural(count, "product", "products");
-  return belowFloor > 0 ? `${head} · ${belowFloor.toLocaleString("en-US")} more below the floor` : head;
+export function productsCountLine(count: number, belowFloor = 0, stages: ProductStageCounts | null = null): string {
+  const parts = [plural(count, "product", "products")];
+  if (stages !== null) {
+    parts.push(`${stages.shipping.toLocaleString("en-US")} shipping`, plural(stages.idea, "idea", "ideas"));
+  }
+  if (belowFloor > 0) parts.push(`${belowFloor.toLocaleString("en-US")} more below the floor`);
+  return parts.join(" · ");
 }
 
 /** The line beside *Show more*: how many of how many are on the page. With
@@ -109,25 +200,6 @@ export function productsShownLine(shown: number, total: number | null): string {
   return total !== null && total > shown
     ? `${shown.toLocaleString("en-US")} of ${total.toLocaleString("en-US")} shown`
     : `${shown.toLocaleString("en-US")} shown`;
-}
-
-/**
- * A card's line of facts: what was observed about the product this week.
- *
- * IT SITS WHERE THE BOARD HAS THE STAGE ("Shipping · 3 of 4") and says what
- * the data holds instead. Changes are named only when the repository was
- * read — an unobserved repository is not zero changes (OPC-C), so it is left
- * out rather than dashed; upvotes are zero by the declared rule the Most
- * active sentence states, so they are always said.
- */
-export function productFacts(card: PublicProfileCard): string {
-  const changes = mergesOf(card);
-  const parts = [
-    ...(changes === null ? [] : [plural(changes, "change", "changes")]),
-    plural(recentEndorsementsOf(card), "upvote", "upvotes"),
-    "7 days",
-  ];
-  return parts.join(" · ");
 }
 
 /** The card's teal link: how many seats are open. */

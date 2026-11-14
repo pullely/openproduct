@@ -85,6 +85,17 @@ const added = (shape: ApiShape, milestone: string, key: string, sentence: string
  */
 export const API_CHANGELOG: readonly ApiRelease[] = [
   {
+    version: "1.4.0",
+    date: "2026-11-14",
+    entries: [
+      added("card", "OPR2", "stage", "Whether the product is an idea or is shipping: an idea until its first milestone is marked shipped, shipping from then on."),
+      added("product", "OPR2", "tryUrl", "The address of the running product, as the crew declared it; null while there is nothing to try."),
+      added("product", "OPR2", "milestones", "The product's milestones in the crew's order — a short code, a title, a summary, and the moment each shipped; null until it has."),
+      added("card", "OPR2", "milestoneCounts", "How many of the product's milestones have shipped, and how many there are — on every card, so a list draws progress without a read per product."),
+      added("card", "OPR2", "crewCount", "How many people the product's page lists as its crew; null while the catalogue row predates the count."),
+    ],
+  },
+  {
     version: "1.3.0",
     date: "2026-10-01",
     entries: [

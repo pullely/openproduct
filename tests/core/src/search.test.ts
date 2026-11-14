@@ -20,6 +20,7 @@ import {
   FORMULAS,
   MAX_QUERY_TERMS,
   MAX_SEARCH_LIMIT,
+  SEARCH_PERSON_KEYS,
   buildProductIndex,
   queryTerms,
   rankSearch,
@@ -74,6 +75,8 @@ interface Harness {
     pricing: string | null;
     licence: string | null;
     roleOpeningCount: number;
+    milestoneCounts: { shipped: number; total: number };
+    crewCount: number | null;
     openCommitments: string[];
     hasLiveUrl: boolean;
     publishedAt: string | null;
@@ -103,6 +106,8 @@ function harness(): Harness {
         pricing: null,
         licence: "Apache-2.0",
         roleOpeningCount: 2,
+        milestoneCounts: { shipped: 0, total: 0 },
+        crewCount: 1,
         openCommitments: ["A few hours a week"],
         hasLiveUrl: true,
         publishedAt: "2026-08-12T09:00:00.000Z",
@@ -117,6 +122,8 @@ function harness(): Harness {
         pricing: null,
         licence: "MPL-2.0",
         roleOpeningCount: 0,
+        milestoneCounts: { shipped: 0, total: 0 },
+        crewCount: 1,
         openCommitments: [],
         hasLiveUrl: false,
         publishedAt: "2026-08-19T09:00:00.000Z",
@@ -630,10 +637,12 @@ describe("SR0 — three sections, three mechanisms", () => {
       { handle: "cee", displayName: "Cee Bright", bio: "Worked with ada once." },
     ];
     const body = await answer(h, "ada");
+    // OPR-3 — each person also carries their listed products; nobody in
+    // this fixture maintains one, and that is `[]`, never an absent key.
     expect(body.data.makers).toEqual([
-      { handle: "ada", displayName: "Ada Fenwick", matched: "handle" },
-      { handle: "bob", displayName: "Ada Nakamura", matched: "name" },
-      { handle: "cee", displayName: "Cee Bright", matched: "bio" },
+      { handle: "ada", displayName: "Ada Fenwick", matched: "handle", products: [] },
+      { handle: "bob", displayName: "Ada Nakamura", matched: "name", products: [] },
+      { handle: "cee", displayName: "Cee Bright", matched: "bio", products: [] },
     ]);
   });
 
@@ -652,7 +661,9 @@ describe("SR0 — three sections, three mechanisms", () => {
     // than the page. Each surface narrows again (OD3).
     const h = harness();
     const body = await answer(h, "ada");
-    expect(Object.keys(body.data.makers[0]!).sort()).toEqual(["displayName", "handle", "matched"]);
+    // OPR-3 added one key, `products`: the listed products they maintain,
+    // which their own page already names.
+    expect(Object.keys(body.data.makers[0]!).sort()).toEqual([...SEARCH_PERSON_KEYS]);
     // Never a subject id — that is an internal identifier, one bad projection
     // away from a browser.
     expect(JSON.stringify(body.data.makers)).not.toContain("usr_");

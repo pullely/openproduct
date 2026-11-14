@@ -186,6 +186,8 @@ describe("the footer holds what left the bar", () => {
       "/threads",
       "/digest",
       "/docs",
+      // OPR-3 — the post templates' page.
+      "/docs/posting",
       "/transparency",
       "/submit",
     ]) {
@@ -246,7 +248,9 @@ describe("the account menu", () => {
     // more — the chip renders it in its own Profile section, beside the
     // public page CG1 gave it an address for.
     expect(ACCOUNT_MENU_ITEMS.map((i) => i.href)).toEqual([
-      "/studio",
+      // OPR-3 — "Your products" is the first section of `/me`; the studio's
+      // index only redirects there, so the menu names the page itself.
+      "/me",
       // OPR1 — the saved list and the requests are sections of `/me`; the
       // menu names the section, not the old page that redirects to it.
       "/me?section=saved",
@@ -273,7 +277,9 @@ describe("the account menu", () => {
     expect(settings).toContain('<section id="notifications"');
     expect(settings).toContain('aria-label="Weekly digest"');
     const sections = readFileSync(resolve(APP_DIR, "me/section.ts"), "utf-8");
-    expect(sections).toContain('export const ME_SECTION_KEYS = ["products", "saved", "seats"] as const;');
+    // OPR-3 — five sections now (Following and Drafts have their reads); the
+    // menu's two are still among them.
+    expect(sections).toContain('export const ME_SECTION_KEYS = ["products", "following", "saved", "seats", "drafts"] as const;');
     // With no handle yet, the public-page row goes to where one is claimed.
     const chip = readFileSync(resolve(APP_DIR, "shell/account-chip.tsx"), "utf-8");
     expect(chip).toContain('href={handle ? `/@${handle}` : "/me/settings"}');
@@ -510,7 +516,7 @@ describe("XP-1 — one accent colour, one meaning", () => {
     // The product page spends it on the `#1 today` pill and nowhere else —
     // the same meaning the feed row spends it on. The vote box beside it is
     // a shared component and is held to its own rule below.
-    const product = markupOf("[slug]/page.tsx");
+    const product = markupOf("[slug]/product-page.tsx");
     // OPR1 — the pill is flat (a fill and its ink, no border), so it spends
     // the gold twice where it spent it three times.
     expect(product.match(SPENDS_GOLD)?.length).toBe(2);

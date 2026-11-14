@@ -183,7 +183,15 @@ export async function runStudio(base) {
     await cdp.send("Network.setCacheDisabled", { cacheDisabled: true });
 
     // ── the overview ──
+    // The listing's base address forwards a draft to its settings page (a
+    // 307 from a route handler; `MOVED` and the authed lane hold the status
+    // line). The walk arrives the way a held link does, and lands there.
     const overview = await page.goto(listing, { waitUntil: "networkidle" });
+    check(
+      "the listing's base address lands on its settings page",
+      new URL(page.url()).pathname === `/studio/${STUDIO_ORG}/${STUDIO_PROFILE}/settings`,
+      new URL(page.url()).pathname,
+    );
     check("the overview loads for a signed-in maintainer", overview?.status() === 200, `status ${overview?.status()}`);
     // d8b10168 cut the sentence ("Draft — nobody can reach this page but
     // you") to the design's status pill; what says nobody else can reach it
@@ -207,7 +215,11 @@ export async function runStudio(base) {
     const stripLinks = await page
       .locator('nav[aria-label="Listing steps"] a')
       .evaluateAll((els) => els.map((e) => ({ text: e.textContent?.trim(), href: e.getAttribute("href") })));
-    // OVERVIEW, THE STEPS, THEN DISCUSSIONS. 3d54dc12 put CB1's surface at
+    // SETTINGS, THE STEPS, THEN DISCUSSIONS. The first tab was "Overview"
+    // until openproduct-redesign OPR-3: the editor's front page is the
+    // listing's settings page now, at `/settings` (the base address forwards
+    // — to the product's own page once it is published), and its tab says
+    // so. 3d54dc12 put CB1's surface at
     // the end of the strip where the design draws it — a section of the
     // editor, not a step of the listing (`listing-shell.tsx` says so) — and
     // OSD5 (#1649) made the editor's own front page a tab of its own, first
@@ -215,9 +227,10 @@ export async function runStudio(base) {
     // order.
     const stripText = stripLinks.map((l) => l.text);
     check(
-      "the strip links every step — the media step has a page since MD2 — between Overview and Discussions",
+      "the strip links every step — the media step has a page since MD2 — between Settings and Discussions",
       stripLinks.length === STEPS.length + 2 &&
-        stripText[0] === "Overview" &&
+        stripText[0] === "Settings" &&
+        /\/settings$/.test(stripLinks[0]?.href ?? "") &&
         STEPS.every((step, i) => stripText[i + 1] === step.label) &&
         stripText[STEPS.length + 1] === "Discussions" &&
         /\/discussions$/.test(stripLinks[STEPS.length + 1]?.href ?? ""),

@@ -16,6 +16,7 @@ import { createRequire } from "node:module";
 import { chromium } from "playwright";
 
 import { AUTHED_ROUTES, sessionCookie } from "./fixture.mjs";
+import { CREW_ORG, CREW_PROFILE, CREW_SLUG, STUDIO_ORG, STUDIO_PROFILE } from "./fixture.mjs";
 import { TAP_MIN, sweepPage } from "./a11y.mjs";
 import { newRampContext } from "./ramp.mjs";
 
@@ -26,6 +27,28 @@ const PASSES = [
   { id: "desktop/light", viewport: { width: 1280, height: 900 }, colorScheme: "light" },
   { id: "phone/dark", viewport: { width: 375, height: 812 }, colorScheme: "dark" },
 ];
+
+/**
+ * A `Location` on this app, as a path.
+ *
+ * A `redirects()` entry answers a path. A route handler answers an absolute
+ * URL built from `request.url`, and `next start` builds that from its own
+ * idea of the host (`localhost`) whatever address the request came in on —
+ * so the same destination reads `http://localhost:3187/me` here and
+ * `https://openproduct.live/me` deployed. Both are this app. Anything on
+ * another host or port is returned whole, and fails the comparison.
+ */
+function onThisApp(location, base) {
+  try {
+    const target = new URL(location, base);
+    const app = new URL(base);
+    const loopback = (host) => host === "localhost" || host === "127.0.0.1" || host === "[::1]";
+    const same = target.port === app.port && (target.hostname === app.hostname || (loopback(target.hostname) && loopback(app.hostname)));
+    return same ? target.pathname + target.search : location;
+  } catch {
+    return location;
+  }
+}
 
 const failures = [];
 function check(name, ok, detail) {
@@ -110,6 +133,31 @@ export async function runAuthed(base) {
       await context.close();
     }
 
+    // ── a listing's base address forwards (OPR-3, design §5) ───────────
+    //
+    // A published product's own page is its dashboard, so its listing's
+    // base address goes there; a draft has no public page and goes to its
+    // settings page. A route handler answers both, so the status line is the
+    // status line — asked with no redirect followed, signed in.
+    {
+      const context = await browser.newContext({ viewport: PASSES[0].viewport });
+      await context.addCookies(sessionCookie(base));
+      for (const [from, to, what] of [
+        [`/studio/${CREW_ORG}/${CREW_PROFILE}`, `/${CREW_SLUG}`, "a published listing → its product page"],
+        [`/studio/${STUDIO_ORG}/${STUDIO_PROFILE}`, `/studio/${STUDIO_ORG}/${STUDIO_PROFILE}/settings`, "a draft → its settings page"],
+        [`/studio/${STUDIO_ORG}/${STUDIO_PROFILE}?notice=saved`, `/studio/${STUDIO_ORG}/${STUDIO_PROFILE}/settings?notice=saved`, "a draft keeps its query"],
+      ]) {
+        const res = await context.request.get(base + from, { maxRedirects: 0 });
+        const location = onThisApp(res.headers()["location"] ?? "", base);
+        check(
+          `listing base: ${what}`,
+          res.status() === 307 && location === to && (res.headers()["cache-control"] ?? "").includes("no-store"),
+          `${res.status()} → ${location || "(no location)"} [${res.headers()["cache-control"] ?? "no cache-control"}]`,
+        );
+      }
+      await context.close();
+    }
+
     // ── signed out: the same addresses are a door, not a page ──────────
     //
     // The pages redirect FROM THE STREAM: a `loading.tsx` sits above their
@@ -125,7 +173,10 @@ export async function runAuthed(base) {
       // OPR1 — `/me/settings` stands where `/me/saved` did: the saved list is
       // a section of `/me` now, and its old address sends a signed-out
       // visitor back to the SECTION rather than to itself.
-      for (const path of ["/me", "/me/settings", "/me/export", "/studio", "/studio/reports"]) {
+      // OPR-3 — `/studio` left this list: it is a 308 to `/me` now (`MOVED`),
+      // so signed out it arrives at `/me`'s door, not its own. The post
+      // builder joined it: a crew-only page whose door returns to itself.
+      for (const path of ["/me", "/me/settings", "/me/export", "/studio/reports", `/${CREW_SLUG}/new`]) {
         const res = await page.goto(base + path, { waitUntil: "load" });
         // `res` is the LAST response of the navigation: after an HTTP redirect
         // it is the sign-in page's 200, and `redirectedFrom()` says so. A page

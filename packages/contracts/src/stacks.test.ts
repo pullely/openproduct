@@ -37,6 +37,9 @@ const card = (slug: string, canonical: string[], written: string[] = canonical):
   publishedAt: "2026-08-01T00:00:00Z",
   metrics: [],
   thumbnail: null,
+  stage: "idea" as const,
+  milestoneCounts: { shipped: 0, total: 0 },
+  crewCount: 1,
 });
 
 describe("a stack value is an address", () => {

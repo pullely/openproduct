@@ -25,6 +25,9 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   const subjectRef = String(form.get("subjectRef") ?? "");
   const reason = String(form.get("reason") ?? "");
   const detailRaw = form.get("detail");
+  // The control it came from: a conversation's wears its own id, so a page
+  // that holds two controls has no ambiguous anchor (`ui/report-control.tsx`).
+  const anchor = subjectKind === "thread" ? "report-thread" : "report";
 
   // `sanitizeReturnTo` is the authority — same-host paths only, never /auth.
   // A report control renders on pages we control, so a return path we cannot
@@ -38,7 +41,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     !(REPORT_REASONS as readonly string[]).includes(reason) ||
     subjectRef.length === 0
   ) {
-    return back("?reported=invalid#report");
+    return back(`?reported=invalid#${anchor}`);
   }
 
   const session = decodeSession(request.cookies.get(SESSION_COOKIE)?.value);
@@ -46,7 +49,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     // Their intent survives the round trip: they come back to the control they
     // opened, with what they typed gone but the reason they came still there.
     return NextResponse.redirect(
-      new URL(`/signin?return_to=${encodeURIComponent(`${returnTo}#report`)}`, request.url),
+      new URL(`/signin?return_to=${encodeURIComponent(`${returnTo}#${anchor}`)}`, request.url),
       303,
     );
   }
@@ -65,7 +68,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
   if (result.kind === "unauthorized") {
     return NextResponse.redirect(
-      new URL(`/signin?return_to=${encodeURIComponent(`${returnTo}#report`)}`, request.url),
+      new URL(`/signin?return_to=${encodeURIComponent(`${returnTo}#${anchor}`)}`, request.url),
       303,
     );
   }
@@ -74,12 +77,12 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     // does not need our taxonomy of failures, and a validation refusal here
     // would mean the control sent something the contract rejects — a bug on
     // our side, not something to explain to them.
-    return back("?reported=failed#report");
+    return back(`?reported=failed#${anchor}`);
   }
 
   // A DUPLICATE LOOKS EXACTLY LIKE A FIRST REPORT, because core answers it
   // that way on purpose: an error code here would let anybody probe whether
   // their own earlier report is still open, which is a brigading signal and
   // the beginning of a queue-shaped oracle.
-  return back("?reported=1#report");
+  return back(`?reported=1#${anchor}`);
 }

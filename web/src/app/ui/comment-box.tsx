@@ -38,7 +38,7 @@ export function CommentBox({
 }) {
   return (
     <AppLink
-      href={`/${slug}#discussion`}
+      href={`/${slug}/talk#discussion`}
       aria-label={`${count} ${count === 1 ? "comment" : "comments"} on ${slug}`}
       className="grid h-[52px] w-[52px] shrink-0 content-center place-items-center gap-[2px] rounded-[10px] border border-border-strong bg-card text-foreground transition-colors hover:border-faint focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
     >

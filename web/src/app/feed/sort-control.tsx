@@ -2,14 +2,22 @@ import { ChevronIcon, SortIcon } from "../ui/icons";
 import { AppLink } from "../ui/link";
 import { FOCUS } from "../ui/design";
 
-import { PRODUCT_SORTS, PRODUCT_SORT_LABEL, productsPath, type ProductSort } from "./products";
+import {
+  DEFAULT_PRODUCT_STAGE,
+  PRODUCT_SORTS,
+  PRODUCT_SORT_LABEL,
+  productsPath,
+  type ProductSort,
+  type ProductStageFilter,
+} from "./products";
 
 /**
  * The Products page's sort (openproduct-redesign OPR1; boards `Products`,
  * `PhoneProducts`).
  *
  * LINKS, NOT A WIDGET. Each sort is an address — `/products` for the default,
- * `/products/by/<order>` for the others (`products.ts`) — so the control is
+ * `/products/by/<order>` for the others, each under the stage filter the
+ * page is on (`productsPath(sort, stage)` in `products.ts`) — so the control is
  * a row of plain links that work with no JavaScript, and the current one
  * carries `aria-current`. A client-side re-sort would order only the cards
  * the page happens to hold, which is not the order the site publishes.
@@ -32,13 +40,20 @@ function option(on: boolean): string {
   return on ? "bg-card font-semibold text-foreground" : "font-medium text-copy hover:text-foreground";
 }
 
-export function SortControl({ current }: { current: ProductSort }) {
+export function SortControl({
+  current,
+  stage = DEFAULT_PRODUCT_STAGE,
+}: {
+  current: ProductSort;
+  /** The stage filter the page is on: a sort keeps it. */
+  stage?: ProductStageFilter;
+}) {
   return (
     <nav aria-label="Sort" data-product-sort className="flex shrink-0 gap-[2px] rounded-full bg-foreground/[0.06] p-1 max-sm:hidden">
       {PRODUCT_SORTS.map((sort) => (
         <AppLink
           key={sort}
-          href={productsPath(sort)}
+          href={productsPath(sort, stage)}
           aria-current={sort === current ? "page" : undefined}
           data-product-sort-option={sort}
           className={`${OPTION} min-h-[36px] ${option(sort === current)} ${FOCUS}`}
@@ -50,7 +65,13 @@ export function SortControl({ current }: { current: ProductSort }) {
   );
 }
 
-export function SortMenu({ current }: { current: ProductSort }) {
+export function SortMenu({
+  current,
+  stage = DEFAULT_PRODUCT_STAGE,
+}: {
+  current: ProductSort;
+  stage?: ProductStageFilter;
+}) {
   return (
     // The summary is lifted into the title's row (the page's head is the
     // positioned box); what it opens flows under the title, full width.
@@ -67,7 +88,7 @@ export function SortMenu({ current }: { current: ProductSort }) {
         {PRODUCT_SORTS.map((sort) => (
           <AppLink
             key={sort}
-            href={productsPath(sort)}
+            href={productsPath(sort, stage)}
             aria-current={sort === current ? "page" : undefined}
             className={`${OPTION} min-h-[44px] flex-auto px-3 ${option(sort === current)} ${FOCUS}`}
           >
