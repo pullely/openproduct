@@ -1,0 +1,42 @@
+# OPN-10: the prod switch (design §6, steps 3 and 4). openproduct.live moves
+# from the old Cloudflare account to the openproduct account: the zone is
+# added there, the nameservers change at the registrar (Namecheap), and the
+# apex and api. become Workers Custom Domains on this repository's prod
+# workers. Attaching a Custom Domain needs "Workers Routes: Edit" on the zone,
+# which no token the workspace can broker holds, so the owner's dashboard
+# attaches them and infra/domain and infra/api-domain stay undiscovered.
+# The website reads the gateway's workers.dev host still: its API URL needs a
+# creator component to wait on (tests/web/src/deploy-ordering.test.ts).
+# The platform's prod seam moves in an orun-cloud pull request of its own.
+# The file is the contract; the task lives in Orunbase.
+apiVersion: orun.io/v1
+kind: TaskContract
+metadata:
+  name: OPN-10
+  title: "OPN3: openproduct.live served from here"
+spec:
+  goal: openproduct.live and api.openproduct.live are served by this repository's prod workers on the openproduct Cloudflare account, and the platform's prod seam points at api.openproduct.live with a fresh key shared by both sides.
+  affects:
+    - gateway/wrangler.jsonc
+    # A note only: it puts core in the merge's plan, so the redeploy delivers
+    # the rotated prod LISTING_SEAM_SECRET (the link grants' key).
+    - core/component.yaml
+    - web/component.yaml
+    - infra/synthetic/wrangler.jsonc
+    - infra/synthetic/src/config.test.ts
+    - intent.yaml
+    - specs/epics/openproduct-standalone/**
+    - tasks/OPN-10.TaskContract.yaml
+    - default/openproduct/openproduct-worker
+    - default/openproduct/openproduct-gateway
+    - default/openproduct/openproduct-web
+    - default/openproduct/openproduct-synthetic
+    # Re-run, not changed: it builds the website from web/component.yaml.
+    - default/openproduct/openproduct-web-perf
+  doneWhen:
+    - the openproduct.live zone is active in the openproduct Cloudflare account, and openproduct.live and api.openproduct.live are Workers Custom Domains on openproduct-web-prod and openproduct-gateway-prod
+    - the prod gateway's CORS origin, the website's canonical origin and the synthetic monitor's prod targets name openproduct.live and api.openproduct.live
+    - the platform's prod LISTING_SEAM_URL is https://api.openproduct.live, and prod LISTING_SEAM_SECRET is a fresh value written once to orun-cloud's workspace and to this one (an orun-cloud pull request)
+    - on openproduct.live, "Sign in with Orunbase" completes and a visitor signs up with a password
+    - IMPLEMENTATION-STATUS.md records it, with the teardown left for OPN4
+  gates: []

@@ -50,7 +50,9 @@ spec:
   #                         OPN-9, prod at OPN-10): orun-cloud's Orunbase
   #                         workspace holds the same value for membership-worker.
   #                         A rotation writes one fresh value to both
-  #                         workspaces, then redeploys this Worker.
+  #                         workspaces, then redeploys this Worker. Prod's
+  #                         was rotated at OPN-10, and this note changing
+  #                         is what put core in that merge's plan.
   #   OPENPRODUCT_OPERATORS the operators' platform subject ids, set by the owner
   optionalSecretEnv:
     LISTING_SEAM_SECRET: "secret://ws_VTNEQKAP/openproduct/{{ .environment }}/LISTING_SEAM_SECRET"

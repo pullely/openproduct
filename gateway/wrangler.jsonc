@@ -285,10 +285,11 @@
       "vars": {
         "ENVIRONMENT": "prod",
         "PLATFORM_API_URL": "https://api-edge-prod.oruncloud.workers.dev",
-        // The new prod site's workers.dev host until the switch (OPN3), when
-        // openproduct.live serves this repository's deploy and this returns
-        // to "https://openproduct.live". It is the only CORS origin (cors.ts).
-        "SITE_ORIGIN": "https://openproduct-web-prod.openproduct.workers.dev",
+        // openproduct.live serves this repository's deploy since the prod
+        // switch (OPN-10), a Custom Domain on openproduct-web-prod. It is the
+        // only CORS origin (cors.ts), so the site's own workers.dev host is
+        // no longer one.
+        "SITE_ORIGIN": "https://openproduct.live",
         // MD1 — "true" only where Cloudflare Image Resizing is enabled on
         // the zone. A zone feature this file cannot see, so it is stated
         // rather than assumed; "false" serves the original at every width.
