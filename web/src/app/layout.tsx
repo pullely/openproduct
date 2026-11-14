@@ -13,51 +13,50 @@ import { SectionBar } from "./shell/section-bar";
 import { SiteFooter } from "./shell/site-footer";
 import { TopPanel } from "./shell/top-panel";
 
-// OL1 — THE DESIGN'S THREE FACES, and each has exactly one job
-// (design-reference.md §2). Geist is every UI voice at a 15px base;
-// Newsreader is display only — page titles, the wordmark, collection titles
-// and the feed's rank numerals; Geist Mono is licences, logo initials, vote
-// counts and component names.
+// OPR1 — THE REDESIGN'S THREE FACES, and each has exactly one job
+// (openproduct-redesign design.md §3). Hanken Grotesk is every UI voice at a
+// 15px base; Lora is display only — page titles and idea quotes, the quotes
+// in its italic; IBM Plex Mono is the small uppercase label and the machine
+// facts (licences, counts, component names).
 //
-// This is a webfont where the body type used to be a system stack, and XP4's
-// byte budget is a real budget: the rise is expected, is recorded in
-// IMPLEMENTATION-STATUS.md with its number, and is bounded here rather than
-// left to grow. `latin` only, `swap` on all three, and Newsreader ships
-// upright at 400 alone — the display face is never set in italic or at a
-// second weight anywhere in the design.
+// FIVE FILES, 98,664 BYTES, and the font budget was moved to say so
+// (`FONTS` in tests/web-perf/src/budgets.mjs; the wire budget's amendment is
+// in tests/web/src/wire-budget.decision.json). `latin` only and `swap` on all
+// three. Each file is here for a use the design names and no other: Hanken
+// Grotesk is one variable file across 400–600, Lora ships 400 upright and 400
+// italic and no second weight, and IBM Plex Mono — which has no variable
+// build — ships 400 and the 500 its labels are set in. Weights stop at 600.
 //
-// The three files are committed under src/fonts rather than fetched from
-// Google Fonts at build time, which made every `next build` depend on
-// fonts.googleapis.com and crashed it whenever Google answered with a font URL
-// that had no file extension. They are the exact latin-subset files
-// next/font/google used to download (see src/fonts/README.md), so what a
-// visitor fetches — and the web-perf font budget — is unchanged. Geist and
-// Geist Mono are variable, one file across their weights; Newsreader is a
-// static 400.
-const geist = localFont({
-  src: "../fonts/geist-latin-wght.woff2",
+// The files are committed under src/fonts rather than fetched from Google
+// Fonts at build time, so `next build` never depends on
+// fonts.googleapis.com and no visitor's browser reaches a third-party host
+// (the wire budget allows none). See src/fonts/README.md.
+const hanken = localFont({
+  src: "../fonts/hanken-grotesk-latin-wght.woff2",
   weight: "400 600",
   style: "normal",
   display: "swap",
-  variable: "--font-geist",
+  variable: "--font-hanken",
 });
 
-const newsreader = localFont({
-  src: "../fonts/newsreader-latin-400.woff2",
-  weight: "400",
-  style: "normal",
+const lora = localFont({
+  src: [
+    { path: "../fonts/lora-latin-400.woff2", weight: "400", style: "normal" },
+    { path: "../fonts/lora-latin-400-italic.woff2", weight: "400", style: "italic" },
+  ],
   display: "swap",
-  variable: "--font-newsreader",
-  // A serif: size the fallback against Times New Roman, as next/font/google did.
+  variable: "--font-lora",
+  // A serif: size the fallback against Times New Roman.
   adjustFontFallback: "Times New Roman",
 });
 
-const geistMono = localFont({
-  src: "../fonts/geist-mono-latin-wght.woff2",
-  weight: "400 500",
-  style: "normal",
+const plexMono = localFont({
+  src: [
+    { path: "../fonts/ibm-plex-mono-latin-400.woff2", weight: "400", style: "normal" },
+    { path: "../fonts/ibm-plex-mono-latin-500.woff2", weight: "500", style: "normal" },
+  ],
   display: "swap",
-  variable: "--font-geist-mono",
+  variable: "--font-plex-mono",
 });
 
 
@@ -120,12 +119,13 @@ const SESSION_BOOT = `try{if(/(?:^|; )${SESSION_HINT_COOKIE}=1(?:;|$)/.test(docu
  *   - titles, descriptions and OG tags are in scope, and nothing beyond them.
  */
 /**
- * Which of the four accent hues this deployment paints (design-reference.md
- * §1: ember 25 · moss 150 · ocean 205 · plum 340). Ocean is the default and
- * the only one :root carries; the other three are `[data-accent]` blocks in
- * globals.css that redefine the accent family and nothing else.
+ * Which accent hue this deployment paints. Amber — the redesign's #B8862F —
+ * is the default and the only one :root carries (openproduct-redesign OPR1;
+ * it took the place the prototype's ocean held); ember 25 · moss 150 ·
+ * plum 340 are `[data-accent]` blocks in globals.css that redefine the
+ * accent family and nothing else.
  *
- * Read once, here, and validated — an unknown value falls back to ocean
+ * Read once, here, and validated — an unknown value falls back to amber
  * rather than stamping an attribute no stylesheet answers, which would leave
  * the page correct but silently un-themed.
  *
@@ -133,11 +133,11 @@ const SESSION_BOOT = `try{if(/(?:^|; )${SESSION_HINT_COOKIE}=1(?:;|$)/.test(docu
  * and identical for every visitor. An accent chosen per visitor would be a
  * second render of a page I6 requires to be exactly one.
  */
-const ACCENTS = ["ember", "moss", "ocean", "plum"] as const;
+const ACCENTS = ["amber", "ember", "moss", "plum"] as const;
 const RAW_ACCENT = process.env.NEXT_PUBLIC_OPENPRODUCT_ACCENT;
 const ACCENT = (ACCENTS as readonly string[]).includes(RAW_ACCENT ?? "")
   ? (RAW_ACCENT as (typeof ACCENTS)[number])
-  : "ocean";
+  : "amber";
 
 /**
  * QE1 — THE SITE CARD IS THE DEFAULT, on every route that declares no card
@@ -171,10 +171,10 @@ export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",
-  // ONE THEME. The design is a light page — `oklch(0.985 0.004 80)` paper
-  // under a white glass bar — and it is the only one this site paints; there
-  // is no dark palette to follow the visitor's system into.
-  themeColor: "#fbfaf9",
+  // The light page's own colour (`--background`, #F6F4EE). Light is the
+  // default ramp — a reader gets dark only by choosing it (globals.css) — and
+  // this is a build-time fact in the document, the same for every visitor.
+  themeColor: "#f6f4ee",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
@@ -183,7 +183,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       lang="en"
       suppressHydrationWarning
       data-accent={ACCENT}
-      className={`${geist.variable} ${newsreader.variable} ${geistMono.variable}`}
+      className={`${hanken.variable} ${lora.variable} ${plexMono.variable}`}
     >
       <body className="flex min-h-dvh flex-col bg-background text-foreground antialiased">
         {/* esbuild's `keepNames` helper (`__name`) can be referenced by inline

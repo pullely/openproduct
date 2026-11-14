@@ -7,18 +7,17 @@
     /* FR0 — the ramp this file's values are drawn for; the dark scopes
        below override it. */
     color-scheme: light;
-    /* OL1 — the design's three faces (design-reference.md §2). Each has
-       exactly one job, and the job is why it is here rather than a taste:
-       Geist is every UI voice, Newsreader is display ONLY (page titles, the
-       wordmark, collection titles, the feed's rank numerals), Geist Mono is
-       the machine facts — licences, logo initials, vote counts, component
-       names. All three load via next/font (app/layout.tsx) and land here as
-       CSS variables; the stacks behind them are the swap fallbacks. */
-    --font-sans: var(--font-geist, "Geist"), ui-sans-serif, system-ui,
+    /* OPR1 — the redesign's three faces (openproduct-redesign design.md §3).
+       Each has exactly one job: Hanken Grotesk is every UI voice, Lora 400 is
+       display ONLY (page titles and idea quotes — the quotes in its italic),
+       IBM Plex Mono is the small uppercase label and the machine facts. All
+       three load via next/font (app/layout.tsx) and land here as CSS
+       variables; the stacks behind them are the swap fallbacks. */
+    --font-sans: var(--font-hanken, "Hanken Grotesk"), ui-sans-serif, system-ui,
       -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
-    --font-serif: var(--font-newsreader, "Newsreader"), ui-serif, Georgia,
+    --font-serif: var(--font-lora, "Lora"), ui-serif, Georgia,
       "Times New Roman", serif;
-    --font-mono: var(--font-geist-mono, "Geist Mono"), ui-monospace, "SF Mono",
+    --font-mono: var(--font-plex-mono, "IBM Plex Mono"), ui-monospace, "SF Mono",
       "Cascadia Code", "JetBrains Mono", Menlo, Consolas, monospace;
 
     /* The masthead's height, and the ONE place it is written down.
@@ -56,118 +55,113 @@
        verbatim so naming it changes no page's spacing. */
     --tabbar-reserve: calc(env(safe-area-inset-bottom) + 4.5rem);
 
-    /* Northwind light — the canonical console surface. Neutral gray paper
-       (#FAFAFA canvas, #FFFFFF cards, #F5F5F5 rail), near-black ink (#171717),
-       and reserved accent colors: green #3A8159, amber #C39B45/#9A7B2D,
-       red #C94A44, run-blue #3B76C9, link-blue #2563C9. */
-    --background: 0.985 0.004 80; /* the page */
-    --foreground: 0.21 0.01 80; /* headings, names */
-    --card: 1 0 0; /* cards, the header's glass */
-    --card-foreground: 0.21 0.01 80;
+    /* OPR1 — THE REDESIGN'S PALETTE (openproduct-redesign design.md §3).
+       Every value below is one of the boards' hexes carried into OKLCH; the
+       hex is beside it. A warm page (#F6F4EE) under flat white cards, wells in
+       #F0EEE6 / #F7F5EF, ink #141413, body #2B2A27, one muted #6B6A66, and
+       hairlines at 6% ink. Four colours each mean one KIND and nothing else —
+       amber #B8862F is shipped and links, lavender #5B3F86 is ideas, slate
+       #3A4A75 is versions, teal #2F6F73 is seats — plus green #2F7A4E for
+       success and red #8E3B27 / #B4533C for danger ONLY.
+
+       THE NAMES DID NOT MOVE. Every token a component already reads keeps its
+       name and takes the redesign's value, so a page that has not been rebuilt
+       yet is repainted rather than broken. */
+    --background: 0.967 0.0082 91.48; /* the page */
+    --foreground: 0.1908 0.002 106.59; /* headings, names */
+    --card: 1 0 0; /* #FFFFFF — cards: flat, radius 16, no border, no shadow */
+    --card-foreground: 0.1908 0.002 106.59;
     --popover: 1 0 0;
-    --popover-foreground: 0.21 0.01 80;
-    /* Primary is Northwind ink: black buttons, black active states.
-       `bg-primary/10` ≈ the #E4E4E4 active-nav tint. */
-    --primary: 0.21 0.01 80; /* the one black button */
-    --primary-foreground: 1 0 0;
-    --secondary: 0.96 0.006 80; /* the active nav pill — the design's --chip */
-    --secondary-foreground: 0.36 0.01 80;
-    --muted: 0.965 0.005 80; /* row hover */
-    --muted-foreground: 0.52 0.012 80; /* meta lines, inactive nav */
-    --accent: 0.965 0.005 80; /* nav hover — the design's --hover */
-    --accent-foreground: 0.21 0.01 80;
-    /* Darkened by FR5, from `0.5836 0.1610 26.30`. That painted #C94C45 and
-       measured 4.37:1 on the page — under AA for text, and `text-destructive`
-       IS painted, once, on the studio's report actions. Darkening the ink
-       raises BOTH figures at once (a darker fill carries white better), so
-       there is no trade: 4.92:1 on the page, 5.14:1 for white on it. Hue and
-       chroma untouched; the two hexes are a step apart. */
-    --destructive: 0.555 0.1610 26.30; /* #BF433D */
-    --destructive-foreground: 1.0000 0 0;
-    --warning: 0.5983 0.1025 86.88; /* #9A7B2D (text); dot uses --warning-accent */
-    --warning-foreground: 1.0000 0 0;
-    --success: 0.5 0.12 150; /* "N people wanted" */
-    --success-foreground: 1.0000 0 0;
-    /* Informational / running blue (#3B76C9) and prose-link blue (#2563C9). */
-    --info: 0.5689 0.1382 257.26;
-    --info-foreground: 1.0000 0 0;
-    --link: 0.5238 0.1713 259.76;
-    --border: 0.915 0.006 80; /* card and control borders */
-    --input: 0.915 0.006 80;
-    --ring: 0.21 0.01 80;
-    --radius: 0.75rem; /* cards 12px; md 10px; sm 8px */
+    --popover-foreground: 0.1908 0.002 106.59;
+    /* Primary is ink on any page: #141413 under #FAF9F5 (17.5:1). */
+    --primary: 0.1908 0.002 106.59; /* #141413 — the primary button */
+    --primary-foreground: 0.9818 0.0054 95.1; /* #FAF9F5 */
+    --secondary: 0.9485 0.0109 95.17; /* #F0EEE6 — sunken: the active pill, a well */
+    --secondary-foreground: 0.285 0.0056 91.57;
+    --muted: 0.97 0.0082 91.48; /* #F7F5EF — the lighter well */
+    --muted-foreground: 0.5239 0.0063 95.17; /* #6B6A66 — 4.92:1 on the page, 5.41 on a card, 4.66 on sunken */
+    --accent: 0.9485 0.0109 95.17; /* #F0EEE6 — row and nav hover */
+    --accent-foreground: 0.1908 0.002 106.59;
+    /* Danger only. The redesign names two reds and this is the deeper one,
+       because `text-destructive` IS painted as text: #8E3B27 is 6.81:1 on the
+       page and carries white at 7.49:1. The brighter #B4533C is 4.50:1 on the
+       page — a mark, not a word — and is `--run-failed` / `--verdict-fail`. */
+    --destructive: 0.4614 0.1178 34.83; /* #8E3B27 */
+    --destructive-foreground: 1 0 0;
+    --warning: 0.53 0.0959 78.02; /* #8A6420 (amber as text); the dot uses --warning-accent */
+    --warning-foreground: 1 0 0;
+    --success: 0.5204 0.1021 154.68; /* #2F7A4E — success, resolved */
+    --success-foreground: 1 0 0;
+    /* The redesign has no blue. Informational is the versions' slate
+       (#3A4A75), and a link is amber — the text-safe #8A6420 (4.87:1 on the
+       page), never the #B8862F mark, which is 3.2:1 against white. */
+    --info: 0.416 0.075 267.6; /* #3A4A75 */
+    --info-foreground: 1 0 0;
+    --link: 0.53 0.0959 78.02; /* #8A6420 */
+    /* The hairline is rgba(20,20,19,0.06). A border token is an opaque triple
+       here (every utility composes its own alpha onto it), so it is written
+       as that 6% of ink ALREADY LAID on the surface it rules: #E8E7E1 on the
+       page (`--border`, `--line-soft`), #F1F1F1 inside a white card
+       (`--line`). */
+    --border: 0.9271 0.0081 98.89; /* #E8E7E1 — control borders, rules on the page */
+    --input: 0.9271 0.0081 98.89;
+    --ring: 0.1908 0.002 106.59;
+    --radius: 16px; /* cards 16px; md 14px; sm 12px — pixels, not rem: the root is 14px */
 
     /* Console design ramp — the neutrals and tinted inks the Overview and the
        rail read from directly. `copy` is body prose (a step lighter than
        `secondary-foreground`), `faint` is the quiet mono metadata, `surface-2`
        is the inner-card hairline / segmented-track fill, and the `*-strong`
        inks are the pill and numeral colors on soft tinted fills. */
-    --copy: 0.36 0.01 80; /* taglines, prose */
-    /* #716D67 — 4.92:1 on the page, 5.14:1 on a card. Was #A3A3A3 (2.4:1),
-       which `text-faint` painted every timestamp, empty state and quiet
-       caption with: not "quiet", unreadable. The type system names exactly
-       three inks that clear WCAG AA at these sizes — #171717, #595959,
-       #6E6E68 — and this is the third. Anything at or lighter than #8C8C88
-       is not a text colour; #9A9A94 is legible only against the ink header
-       and bands.
-
-       AND FOR MOST OF THIS PROGRAM'S LIFE THIS LINE WAS A CLAIM, NOT A
-       COLOUR (openproduct-worldclass FR5). The paragraph above shipped
-       beside `0.68 0.01 80`, which paints **#9B9891** and measures **2.76:1**
-       — a hair off the #A3A3A3 it says it replaced, and lighter than the
-       #8C8C88 the same paragraph calls "not a text colour". It is very
-       nearly #9A9A94, the value named on the last line as legible ONLY
-       against the ink header: the wrong hex out of the paragraph was the one
-       that got converted. The fix was recorded, reviewed and never reached a
-       pixel, exactly as VC4's chroma did.
-
-       0.536 is #6E6E68's own lightness, carried into this ramp's neutral
-       family (hue 80, chroma 0.01) rather than its own 106.7°. FR5's axe pass
-       is what found it, and is what will notice if it drifts again — the
-       whole light ramp measured contrast in a browser for the first time,
-       and this was the only text token in it that failed. */
-    --faint: 0.536 0.01 80; /* licences, ranks 02+, kbd hints */
-    --surface-2: 0.945 0.005 80;
-    --border-strong: 0.855 0.008 80;
-    --border-hover: 0.885 0.007 80;
-    --warning-strong: 0.5105 0.0912 88.07; /* #7C621D — the New pill's ink */
-    --warning-pill: 0.5057 0.0884 88.36; /* #7A6320 */
-    --warning-soft-border: 0.8938 0.0357 88.99; /* #EBDDBB */
-    --warning-wash-soft: 0.9547 0.0231 88.93; /* #F7EFDC */
-    --info-strong: 0.4946 0.1286 257.39; /* #2C5AA8 */
-    --info-border: 0.9141 0.0235 255.08; /* #D7E3F5 */
-    --success-border: 0.88 0.06 150;
+    --copy: 0.285 0.0056 91.57; /* #2B2A27 — body */
+    /* THE REDESIGN HAS ONE MUTED, so `--faint` is `--muted-foreground`'s own
+       value: #6B6A66, 4.92:1 on the page and 5.41:1 on a card. The name stays
+       because forty-seven call sites paint with it; a second, quieter grey is
+       exactly what the palette does not have, and the last one this token
+       carried (FR5 found it at 2.76:1) is why `dark-ramp.test.ts` measures
+       the pair in both ramps. */
+    --faint: 0.5239 0.0063 95.17; /* #6B6A66 */
+    --surface-2: 0.9485 0.0109 95.17;
+    --border-strong: 0.8855 0.0071 88.65;
+    --border-hover: 0.9038 0.0071 88.65;
+    --warning-strong: 0.5154 0.0942 78.11; /* #85601D — the New pill's ink */
+    --warning-pill: 0.5154 0.0942 78.11; /* #85601D */
+    --warning-soft-border: 0.8767 0.0572 88.16; /* #E6D5AC */
+    --warning-wash-soft: 0.959 0.0237 88.23; /* #F8F1E0 */
+    --info-strong: 0.416 0.075 267.6; /* #3A4A75 */
+    --info-border: 0.8677 0.0257 271.11; /* #CDD3E5 */
+    --success-border: 0.8684 0.0386 159.79;
 
     /* Soft tint fills for status pills and row washes. */
-    --success-soft: 0.95 0.035 150;
-    --warning-soft: 0.9451 0.0304 90.33; /* #F5EDD8 */
-    --warning-accent: 0.7195 0.1153 87.49; /* #C39B45 dot */
-    --warning-wash: 0.9768 0.0192 95.26; /* #FBF7E8 row tint */
-    --destructive-soft: 0.9509 0.0193 22.45; /* #FBEBEA */
-    --destructive-wash: 0.9628 0.0133 26.54; /* #FCF0EF row tint */
-    --info-soft: 0.9544 0.0161 258.35; /* #E9F0FB */
+    --success-soft: 0.958 0.0132 159.91;
+    --warning-soft: 0.9305 0.0379 86.89; /* #F3E7CC */
+    --warning-accent: 0.6539 0.1178 77.4; /* #B8862F dot */
+    --warning-wash: 0.9705 0.018 89.36; /* #FAF5E8 row tint */
+    --destructive-soft: 0.9363 0.0188 38.15; /* #F6E6E1 */
+    --destructive-wash: 0.9621 0.0116 37.42; /* #FAF0ED row tint */
+    --info-soft: 0.9343 0.0126 271.28; /* #E6E9F2 */
 
     /* Work plane (orun-work-v5 WV0) — rung glyphs, meters, agent actors.
        See specs/epics/orun-work-v5/design.md §1. */
-    --work-track: 0.9466 0 0; /* #EDEDED meter + ring track */
-    --work-track-warning: 0.9190 0.0369 90.37; /* #EDE3C8 in-progress ring track */
-    --work-track-info: 0.9115 0.0260 258.36; /* #D9E4F4 in-review ring track */
-    --work-idle: 0.6830 0 0; /* #999999 ready ring */
-    --work-idle-faint: 0.7326 0 0; /* #A8A8A8 draft dashed ring */
-    --work-outline: 0.8054 0 0; /* #C0C0C0 upcoming diamond, unassigned ring */
-    --agent: 0.5435 0.0721 307.71; /* #7A648F agent star */
-    --agent-soft: 0.9371 0.0164 308.27; /* #ECE6F2 agent avatar fill */
-    --agent-strong: 0.4714 0.0677 303.79; /* #63527A design-agent glyph ink + kicker */
+    --work-track: 0.9369 0.0083 91.49; /* #ECEAE4 meter + ring track */
+    --work-track-warning: 0.915 0.0445 88.53; /* #EFE2C2 in-progress ring track */
+    --work-track-info: 0.8982 0.0212 271.18; /* #D8DDEC in-review ring track */
+    --work-idle: 0.6796 0.009 91.52; /* #9A9892 ready ring */
+    --work-idle-faint: 0.7283 0.0088 91.51; /* #A9A7A1 draft dashed ring */
+    --work-outline: 0.8077 0.0086 91.5; /* #C2C0BA upcoming diamond, unassigned ring */
+    --agent: 0.4334 0.1155 299.8; /* #5B3F86 agent star */
+    --agent-soft: 0.9334 0.0185 306.66; /* #ECE6F3 agent avatar fill */
+    --agent-strong: 0.3815 0.1007 299.29; /* #4B3470 design-agent glyph ink + kicker */
 
-    /* Brand amber — the eclipse's earth (see brand/README.md). One colour seen
-       through two grounds: #B8862F carries on paper, #E3B34C carries on ink.
+    /* Brand amber — the logo's ring. One colour seen through two grounds:
+       #B8862F carries on paper, #E3B34C carries on ink.
        `--brand-amber` is the page ground, `--brand-amber-inverted` the opposite,
        for a mark riding an inverted chip (the rail's ink org square). This is
        identity, not status — `--warning*` stays the functional amber. */
-    --brand-amber: 0.6538 0.1178 77.40; /* #B8862F */
+    --brand-amber: 0.6539 0.1178 77.4; /* #B8862F */
     --brand-amber-inverted: 0.7913 0.1311 83.59; /* #E3B34C */
-    --warning-border: 0.9172 0.0447 90.40; /* #EFE3C2 drift banner border */
-    --warning-ink: 0.4729 0.0778 88.95; /* #6E5A22 drift banner ink */
+    --warning-border: 0.8942 0.0515 88.57; /* #EADBB6 drift banner border */
+    --warning-ink: 0.46 0.0764 80.59; /* #6E5320 drift banner ink */
 
     /* Catalog v2 (Orunbase Console v2) — the exact inks the catalog index and the
        service page draw with. The design is a light surface, so each value is
@@ -177,20 +171,20 @@
        carry their own hue in the design, a half-step off `--success` /
        `--destructive`, and rounding them to the semantic tokens is exactly the
        drift this surface is meant not to have. */
-    --ink-2: 0.3211 0 0; /* #333333 — the pitch, facet labels */
-    --avatar: 0.9079 0 0; /* #E0E0E0 — owner/on-call avatar fill */
-    --rule-dot: 0.8373 0 0; /* #C9C9C9 — the eyebrow separator */
+    --ink-2: 0.285 0.0056 91.57; /* #2B2A27 — the pitch, facet labels */
+    --avatar: 0.9124 0.0097 93.58; /* #E4E2DB — owner/on-call avatar fill */
+    --rule-dot: 0.8355 0.0099 93.59; /* #CBC9C2 — the eyebrow separator */
     /* Kind glyph pairs — Component/service blue, API/worker violet,
        System·Domain·Group/job green, Resource neutral. */
-    --kind-service-bg: 0.9554 0.0162 255.04; /* #EAF1FB */
-    --kind-job-bg: 0.9525 0.0151 155.56; /* #EAF3ED */
+    --kind-service-bg: 0.9343 0.0126 271.28; /* #E6E9F2 */
+    --kind-job-bg: 0.958 0.0132 159.91; /* #EAF4EE */
     /* Verdict inks (scorecard marks, status dots). */
-    --verdict-pass: 0.5407 0.0913 154.77; /* #3E7D52 */
-    --verdict-fail: 0.5351 0.1467 26.25; /* #B0433D */
-    --status-healthy: 0.5805 0.0901 154.07; /* #4C8A5F — the healthy dot */
+    --verdict-pass: 0.5204 0.1021 154.68; /* #2F7A4E */
+    --verdict-fail: 0.5596 0.1317 34.61; /* #B4533C */
+    --status-healthy: 0.5204 0.1021 154.68; /* #2F7A4E — the healthy dot */
     /* Metal tiers. Gold is `--warning` (#9A7B2D); Silver is
        `--muted-foreground` (#737373); only Bronze needs its own value. */
-    --tier-bronze: 0.6619 0.0505 79.47; /* #A6906B */
+    --tier-bronze: 0.6638 0.0577 80.39; /* #A6906B */
 
     /* Overview v3 — the warm hairline family the Orun Overview design draws
        with. Distinct from `--border` (#E5E5E5, a neutral grey) because the
@@ -202,53 +196,94 @@
          --line       card and cell borders
          --line-soft  the divider BETWEEN rows inside one card
          --track      the unfilled part of a progress meter */
-    --line: 0.945 0.005 80; /* dividers inside a card */
-    --line-soft: 0.9352 0.0057 91.46; /* #EBEAE5 — the divider between rows */
-    --track: 0.9283 0.0069 91.47; /* #EAE8E2 */
+    --line: 0.9581 0 0; /* dividers inside a card */
+    --line-soft: 0.9271 0.0081 98.89; /* #E8E7E1 — the divider between rows */
+    --track: 0.9276 0.0096 93.57; /* #E9E7E0 */
 
     /* The activity plane's failure pair. Deliberately NOT `--destructive`
        (#C94A44): a run that went red on the change feed is drawn a shade
        deeper and browner than a destructive action, so a column of ladders
        reads as machine outcome rather than as a warning aimed at the reader. */
-    --run-failed: 0.5607 0.1315 26.27; /* #B4524A — the mark */
-    --run-failed-ink: 0.4969 0.1171 30.61; /* #9A4238 — the text */
+    --run-failed: 0.5596 0.1317 34.61; /* #B4533C — the mark */
+    --run-failed-ink: 0.4614 0.1178 34.83; /* #8E3B27 — the text */
 
-    /* ── openproduct-commons XP0 — the commons shell ──────────────────
-       The reference design's chrome is a full-bleed dark panel over a paper
-       page, and one accent colour that means exactly one thing.
+    /* ── The shell's panel (XP0's tokens, OPR1's values) ───────────────
+       The redesign's header is a LIGHT frosted bar — rgba(255,255,255,0.62)
+       over the page, with a backdrop blur — not the dark panel XP0 drew. The
+       token set keeps its names, because the shell reads them, and takes the
+       light bar's values: white under ink text, #6B6A66 for the quiet words,
+       ink for the hairlines (painted at low alpha at the call site). The 0.62
+       and the blur belong to the bar's own markup (`bg-panel/[0.62]`).
 
-       WHY THE PANEL IS ITS OWN TOKEN SET rather than `--card` inverted: it is
-       the product's chrome, not a surface that follows the reader.
+       WHY `--endorse` IS RESERVED: the accent appears once per row and it
+       always means endorsement (XP-1). Two values exist because one of them
+       is text: `--endorse` is the ▲ mark (a glyph, not a label),
+       `--endorse-ink` is the deeper value any accent *word* uses, so the
+       accent never buys itself a contrast exemption. */
+    --panel: 1 0 0; /* #FFFFFF — painted at 0.62 with a blur */
+    --panel-foreground: 0.1908 0.002 106.59; /* #141413 */
+    --panel-muted: 0.5239 0.0063 95.17; /* #6B6A66 — the search's placeholder and ⌘K (5.41:1 on white) */
+    --panel-line: 0.1908 0.002 106.59; /* used at low alpha for the panel's hairlines */
+    --panel-raised: 1 0 0; /* #FFFFFF — the account menu */
+    --panel-raised-line: 0.9271 0.0081 98.89; /* #E8E7E1 */
+    /* THE ONE RESERVED ACCENT. In the redesign it is the amber — #B8862F, the
+       same value as `--amber` below — and that is what :root carries.
+       `[data-accent]` can still swap the family for one of three other hues
+       without redrawing anything; those blocks redefine these four tokens (and
+       their dark twins) and nothing else.
 
-       WHY `--endorse` IS RESERVED: gold appears once per row and it always
-       means endorsement (XP-1). Two golds exist because one of them is text:
-       `--endorse` is the ▲ mark (a glyph, not a label), `--endorse-ink` is the
-       deeper value any gold *word* uses, so the accent never buys itself a
-       contrast exemption. */
-    --panel: 0.2044 0 0; /* #171717 */
-    --panel-foreground: 0.9446 0.0086 88.85; /* #EFECE4 */
-    --panel-muted: 0.7394 0.0074 106.58; /* #ABABA6 — the search's placeholder and ⌘K */
-    --panel-line: 0.9307 0.0108 88.86; /* used at low alpha for the panel's hairlines */
-    --panel-raised: 0.2376 0 0; /* #1F1F1F — the account menu */
-    --panel-raised-line: 0.3211 0 0; /* #333333 */
-    /* THE ONE RESERVED ACCENT, and the four hues it can be.
-       The fill, the soft wash and the line are ONE lightness and ONE chroma
-       across all four hues — only H moves. That is the reason the ramp is
-       authored in oklch rather than in HSL: contrast becomes a property of
-       the ramp instead of a property of the theme somebody picked.
+       `--endorse-ink` is the accent used AS A WORD (rank #1, a voted count)
+       and the only one that has to clear AA as text ON ITS OWN TINT. The
+       redesign's amber text, #8A6420, is 4.87:1 on the page but 4.36:1 on the
+       #F3E7CC tint, so the word-on-tint value is one step deeper: #85601D,
+       4.64:1 on the tint. `--amber-ink` stays the board's #8A6420 for amber
+       words on the page or a card. */
+    /* The ink on an accent fill. Ink, not white: white on #B8862F is 3.24:1
+       and #141413 on it is 5.70:1. */
+    --on-accent: 0.1908 0.002 106.59;
+    --endorse: 0.6539 0.1178 77.4; /* #B8862F — the logo ring, the unread badge, the ▲ */
+    --endorse-ink: 0.5154 0.0942 78.11; /* #85601D — accent as a word on its tint */
+    --endorse-soft: 0.9305 0.0379 86.89; /* #F3E7CC — voted fill, unread row, the `#1 today` badge */
+    --endorse-line: 0.8594 0.0667 88.03; /* #E3CF9F — the voted box's border */
 
-       `--endorse-ink` is the exception, and it is deliberate: it is the
-       accent used AS A WORD (rank #1, a voted count), it is the only one that
-       has to clear AA as text, and equal L and C at different hues do not
-       read as equal contrast on paper. The prototype tunes it per hue, and
-       the four values below are its own. `[data-accent]` carries the other
-       three hues; ocean is :root. */
-    /* The ink on an accent fill — white on paper, near-black on the dark ramp. */
-    --on-accent: 1 0 0;
-    --endorse: 0.62 0.105 205; /* ocean — the logo dot, the unread badge, the ▲ */
-    --endorse-ink: 0.46 0.078 205; /* accent as a word: rank #1, a voted count */
-    --endorse-soft: 0.95 0.035 205; /* voted fill, unread row, the `#1 today` badge */
-    --endorse-line: 0.86 0.08 205; /* the voted box's border */
+    /* ── OPR1 — THE FOUR KINDS, AND THE TWO WELLS ─────────────────────
+       New names, for the pages the redesign rebuilds (design.md §3). A colour
+       here means a KIND of thing, and each family carries the same parts:
+       the hue itself (a fill, a mark, a dot), an `ink` or `deep` that is safe
+       as a word, and one or two tints to sit under them.
+
+         amber    shipped, links          lavender (`idea`)   ideas
+         slate (`version`)  versions       teal (`seat`)       help wanted, seats
+
+       MEASURED AS TEXT: `--idea` 7.64:1 on the page and 6.87 on its soft tint;
+       `--version` 7.90 and 7.16; `--seat-ink` 7.85 and 7.15 (`--seat` itself
+       is 5.24 on the page, 4.78 on its tint); `--amber-ink` 4.87 on the page,
+       5.35 on a card — and 4.36 on `--amber-soft`, so an amber word ON the
+       amber tint takes `--endorse-ink` instead. `--amber` itself is a mark,
+       never a word (3.24:1 against white).
+
+       `--sunken` and `--well` are the two inset surfaces: text fields, inner
+       rows, the track of a segmented control. */
+    --amber: 0.6539 0.1178 77.4; /* #B8862F */
+    --amber-ink: 0.53 0.0959 78.02; /* #8A6420 */
+    --amber-soft: 0.9305 0.0379 86.89; /* #F3E7CC */
+    --idea: 0.4334 0.1155 299.8; /* #5B3F86 */
+    --idea-deep: 0.2678 0.0558 299.53; /* #2A1F3D */
+    --idea-soft: 0.9334 0.0185 306.66; /* #ECE6F3 */
+    --idea-wash: 0.9605 0.0114 308.33; /* #F4F0F8 */
+    --version: 0.416 0.075 267.6; /* #3A4A75 */
+    --version-soft: 0.9343 0.0126 271.28; /* #E6E9F2 */
+    --seat: 0.5021 0.0651 200.89; /* #2F6F73 */
+    --seat-ink: 0.4094 0.0549 202.23; /* #1F5357 */
+    --seat-soft: 0.9339 0.017 192.35; /* #DDEDEC */
+    --seat-wash: 0.9706 0.0075 186.89; /* #F0F7F6 */
+    --sunken: 0.9485 0.0109 95.17; /* #F0EEE6 */
+    --well: 0.97 0.0082 91.48; /* #F7F5EF */
+    /* The page's ground (see `body` below): the amber of the glow at the top
+       and the ink of the dot grid. Tokens, so the dark ramp can answer with a
+       dimmer glow and light dots without a second rule. */
+    --page-glow: 0.6539 0.1178 77.4; /* #B8862F, painted at 0.18 */
+    --page-dot: 0.1908 0.002 106.59; /* #141413, painted at 0.07 */
 
     /* FR0 — THE THREE TOKENS THAT ARE NOT WHOLE COLOURS.
 
@@ -288,7 +323,7 @@
        a second stylesheet — nothing below this line is a new selector for an
        existing component, and no component knows which ramp it is in.
 
-       EIGHTY-TWO VALUES, WRITTEN OUT, AND NOT COMPUTED. `oklch()` needs a
+       A HUNDRED AND THREE VALUES, WRITTEN OUT, AND NOT COMPUTED. `oklch()` needs a
        literal triple, so a runtime formula is not available even if it were
        wise; and it would not be, because a dark ramp is not one function of
        the light one. The families below each answer a different question and
@@ -310,137 +345,161 @@
          rises to 0.72 and the ink on it has to go DARK. Reflecting these to
          black-on-dark would have been a solid red chip with unreadable text.
 
-       AND THE PANEL RISES. `--panel` is already dark in the light ramp — it
-       is the one surface drawn as an inversion — so in dark it cannot sink
-       any further and stay visible. It goes UP, to 0.255 over a 0.165 page.
+       THE PANEL FOLLOWS THE CARD. In the redesign the header is a frosted
+       light bar, so in dark it is a frosted dark one: the card's own value
+       (0.225 over a 0.18 page) under the page's light ink.
 
-       CHROMA IS NOT FREE AT THESE LIGHTNESSES. Five of the values below were
-       authored at a chroma sRGB cannot hold and are written here at the
-       largest it can: ocean's `--dk-endorse` wanted 0.16 at L 0.72 and gets
-       0.122, and `--dk-link` wanted 0.14 and gets 0.1231. Authoring the
-       unreachable number would not have been harmless — the browser gamut-maps
-       it anyway, so the stylesheet would have stated a colour it never paints.
+       DERIVED FROM THE REDESIGN'S PALETTE (OPR1). The boards are light; the
+       switch stays (design.md §3, risks R3), so this ramp is the same palette
+       read on a warm near-black: the page is the ink's own hue at L 0.18,
+       cards sit a step above it, and each of the four kind hues keeps its hue
+       angle and is LIFTED to L 0.74–0.78 so it reads as the same colour on a
+       dark ground. The `ink` / `deep` of a kind — the darkest member in the
+       light ramp — is the LIGHTEST here, because its job is to be the word.
+
+       CHROMA IS NOT FREE AT THESE LIGHTNESSES. Every value below is written at
+       a chroma sRGB can hold (`dark-ramp.test.ts` asks). Authoring an
+       unreachable number would not be harmless — the browser gamut-maps it
+       anyway, so the stylesheet would state a colour it never paints.
 
        EVERY PAIR IS MEASURED, and `dark-ramp.test.ts` holds them: no text
        pair in the dark ramp is more than a fifth worse than the same pair in
        the light one, and every pair the light ramp clears at 4.5:1 the dark
        ramp clears too. In practice the dark ramp is the more contrasty of the
-       two on almost every pair — `--warning` on the page goes from 3.83 to
-       9.59 — because the light ramp's chromatic inks were drawn to sit on a
+       two on most pairs — `--link` on the page goes from 4.87 to 10.98 —
+       because the light ramp's chromatic inks were drawn to sit on a
        near-white page and their dark counterparts sit far from a near-black
        one. */
 
     /* the page, and the stack that sits on it */
-    --dk-background: 0.165 0.004 80;
-    --dk-card: 0.205 0.005 80;
-    --dk-popover: 0.225 0.005 80;
-    --dk-secondary: 0.255 0.007 80;
-    --dk-muted: 0.225 0.005 80;
-    --dk-accent: 0.225 0.005 80;
-    --dk-surface-2: 0.24 0.006 80;
-    --dk-primary: 0.93 0.006 80;
-    --dk-primary-foreground: 0.18 0.004 80;
+    --dk-background: 0.18 0.004 95;
+    --dk-card: 0.225 0.005 95;
+    --dk-popover: 0.245 0.005 95;
+    --dk-secondary: 0.27 0.006 95;
+    --dk-muted: 0.245 0.005 95;
+    --dk-accent: 0.27 0.006 95;
+    --dk-surface-2: 0.27 0.006 95;
+    --dk-primary: 0.9818 0.0054 95.1;
+    --dk-primary-foreground: 0.1908 0.002 106.59;
 
     /* ink */
-    --dk-foreground: 0.935 0.006 80;
-    --dk-card-foreground: 0.935 0.006 80;
-    --dk-popover-foreground: 0.935 0.006 80;
-    --dk-accent-foreground: 0.935 0.006 80;
-    --dk-secondary-foreground: 0.88 0.008 80;
-    --dk-copy: 0.86 0.008 80;
-    /* The quiet pair is floored at a secondary row in a well-set dark UI:
-       #959597 on #0B0B0C, APCA Lc 45. 0.6 (#83807A) sat at Lc 34 on a card
-       and read as greyed-out; 0.70 (#A29E98) is Lc 49, and muted moves a
-       step up with it (0.72 -> 0.76, #B4B0AA, Lc 59) to stay the louder of
-       the two. */
-    --dk-muted-foreground: 0.76 0.01 80;
-    --dk-faint: 0.7 0.01 80;
-    --dk-ink-2: 0.87 0 0;
-    --dk-ring: 0.85 0.008 80;
+    --dk-foreground: 0.96 0.005 95;
+    --dk-card-foreground: 0.96 0.005 95;
+    --dk-popover-foreground: 0.96 0.005 95;
+    --dk-accent-foreground: 0.96 0.005 95;
+    --dk-secondary-foreground: 0.87 0.006 95;
+    --dk-copy: 0.87 0.006 95;
+    /* The quiet pair. Muted is #ACABA5 — 8.15:1 on the page, 7.42 on a card,
+       6.57 on the sunken well — and faint sits one step under it (#A6A59F,
+       7.59 / 6.92). The light ramp has one muted; the dark keeps the half
+       step because a secondary row greys out faster on a dark ground. */
+    --dk-muted-foreground: 0.74 0.008 95;
+    --dk-faint: 0.72 0.008 95;
+    --dk-ink-2: 0.87 0.006 95;
+    --dk-ring: 0.87 0.006 95;
 
     /* lines */
-    --dk-border: 0.3 0.006 80;
-    --dk-input: 0.32 0.006 80;
-    --dk-border-hover: 0.36 0.007 80;
-    --dk-border-strong: 0.42 0.008 80;
-    --dk-line: 0.27 0.005 80;
-    --dk-line-soft: 0.28 0.0057 91.46;
-    --dk-track: 0.29 0.0069 91.47;
-    --dk-rule-dot: 0.42 0 0;
-    --dk-avatar: 0.32 0 0;
-    --dk-work-track: 0.28 0 0;
-    --dk-work-outline: 0.45 0 0;
-    --dk-work-idle: 0.58 0 0;
-    --dk-work-idle-faint: 0.52 0 0;
+    --dk-border: 0.29 0.006 95;
+    --dk-input: 0.31 0.006 95;
+    --dk-border-hover: 0.35 0.007 95;
+    --dk-border-strong: 0.41 0.008 95;
+    --dk-line: 0.285 0.005 95;
+    --dk-line-soft: 0.29 0.006 95;
+    --dk-track: 0.3 0.007 95;
+    --dk-rule-dot: 0.42 0.006 95;
+    --dk-avatar: 0.32 0.006 95;
+    --dk-work-track: 0.29 0.006 95;
+    --dk-work-outline: 0.45 0.006 95;
+    --dk-work-idle: 0.58 0.006 95;
+    --dk-work-idle-faint: 0.52 0.006 95;
 
     /* washes — a tinted row, which on a dark page means lighter, not darker */
-    --dk-warning-wash: 0.225 0.03 95.26;
-    --dk-warning-wash-soft: 0.245 0.036 88.93;
-    --dk-warning-soft: 0.255 0.045 90.33;
-    --dk-destructive-wash: 0.225 0.028 26.54;
-    --dk-destructive-soft: 0.245 0.04 22.45;
-    --dk-info-soft: 0.245 0.038 258.35;
-    --dk-success-soft: 0.245 0.048 150;
-    --dk-agent-soft: 0.25 0.038 308.27;
-    --dk-kind-service-bg: 0.245 0.038 255.04;
-    --dk-kind-job-bg: 0.245 0.038 155.56;
-    --dk-work-track-warning: 0.29 0.05 90.37;
-    --dk-work-track-info: 0.29 0.045 258.36;
+    --dk-warning-wash: 0.235 0.03 86.89;
+    --dk-warning-wash-soft: 0.255 0.038 86.89;
+    --dk-warning-soft: 0.29 0.05 85;
+    --dk-destructive-wash: 0.235 0.03 34.8;
+    --dk-destructive-soft: 0.27 0.045 34.8;
+    --dk-info-soft: 0.29 0.04 270;
+    --dk-success-soft: 0.27 0.045 154.68;
+    --dk-agent-soft: 0.29 0.05 303;
+    --dk-kind-service-bg: 0.29 0.04 270;
+    --dk-kind-job-bg: 0.27 0.045 154.68;
+    --dk-work-track-warning: 0.31 0.05 85;
+    --dk-work-track-info: 0.31 0.045 270;
 
     /* tinted borders */
-    --dk-warning-soft-border: 0.4 0.055 88.99;
-    --dk-info-border: 0.4 0.045 255.08;
-    --dk-success-border: 0.42 0.08 150;
-    --dk-warning-border: 0.4 0.06 90.4;
+    --dk-warning-soft-border: 0.4 0.06 85;
+    --dk-info-border: 0.4 0.05 270;
+    --dk-success-border: 0.42 0.07 154.68;
+    --dk-warning-border: 0.4 0.06 85;
 
     /* chromatic ink and status */
-    --dk-destructive: 0.72 0.15 26.3;
-    --dk-warning: 0.78 0.11 86.88;
-    --dk-success: 0.74 0.12 150;
-    --dk-info: 0.74 0.13 257.26;
-    --dk-link: 0.76 0.123 259.76;
-    --dk-warning-strong: 0.8 0.1 88.07;
-    --dk-warning-pill: 0.8 0.1 88.36;
-    --dk-warning-ink: 0.82 0.09 88.95;
-    --dk-warning-accent: 0.76 0.12 87.49;
-    --dk-info-strong: 0.78 0.112 257.39;
-    --dk-agent: 0.74 0.09 307.71;
-    --dk-agent-strong: 0.8 0.08 303.79;
+    --dk-destructive: 0.74 0.13 34.83;
+    --dk-warning: 0.83 0.11 80;
+    --dk-success: 0.74 0.12 154.68;
+    --dk-info: 0.76 0.09 268;
+    --dk-link: 0.83 0.11 80;
+    --dk-warning-strong: 0.83 0.11 80;
+    --dk-warning-pill: 0.83 0.11 80;
+    --dk-warning-ink: 0.85 0.09 82;
+    --dk-warning-accent: 0.78 0.12 77.4;
+    --dk-info-strong: 0.8 0.08 268;
+    --dk-agent: 0.74 0.11 300;
+    --dk-agent-strong: 0.82 0.08 300;
     --dk-brand-amber: 0.78 0.12 77.4;
     --dk-brand-amber-inverted: 0.8 0.13 83.59;
-    --dk-verdict-pass: 0.76 0.1 154.77;
-    --dk-verdict-fail: 0.72 0.15 26.25;
-    --dk-status-healthy: 0.76 0.1 154.07;
-    --dk-run-failed: 0.73 0.14 26.27;
-    --dk-run-failed-ink: 0.78 0.12 30.61;
+    --dk-verdict-pass: 0.74 0.12 154.68;
+    --dk-verdict-fail: 0.72 0.14 34.61;
+    --dk-status-healthy: 0.74 0.12 154.68;
+    --dk-run-failed: 0.72 0.14 34.61;
+    --dk-run-failed-ink: 0.78 0.12 34.83;
     --dk-tier-bronze: 0.75 0.06 79.47;
 
     /* the ink ON a solid chip, which inverts with the chip */
-    --dk-destructive-foreground: 0.18 0.01 26.3;
-    --dk-warning-foreground: 0.18 0.01 86.88;
-    --dk-success-foreground: 0.18 0.01 150;
-    --dk-info-foreground: 0.18 0.01 257.26;
+    --dk-destructive-foreground: 0.18 0.01 34.83;
+    --dk-warning-foreground: 0.18 0.01 80;
+    --dk-success-foreground: 0.18 0.01 154.68;
+    --dk-info-foreground: 0.18 0.01 268;
 
-    /* the dark panel, which has to RISE on a dark page rather than sink */
-    --dk-panel: 0.255 0 0;
-    --dk-panel-foreground: 0.9446 0.0086 88.85;
-    --dk-panel-muted: 0.76 0.0074 106.58;
-    --dk-panel-line: 0.9307 0.0108 88.86;
-    --dk-panel-raised: 0.3 0 0;
-    --dk-panel-raised-line: 0.36 0 0;
+    /* the frosted bar — the card's value under the page's light ink */
+    --dk-panel: 0.225 0.005 95;
+    --dk-panel-foreground: 0.96 0.005 95;
+    --dk-panel-muted: 0.74 0.008 95;
+    --dk-panel-line: 0.96 0.005 95;
+    --dk-panel-raised: 0.245 0.005 95;
+    --dk-panel-raised-line: 0.31 0.006 95;
 
     /* the tile, and the ink behind a dialog */
     --dk-tile-fill: 0.41 0.069;
     --dk-tile-ink: 0.8 0.099;
     --dk-scrim: 0.06 0.004 80;
 
-    /* ocean's dark accent — the other three hues carry theirs in their own
+    /* amber's dark accent — the other three hues carry theirs in their own
        `[data-accent]` block below, exactly as the light ones do. */
-    --dk-on-accent: 0.18 0.01 205;
-    --dk-endorse: 0.72 0.122 205;
-    --dk-endorse-ink: 0.8 0.13 205;
-    --dk-endorse-soft: 0.25 0.042 205;
-    --dk-endorse-line: 0.44 0.075 205;
+    --dk-on-accent: 0.18 0.01 77.4;
+    --dk-endorse: 0.78 0.12 77.4;
+    --dk-endorse-ink: 0.83 0.11 80;
+    --dk-endorse-soft: 0.29 0.05 85;
+    --dk-endorse-line: 0.44 0.07 82;
+
+    /* the four kinds, lifted; the two wells; the page's ground */
+    --dk-amber: 0.78 0.12 77.4; /* #E2AD58 */
+    --dk-amber-ink: 0.83 0.11 80; /* #EDBF71 */
+    --dk-amber-soft: 0.29 0.05 85; /* #37290A */
+    --dk-idea: 0.74 0.11 300; /* #B59BE6 */
+    --dk-idea-deep: 0.88 0.06 300; /* #DDCFFA */
+    --dk-idea-soft: 0.29 0.05 303; /* #302540 */
+    --dk-idea-wash: 0.24 0.03 305; /* #231C2B */
+    --dk-version: 0.74 0.09 268; /* #92A9E4 */
+    --dk-version-soft: 0.29 0.04 270; /* #232A3F */
+    --dk-seat: 0.74 0.08 200; /* #69BABF */
+    --dk-seat-ink: 0.83 0.07 200; /* #90D6D9 */
+    --dk-seat-soft: 0.29 0.04 195; /* #0E3231 */
+    --dk-seat-wash: 0.24 0.025 190; /* #102322 */
+    --dk-sunken: 0.27 0.006 95; /* #272623 */
+    --dk-well: 0.245 0.005 95; /* #21201E */
+    --dk-page-glow: 0.6 0.1 77.4; /* #A17833, painted at 0.18 */
+    --dk-page-dot: 0.95 0.005 95; /* #EFEEEB, painted at 0.07 */
   }
 
 
@@ -453,7 +512,7 @@
      `data-accent` is stamped on <html> from NEXT_PUBLIC_OPENPRODUCT_ACCENT at
      build time, so it is in the first byte of the document and identical for
      every visitor — an accent chosen per-visitor would be a second render of
-     a page that I6 requires to be one (and is out of scope besides). Ocean is
+     a page that I6 requires to be one (and is out of scope besides). Amber is
      the default and is already in :root, so it needs no block. */
   :root[data-accent="ember"] {
     --endorse: 0.62 0.17 25;
@@ -500,7 +559,7 @@
      setting the reader never touched.
 
      THE DECLARATION LISTS ARE IDENTICAL AND ARE ALIASES, NOT VALUES. Every
-     line below is `--x: var(--dk-x)`, so the eighty-two numbers live in one
+     line below is `--x: var(--dk-x)`, so the hundred and three numbers live in one
      place and these blocks carry none of them; `dark-ramp.test.ts` asserts
      the two lists are the same text. Duplicating the VALUES here would be the
      drift this file has spent four epics avoiding.
@@ -608,6 +667,23 @@
     --tile-fill: var(--dk-tile-fill);
     --tile-ink: var(--dk-tile-ink);
     --scrim: var(--dk-scrim);
+    --amber: var(--dk-amber);
+    --amber-ink: var(--dk-amber-ink);
+    --amber-soft: var(--dk-amber-soft);
+    --idea: var(--dk-idea);
+    --idea-deep: var(--dk-idea-deep);
+    --idea-soft: var(--dk-idea-soft);
+    --idea-wash: var(--dk-idea-wash);
+    --version: var(--dk-version);
+    --version-soft: var(--dk-version-soft);
+    --seat: var(--dk-seat);
+    --seat-ink: var(--dk-seat-ink);
+    --seat-soft: var(--dk-seat-soft);
+    --seat-wash: var(--dk-seat-wash);
+    --sunken: var(--dk-sunken);
+    --well: var(--dk-well);
+    --page-glow: var(--dk-page-glow);
+    --page-dot: var(--dk-page-dot);
   }
 
   @media (prefers-color-scheme: dark) {
@@ -695,13 +771,30 @@
       --panel-raised: var(--dk-panel-raised);
       --panel-raised-line: var(--dk-panel-raised-line);
       --on-accent: var(--dk-on-accent);
-    --endorse: var(--dk-endorse);
+      --endorse: var(--dk-endorse);
       --endorse-ink: var(--dk-endorse-ink);
       --endorse-soft: var(--dk-endorse-soft);
       --endorse-line: var(--dk-endorse-line);
       --tile-fill: var(--dk-tile-fill);
       --tile-ink: var(--dk-tile-ink);
       --scrim: var(--dk-scrim);
+      --amber: var(--dk-amber);
+      --amber-ink: var(--dk-amber-ink);
+      --amber-soft: var(--dk-amber-soft);
+      --idea: var(--dk-idea);
+      --idea-deep: var(--dk-idea-deep);
+      --idea-soft: var(--dk-idea-soft);
+      --idea-wash: var(--dk-idea-wash);
+      --version: var(--dk-version);
+      --version-soft: var(--dk-version-soft);
+      --seat: var(--dk-seat);
+      --seat-ink: var(--dk-seat-ink);
+      --seat-soft: var(--dk-seat-soft);
+      --seat-wash: var(--dk-seat-wash);
+      --sunken: var(--dk-sunken);
+      --well: var(--dk-well);
+      --page-glow: var(--dk-page-glow);
+      --page-dot: var(--dk-page-dot);
     }
   }
 
@@ -798,11 +891,37 @@
     font-size: 14px;
     -webkit-font-smoothing: antialiased;
   }
-  /* The design's base: Geist at 15px. `html` keeps 14px so every rem-based
-     reservation above resolves as it always has; the type the page inherits
-     is the prototype's. */
+  /* The redesign's base: Hanken Grotesk at 15px. `html` KEEPS 14px, and OPR1
+     looked at moving it: every rem-based reservation above (`--tabbar-reserve`
+     is 4.5rem and says so) and every rem spacing utility on a page that has
+     not been rebuilt yet resolves against the root, so a 15px root would
+     re-space the whole site by 7% in the one milestone that promised to move
+     no layout. The type the page inherits is 15px either way, because it is
+     set here on `body` in pixels. */
   body {
     font-size: 15px;
+  }
+  /* THE PAGE'S GROUND (openproduct-redesign design.md §3): a soft amber glow
+     at the top and a faint dot grid, on the page colour. Both are gradients,
+     so they cost no request, and both read tokens, so the dark ramp answers
+     with a dimmer glow and light dots and this rule is written once.
+
+     ON `body`, under everything: a card is opaque white and sits on it; the
+     frosted bar is translucent and lets it through, which is what makes the
+     bar read as glass.
+
+     The glow is 1100×460 and anchored in PIXELS above the top edge. The
+     boards write `50% -8%`, which is a share of the box's height — right for
+     a fixed artboard, and on a real page it would slide the glow further off
+     the top the longer the page got. -72px is that 8% on the 900px board. */
+  body {
+    background-image:
+      radial-gradient(1100px 460px at 50% -72px, oklch(var(--page-glow) / 0.18), transparent 62%),
+      radial-gradient(oklch(var(--page-dot) / 0.07) 1px, transparent 1.2px);
+    background-size:
+      auto,
+      22px 22px;
+    background-repeat: no-repeat, repeat;
   }
   /* The scrollbar is a LAYOUT fact, not a decoration. Every screen in this
      console is a centered column (`Screen`'s 1060px measure, the Agents hero's
@@ -855,21 +974,22 @@
     color: inherit;
   }
   ::selection {
-    background: oklch(var(--link) / 0.14);
+    background: oklch(var(--amber) / 0.22);
   }
 
-  /* Northwind scrollbars: light thumb inset from a transparent track. */
+  /* Scrollbars: a thumb in the ramp's own border ink, inset from a
+     transparent track — tokens, so it follows the theme. */
   ::-webkit-scrollbar {
     width: 10px;
     height: 10px;
   }
   ::-webkit-scrollbar-thumb {
-    background: oklch(0.8923 0 0);
+    background: oklch(var(--border-strong));
     border-radius: 6px;
     border: 2px solid oklch(var(--background));
   }
   ::-webkit-scrollbar-thumb:hover {
-    background: oklch(0.8294 0 0);
+    background: oklch(var(--muted-foreground) / 0.6);
   }
   ::-webkit-scrollbar-track {
     background: transparent;
@@ -1078,15 +1198,13 @@
 
   /* ── Cards and their rows ─────────────────────────────────────────── */
   [data-card] {
-    transition:
-      border-color 250ms ease,
-      box-shadow 300ms ease,
-      transform 300ms cubic-bezier(0.2, 0.7, 0.2, 1);
+    transition: border-color 250ms ease;
   }
+  /* OPR1 — FLAT. A card is white on the page colour and that contrast is the
+     whole of its edge: no drop shadow at rest and none on hover, here or on
+     the tile and the two `cat-*` plates below. */
   [data-card]:hover {
     border-color: oklch(var(--border-hover));
-    box-shadow: 0 10px 26px -18px oklch(var(--foreground) / 0.18);
-    transform: translateY(-1px);
   }
   [data-listrow] {
     transition: background-color 140ms ease;
@@ -1120,20 +1238,13 @@
    * than at the call site.
    */
   [data-tile] {
-    box-shadow:
-      0 1px 2px oklch(var(--foreground) / 0.04),
-      0 10px 30px -24px oklch(var(--foreground) / 0.3);
     transition:
       transform 250ms cubic-bezier(0.2, 0.7, 0.2, 1),
-      box-shadow 250ms ease,
       border-color 250ms ease;
   }
   [data-tile]:hover {
     transform: translateY(-2px);
     border-color: oklch(var(--border-hover));
-    box-shadow:
-      0 1px 2px oklch(var(--foreground) / 0.05),
-      0 22px 44px -26px oklch(var(--foreground) / 0.35);
   }
   [data-tile] [data-chev] {
     opacity: 0;
@@ -1321,23 +1432,22 @@
     background-size: 16px 16px;
   }
 
-  /* Display serif for page titles, greetings, and stat numerals. */
+  /* Display serif for page titles and idea quotes: Lora, and 400 is the only
+     weight the site ships of it. */
   .font-serif-display {
     font-family: var(--font-serif);
-    font-weight: 500;
+    font-weight: 400;
   }
 
-  /* The uppercase section label — WORKSPACE, MILESTONES, a column header.
-     Machine text, so it is set in the mono face at the bottom rung of the
-     ladder and leans on uppercase + letterspacing rather than on weight. Was
-     11px/600 sans at 85% muted-foreground, which is both under the 12px floor
-     and a 3.4:1 ink. */
+  /* The uppercase section label — a column header, a card's kind. The
+     redesign's mono label: IBM Plex Mono at 10.5px, tracked 0.12em, in the
+     one muted ink (#6B6A66, 4.92:1 on the page). */
   .kicker {
     font-family: var(--font-mono);
-    font-size: 12px;
+    font-size: 10.5px;
     font-weight: 400;
     text-transform: uppercase;
-    letter-spacing: 0.1em;
+    letter-spacing: 0.12em;
     color: oklch(var(--faint));
   }
 
@@ -1351,33 +1461,21 @@
 
   /* The raised plate: index entity cards and the service page's stat tiles. */
   .cat-tile {
-    box-shadow:
-      0 1px 2px oklch(var(--foreground) / 0.04),
-      0 10px 30px -24px oklch(var(--foreground) / 0.3);
     transition:
       transform 0.25s cubic-bezier(0.2, 0.7, 0.2, 1),
-      box-shadow 0.25s ease,
       border-color 0.25s ease;
   }
   .cat-tile:hover {
     transform: translateY(-2px);
     border-color: oklch(var(--border-hover));
-    box-shadow:
-      0 1px 2px oklch(var(--foreground) / 0.05),
-      0 22px 44px -26px oklch(var(--foreground) / 0.35);
   }
 
   /* The flat panel: the service page's content cards. Lifts a hair on hover. */
   .cat-card {
-    transition:
-      border-color 0.25s ease,
-      box-shadow 0.3s ease,
-      transform 0.3s cubic-bezier(0.2, 0.7, 0.2, 1);
+    transition: border-color 0.25s ease;
   }
   .cat-card:hover {
     border-color: oklch(var(--border-hover));
-    box-shadow: 0 10px 26px -18px oklch(var(--foreground) / 0.18);
-    transform: translateY(-1px);
   }
 
   /* A navigable row inside a card. The trailing chevron is absent until the
@@ -1610,8 +1708,8 @@
   /* Uppercase mono section label, retained for legacy call sites. */
   .eyebrow {
     font-family: var(--font-mono);
-    /* Was 0.6875rem, which is 9.6px against this document's 14px root. */
-    font-size: 12px;
+    /* The redesign's mono label, in pixels (the root is 14px). */
+    font-size: 10.5px;
     letter-spacing: 0.12em;
     text-transform: uppercase;
     color: oklch(var(--muted-foreground));

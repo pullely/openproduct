@@ -265,7 +265,7 @@ describe("the row is the design's own measurements", () => {
     // The vote box's own measurements moved with the box at UV0 — it is a
     // control both this row and the product page draw, so its numbers live in
     // one file rather than in two that have to stay in step. 58×58, radius
-    // 12, the mark at 11px over Geist Mono 14px: the design's box.
+    // 12, the mark at 11px over IBM Plex Mono 14px: the design's box.
     const box = read("ui/vote-box.tsx");
     for (const measurement of ["h-[52px] w-[52px]", "rounded-[10px]", "text-[14px]"]) {
       expect([measurement, box.includes(measurement)]).toEqual([measurement, true]);

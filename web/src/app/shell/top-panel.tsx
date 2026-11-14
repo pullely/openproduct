@@ -19,7 +19,7 @@ import { AppLink } from "../ui/link";
  * IT SPANS THE WINDOW. The bar used to sit inside the same 1180px column as
  * the page, which tucked the wordmark in from the corner and made the bar
  * read as part of the content. CL1 takes it out of the column: the mark
- * (32px) and the wordmark (Newsreader 28px, regular, -0.03em) sit in the
+ * (32px) and the wordmark (Lora 28px, regular, -0.03em) sit in the
  * left corner at the page gutter, the sections follow as WORDS with a 2px
  * underline under the current one (no pill, no glyph: the glyphs live in the
  * phone's bottom bar, where there are no words), and the search field, the
@@ -74,7 +74,7 @@ export function TopPanel() {
           // hit area grows to meet the 44px tap minimum (OL9's walk).
           className="flex shrink-0 items-center gap-3 rounded-[8px] max-sm:min-h-[44px] max-sm:min-w-[44px] max-sm:justify-center focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
         >
-          <Logomark size={32} stroke={2.2} />
+          <Logomark size={32} />
           {/* THE WORDMARK STEPS ASIDE BELOW `sm` (FR1). 148px of a 343px row
               is the difference between a search field a person can read their
               query in and a button they have to guess at; the mark still goes

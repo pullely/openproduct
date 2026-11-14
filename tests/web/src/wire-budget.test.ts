@@ -26,23 +26,37 @@ const code = (file: string) =>
 describe("WC2-8's three numbers", () => {
   const wire = code(resolve(PERF, "wire.mjs"));
 
-  it("are 276 KB compressed, 30 requests, no third-party host", () => {
-    expect(wire).toContain("export const WIRE = { bytes: 276 * 1024, requests: 30, thirdPartyHosts: 0 };");
+  it("are 300 KB compressed, 30 requests, no third-party host", () => {
+    expect(wire).toContain("export const WIRE = { bytes: 300 * 1024, requests: 30, thirdPartyHosts: 0 };");
   });
 
   it("moved only by a recorded decision: the amendment is in WC2-8 itself", () => {
     // 250 → 276 KB at the Next 16 upgrade (2026-10-22): the runtime grew,
-    // the app did not. The number here and the number in the decision move
-    // together or not at all.
+    // the app did not. 276 → 300 KB at the redesign (2026-11-14, OPR1): three
+    // design families, five Latin-subset files, +23,764 font bytes on every
+    // page. The number here and the number in the decision move together or
+    // not at all.
     const wc28 = JSON.parse(read(DECISION)) as {
       decision: string;
       bytesKB: number;
       requests: number;
       thirdPartyHosts: number;
-      amendments: Array<{ date: string; fromKB: number; toKB: number }>;
+      amendments: Array<{ date: string; fromKB: number; toKB: number; why: string }>;
     };
     expect(wc28.decision).toBe("WC2-8");
-    expect(wc28.amendments.map((a) => [a.date, a.fromKB, a.toKB])).toEqual([["2026-10-22", 250, 276]]);
+    expect(wc28.amendments.map((a) => [a.date, a.fromKB, a.toKB])).toEqual([
+      ["2026-10-22", 250, 276],
+      ["2026-11-14", 276, 300],
+    ]);
+    // Each amendment starts where the last one ended, and says why.
+    wc28.amendments.forEach((a, i) => {
+      if (i > 0) expect(a.fromKB).toBe(wc28.amendments[i - 1]!.toKB);
+      expect(a.why.length).toBeGreaterThan(40);
+    });
+    // The redesign's amendment is the fonts', by its own numbers: the rise it
+    // records is the rise in the files the layout loads.
+    expect(wc28.amendments.at(-1)!.why).toContain("three design families, five Latin-subset files");
+    expect(wc28.amendments.at(-1)!.why).toContain("98,664");
     // The budget in force is the last amendment's, and the lane holds exactly it.
     expect(wc28.bytesKB).toBe(wc28.amendments.at(-1)!.toKB);
     expect(wire).toContain(

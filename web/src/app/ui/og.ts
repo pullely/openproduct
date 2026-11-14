@@ -153,11 +153,11 @@ export function oklchToHex(lightness: number, chroma: number, hue: number): stri
  * forgets the cards fails in CI rather than in somebody's timeline.
  */
 export const OG_TOKENS = {
-  background: [0.985, 0.004, 80],
-  foreground: [0.21, 0.01, 80],
-  copy: [0.36, 0.01, 80],
-  faint: [0.536, 0.01, 80],
-  border: [0.915, 0.006, 80],
+  background: [0.967, 0.0082, 91.48],
+  foreground: [0.1908, 0.002, 106.59],
+  copy: [0.285, 0.0056, 91.57],
+  faint: [0.5239, 0.0063, 95.17],
+  border: [0.9271, 0.0081, 98.89],
   card: [1, 0, 0],
 } as const;
 

@@ -10,7 +10,7 @@ import { AppLink } from "./link";
  *
  *   box    58×58, radius 12, 1px --border on --card, hover --faint
  *   icon   15px outline bubble in --muted
- *   count  Geist Mono 14px/500, tabular
+ *   count  IBM Plex Mono 14px/500, tabular
  *
  * THE COUNT LEFT THE META LINE to get here. It used to ride between the
  * topics and the stack as `12 comments`; in the row layout it is a

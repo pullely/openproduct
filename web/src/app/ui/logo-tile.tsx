@@ -4,7 +4,7 @@ import { initialsOf, tileColours } from "../feed/tile";
  * A product's logo tile — the slug's initials on a fill derived from the
  * slug — at every size the design draws it.
  *
- *   52  the feed row (radius 14, Geist Mono 16px/500)
+ *   52  the feed row (radius 14, IBM Plex Mono 16px/500)
  *   76  the product hero (radius 20, 24px/500)
  *   72  the studio editor's hero (radius 16, 22px/500)
  *   44  a collection card's row (radius 13, 13px)

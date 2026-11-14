@@ -284,7 +284,7 @@ describe("XP-1 — one accent colour, one meaning", () => {
     // missing from", which was true when the site had one ramp and is the
     // wrong claim now. What it was really guarding — that a token cannot be
     // defined in one theme and missing from the other — is guarded properly
-    // in `dark-ramp.test.ts`, over all 82 of them rather than over `--panel`.
+    // in `dark-ramp.test.ts`, over all 103 of them rather than over `--panel`.
     //
     // What survives here is the SHAPE: dark is a second set of values on the
     // same tokens (WC-8), so there is still no theme class and no component
@@ -294,7 +294,8 @@ describe("XP-1 — one accent colour, one meaning", () => {
     expect(css).toContain("@media (prefers-color-scheme: dark)");
 
     // One base definition (`:root`) plus one per non-default hue — that is the
-    // light value. Ocean is the default and lives in `:root`, so three hue
+    // light value. Amber is the default (openproduct-redesign OPR1; it was
+    // ocean) and lives in `:root`, so three hue
     // blocks and four definitions in all. FR0's dark counterparts are
     // `--dk-endorse*`, which this pattern deliberately does not match: the
     // point of the count is that the LIGHT value is defined once per hue.
@@ -342,7 +343,7 @@ describe("XP-1 — one accent colour, one meaning", () => {
   it("the shell spends the accent where the design does, and nowhere else", () => {
     // MATCHES THE TOKEN'S USE, NOT THE WORD: the utilities that paint with
     // the accent, and the raw custom property behind them. The chrome wears
-    // the accent in exactly two places — the logomark's dot and the bell's
+    // the accent in exactly two places — the logomark's ring and the bell's
     // unread badge — and the bar itself never reaches for it. The signed-in
     // avatar wore the accent's soft wash until openproduct-calm CL1 (CL-R8):
     // a disc in the upvote's colour beside every upvote box on the page said

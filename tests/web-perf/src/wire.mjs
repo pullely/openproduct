@@ -74,8 +74,28 @@ import { CARDS, SAMPLE_SLUG } from "./fixture.mjs";
  * app's own chunks got slightly smaller. The budget is the old value plus the
  * largest rise, rounded up to the KB: every archetype keeps its margin, the
  * listing's 10 KB included. Requests and third-party hosts did not move.
+ *
+ * ─── 276 KB → 300 KB, RECORDED 2026-11-14 (OPR1, THE REDESIGN'S FONTS) ─────
+ *
+ * The redesign (openproduct-redesign OPR1) replaced Geist, Newsreader and
+ * Geist Mono with three design families, five Latin-subset files: Hanken
+ * Grotesk (one variable file), Lora 400 upright and italic, IBM Plex Mono 400
+ * and 500. Every page fetches the same font files, whatever its archetype:
+ *
+ *                     before (3 files)   after (5 files)   rise
+ *   font bytes        74,900             98,664            +23,764
+ *
+ * A `woff2` is already brotli inside, so this lane's re-compression does not
+ * shrink it: the rise on the wire is the rise in the files, 23.2 KB, on every
+ * archetype alike. The budget is the old value plus that rise, rounded up to
+ * the KB (276 + 24), so every archetype keeps the margin it had — the same
+ * rule the Next 16 amendment used. No app code is in this number.
+ *
+ * REQUESTS DID NOT MOVE AS A BUDGET, AND DO MOVE AS A MEASUREMENT: the two
+ * extra files are two more requests per page. 30 is held; if an archetype
+ * was within two of it, that is the next recorded decision, not this one.
  */
-export const WIRE = { bytes: 276 * 1024, requests: 30, thirdPartyHosts: 0 };
+export const WIRE = { bytes: 300 * 1024, requests: 30, thirdPartyHosts: 0 };
 
 /** The audit's two viewports (audit-reference.md). */
 const VIEWPORTS = [

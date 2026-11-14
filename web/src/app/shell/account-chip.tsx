@@ -218,7 +218,7 @@ export function AccountChip() {
         aria-expanded={open}
         aria-label={`Account — ${displayName ?? "your account"}`}
         // THE AVATAR: a 40px neutral disc on `--secondary`, the initials in
-        // Geist Mono (CL1). It means "you" and opens the menu; it does not
+        // IBM Plex Mono (CL1). It means "you" and opens the menu; it does not
         // wear the accent, which is the upvote's (CL-R8).
         className="grid h-[40px] w-[40px] place-items-center rounded-full bg-secondary font-mono text-[13px] font-medium text-foreground transition-opacity hover:opacity-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring max-sm:h-[44px] max-sm:w-[44px]"
       >

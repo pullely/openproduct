@@ -7,48 +7,76 @@ export default {
       padding: "1rem",
       screens: { "2xl": "1400px" },
     },
-    // ── The type ladder ────────────────────────────────────────────────
-    // Nine sizes, in absolute pixels, and nothing else. This REPLACES
-    // Tailwind's scale rather than extending it, which is the point: the
-    // default scale is rem-based, `globals.css` typesets `html` at 14px, and
-    // every rung therefore resolved to 87.5% of what it read as — `text-xs`
-    // rendered 10.5px, under the 12px floor, and `text-sm` rendered 12.25px,
-    // a value that is on no ladder at all. Absolute pixels mean the class name
-    // and the rendered size are the same fact.
+    // ── The type ladder (openproduct-redesign OPR1, design.md §3) ───────
+    // The redesign's sizes, in absolute pixels, and nothing else. This
+    // REPLACES Tailwind's scale rather than extending it, which is the point:
+    // the default scale is rem-based, `globals.css` typesets `html` at 14px,
+    // and every rung would resolve to 87.5% of what it reads as. Absolute
+    // pixels mean the class name and the rendered size are the same fact.
+    //
+    // THE REDESIGN HAS SEVEN SIZES:
+    //
+    //   10.5  the mono label (IBM Plex Mono, uppercase, tracked 0.12em)
+    //   11    labels
+    //   13    secondary text
+    //   15    body
+    //   16    inputs — also the no-zoom floor on a phone
+    //   18    card titles
+    //   40    page titles (Lora 400), 28 on a phone
+    //
+    // THE OLD NAMES STILL RESOLVE, each to the nearest of those, so a page
+    // that has not been rebuilt yet is re-set rather than broken. Where two
+    // old rungs were half a pixel apart they are now the same size, which is
+    // the ladder getting shorter on purpose:
+    //
+    //   name      was    is    the redesign's
+    //   xs        12     11    label
+    //   dense     12.5   13    secondary
+    //   sm        13     13    secondary
+    //   mid       13.5   13    secondary
+    //   base      14     15    body
+    //   lg        15     15    body
+    //   xl        16     16    input size (a 16px heading rung until rebuilt)
+    //   nozoom    16     16    inputs
+    //   title     28     28    the page title's phone step
+    //   2xl       28     28    the page title's phone step
+    //   numeral   32     28    the page title's phone step (32 is on no rung)
+    //
+    // AND FOUR NEW NAMES, for the sizes that had none:
+    //
+    //   label        11     labels
+    //   mono-label   10.5   the mono label, with its 0.12em tracking
+    //   card-title   18     card titles
+    //   display      40     page titles; pair with `max-sm:text-title`
     //
     // Off-ladder rungs (`text-3xl` and up) are deliberately absent: asking for
-    // one now fails to resolve instead of quietly introducing a tenth size.
-    // Arbitrary values (`text-[19px]`) still bypass this by design, so the
-    // ladder is also enforced at review time by the guard in
-    // tests/web-console-next/src/type-ladder.test.ts.
-    //
-    //   12    count badges, the smallest labels
-    //   12.5  dense table cells, timestamps, small links
-    //   13    metadata under row titles, status words, owner names
-    //   13.5  the half-step between metadata and body
-    //   14    body copy, list rows, job steps, dock messages
-    //   15    row titles, sidebar nav labels, section headings
-    //   16    thread and section titles; also the no-zoom input floor
-    //   28    page titles and the Overview greeting (Lora 500)
-    //   32    the big display numerals (Lora, line-height 1)
+    // one fails to resolve instead of quietly introducing an eighth size.
+    // Arbitrary values (`text-[19px]`) still bypass this by design, and leave
+    // page by page as each is rebuilt.
     fontSize: {
-      xs: ["12px", { lineHeight: "1.35" }],
-      dense: ["12.5px", { lineHeight: "1.4" }],
+      "mono-label": ["10.5px", { lineHeight: "1.3", letterSpacing: "0.12em" }],
+      label: ["11px", { lineHeight: "1.35" }],
+      xs: ["11px", { lineHeight: "1.35" }],
+      dense: ["13px", { lineHeight: "1.45" }],
       sm: ["13px", { lineHeight: "1.45" }],
-      mid: ["13.5px", { lineHeight: "1.45" }],
-      base: ["14px", { lineHeight: "1.5" }],
-      lg: ["15px", { lineHeight: "1.45" }],
+      mid: ["13px", { lineHeight: "1.45" }],
+      base: ["15px", { lineHeight: "1.5" }],
+      lg: ["15px", { lineHeight: "1.5" }],
       xl: ["16px", { lineHeight: "1.4" }],
       // MX2 — a mobile browser zooms the page whenever it focuses an input
       // under 16px. `text-nozoom` is the fix, and it is named for what it
-      // prevents so it survives a search-and-replace.
+      // prevents so it survives a search-and-replace. The redesign's input
+      // size is the same 16px.
       nozoom: ["16px", { lineHeight: "1.4" }],
+      "card-title": ["18px", { lineHeight: "1.3" }],
       title: ["28px", { lineHeight: "1.15" }],
       "2xl": ["28px", { lineHeight: "1.15" }],
-      numeral: ["32px", { lineHeight: "1" }],
+      numeral: ["28px", { lineHeight: "1" }],
+      display: ["40px", { lineHeight: "1.1" }],
     },
     // Three weights. 700+ is not part of this type system — Hanken Grotesk at
-    // 600 is already the emphatic end of the UI voice, and the console's
+    // 600 is already the emphatic end of the UI voice (and the heaviest the
+    // self-hosted file declares), and the site's
     // hierarchy is carried by size and colour rather than by weight. `bold` is
     // kept as an alias clamped to 600 rather than removed, so a stray
     // `font-bold` renders the intended semibold instead of silently resolving
@@ -103,9 +131,11 @@ export default {
           DEFAULT: "oklch(var(--muted) / <alpha-value>)",
           foreground: "oklch(var(--muted-foreground) / <alpha-value>)",
         },
-        // openproduct-commons XP0 — the commons chrome. `panel` is the
-        // full-bleed dark top bar (dark in BOTH themes); `endorse` is the one
-        // reserved accent, and it means endorsement wherever it appears.
+        // The shell's chrome. `panel` is the header's frosted bar — white in
+        // the light ramp, painted at 0.62 with a blur (openproduct-redesign
+        // OPR1), the card's value in the dark one; `endorse` is the one
+        // reserved accent — the amber — and it means endorsement wherever it
+        // appears.
         panel: {
           DEFAULT: "oklch(var(--panel) / <alpha-value>)",
           foreground: "oklch(var(--panel-foreground) / <alpha-value>)",
@@ -142,6 +172,36 @@ export default {
           foreground: "oklch(var(--info-foreground) / <alpha-value>)",
         },
         link: "oklch(var(--link) / <alpha-value>)",
+        // openproduct-redesign OPR1 — the four kinds and the two wells
+        // (design.md §3). A colour here means a KIND: amber is shipped and
+        // links, `idea` (lavender) is ideas, `version` (slate) is versions,
+        // `seat` (teal) is help wanted. DEFAULT is the hue as a fill or a
+        // mark; `ink` / `deep` is the member that is safe as a word; `soft`
+        // and `wash` are the tints under them. Contrast for each pair is
+        // written beside the values in globals.css.
+        amber: {
+          DEFAULT: "oklch(var(--amber) / <alpha-value>)",
+          ink: "oklch(var(--amber-ink) / <alpha-value>)",
+          soft: "oklch(var(--amber-soft) / <alpha-value>)",
+        },
+        idea: {
+          DEFAULT: "oklch(var(--idea) / <alpha-value>)",
+          deep: "oklch(var(--idea-deep) / <alpha-value>)",
+          soft: "oklch(var(--idea-soft) / <alpha-value>)",
+          wash: "oklch(var(--idea-wash) / <alpha-value>)",
+        },
+        version: {
+          DEFAULT: "oklch(var(--version) / <alpha-value>)",
+          soft: "oklch(var(--version-soft) / <alpha-value>)",
+        },
+        seat: {
+          DEFAULT: "oklch(var(--seat) / <alpha-value>)",
+          ink: "oklch(var(--seat-ink) / <alpha-value>)",
+          soft: "oklch(var(--seat-soft) / <alpha-value>)",
+          wash: "oklch(var(--seat-wash) / <alpha-value>)",
+        },
+        sunken: "oklch(var(--sunken) / <alpha-value>)",
+        well: "oklch(var(--well) / <alpha-value>)",
         // FR0 — the ink behind a modal, as a token rather than an inline
         // `oklch(0.2 0.01 80 / 0.45)`. A scrim tuned for a near-white page is
         // nearly invisible over a near-black one, so the dark ramp gives it a
@@ -185,8 +245,8 @@ export default {
         line: "oklch(var(--line) / <alpha-value>)",
         "line-soft": "oklch(var(--line-soft) / <alpha-value>)",
         track: "oklch(var(--track) / <alpha-value>)",
-        // The eclipse's amber (brand/README.md). Identity, not status — reach
-        // for `warning` when the colour means something is wrong.
+        // The logo ring's amber. Identity, not status — reach for `warning`
+        // when the colour means something is wrong.
         "brand-amber": "oklch(var(--brand-amber) / <alpha-value>)",
         "brand-amber-inverted": "oklch(var(--brand-amber-inverted) / <alpha-value>)",
         // Catalog v2 (Orunbase Console v2) — the catalog index + service page inks.
@@ -219,13 +279,13 @@ export default {
         sm: "calc(var(--radius) - 4px)",
       },
       boxShadow: {
-        // The lift a panel hanging off the chrome needs to read as being IN
-        // FRONT of the page rather than pasted onto it: a long, soft, mostly
-        // downward cast, no ring. Two of them — the Assist popover and the
-        // history menu it shares a trigger with — so it is a token rather than
-        // two arbitrary values that drift apart.
-        panel: "0 16px 44px -12px rgb(0 0 0 / 0.28), 0 4px 12px -4px rgb(0 0 0 / 0.12)",
-        menu: "0 12px 32px -10px rgb(0 0 0 / 0.24), 0 3px 8px -3px rgb(0 0 0 / 0.10)",
+        // OPR1 — FLAT (openproduct-redesign design.md §3: no drop shadows).
+        // The two names stay, because the menus that hang off the chrome ask
+        // for them, and each is now a one-pixel hairline ring in the ramp's
+        // own ink instead of a cast: a floating surface still has an edge
+        // against the white card it may open over, and nothing has a shadow.
+        panel: "0 0 0 1px oklch(var(--foreground) / 0.08)",
+        menu: "0 0 0 1px oklch(var(--foreground) / 0.08)",
       },
       fontFamily: {
         sans: ["var(--font-sans)", "system-ui", "sans-serif"],

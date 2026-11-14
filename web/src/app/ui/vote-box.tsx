@@ -22,8 +22,8 @@ import { useToggle } from "./use-toggle";
  * and they draw it at the same measurements because it is the same
  * component.
  *
- *   box   58×58, radius 12, `▲` 11px over Geist Mono 14px/500 — the feed row
- *   pill  32px tall, radius 8, `▲` 10px beside Geist Mono 13px — a table row
+ *   box   58×58, radius 12, `▲` 11px over IBM Plex Mono 14px/500 — the feed row
+ *   pill  32px tall, radius 8, `▲` 10px beside IBM Plex Mono 13px — a table row
  *   hero  44px tall, radius 12, `▲` 12px, the word, the count — the product page
  *
  * THE WORD IS `UPVOTE`, THE OBJECT IS AN ENDORSEMENT (R3). The form still
