@@ -57,6 +57,7 @@ function card(
       ...(upvotes === undefined ? [] : [metric("endorsements.7d", upvotes)]),
     ],
     thumbnail: null,
+    stage: "idea" as const,
     ...rest,
   };
 }

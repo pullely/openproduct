@@ -10,11 +10,15 @@
 // filter, the one-row-per-opening upsert, the cascade) is pinned against a
 // live engine in packages/db/src/openproduct/repository-pg.test.ts.
 
-import { ME_OVERLAY_KEYS, ME_OVERLAY_MAX_IDS } from "@openproduct/contracts";
+import { ME_OVERLAY_KEYS, ME_OVERLAY_MAX_IDS, OVERLAY_CREW_KEYS, PRODUCT_POST_REACTIONS } from "@openproduct/contracts";
 import type { OpenproductRepository } from "@openproduct/db";
 import { route } from "@openproduct-worker/router";
 import type { Env } from "@openproduct-worker/env";
 import type { ProfileHandlerDeps } from "@openproduct-worker/handlers/profiles";
+
+// OPR-3 — the listing the overlay's crew fake answers with.
+const ORG_UUID = "11111111-1111-4111-8111-111111111111";
+const PROFILE_UUID = "55555555-5555-4555-8555-555555555555";
 
 const SUBJECT = "usr_0123456789abcdef0123456789abcdef";
 const BASE = "https://openproduct.internal/internal/openproduct/me";
@@ -220,6 +224,23 @@ function harness(): Harness {
     async listPostVotesBy(_subjectId: string, postIds: readonly string[]) {
       calls.push(`postVotes:${postIds.join("|")}`);
       return postIds.slice(0, 1);
+    },
+    // OPR-3 — the overlay's three new bounded questions. Each fake answers
+    // about the FIRST thing it was asked about, so a handler that returned
+    // everything it asked about (or nothing) fails where the bound is pinned.
+    async listProductPostReactionsBy(_subjectId: string, postIds: readonly string[]) {
+      calls.push(`reactions:${postIds.join("|")}`);
+      return postIds.slice(0, 1).map((postId) => ({ postId, reaction: "would_use" as const }));
+    },
+    async listCrewOf(_subjectId: string, slugs: readonly string[]) {
+      calls.push(`crewOf:${slugs.join("|")}`);
+      return slugs
+        .filter((slug) => slug === "acme-thing")
+        .map((slug) => ({ slug, orgId: ORG_UUID, profileId: PROFILE_UUID }));
+    },
+    async listPendingApplicationOpenings(_subjectId: string, openingIds: readonly string[]) {
+      calls.push(`requested:${openingIds.join("|")}`);
+      return openingIds.slice(0, 1);
     },
     async overlayFor(subjectId: string, slugs: readonly string[]) {
       calls.push(`overlayFor:${slugs.join("|")}`);
@@ -637,14 +658,31 @@ describe("the personalisation overlay (openproduct-commons XP2)", () => {
       // strings. DQ1 adds a fourth, whose members are POST IDS — a third
       // namespace, and still strings: the overlay carries ids and integers and
       // nothing else, which is what stops it becoming a second rendering path.
+      //
+      // OPR-3 adds three, and each is still ids and closed words: `crew` is a
+      // list of `{slug, org, profile}` (public ids, pinned by
+      // `OVERLAY_CREW_KEYS`), `reactions` maps a product post's id to one of
+      // the four reaction names, and `requestedOpenings` is a list of seat ids.
+      const strings = (v: unknown) => Array.isArray(v) && v.every((x) => typeof x === "string");
       const ok =
-        key === "saved" || key === "endorsed" || key === "follows" || key === "postVotes"
-        ? Array.isArray(value) && value.every((v) => typeof v === "string")
+        key === "saved" || key === "endorsed" || key === "follows" || key === "postVotes" || key === "requestedOpenings"
+        ? strings(value)
         : key === "handle"
           ? value === null || typeof value === "string"
           : key === "profilePublic"
             ? typeof value === "boolean"
-            : typeof value === "number";
+            : key === "crew"
+              ? Array.isArray(value) &&
+                value.every(
+                  (entry) =>
+                    JSON.stringify(Object.keys(entry as object).sort()) === JSON.stringify([...OVERLAY_CREW_KEYS]) &&
+                    Object.values(entry as object).every((x) => typeof x === "string"),
+                )
+              : key === "reactions"
+                ? typeof value === "object" &&
+                  value !== null &&
+                  Object.values(value).every((x) => (PRODUCT_POST_REACTIONS as readonly string[]).includes(x as string))
+                : typeof value === "number";
       expect([key, ok]).toEqual([key, true]);
     }
     // CG1's two identity fields: the visitor's OWN handle (already public by
@@ -660,6 +698,55 @@ describe("the personalisation overlay (openproduct-commons XP2)", () => {
     // that a handler which read `savedSlugs` into both fields fails here.
     expect(overlay.saved).toEqual(["acme-thing"]);
     expect(overlay.endorsed).toEqual(["other-thing"]);
+  });
+
+  it("OPR-3 — answers my reaction, my crew and my requested seats, each bounded by what the page asked", async () => {
+    const h = harness();
+    const POST_A = "ppo_0d5e1f2a111142228333444455556666";
+    const POST_B = "ppo_1d5e1f2a111142228333444455556666";
+    const SEAT_A = "opr_2d5e1f2a111142228333444455556666";
+    const SEAT_B = "opr_3d5e1f2a111142228333444455556666";
+    const res = await route(
+      req(
+        `${BASE}/overlay?ids=acme-thing,other-thing&productPosts=${POST_A},${POST_B},nope&openings=${SEAT_A},${SEAT_B},ppo_x`,
+        "GET",
+      ),
+      env(),
+      h.deps,
+    );
+    expect(res.status).toBe(200);
+    const overlay = ((await res.json()) as { data: { overlay: Record<string, unknown> } }).data.overlay;
+
+    // My reaction, keyed by the post's PUBLIC id — the table's id never
+    // crosses the wire in either direction.
+    expect(overlay.reactions).toEqual({ [POST_A]: "would_use" });
+    expect(h.calls).toContain(
+      "reactions:0d5e1f2a-1111-4222-8333-444455556666|1d5e1f2a-1111-4222-8333-444455556666",
+    );
+    // The products I am on the crew of, with the ids the crew routes take.
+    expect(overlay.crew).toEqual([
+      {
+        slug: "acme-thing",
+        org: `org_${ORG_UUID.replace(/-/g, "")}`,
+        profile: `opp_${PROFILE_UUID.replace(/-/g, "")}`,
+      },
+    ]);
+    expect(h.calls).toContain("crewOf:acme-thing|other-thing");
+    // The seats I have a pending request for, as the ids the page holds.
+    expect(overlay.requestedOpenings).toEqual([SEAT_A]);
+    expect(h.calls).toContain(
+      "requested:2d5e1f2a-1111-4222-8333-444455556666|3d5e1f2a-1111-4222-8333-444455556666",
+    );
+  });
+
+  it("OPR-3 — a page that names no product posts, slugs or seats costs none of the three reads", async () => {
+    const h = harness();
+    const res = await route(req(`${BASE}/overlay`, "GET"), env(), h.deps);
+    const overlay = ((await res.json()) as { data: { overlay: Record<string, unknown> } }).data.overlay;
+    expect(overlay.reactions).toEqual({});
+    expect(overlay.crew).toEqual([]);
+    expect(overlay.requestedOpenings).toEqual([]);
+    expect(h.calls.some((c) => /^(reactions|crewOf|requested):/.test(c))).toBe(false);
   });
 
   it("bounds the answer to the ids the page asked about", async () => {

@@ -55,9 +55,22 @@ export type ChosenThreadTag = (typeof THREAD_TAGS)[number];
  */
 export const LAUNCH_THREAD_TAG = "launch" as const;
 
-/** Every tag that can EXIST, which is the six plus the one. Read paths and
- *  labels use this; write paths that take a tag from a person use the six. */
-export const ALL_THREAD_TAGS = [...THREAD_TAGS, LAUNCH_THREAD_TAG] as const;
+/**
+ * The eighth tag (openproduct-redesign OPR-3), which nobody picks either.
+ *
+ * A product post's comments are a thread, for the reason a listing's are: the
+ * same removal path, the same velocity limits, the same notifications. The
+ * system writes it when the post is published. It is in no list a person
+ * chooses from, and — unlike `launch` — a listing may hold many: one per
+ * published post. The forum index, a listing's discussions and the sidebar's
+ * recent replies leave it out; it is read by its id, from the post.
+ */
+export const PRODUCT_POST_THREAD_TAG = "post" as const;
+
+/** Every tag that can EXIST, which is the six plus the two the system
+ *  writes. Read paths and labels use this; write paths that take a tag from
+ *  a person use the six. */
+export const ALL_THREAD_TAGS = [...THREAD_TAGS, LAUNCH_THREAD_TAG, PRODUCT_POST_THREAD_TAG] as const;
 export type ThreadTag = (typeof ALL_THREAD_TAGS)[number];
 
 /** What each tag is for, said once so no surface invents its own gloss. */
@@ -72,6 +85,8 @@ export const THREAD_TAG_LABELS: Record<ThreadTag, string> = {
   // rendered wherever a thread names its own tag, and a missing label there
   // would print `undefined` on a public page.
   launch: "Comments",
+  // OPR-3 — a product post's comments. The same word, for the same reason.
+  post: "Comments",
 };
 
 /** Whether a tag is one a person may choose. The write paths' question. */

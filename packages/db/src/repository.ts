@@ -16,7 +16,7 @@
 // a star would re-derive the public shape from whatever the table happens to
 // hold, which is the denylist failure this epic is built to avoid.
 
-import { LAUNCH_THREAD_TAG, MOST_ACTIVE_FOLD, canonicaliseStack } from "@openproduct/contracts";
+import { LAUNCH_THREAD_TAG, MOST_ACTIVE_FOLD, PRODUCT_POST_THREAD_TAG, canonicaliseStack } from "@openproduct/contracts";
 
 import type { SqlExecutor, SqlRow } from "./executor.js";
 import type { Uuid } from "./ids.js";
@@ -84,6 +84,19 @@ import type {
   RoleOpeningRecord,
   UpdateProfileInput,
   UpsertRoleOpeningInput,
+  CrewOfRecord,
+  FollowingRecord,
+  PendingApplicationRecord,
+  ProductMilestoneRecord,
+  ProductPostBlockRecord,
+  ProductPostKindName,
+  ProductPostReactionName,
+  ProductPostRecord,
+  ProductPostsPageInput,
+  ProductPostsPageRecord,
+  ProductRefRecord,
+  ProductStageName,
+  PublicProductPostRecord,
   FollowKindName,
   RosterEdgeRecord,
   RosterMemberRecord,
@@ -264,7 +277,7 @@ function parseFacets(value: unknown): Record<string, string[]> {
 /** Every column of a profile, in one place, named once. */
 const PROFILE_COLUMNS = `
   id, org_id, project_id, slug, visibility, tagline,
-  pitch_body, pitch_digest, repo_url, live_url, install_line, stack,
+  pitch_body, pitch_digest, repo_url, live_url, try_url, stage, install_line, stack,
   stack_canonical, category, hosting, pricing,
   repo_visibility, repo_licence, repo_checked_at,
   repo_name, repo_description, repo_topics,
@@ -291,6 +304,11 @@ type ProfileRow = {
   pitch_digest: string | null;
   repo_url: string | null;
   live_url: string | null;
+  // OPR-3 — optional, because a row read against a database that has not yet
+  // applied 2265 has no such columns: `idea` and no address, which is what
+  // every listing held before it.
+  try_url?: string | null;
+  stage?: string | null;
   stack: unknown;
   stack_canonical?: unknown;
   category?: string | null;
@@ -447,6 +465,12 @@ function moderationStateOf(value: string | null | undefined): ModerationStateNam
   return value === "delisted" || value === "removed" ? value : "visible";
 }
 
+/** OPR-3 — narrow the column to the union. `idea` is the column's default
+ *  and what a row read before 2265 means. */
+function stageOf(value: string | null | undefined): ProductStageName {
+  return value === "shipping" ? "shipping" : "idea";
+}
+
 function profileOf(row: ProfileRow): ProfileRecord {
   return {
     id: row.id,
@@ -459,6 +483,9 @@ function profileOf(row: ProfileRow): ProfileRecord {
     pitchDigest: row.pitch_digest,
     repoUrl: row.repo_url,
     liveUrl: row.live_url,
+    // OPR-3 — the stage follows the milestones; the address is authored.
+    stage: stageOf(row.stage),
+    tryUrl: row.try_url ?? null,
     // PV2 — the maintainer's own words, beside the pitch rather than with the
     // `repo_*` family. Never observed, never derived.
     installLine: row.install_line,
@@ -1034,7 +1061,9 @@ const CARD_COLUMNS = `
   -- TS1 — the sitemap is built from this read, and a sitemap that advertises
   -- a page the page itself marks noindex gives a crawler two contradictory
   -- instructions about one URL.
-  p.indexable
+  p.indexable,
+  -- OPR-3 — idea or shipping, so a list can filter and label by it.
+  p.stage
 `;
 
 type CardRow = {
@@ -1055,6 +1084,8 @@ type CardRow = {
   open_commitments: string[] | null;
   has_live_url: boolean | null;
   indexable?: boolean | null;
+  // OPR-3 — absent on a catalogue row materialised before 2265.
+  stage?: string | null;
   published_at: string | Date | null;
 };
 
@@ -1080,6 +1111,7 @@ function cardOf(row: CardRow): ProfileCardRecord {
     hasLiveUrl: row.has_live_url === true,
     indexable: row.indexable !== false,
     publishedAt: iso(row.published_at),
+    stage: stageOf(row.stage),
   };
 }
 
@@ -1276,11 +1308,254 @@ function postOf(row: PostRow): PostRecord {
   };
 }
 
+// ─── openproduct-redesign OPR-3 — row mappers ───
+
+const MILESTONE_COLUMNS = `id, profile_id, code, title, summary, position, shipped_at, created_at, updated_at`;
+
+interface MilestoneRow extends SqlRow {
+  id: string;
+  profile_id: string;
+  code: string;
+  title: string;
+  summary: string | null;
+  position: number | string;
+  shipped_at: string | Date | null;
+  created_at: string | Date;
+  updated_at: string | Date;
+}
+
+function milestoneOf(row: MilestoneRow): ProductMilestoneRecord {
+  return {
+    id: row.id,
+    profileId: row.profile_id,
+    code: row.code,
+    title: row.title,
+    summary: row.summary,
+    position: Number(row.position),
+    shippedAt: iso(row.shipped_at),
+    createdAt: iso(row.created_at)!,
+    updatedAt: iso(row.updated_at)!,
+  };
+}
+
+const PRODUCT_POST_COLUMNS = `id, profile_id, kind, author_subject_id, blocks, state, published_at,
+  milestone_id, role_opening_id, launch_id, thread_id, created_at, updated_at`;
+
+interface ProductPostRow extends SqlRow {
+  id: string;
+  profile_id: string;
+  kind: string;
+  author_subject_id: string | null;
+  blocks: unknown;
+  state: string;
+  published_at: string | Date | null;
+  milestone_id: string | null;
+  role_opening_id: string | null;
+  launch_id: string | null;
+  thread_id: string | null;
+  created_at: string | Date;
+  updated_at: string | Date;
+}
+
+/** `blocks` is JSONB: parsed on some paths, a string on others (the workers'
+ *  client runs `fetch_types:false`). Anything that is not `{block, value}`
+ *  with two strings is dropped rather than coerced. */
+function postBlocksOf(value: unknown): ProductPostBlockRecord[] {
+  let parsed: unknown = value;
+  if (typeof value === "string" && value.length > 0) {
+    try {
+      parsed = JSON.parse(value);
+    } catch {
+      return [];
+    }
+  }
+  if (!Array.isArray(parsed)) return [];
+  const out: ProductPostBlockRecord[] = [];
+  for (const entry of parsed) {
+    if (typeof entry !== "object" || entry === null) continue;
+    const { block, value: text } = entry as { block?: unknown; value?: unknown };
+    if (typeof block === "string" && typeof text === "string") out.push({ block, value: text });
+  }
+  return out;
+}
+
+function productPostOf(row: ProductPostRow): ProductPostRecord {
+  return {
+    id: row.id,
+    profileId: row.profile_id,
+    kind: row.kind as ProductPostKindName,
+    authorSubjectId: row.author_subject_id,
+    blocks: postBlocksOf(row.blocks),
+    state: row.state === "published" ? "published" : row.state === "removed" ? "removed" : "draft",
+    publishedAt: iso(row.published_at),
+    milestoneId: row.milestone_id,
+    roleOpeningId: row.role_opening_id,
+    launchId: row.launch_id,
+    threadId: row.thread_id,
+    createdAt: iso(row.created_at)!,
+    updatedAt: iso(row.updated_at)!,
+  };
+}
+
+interface PublicProductPostRow extends SqlRow {
+  id: string;
+  kind: string;
+  blocks: unknown;
+  published_at: string | Date;
+  thread_id: string | null;
+  author_subject_id: string | null;
+  author_handle: string | null;
+  author_name: string | null;
+  slug: string;
+  stage: string | null;
+  useful: number | string | null;
+  would_use: number | string | null;
+  impressive: number | string | null;
+  curious: number | string | null;
+  comment_count: number | string | null;
+}
+
+function publicProductPostOf(row: PublicProductPostRow): PublicProductPostRecord {
+  return {
+    id: row.id,
+    kind: row.kind as ProductPostKindName,
+    blocks: postBlocksOf(row.blocks),
+    publishedAt: iso(row.published_at)!,
+    threadId: row.thread_id,
+    authorSubjectId: row.author_subject_id,
+    authorHandle: row.author_handle,
+    authorName: row.author_name,
+    slug: row.slug,
+    stage: stageOf(row.stage),
+    reactions: {
+      useful: Number(row.useful ?? 0),
+      would_use: Number(row.would_use ?? 0),
+      impressive: Number(row.impressive ?? 0),
+      curious: Number(row.curious ?? 0),
+    },
+    commentCount: Number(row.comment_count ?? 0),
+  };
+}
+
+/**
+ * OPR-3 — a published product post with what its card draws, as one SELECT.
+ *
+ * THE TWO PREDICATES THAT MAKE IT PUBLIC ARE IN HERE, not in the callers: a
+ * draft and a removed post fail `state = 'published'`, and a post on a
+ * private, delisted or removed listing fails `listed()`. The feed, a
+ * product's list and the single read all start from this text, so none of
+ * them can forget either.
+ *
+ * The counts are a lateral aggregate over the reactions' partial index and a
+ * count of the thread's visible posts — per post, on the page's twenty rows.
+ *
+ * THE AUTHOR'S HANDLE IS CG4'S RULE, word for word — a public page, an
+ * unreleased handle, and standing on a listed listing — so a name links only
+ * when `/@handle` resolves. It is written as a LATERAL of one row rather than
+ * through `handleJoinFor`, because that join's EXISTS is planned as a hash of
+ * every maintainer of every listed listing: right for a forum page that
+ * sorts every thread, and most of the cost of a feed page that reads twenty
+ * rows by index. Per row, it is three index probes.
+ */
+const PUBLIC_PRODUCT_POST_SELECT = `
+  SELECT pp.id, pp.kind, pp.blocks, pp.published_at, pp.thread_id, pp.author_subject_id,
+         au.handle AS author_handle, au.display_name AS author_name,
+         p.slug, p.stage,
+         rc.useful, rc.would_use, rc.impressive, rc.curious,
+         (SELECT count(*)
+            FROM openproduct.posts po
+            JOIN openproduct.threads th ON th.id = po.thread_id
+           WHERE po.thread_id = pp.thread_id
+             AND po.moderation_state = 'visible'
+             AND th.state <> 'removed') AS comment_count
+    FROM openproduct.product_posts pp
+    JOIN openproduct.profiles p ON p.id = pp.profile_id
+    LEFT JOIN LATERAL (
+      SELECT ah.handle, ac.display_name
+        FROM openproduct.contributors ac
+        JOIN openproduct.handles ah ON ah.subject_id = ac.subject_id AND ah.released_at IS NULL
+       WHERE ac.subject_id = pp.author_subject_id
+         AND ac.profile_public
+         AND ac.published_at IS NOT NULL
+         AND EXISTS (
+               SELECT 1 FROM openproduct.listing_maintainers alm
+                 JOIN openproduct.profiles ap ON ap.id = alm.profile_id
+                WHERE alm.subject_id = ac.subject_id AND ${listed("ap")}
+             )
+       LIMIT 1
+    ) au ON TRUE
+    LEFT JOIN LATERAL (
+      SELECT count(*) FILTER (WHERE r.reaction = 'useful')     AS useful,
+             count(*) FILTER (WHERE r.reaction = 'would_use')  AS would_use,
+             count(*) FILTER (WHERE r.reaction = 'impressive') AS impressive,
+             count(*) FILTER (WHERE r.reaction = 'curious')    AS curious
+        FROM openproduct.product_post_reactions r
+       WHERE r.post_id = pp.id AND r.withdrawn_at IS NULL
+    ) rc ON TRUE
+   WHERE pp.state = 'published'
+     AND ${listed("p")}`;
+
+/** The most posts one page of the feed holds. */
+const MAX_PRODUCT_POSTS_PAGE = 50;
+
 export function createOpenproductRepository(sql: SqlExecutor): OpenproductRepository {
   async function profileRow(text: string, params: unknown[]): Promise<ProfileRecord | null> {
     const res = await sql.execute<ProfileRow>(text, params);
     const row = res.rows[0];
     return row ? profileOf(row) : null;
+  }
+
+  /**
+   * OPR-3 — the stage follows the milestones: `shipping` while any is
+   * shipped, `idea` when none is. One UPDATE after each milestone write that
+   * can change the answer, here rather than in a trigger, so the rule is
+   * where the writes are and a reader of this file can see it.
+   */
+  async function syncStage(profileId: string): Promise<ProductStageName> {
+    const res = await sql.execute<{ stage: string }>(
+      `UPDATE openproduct.profiles p
+          SET stage = CASE WHEN EXISTS (
+                        SELECT 1 FROM openproduct.product_milestones m
+                         WHERE m.profile_id = p.id AND m.shipped_at IS NOT NULL
+                      ) THEN 'shipping' ELSE 'idea' END
+        WHERE p.id = $1
+        RETURNING p.stage`,
+      [profileId],
+    );
+    return stageOf(res.rows[0]?.stage);
+  }
+
+  /** OPR-3 — one page of published posts, newest first, from a position. */
+  async function publicProductPostsPage(
+    profileId: string | null,
+    input: ProductPostsPageInput,
+  ): Promise<ProductPostsPageRecord> {
+    const limit = Math.min(Math.max(1, Math.trunc(input.limit) || 0), MAX_PRODUCT_POSTS_PAGE);
+    const params: unknown[] = [limit + 1];
+    const where: string[] = [];
+    if (profileId !== null) {
+      params.push(profileId);
+      where.push(`pp.profile_id = $${params.length}::uuid`);
+    }
+    if (input.cursor !== null) {
+      params.push(input.cursor.publishedAt, input.cursor.id);
+      where.push(
+        `(pp.published_at, pp.id) < ($${params.length - 1}::timestamptz, $${params.length}::uuid)`,
+      );
+    }
+    const res = await sql.execute<PublicProductPostRow>(
+      `${PUBLIC_PRODUCT_POST_SELECT}
+       ${where.map((clause) => `AND ${clause}`).join("\n       ")}
+       ORDER BY pp.published_at DESC, pp.id DESC
+       LIMIT $1`,
+      params,
+    );
+    const rows = res.rows.slice(0, limit).map(publicProductPostOf);
+    const last = rows[rows.length - 1];
+    return {
+      posts: rows,
+      next: res.rows.length > limit && last ? { publishedAt: last.publishedAt, id: last.id } : null,
+    };
   }
 
   /**
@@ -2077,8 +2352,10 @@ export function createOpenproductRepository(sql: SqlExecutor): OpenproductReposi
       const created = await profileRow(
         `INSERT INTO openproduct.profiles
            (id, org_id, project_id, slug, tagline, pitch_body, pitch_digest,
-            repo_url, live_url, stack, stack_canonical, link_grant, created_by)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10::text::jsonb, $11::text::jsonb, $12::text::jsonb, $13)
+            repo_url, live_url, try_url, stack, stack_canonical, link_grant, created_by)
+         -- OPR-3 — a new listing's "Try it" address starts as the address it
+         -- declared, as 2265's backfill did for the listings before it.
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $9, $10::text::jsonb, $11::text::jsonb, $12::text::jsonb, $13)
          RETURNING ${PROFILE_COLUMNS}`,
         [
           input.id,
@@ -2963,6 +3240,8 @@ export function createOpenproductRepository(sql: SqlExecutor): OpenproductReposi
            hosting      = CASE WHEN $17::boolean THEN $18 ELSE hosting END,
            -- PP3 — the third assigned facet, same companion flag.
            pricing      = CASE WHEN $22::boolean THEN $23 ELSE pricing END,
+           -- OPR-3 — the "Try it" address, explicitly clearable.
+           try_url      = CASE WHEN $24::boolean THEN $25 ELSE try_url END,
            updated_by   = $19,
            updated_at   = now()
          WHERE org_id = $1 AND id = $2
@@ -2991,6 +3270,8 @@ export function createOpenproductRepository(sql: SqlExecutor): OpenproductReposi
           input.installLine ?? null,
           input.pricing !== undefined,
           input.pricing ?? null,
+          input.tryUrl !== undefined,
+          input.tryUrl ?? null,
         ],
       );
     },
@@ -4186,6 +4467,9 @@ export function createOpenproductRepository(sql: SqlExecutor): OpenproductReposi
             AND t.state <> 'removed'
             AND ($2::text IS NULL OR t.tag = $2)
             AND ($4::boolean IS NOT TRUE OR t.tag <> '${LAUNCH_THREAD_TAG}')
+            -- OPR-3 — a product post's comment thread is not one of the
+            -- listing's discussions either; it is read by id, from its post.
+            AND t.tag <> '${PRODUCT_POST_THREAD_TAG}'
           ORDER BY t.last_post_at DESC NULLS LAST, t.created_at DESC
           LIMIT $3`,
         [profileId, tag, capped, excludeLaunch],
@@ -4298,6 +4582,7 @@ export function createOpenproductRepository(sql: SqlExecutor): OpenproductReposi
             WHERE ${listed("pr")}
               AND t.state <> 'removed'
               AND t.tag <> '${LAUNCH_THREAD_TAG}'
+              AND t.tag <> '${PRODUCT_POST_THREAD_TAG}'
               AND ($1::text IS NULL OR t.tag = $1)
          ) t
          ORDER BY ${orderBy}
@@ -4328,6 +4613,8 @@ export function createOpenproductRepository(sql: SqlExecutor): OpenproductReposi
           WHERE ${listed("pr")}
             AND t.state <> 'removed'
             AND t.last_post_at IS NOT NULL
+            -- OPR-3 — a product post's comments are reached from the post.
+            AND t.tag <> '${PRODUCT_POST_THREAD_TAG}'
           ORDER BY t.last_post_at DESC, t.created_at DESC
           LIMIT $1`,
         [capped],
@@ -7551,6 +7838,475 @@ export function createOpenproductRepository(sql: SqlExecutor): OpenproductReposi
       );
       const row = res.rows[0];
       return row ? handleOf(row) : null;
+    },
+
+    // ─── openproduct-redesign OPR-3: stage, milestones, product posts ───
+
+    async listProductMilestones(profileId) {
+      const res = await sql.execute<MilestoneRow>(
+        `SELECT ${MILESTONE_COLUMNS}
+           FROM openproduct.product_milestones
+          WHERE profile_id = $1
+          ORDER BY position, created_at, id`,
+        [profileId],
+      );
+      return res.rows.map(milestoneOf);
+    },
+
+    async listPublicProductMilestones(profileId) {
+      // `listed()` re-asserted on the join, like every public read: a draft's
+      // milestones stay behind the crew's door until the listing is public.
+      const res = await sql.execute<MilestoneRow>(
+        `SELECT m.id, m.profile_id, m.code, m.title, m.summary, m.position, m.shipped_at,
+                m.created_at, m.updated_at
+           FROM openproduct.product_milestones m
+           JOIN openproduct.profiles p ON p.id = m.profile_id
+          WHERE m.profile_id = $1 AND ${listed("p")}
+          ORDER BY m.position, m.created_at, m.id`,
+        [profileId],
+      );
+      return res.rows.map(milestoneOf);
+    },
+
+    async createProductMilestone(input) {
+      // Appended: one more than the highest position the product holds, read
+      // in the same statement that writes.
+      const res = await sql.execute<MilestoneRow>(
+        `INSERT INTO openproduct.product_milestones (id, profile_id, code, title, summary, position)
+         SELECT $1::uuid, $2::uuid, $3, $4, $5,
+                COALESCE((SELECT max(position) + 1 FROM openproduct.product_milestones
+                           WHERE profile_id = $2::uuid), 0)
+         RETURNING ${MILESTONE_COLUMNS}`,
+        [input.id, input.profileId, input.code, input.title, input.summary],
+      );
+      return milestoneOf(res.rows[0]!);
+    },
+
+    async updateProductMilestone(profileId, id, input) {
+      const res = await sql.execute<MilestoneRow>(
+        `UPDATE openproduct.product_milestones
+            SET code       = COALESCE($3, code),
+                title      = COALESCE($4, title),
+                summary    = CASE WHEN $5::boolean THEN $6 ELSE summary END,
+                updated_at = now()
+          WHERE profile_id = $1 AND id = $2
+         RETURNING ${MILESTONE_COLUMNS}`,
+        [profileId, id, input.code ?? null, input.title ?? null, input.summary !== undefined, input.summary ?? null],
+      );
+      const row = res.rows[0];
+      return row ? milestoneOf(row) : null;
+    },
+
+    async deleteProductMilestone(profileId, id) {
+      const res = await sql.execute(
+        `DELETE FROM openproduct.product_milestones WHERE profile_id = $1 AND id = $2`,
+        [profileId, id],
+      );
+      if (res.rowCount === 0) return false;
+      // The deleted milestone may have been the only shipped one.
+      await syncStage(profileId);
+      return true;
+    },
+
+    async reorderProductMilestones(profileId, ids) {
+      const existing = await this.listProductMilestones(profileId);
+      const wanted = [...new Set(ids)];
+      const held = new Set(existing.map((m) => m.id));
+      // Every milestone, once each — a partial order would leave two rows on
+      // one position and the page's order undefined between them.
+      if (wanted.length !== ids.length || wanted.length !== held.size || !wanted.every((id) => held.has(id))) {
+        return null;
+      }
+      if (wanted.length > 0) {
+        await sql.execute(
+          `UPDATE openproduct.product_milestones m
+              SET position = o.ord - 1, updated_at = now()
+             FROM unnest($2::uuid[]) WITH ORDINALITY AS o(id, ord)
+            WHERE m.profile_id = $1 AND m.id = o.id`,
+          [profileId, wanted],
+        );
+      }
+      return this.listProductMilestones(profileId);
+    },
+
+    async setProductMilestoneShipped(profileId, id, at) {
+      // ONE STATEMENT for the mark, and it reads what was there before it
+      // wrote: the caller offers a post only when the milestone went from not
+      // shipped to shipped, and a second press of the same button is not that.
+      // A milestone already shipped keeps its first moment.
+      const res = await sql.execute<MilestoneRow & { was_shipped_at: string | Date | null }>(
+        `UPDATE openproduct.product_milestones m
+            SET shipped_at = CASE WHEN $3::timestamptz IS NULL THEN NULL
+                                  ELSE COALESCE(m.shipped_at, $3::timestamptz) END,
+                updated_at = now()
+           FROM (SELECT id, shipped_at AS was_shipped_at
+                   FROM openproduct.product_milestones
+                  WHERE profile_id = $1 AND id = $2) before
+          WHERE m.id = before.id
+         RETURNING m.id, m.profile_id, m.code, m.title, m.summary, m.position, m.shipped_at,
+                   m.created_at, m.updated_at, before.was_shipped_at`,
+        [profileId, id, at],
+      );
+      const row = res.rows[0];
+      if (!row) return null;
+      const milestone = milestoneOf(row);
+      const stage = await syncStage(profileId);
+      return {
+        milestone,
+        stage,
+        changed: (iso(row.was_shipped_at) === null) !== (milestone.shippedAt === null),
+      };
+    },
+
+    async createProductPost(input) {
+      // THE GUARD IS IN THE INSERT. "Offer a post unless one already exists"
+      // read-then-written would offer two to two requests that arrived
+      // together; here the second inserts nothing.
+      const unless =
+        input.unless === "milestone"
+          ? "x.milestone_id = $6::uuid"
+          : input.unless === "role_opening"
+            ? "x.role_opening_id = $7::uuid"
+            : input.unless === "idea"
+              ? "x.kind = 'idea'"
+              : "FALSE";
+      const res = await sql.execute<ProductPostRow>(
+        `INSERT INTO openproduct.product_posts
+           (id, profile_id, kind, author_subject_id, blocks, milestone_id, role_opening_id)
+         SELECT $1::uuid, $2::uuid, $3::text, $4::text, $5::text::jsonb, $6::uuid, $7::uuid
+          WHERE NOT EXISTS (
+                  SELECT 1 FROM openproduct.product_posts x
+                   WHERE x.profile_id = $2::uuid
+                     AND x.state <> 'removed'
+                     AND ${unless}
+                )
+         RETURNING ${PRODUCT_POST_COLUMNS}`,
+        [
+          input.id,
+          input.profileId,
+          input.kind,
+          input.authorSubjectId,
+          JSON.stringify(input.blocks),
+          input.milestoneId ?? null,
+          input.roleOpeningId ?? null,
+        ],
+      );
+      const row = res.rows[0];
+      return row ? productPostOf(row) : null;
+    },
+
+    async getProductPost(profileId, id) {
+      const res = await sql.execute<ProductPostRow>(
+        `SELECT ${PRODUCT_POST_COLUMNS}
+           FROM openproduct.product_posts
+          WHERE profile_id = $1 AND id = $2 AND state <> 'removed'`,
+        [profileId, id],
+      );
+      const row = res.rows[0];
+      return row ? productPostOf(row) : null;
+    },
+
+    async listProductPostsForProfile(profileId) {
+      const res = await sql.execute<ProductPostRow>(
+        `SELECT ${PRODUCT_POST_COLUMNS}
+           FROM openproduct.product_posts
+          WHERE profile_id = $1 AND state <> 'removed'
+          ORDER BY updated_at DESC, id DESC
+          LIMIT 200`,
+        [profileId],
+      );
+      return res.rows.map(productPostOf);
+    },
+
+    async listProductPostDrafts(profileId) {
+      const res = await sql.execute<ProductPostRow>(
+        `SELECT ${PRODUCT_POST_COLUMNS}
+           FROM openproduct.product_posts
+          WHERE profile_id = $1 AND state = 'draft'
+          ORDER BY updated_at DESC, id DESC
+          LIMIT 50`,
+        [profileId],
+      );
+      return res.rows.map(productPostOf);
+    },
+
+    async updateProductPostBlocks(profileId, id, blocks) {
+      // `published_at` is not touched: an edit to a published post does not
+      // move it up the feed.
+      const res = await sql.execute<ProductPostRow>(
+        `UPDATE openproduct.product_posts
+            SET blocks = $3::text::jsonb, updated_at = now()
+          WHERE profile_id = $1 AND id = $2 AND state IN ('draft', 'published')
+         RETURNING ${PRODUCT_POST_COLUMNS}`,
+        [profileId, id, JSON.stringify(blocks)],
+      );
+      const row = res.rows[0];
+      return row ? productPostOf(row) : null;
+    },
+
+    async publishProductPost(profileId, id, input) {
+      // `state = 'draft'` IS THE GATE. Two presses of Post update one row
+      // once; the second finds no draft and the caller is told so.
+      const res = await sql.execute<ProductPostRow>(
+        `UPDATE openproduct.product_posts
+            SET state             = 'published',
+                published_at      = $3::timestamptz,
+                blocks            = $4::text::jsonb,
+                thread_id         = $5::uuid,
+                author_subject_id = COALESCE($6::text, author_subject_id),
+                milestone_id      = CASE WHEN $7::boolean THEN $8::uuid ELSE milestone_id END,
+                role_opening_id   = CASE WHEN $9::boolean THEN $10::uuid ELSE role_opening_id END,
+                updated_at        = $3::timestamptz
+          WHERE profile_id = $1 AND id = $2 AND state = 'draft'
+         RETURNING ${PRODUCT_POST_COLUMNS}`,
+        [
+          profileId,
+          id,
+          input.at,
+          JSON.stringify(input.blocks),
+          input.threadId,
+          input.authorSubjectId ?? null,
+          input.milestoneId !== undefined,
+          input.milestoneId ?? null,
+          input.roleOpeningId !== undefined,
+          input.roleOpeningId ?? null,
+        ],
+      );
+      const row = res.rows[0];
+      return row ? productPostOf(row) : null;
+    },
+
+    async removeProductPost(profileId, id) {
+      // The row stays, as `removed`: it leaves every read, and its reactions
+      // and its thread keep what they held.
+      const res = await sql.execute<ProductPostRow>(
+        `UPDATE openproduct.product_posts
+            SET state = 'removed', updated_at = now()
+          WHERE profile_id = $1 AND id = $2 AND state <> 'removed'
+         RETURNING ${PRODUCT_POST_COLUMNS}`,
+        [profileId, id],
+      );
+      const row = res.rows[0];
+      return row ? productPostOf(row) : null;
+    },
+
+    async listPublicProductPosts(input) {
+      return publicProductPostsPage(null, input);
+    },
+
+    async listPublicProductPostsForProfile(profileId, input) {
+      return publicProductPostsPage(profileId, input);
+    },
+
+    async getPublicProductPost(id) {
+      const res = await sql.execute<PublicProductPostRow>(
+        `${PUBLIC_PRODUCT_POST_SELECT}
+         AND pp.id = $1::uuid`,
+        [id],
+      );
+      const row = res.rows[0];
+      return row ? publicProductPostOf(row) : null;
+    },
+
+    async reactToProductPost(postId, subjectId, reaction, at) {
+      // ONE ROW PER PERSON PER POST, and the row is reused: a second reaction
+      // replaces the first, and one given after a withdrawal clears
+      // `withdrawn_at` on the same row (`post_votes`' rule). `created_at` is
+      // not rewritten.
+      //
+      // The SELECT is the eligibility: the post is published, its listing is
+      // listed, and the subject is not its author. A post that fails any of
+      // the three inserts nothing — no trigger, and nothing to catch.
+      const res = await sql.execute<{ post_id: string }>(
+        `INSERT INTO openproduct.product_post_reactions (post_id, subject_id, reaction, created_at)
+         SELECT pp.id, $2::text, $3::text, $4::timestamptz
+           FROM openproduct.product_posts pp
+           JOIN openproduct.profiles p ON p.id = pp.profile_id
+          WHERE pp.id = $1::uuid
+            AND pp.state = 'published'
+            AND ${listed("p")}
+            AND pp.author_subject_id IS DISTINCT FROM $2::text
+         ON CONFLICT (post_id, subject_id) DO UPDATE
+            SET reaction = EXCLUDED.reaction, withdrawn_at = NULL
+         RETURNING post_id`,
+        [postId, subjectId, reaction, at],
+      );
+      return res.rows.length > 0;
+    },
+
+    async withdrawProductPostReaction(postId, subjectId, at) {
+      const res = await sql.execute<{ post_id: string }>(
+        `UPDATE openproduct.product_post_reactions
+            SET withdrawn_at = $3::timestamptz
+          WHERE post_id = $1::uuid AND subject_id = $2 AND withdrawn_at IS NULL
+         RETURNING post_id`,
+        [postId, subjectId, at],
+      );
+      return res.rows.length > 0;
+    },
+
+    async listProductPostReactionsBy(subjectId, postIds) {
+      // BOUNDED by the ids the page drew, like every overlay read: an
+      // unbounded one would be a listing of everything this visitor reacted to.
+      const ids = [...new Set(postIds)];
+      if (ids.length === 0) return [];
+      const res = await sql.execute<{ post_id: string; reaction: string }>(
+        `SELECT post_id, reaction FROM openproduct.product_post_reactions
+          WHERE subject_id = $1
+            AND post_id = ANY($2::uuid[])
+            AND withdrawn_at IS NULL`,
+        [subjectId, ids],
+      );
+      return res.rows.map((row) => ({ postId: row.post_id, reaction: row.reaction as ProductPostReactionName }));
+    },
+
+    async listCrewOf(subjectId, slugs): Promise<CrewOfRecord[]> {
+      // The authorization table itself (OX4), bounded by the slugs the page
+      // asked about. Not `listed()`-gated: a maker's own draft is theirs.
+      const wanted = [...new Set(slugs.map((slug) => slug.toLowerCase()))];
+      if (wanted.length === 0) return [];
+      const res = await sql.execute<{ slug: string; org_id: string; id: string }>(
+        `SELECT p.slug, p.org_id, p.id
+           FROM openproduct.listing_maintainers lm
+           JOIN openproduct.profiles p ON p.id = lm.profile_id
+          WHERE lm.subject_id = $1
+            AND lower(p.slug) = ANY($2::text[])
+          ORDER BY p.slug`,
+        [subjectId, wanted],
+      );
+      return res.rows.map((row) => ({ slug: row.slug, orgId: row.org_id, profileId: row.id }));
+    },
+
+    async listPendingApplicationOpenings(subjectId, openingIds) {
+      const ids = [...new Set(openingIds)];
+      if (ids.length === 0) return [];
+      const res = await sql.execute<{ role_opening_id: string }>(
+        `SELECT role_opening_id FROM openproduct.applications
+          WHERE subject_id = $1
+            AND status = 'pending'
+            AND role_opening_id = ANY($2::uuid[])`,
+        [subjectId, ids],
+      );
+      return res.rows.map((row) => row.role_opening_id);
+    },
+
+    async listPendingApplicationsForProfile(profileId): Promise<PendingApplicationRecord[]> {
+      // The crew's own queue. `pending` is JR's vocabulary, cached on the row
+      // by the seam (CB-5). The requester's NAME is what they wrote about
+      // themselves and they sent it to this crew by asking; their HANDLE is
+      // here only when their public page resolves, so it is a link or absent.
+      const res = await sql.execute<{
+        id: string;
+        role_opening_id: string;
+        opening_title: string | null;
+        jr_request_ref: string | null;
+        requester_handle: string | null;
+        requester_name: string | null;
+        created_at: string | Date;
+      }>(
+        `SELECT a.id, a.role_opening_id, o.title AS opening_title, a.jr_request_ref,
+                h.handle AS requester_handle, rc.display_name AS requester_name, a.created_at
+           FROM openproduct.applications a
+           LEFT JOIN openproduct.role_openings o ON o.id = a.role_opening_id
+           LEFT JOIN openproduct.contributors rc ON rc.subject_id = a.subject_id
+           ${handleJoinFor("a.subject_id")}
+          WHERE a.profile_id = $1 AND a.status = 'pending'
+          ORDER BY a.created_at, a.id
+          LIMIT 200`,
+        [profileId],
+      );
+      return res.rows.map((row) => ({
+        id: row.id,
+        roleOpeningId: row.role_opening_id,
+        openingTitle: row.opening_title,
+        jrRequestRef: row.jr_request_ref,
+        requesterHandle: row.requester_handle,
+        requesterName: row.requester_name,
+        createdAt: iso(row.created_at)!,
+      }));
+    },
+
+    async listFollowing(subjectId, limit): Promise<FollowingRecord> {
+      // THE READER'S OWN LIST, and only theirs: `subject_id = $1` is the whole
+      // of the authorization, and nothing here answers who follows anything.
+      // A product is here only while it is listed and a person only while
+      // their public page resolves — the gates the pages themselves apply —
+      // so every row is a link that works.
+      const capped = Math.min(Math.max(1, Math.trunc(limit) || 0), 200);
+      const [products, people] = await Promise.all([
+        sql.execute<{ slug: string; tagline: string | null; stage: string | null }>(
+          `SELECT p.slug, p.tagline, p.stage
+             FROM openproduct.follows f
+             JOIN openproduct.profiles p ON lower(p.slug) = lower(f.target)
+            WHERE f.subject_id = $1 AND f.kind = 'listing' AND ${listed("p")}
+            ORDER BY f.created_at DESC, p.slug
+            LIMIT $2`,
+          [subjectId, capped],
+        ),
+        sql.execute<{ handle: string; display_name: string | null }>(
+          `SELECT h.handle, c.display_name
+             FROM openproduct.follows f
+             JOIN openproduct.handles h ON h.subject_id = f.target AND h.released_at IS NULL
+             JOIN openproduct.contributors c ON c.subject_id = f.target
+            WHERE f.subject_id = $1
+              AND f.kind = 'person'
+              AND c.profile_public
+              AND c.published_at IS NOT NULL
+              AND EXISTS (
+                SELECT 1 FROM openproduct.listing_maintainers lm
+                  JOIN openproduct.profiles p2 ON p2.id = lm.profile_id
+                 WHERE lm.subject_id = c.subject_id AND ${listed("p2")}
+              )
+            ORDER BY f.created_at DESC, h.handle
+            LIMIT $2`,
+          [subjectId, capped],
+        ),
+      ]);
+      return {
+        products: products.rows.map((row) => ({ slug: row.slug, tagline: row.tagline, stage: stageOf(row.stage) })),
+        people: people.rows.map((row) => ({ handle: row.handle, displayName: row.display_name })),
+      };
+    },
+
+    async listStagesForSlugs(slugs) {
+      const wanted = [...new Set(slugs.map((slug) => slug.toLowerCase()))];
+      const out = new Map<string, ProductStageName>();
+      if (wanted.length === 0) return out;
+      const res = await sql.execute<{ slug: string; stage: string | null }>(
+        `SELECT p.slug, p.stage
+           FROM openproduct.profiles p
+          WHERE ${listed("p")} AND lower(p.slug) = ANY($1::text[])`,
+        [wanted],
+      );
+      for (const row of res.rows) out.set(row.slug.toLowerCase(), stageOf(row.stage));
+      return out;
+    },
+
+    async listProductsForHandles(handles, perPerson) {
+      // The listed products each person MAINTAINS — the same edge and the
+      // same gate CG2's eligibility reads — newest first. Bounded twice: by
+      // the handles a search page holds and by `perPerson`.
+      const wanted = [...new Set(handles)];
+      const out = new Map<string, ProductRefRecord[]>();
+      if (wanted.length === 0) return out;
+      const cap = Math.min(Math.max(1, Math.trunc(perPerson) || 0), 20);
+      const res = await sql.execute<{ handle: string; slug: string; tagline: string | null; stage: string | null }>(
+        `SELECT h.handle, p.slug, p.tagline, p.stage
+           FROM openproduct.handles h
+           JOIN openproduct.listing_maintainers lm ON lm.subject_id = h.subject_id
+           JOIN openproduct.profiles p ON p.id = lm.profile_id
+          WHERE h.released_at IS NULL
+            AND h.handle = ANY($1::text[])
+            AND ${listed("p")}
+          ORDER BY h.handle, p.published_at DESC NULLS LAST, p.slug`,
+        [wanted],
+      );
+      for (const row of res.rows) {
+        const list = out.get(row.handle) ?? [];
+        if (list.length < cap) list.push({ slug: row.slug, tagline: row.tagline, stage: stageOf(row.stage) });
+        out.set(row.handle, list);
+      }
+      return out;
     },
 
     async eraseSubject(subjectId: string, at: string): Promise<SubjectErasure> {

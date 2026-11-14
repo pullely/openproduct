@@ -46,12 +46,14 @@ import {
   decodeCursor,
   encodeCursor,
   pageSize,
+  milestoneCountsOf,
 } from "@openproduct/contracts";
 import type {
   OpenproductRepository,
   ProfileRecord,
   PublicContributorRecord,
   ProductMediaRecord,
+  ProductMilestoneRecord,
 } from "@openproduct/db";
 
 import { orgPublicId, type Uuid } from "../ids.js";
@@ -84,6 +86,8 @@ export interface PublicHandlerDeps {
     // CG1 — the contributor page. Same deps object, same repository, same
     // connection: one public branch, not two.
     | "getPublicContributor"
+    // OPR-3 — the product page's milestones, and the count over them.
+    | "listPublicProductMilestones"
     // FL0 — the follower count on a profile, and the handle→subject
     // translation it needs. The count only; nothing lists followers.
     | "getSubjectsForHandles"
@@ -150,6 +154,7 @@ function cardOf(row: {
   hasLiveUrl: boolean;
   indexable: boolean;
   publishedAt: string | null;
+  stage: "idea" | "shipping";
 }, metrics: PublicMetric[], thumbnail: MediaThumbnail | null): PublicProfileCard {
   // Field by field, from the projection's own list — never by spreading the
   // record. CT1 widens this by four, and each one is a line somebody wrote.
@@ -181,6 +186,8 @@ function cardOf(row: {
     metrics,
     // MD3 — the tile's picture, or null for the monogram. Never an ordering input.
     thumbnail,
+    // OPR-3 — idea or shipping. Read, never recomputed; never an ordering input.
+    stage: row.stage,
   };
 }
 
@@ -381,7 +388,17 @@ function profileOf(
   launches: PublicListingLaunch[],
   /** MD2 — the media rows, already in document order from the repository. */
   media: readonly ProductMediaRecord[],
+  /** OPR-3 — the milestones, already in the crew's order. */
+  milestones: readonly ProductMilestoneRecord[],
 ): PublicProfile {
+  // OPR-3 — field by field, like everything else here: a milestone's id and
+  // its position stay behind the crew's door.
+  const publicMilestones = milestones.map((m) => ({
+    code: m.code,
+    title: m.title,
+    summary: m.summary,
+    shippedAt: m.shippedAt,
+  }));
   return {
     slug: profile.slug,
     // OPR5 (seam S12) — the console address of the PUBLIC workspace the
@@ -416,6 +433,13 @@ function profileOf(
     pricing: profile.pricing,
     repoUrl: profile.repoUrl,
     liveUrl: profile.liveUrl,
+    // OPR-3 — the stage is stored and follows the milestones; the "Try it"
+    // address is the crew's own; the count is of the list beside it, so the
+    // two cannot disagree.
+    stage: profile.stage,
+    tryUrl: profile.tryUrl,
+    milestones: publicMilestones,
+    milestoneCounts: milestoneCountsOf(publicMilestones),
     // What the App observed at publish, not what a maintainer typed (§2.5).
     licence: profile.repoLicence,
     // PV0 — the rest of the observed row, and its moment. `observedAt` is
@@ -576,7 +600,7 @@ export async function handlePublicProfile(
   }
 
   const at = (deps.now ?? (() => new Date()))();
-  const [maintainers, openings, metrics, demand, launch, baseline, followerCounts, launches, media] = await Promise.all([
+  const [maintainers, openings, metrics, demand, launch, baseline, followerCounts, launches, media, milestones] = await Promise.all([
     deps.repo.listPublicMaintainers(profile.id),
     deps.repo.listPublicRoleOpenings(profile.id),
     deps.repo.latestMetrics(profile.id),
@@ -598,6 +622,8 @@ export async function handlePublicProfile(
     // MD2 — the media rows, in the same round. The public read only: a draft's
     // rows stay behind the maintainer door until publish.
     deps.repo.listPublicMedia(profile.id),
+    // OPR-3 — the milestones, in the same round: one indexed read.
+    deps.repo.listPublicProductMilestones(profile.id),
   ]);
   const now = at.getTime();
 
@@ -621,6 +647,7 @@ export async function handlePublicProfile(
         followerCounts.get(profile.slug) ?? 0,
         launches,
         media,
+        milestones,
       ),
       // A delisted listing renders in full AND says so. The key is absent
       // rather than null when there is nothing to say, so the visible case is

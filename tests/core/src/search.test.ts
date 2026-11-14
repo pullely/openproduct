@@ -20,6 +20,7 @@ import {
   FORMULAS,
   MAX_QUERY_TERMS,
   MAX_SEARCH_LIMIT,
+  SEARCH_PERSON_KEYS,
   buildProductIndex,
   queryTerms,
   rankSearch,
@@ -630,10 +631,12 @@ describe("SR0 — three sections, three mechanisms", () => {
       { handle: "cee", displayName: "Cee Bright", bio: "Worked with ada once." },
     ];
     const body = await answer(h, "ada");
+    // OPR-3 — each person also carries their listed products; nobody in
+    // this fixture maintains one, and that is `[]`, never an absent key.
     expect(body.data.makers).toEqual([
-      { handle: "ada", displayName: "Ada Fenwick", matched: "handle" },
-      { handle: "bob", displayName: "Ada Nakamura", matched: "name" },
-      { handle: "cee", displayName: "Cee Bright", matched: "bio" },
+      { handle: "ada", displayName: "Ada Fenwick", matched: "handle", products: [] },
+      { handle: "bob", displayName: "Ada Nakamura", matched: "name", products: [] },
+      { handle: "cee", displayName: "Cee Bright", matched: "bio", products: [] },
     ]);
   });
 
@@ -652,7 +655,9 @@ describe("SR0 — three sections, three mechanisms", () => {
     // than the page. Each surface narrows again (OD3).
     const h = harness();
     const body = await answer(h, "ada");
-    expect(Object.keys(body.data.makers[0]!).sort()).toEqual(["displayName", "handle", "matched"]);
+    // OPR-3 added one key, `products`: the listed products they maintain,
+    // which their own page already names.
+    expect(Object.keys(body.data.makers[0]!).sort()).toEqual([...SEARCH_PERSON_KEYS]);
     // Never a subject id — that is an internal identifier, one bad projection
     // away from a browser.
     expect(JSON.stringify(body.data.makers)).not.toContain("usr_");

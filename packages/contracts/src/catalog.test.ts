@@ -73,7 +73,9 @@ describe("OPC-4 — every computed number resolves to a published sentence", () 
       expect(formula.sentence.length).toBeGreaterThan(24);
       // One sentence. If it needs two, the formula is doing too much.
       expect(formula.sentence.trim().endsWith(".")).toBe(true);
-      expect(formula.computedBy).toMatch(/^[A-Z]{2}\d$/);
+      // Two letters and a digit for a sub-epic's milestone (`CT4`), three for
+      // an epic's own (`OPR2`, openproduct-redesign).
+      expect(formula.computedBy).toMatch(/^[A-Z]{2,3}\d$/);
     }
   });
 

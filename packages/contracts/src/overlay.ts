@@ -35,6 +35,8 @@
 // (OPC-3), and a single field meaning "you interacted with this" would be the
 // exact conflation the whole EN sub-epic is built to refuse.
 
+import { PRODUCT_POST_ID_RE, type OverlayCrew, type ProductPostReaction } from "./product-posts.js";
+
 /**
  * What the overlay answers. Ids and integers, nothing else.
  *
@@ -115,6 +117,24 @@ export interface MeOverlay {
    * cannot be turned into a listing of anything.
    */
   readonly unread: number;
+  /**
+   * OPR-3 — my reaction on each of the REQUESTED product posts I reacted to,
+   * keyed by the post's public id (`ppo_…`). A post I have not reacted to is
+   * absent. Asked with `productPosts=`; bounded by what the page drew.
+   */
+  readonly reactions: Readonly<Record<string, ProductPostReaction>>;
+  /**
+   * OPR-3 — the subset of the REQUESTED slugs (`ids=`) whose crew I am on,
+   * each with the workspace and listing ids the crew routes are addressed
+   * by. This is what lets a cached product page show its maker view: the
+   * page is the same bytes for everyone, and this says it is mine.
+   */
+  readonly crew: readonly OverlayCrew[];
+  /**
+   * OPR-3 — the subset of the REQUESTED seats (`openings=`, `opr_…`) I have
+   * a pending request for, so a seat can say "Requested".
+   */
+  readonly requestedOpenings: readonly string[];
 }
 
 /**
@@ -122,7 +142,7 @@ export interface MeOverlay {
  * reaches a public page, so the OD3 discipline applies to it with more force
  * than anywhere else: a field cannot appear here by accident, only on purpose.
  */
-export const ME_OVERLAY_KEYS = ["endorsed", "follows", "handle", "listings", "postVotes", "profilePublic", "requests", "saved", "savedCount", "unread"] as const;
+export const ME_OVERLAY_KEYS = ["crew", "endorsed", "follows", "handle", "listings", "postVotes", "profilePublic", "reactions", "requestedOpenings", "requests", "saved", "savedCount", "unread"] as const;
 
 /**
  * The most ids one request may ask about.
@@ -181,4 +201,32 @@ export function parseOverlayIds(raw: string | null): string[] {
     if (out.length >= ME_OVERLAY_MAX_IDS) break;
   }
   return out;
+}
+
+/**
+ * OPR-3 — the product post ids an overlay request asks about (`productPosts=`).
+ * The public id grammar and the same bound and silence as every other
+ * overlay parameter: what does not parse is dropped, never refused.
+ */
+export function parseOverlayProductPostIds(raw: string | null | undefined): string[] {
+  return parsePrefixedIds(raw, PRODUCT_POST_ID_RE);
+}
+
+/** A role opening's public id: `opr_` and 32 hex characters. */
+export const ME_OVERLAY_OPENING_ID_RE = /^opr_[0-9a-f]{32}$/;
+
+/** OPR-3 — the seats an overlay request asks about (`openings=`). */
+export function parseOverlayOpeningIds(raw: string | null | undefined): string[] {
+  return parsePrefixedIds(raw, ME_OVERLAY_OPENING_ID_RE);
+}
+
+function parsePrefixedIds(raw: string | null | undefined, grammar: RegExp): string[] {
+  if (typeof raw !== "string" || raw.length === 0) return [];
+  const seen = new Set<string>();
+  for (const part of raw.split(",")) {
+    const id = part.trim().toLowerCase();
+    if (grammar.test(id)) seen.add(id);
+    if (seen.size >= ME_OVERLAY_MAX_IDS) break;
+  }
+  return [...seen];
 }

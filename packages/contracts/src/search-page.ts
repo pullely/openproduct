@@ -57,6 +57,7 @@
 
 import { facet } from "./facets.js";
 import { topicPath } from "./topics.js";
+import type { ProductRef } from "./product-posts.js";
 
 /** The one address, and the design's. */
 export const SEARCH_PATH = "/search";
@@ -193,6 +194,20 @@ export interface SearchMakerHit {
 }
 
 export const SEARCH_MAKER_KEYS = ["displayName", "handle", "matched"] as const;
+
+/**
+ * OPR-3 — a person as `/v1/search` answers one: the hit, and the listed
+ * products they maintain, so the row can open (design §2 rule 6).
+ *
+ * `products` is newest first and at most `SEARCH_MAKER_PRODUCT_LIMIT` long;
+ * each entry is `{slug, name, stage}` (`PRODUCT_REF_KEYS`). Empty for a
+ * person the read finds no listed product for, never absent.
+ */
+export interface SearchPersonHit extends SearchMakerHit {
+  readonly products: readonly ProductRef[];
+}
+
+export const SEARCH_PERSON_KEYS = ["displayName", "handle", "matched", "products"] as const;
 
 /** Why this person is in the results, said in a word. */
 export const MAKER_MATCH_LABELS: Record<SearchMakerHit["matched"], string> = {

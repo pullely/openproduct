@@ -63,6 +63,10 @@ function storedProfile(overrides: Partial<ProfileRecord> = {}): ProfileRecord {
     cleanVotes: false,
     repoUrl: "https://github.com/acme/thing",
     liveUrl: "https://acme.test",
+    // OPR-3 — an idea with no Try it address: what every listing is until a
+    // milestone ships and the crew says where to try it.
+    stage: "idea" as const,
+    tryUrl: null,
     stack: ["typescript", "Hand-rolled CRDT"],
     stackCanonical: ["typescript"],
     category: "dev-tools",
@@ -129,6 +133,8 @@ function publicDeps(profile: ProfileRecord | null = storedProfile()): PublicHand
                 openCommitments: ["One evening a week"],
                 hasLiveUrl: true,
                 publishedAt: profile.publishedAt,
+                // OPR-3 — the stage rides the card.
+                stage: profile.stage,
               },
             ]
           : [];
@@ -191,6 +197,10 @@ function publicDeps(profile: ProfileRecord | null = storedProfile()): PublicHand
         return { today: 12, week: 30, month: 60, total: 400 };
       },
       // MD2 — the media rows; none on these fixtures.
+      // OPR-3 — the milestones; none on these fixtures.
+      async listPublicProductMilestones() {
+        return [];
+      },
       async listPublicMedia() {
         return [];
       },
@@ -754,6 +764,10 @@ describe("I9 — an observed value never reaches the wire without its moment", (
             return storedProfile();
           },
           // MD2 — the media rows; none on these fixtures.
+          // OPR-3 — the milestones; none on these fixtures.
+          async listPublicProductMilestones() {
+            return [];
+          },
           async listPublicMedia() {
             return [];
           },
@@ -811,6 +825,10 @@ describe("I9 — an observed value never reaches the wire without its moment", (
             return storedProfile();
           },
           // MD2 — the media rows; none on these fixtures.
+          // OPR-3 — the milestones; none on these fixtures.
+          async listPublicProductMilestones() {
+            return [];
+          },
           async listPublicMedia() {
             return [];
           },

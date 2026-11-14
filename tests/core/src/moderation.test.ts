@@ -251,6 +251,10 @@ describe("a removed listing renders a tombstone, not a 404 (TS-3)", () => {
         } as unknown as Awaited<ReturnType<OpenproductRepository["getPublicProfile"]>>;
       },
       // MD2 — the media rows; none on these fixtures.
+      // OPR-3 — the milestones; none on these fixtures.
+      async listPublicProductMilestones() {
+        return [];
+      },
       async listPublicMedia() {
         return [];
       },

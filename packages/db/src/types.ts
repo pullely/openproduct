@@ -10,6 +10,12 @@ import type { Uuid } from "./ids.js";
 export type ProfileVisibility = "private" | "public";
 export type RepoVisibility = "private" | "public";
 export type RoleOpeningStatus = "open" | "filled" | "closed";
+/** OPR-3 — idea until the first milestone ships, then shipping. */
+export type ProductStageName = "idea" | "shipping";
+/** OPR-3 — a PRODUCT post's template. Never a forum post (`PostRecord`). */
+export type ProductPostKindName = "feature" | "version" | "demo" | "idea" | "seat";
+export type ProductPostStateName = "draft" | "published" | "removed";
+export type ProductPostReactionName = "useful" | "would_use" | "impressive" | "curious";
 
 /** A profile as this schema stores it. Ids are UUIDs; actors are opaque text. */
 /** One curated snapshot entry (OH4). Name and kind, nothing else — an
@@ -50,6 +56,10 @@ export interface ProfileRecord {
   pitchDigest: string | null;
   repoUrl: string | null;
   liveUrl: string | null;
+  /** OPR-3 — idea or shipping. Follows the milestones; never set by hand. */
+  stage: ProductStageName;
+  /** OPR-3 — the address of the running product ("Try it"). Authored. */
+  tryUrl: string | null;
   /** The maintainer's own words. Untouched by canonicalisation — an entry we
    *  do not recognise stays exactly as written (CT-1). */
   stack: string[];
@@ -114,6 +124,170 @@ export interface OverlayRecord {
   savedCount: number;
   requestCount: number;
   listingCount: number;
+}
+
+// ─── openproduct-redesign OPR-3: stage, milestones, product posts ───
+//
+// A PRODUCT post is not a forum post. `PostRecord` and `post_votes` are
+// replies in a thread and the upvotes on them; everything below is the other
+// object, and is named for it.
+
+/** One milestone of a product, as stored. */
+export interface ProductMilestoneRecord {
+  id: string;
+  profileId: string;
+  /** The crew's own short label ("AS3"). */
+  code: string;
+  title: string;
+  summary: string | null;
+  position: number;
+  /** Null until the crew marks it shipped. */
+  shippedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateProductMilestoneInput {
+  id: Uuid;
+  profileId: Uuid;
+  code: string;
+  title: string;
+  summary: string | null;
+}
+
+export interface UpdateProductMilestoneInput {
+  code?: string | undefined;
+  title?: string | undefined;
+  /** `null` clears; omitted leaves unchanged. */
+  summary?: string | null | undefined;
+}
+
+/** One block of a product post: which block of its kind, and what it says. */
+export interface ProductPostBlockRecord {
+  block: string;
+  value: string;
+}
+
+/** A product post as stored — what the crew's reads and writes return. */
+export interface ProductPostRecord {
+  id: string;
+  profileId: string;
+  kind: ProductPostKindName;
+  /** Null when the system wrote the post. Opaque; it stops at the handler. */
+  authorSubjectId: string | null;
+  blocks: ProductPostBlockRecord[];
+  state: ProductPostStateName;
+  publishedAt: string | null;
+  milestoneId: string | null;
+  roleOpeningId: string | null;
+  launchId: string | null;
+  /** The thread holding the post's comments; null until it is published. */
+  threadId: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateProductPostInput {
+  id: Uuid;
+  profileId: Uuid;
+  kind: ProductPostKindName;
+  /** Null for a post the system writes. */
+  authorSubjectId: string | null;
+  blocks: ProductPostBlockRecord[];
+  milestoneId?: Uuid | null | undefined;
+  roleOpeningId?: Uuid | null | undefined;
+  /**
+   * Write nothing when the product already holds a post (draft or published)
+   * of this shape — the guard is in the INSERT, so two requests cannot both
+   * offer one:
+   *   `milestone`     a post about `milestoneId`
+   *   `role_opening`  a post about `roleOpeningId`
+   *   `idea`          any `idea` post
+   */
+  unless?: "milestone" | "role_opening" | "idea" | undefined;
+}
+
+export interface PublishProductPostInput {
+  at: string;
+  /** The blocks as published — validated by the caller. */
+  blocks: ProductPostBlockRecord[];
+  /** The comment thread, already created. */
+  threadId: string;
+  /** Who pressed Post; replaces the draft's author when the draft has one. */
+  authorSubjectId?: string | null | undefined;
+  /** `undefined` keeps the draft's link; `null` clears it. */
+  milestoneId?: Uuid | null | undefined;
+  roleOpeningId?: Uuid | null | undefined;
+}
+
+/** A published product post with everything its card draws, as one row. */
+export interface PublicProductPostRecord {
+  id: string;
+  kind: ProductPostKindName;
+  blocks: ProductPostBlockRecord[];
+  publishedAt: string;
+  threadId: string | null;
+  /** Opaque, and it stops at the handler (I3). Null for a system post. */
+  authorSubjectId: string | null;
+  /** Non-null only when the author's public page resolves (CG4's gates). */
+  authorHandle: string | null;
+  authorName: string | null;
+  /** The product: its slug and its stage. */
+  slug: string;
+  stage: ProductStageName;
+  /** Every reaction's live count; zero where nobody holds it. */
+  reactions: Record<ProductPostReactionName, number>;
+  /** Visible posts in the comment thread. */
+  commentCount: number;
+}
+
+/** A position in the feed: the last post a page held. */
+export interface ProductPostCursorInput {
+  publishedAt: string;
+  id: string;
+}
+
+export interface ProductPostsPageInput {
+  cursor: ProductPostCursorInput | null;
+  limit: number;
+}
+
+export interface ProductPostsPageRecord {
+  posts: PublicProductPostRecord[];
+  next: ProductPostCursorInput | null;
+}
+
+/** OPR-3 — one product the subject is on the crew of, for the overlay. */
+export interface CrewOfRecord {
+  slug: string;
+  orgId: string;
+  profileId: string;
+}
+
+/** OPR-3 — one pending request to join, as the product's crew reads it. */
+export interface PendingApplicationRecord {
+  id: string;
+  roleOpeningId: string;
+  /** Null when the opening has since been deleted. */
+  openingTitle: string | null;
+  jrRequestRef: string | null;
+  /** Non-null only when the requester's public page resolves. */
+  requesterHandle: string | null;
+  requesterName: string | null;
+  createdAt: string;
+}
+
+/** OPR-3 — a product by its public identity and its stage. */
+export interface ProductRefRecord {
+  slug: string;
+  tagline: string | null;
+  stage: ProductStageName;
+}
+
+/** OPR-3 — what a subject follows: listed products and public people. */
+export interface FollowingRecord {
+  products: ProductRefRecord[];
+  people: Array<{ handle: string; displayName: string | null }>;
 }
 
 /** One row of the search index. Mirrors the contract's `IndexDocument`. */
@@ -225,6 +399,8 @@ export interface ProfileCardRecord {
   /** TS1 — may crawlers amplify this listing. */
   indexable: boolean;
   publishedAt: string | null;
+  /** OPR-3 — idea or shipping, so a list can filter and label by it. */
+  stage: ProductStageName;
 }
 
 export interface RoleOpeningRecord {
@@ -375,6 +551,9 @@ export interface UpdateProfileInput {
   category?: string | null | undefined;
   hosting?: string | null | undefined;
   pricing?: string | null | undefined;
+  /** OPR-3 — the address of the running product. `null` clears; omitted
+   *  leaves unchanged. */
+  tryUrl?: string | null | undefined;
   updatedBy: string;
 }
 
@@ -2925,4 +3104,104 @@ export interface OpenproductRepository {
    * will walk. Rows of a polymorphic column count only under its subject kind.
    */
   subjectFootprint(subjectId: string): Promise<Map<string, number>>;
+
+  // ---------------------------------------------------------------------
+  // openproduct-redesign OPR-3 — stage, milestones, product posts.
+  // ---------------------------------------------------------------------
+
+  /** A product's milestones in its crew's order — the crew's own read. */
+  listProductMilestones(profileId: Uuid): Promise<ProductMilestoneRecord[]>;
+  /** The same list for a LISTED product, re-asserted in SQL; `[]` otherwise. */
+  listPublicProductMilestones(profileId: string): Promise<ProductMilestoneRecord[]>;
+  /** Appended at the end of the crew's order. */
+  createProductMilestone(input: CreateProductMilestoneInput): Promise<ProductMilestoneRecord>;
+  updateProductMilestone(
+    profileId: Uuid,
+    id: Uuid,
+    input: UpdateProductMilestoneInput,
+  ): Promise<ProductMilestoneRecord | null>;
+  /** Deletes the milestone and re-derives the product's stage. */
+  deleteProductMilestone(profileId: Uuid, id: Uuid): Promise<boolean>;
+  /**
+   * Rewrite the crew's order. `ids` must be every milestone of the product,
+   * once each; anything else writes nothing and answers null.
+   */
+  reorderProductMilestones(profileId: Uuid, ids: readonly Uuid[]): Promise<ProductMilestoneRecord[] | null>;
+  /**
+   * Mark a milestone shipped (`at`) or not shipped (`null`), and move the
+   * product's stage with it: `shipping` while any milestone is shipped,
+   * `idea` when none is. Marking a shipped milestone shipped again keeps its
+   * first moment. Null when the milestone is not this product's.
+   */
+  setProductMilestoneShipped(
+    profileId: Uuid,
+    id: Uuid,
+    at: string | null,
+  ): Promise<{ milestone: ProductMilestoneRecord; stage: ProductStageName; changed: boolean } | null>;
+
+  /**
+   * Create a draft. Null when `unless` named a post the product already
+   * holds — nothing was written.
+   */
+  createProductPost(input: CreateProductPostInput): Promise<ProductPostRecord | null>;
+  /** One post of this product, in any state but `removed`. The crew's read. */
+  getProductPost(profileId: Uuid, id: Uuid): Promise<ProductPostRecord | null>;
+  /** The crew's list: drafts and published, most recently touched first. */
+  listProductPostsForProfile(profileId: Uuid): Promise<ProductPostRecord[]>;
+  /** The product's drafts only, most recently touched first. */
+  listProductPostDrafts(profileId: Uuid): Promise<ProductPostRecord[]>;
+  /** Rewrite a draft's or a published post's blocks. `published_at` stands. */
+  updateProductPostBlocks(
+    profileId: Uuid,
+    id: Uuid,
+    blocks: ProductPostBlockRecord[],
+  ): Promise<ProductPostRecord | null>;
+  /**
+   * Publish a DRAFT. The state is in the WHERE clause, so publishing twice
+   * publishes once; null means it was not a draft of this product.
+   */
+  publishProductPost(profileId: Uuid, id: Uuid, input: PublishProductPostInput): Promise<ProductPostRecord | null>;
+  /** Remove a draft or a published post. It leaves every read. */
+  removeProductPost(profileId: Uuid, id: Uuid): Promise<ProductPostRecord | null>;
+
+  /**
+   * The feed: published posts of LISTED products, newest first, by position.
+   * Never a draft, never a removed post — both are in the WHERE clause.
+   */
+  listPublicProductPosts(input: ProductPostsPageInput): Promise<ProductPostsPageRecord>;
+  /** One listed product's published posts, newest first. */
+  listPublicProductPostsForProfile(profileId: string, input: ProductPostsPageInput): Promise<ProductPostsPageRecord>;
+  /** One published post of a listed product, or null — one answer for a
+   *  draft, a removed post, an unlisted product and an unknown id. */
+  getPublicProductPost(id: string): Promise<PublicProductPostRecord | null>;
+
+  /**
+   * Set this subject's reaction on a published post of a listed product.
+   * One row per pair: a second reaction replaces the first, and one given
+   * after a withdrawal reuses the row. False when the post is not public, or
+   * the subject is its author.
+   */
+  reactToProductPost(postId: string, subjectId: string, reaction: ProductPostReactionName, at: string): Promise<boolean>;
+  /** Take the reaction back. The row survives with `withdrawn_at` set. */
+  withdrawProductPostReaction(postId: string, subjectId: string, at: string): Promise<boolean>;
+  /** The overlay's question, bounded by the post ids the page drew. */
+  listProductPostReactionsBy(
+    subjectId: string,
+    postIds: readonly string[],
+  ): Promise<Array<{ postId: string; reaction: ProductPostReactionName }>>;
+
+  /** The overlay: which of the asked slugs this subject is on the crew of. */
+  listCrewOf(subjectId: string, slugs: readonly string[]): Promise<CrewOfRecord[]>;
+  /** The overlay: which of the asked openings this subject has a PENDING
+   *  request for. */
+  listPendingApplicationOpenings(subjectId: string, openingIds: readonly string[]): Promise<string[]>;
+  /** A product's pending requests to join, oldest first — its crew's read. */
+  listPendingApplicationsForProfile(profileId: Uuid): Promise<PendingApplicationRecord[]>;
+  /** What a subject follows: listed products and public people, newest first. */
+  listFollowing(subjectId: string, limit: number): Promise<FollowingRecord>;
+  /** Each listed slug's stage, in one read. An unlisted slug is absent. */
+  listStagesForSlugs(slugs: readonly string[]): Promise<Map<string, ProductStageName>>;
+  /** The listed products each handle's holder maintains, newest first, at
+   *  most `perPerson` each — search's person rows. */
+  listProductsForHandles(handles: readonly string[], perPerson: number): Promise<Map<string, ProductRefRecord[]>>;
 }

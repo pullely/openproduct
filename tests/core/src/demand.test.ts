@@ -54,6 +54,10 @@ function deps(pending: number, openedAt = OPENED): PublicHandlerDeps {
       } as unknown as Awaited<ReturnType<OpenproductRepository["getPublicProfile"]>>;
     },
     // MD2 — the media rows; none on these fixtures.
+    // OPR-3 — the milestones; none on these fixtures.
+    async listPublicProductMilestones() {
+      return [];
+    },
     async listPublicMedia() {
       return [];
     },

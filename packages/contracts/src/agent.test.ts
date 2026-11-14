@@ -25,7 +25,7 @@ import {
 } from "./agent.js";
 import { CATALOG_CARD_KEYS, type CatalogCard } from "./catalog-api.js";
 import { FACETS } from "./facets.js";
-import { authored, observed } from "./provenance.js";
+import { authored, derived, observed } from "./provenance.js";
 
 const NOW = new Date("2026-09-07T12:00:00.000Z");
 const AT = "2026-09-01T00:00:00.000Z";
@@ -58,6 +58,7 @@ function card(over: {
     openingCommitments: authored([], "maintainer"),
     hasLiveUrl: authored(false, "maintainer"),
     indexable: observed(true, "linked_repo", AT),
+    stage: derived("idea", "product.stage", ["product_milestones"], AT),
     // MD0 — present and empty. Every listing's array is `[]` until MD1 gives
     // a maker somewhere to put a picture; the key is on the card anyway,
     // because a machine consumer that has to wait for our renderer is not a

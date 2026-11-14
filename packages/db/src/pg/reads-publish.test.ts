@@ -437,6 +437,8 @@ describe("eraseSubject — the subject's own exit, by the registry (OX5c; CS2)",
   const ACTIVITY_X = asUuid("cfcfcfcf-cfcf-4fcf-8fcf-cfcfcfcfcfcf");
   const AUDIT_X = asUuid("d0d0d0d0-d0d0-4d0d-8d0d-d0d0d0d0d0d0");
   const APPLICATION_X = asUuid("d1d1d1d1-d1d1-4d1d-8d1d-d1d1d1d1d1d1");
+  const PRODUCT_POST_X = asUuid("d2d2d2d2-d2d2-4d2d-8d2d-d2d2d2d2d2d2");
+  const PRODUCT_POST_Y = asUuid("d3d3d3d3-d3d3-4d3d-8d3d-d3d3d3d3d3d3");
 
   /**
    * A subject (ACTOR) who has done everything the product allows, and has
@@ -490,6 +492,12 @@ describe("eraseSubject — the subject's own exit, by the registry (OX5c; CS2)",
     await repo.scheduleLaunch({ id: LAUNCH_X, profileId: PROFILE, versionLabel: "2.0", scheduledFor: "2026-09-01T09:00:00.000Z", scheduledBy: ACTOR });
     await repo.cancelLaunch(LAUNCH_X, ACTOR, NOW);
     await sql.execute(`INSERT INTO openproduct.digest_notes (week_id, body, author_subject_id) VALUES ('2026-w33', 'A quiet week.', $1)`, [ACTOR]);
+    // OPR-3 — a product post they wrote, and a reaction on somebody else's:
+    // an author cannot react to their own post.
+    await repo.createProductPost({ id: PRODUCT_POST_X, profileId: PROFILE, kind: "idea", authorSubjectId: ACTOR, blocks: [{ block: "problem", value: "Leaving is hard." }] });
+    await repo.createProductPost({ id: PRODUCT_POST_Y, profileId: PROFILE, kind: "idea", authorSubjectId: ADMIN, blocks: [] });
+    await repo.publishProductPost(PROFILE, PRODUCT_POST_Y, { at: NOW, blocks: [], threadId: THREAD_X });
+    expect(await repo.reactToProductPost(PRODUCT_POST_Y, ACTOR, "useful", NOW)).toBe(true);
   }
 
   async function transparency() {

@@ -124,6 +124,13 @@ export function parseOverlay(body: unknown): MeOverlay | null {
     // by what the page rendered: it is a fact about the reader rather than
     // about anything on the page, and cannot be turned into a listing.
     unread: o.unread as number,
+    // OPR-3 — the three answers the redesign's overlay adds (my reaction per
+    // product post, the products I am on the crew of, the seats I asked for).
+    // Carried through as sent, and empty when a response does not hold them:
+    // nothing reads them yet, and an older body is still a valid overlay.
+    reactions: (typeof o.reactions === "object" && o.reactions !== null ? o.reactions : {}) as MeOverlay["reactions"],
+    crew: (Array.isArray(o.crew) ? o.crew : []) as MeOverlay["crew"],
+    requestedOpenings: (Array.isArray(o.requestedOpenings) ? o.requestedOpenings : []) as MeOverlay["requestedOpenings"],
   };
 }
 

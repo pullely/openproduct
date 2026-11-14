@@ -42,6 +42,7 @@ function card(slug: string, pricing: string | null): PublicProfileCard {
     publishedAt: "2026-09-01T00:00:00Z",
     metrics: [],
     thumbnail: null,
+    stage: "idea" as const,
   };
 }
 

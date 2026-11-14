@@ -95,6 +95,10 @@ function profile(overrides: Partial<ProfileRecord> = {}): ProfileRecord {
     cleanVotes: false,
     repoUrl: "https://github.com/acme/thing",
     liveUrl: null,
+    // OPR-3 — an idea with no Try it address: what every listing is until a
+    // milestone ships and the crew says where to try it.
+    stage: "idea" as const,
+    tryUrl: null,
     stack: ["typescript"],
     stackCanonical: ["typescript"],
     category: null,

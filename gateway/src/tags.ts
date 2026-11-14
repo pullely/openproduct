@@ -46,6 +46,8 @@ export const TAG_SEARCH = "op-search";
 export const TAG_LEADERBOARD = "op-leaderboard";
 export const TAG_THREADS = "op-threads";
 export const TAG_TRANSPARENCY = "op-transparency";
+/** OPR-3 — product posts: the feed, one post, one product's posts. */
+export const TAG_POSTS = "op-posts";
 
 /** Every tag this worker will ever emit. The suite walks it. */
 export const ALL_TAGS = [
@@ -62,6 +64,7 @@ export const ALL_TAGS = [
   TAG_LEADERBOARD,
   TAG_THREADS,
   TAG_TRANSPARENCY,
+  TAG_POSTS,
 ] as const;
 
 /**
@@ -104,6 +107,8 @@ export function publicCacheTags(pathname: string): string[] {
   else if (p === "/v1/search") add(TAG_SEARCH);
   else if (p === "/v1/facets") add(TAG_CATALOG);
   else if (p === "/v1/products" || p.startsWith("/v1/products/")) add(TAG_CATALOG);
+  else if (p.startsWith("/v1/public/openproduct/product-posts")) add(TAG_POSTS);
+  else if (/^\/v1\/public\/openproduct\/projects\/[^/]+\/product-posts$/.test(p)) add(TAG_POSTS, TAG_LISTING);
   else if (/^\/v1\/public\/openproduct\/projects\/[^/]+\/threads$/.test(p)) add(TAG_THREADS, TAG_LISTING);
   else if (/^\/v1\/public\/openproduct\/projects\/[^/]+\/people$/.test(p)) add(TAG_LISTING, TAG_PEOPLE);
   else add(TAG_LISTING);
@@ -181,10 +186,55 @@ export function purgeTagsForSweep(result: {
  * Free-tier purge budget on a number that is recomputed on a schedule.
  */
 export function purgeTagsForWrite(pathname: string, action: string): string[] {
+  // A comment under a product post is a reply in its thread (OPR-3), so it
+  // purges the thread like any other. The comment COUNT on the post's card
+  // is not purged with it: this layer cannot tell a product post's thread
+  // from a forum thread without a read, and the count is true again within
+  // the document's sixty seconds.
   if (action === "post" || action === "thread-create") return [TAG_THREADS];
   if (action === "endorse" && /^\/v1\/openproduct\/posts\/[^/]+\/vote$/.test(pathname)) {
     return [TAG_THREADS];
   }
+  // OPR-3 — a reaction moves the counts on a product post's card.
+  if (action === "endorse" && /^\/v1\/openproduct\/me\/product-post-reactions\/[^/]+$/.test(pathname)) {
+    return [TAG_POSTS];
+  }
+  if (action === "listing-write") return purgeTagsForCrewWrite(pathname);
+  return [];
+}
+
+const CREW_PROFILE = "^/v1/organizations/[^/]+/openproduct/profiles/[^/]+";
+
+/**
+ * OPR-3 — what a crew write on a product page has to purge.
+ *
+ * The product page is where its crew edits it (design §2 rule 5), so the
+ * person who pressed Save or Post is looking at the public page when the
+ * answer comes back; sixty seconds of the old one reads as a save that did
+ * not take. By path, because this layer never reads a body:
+ *
+ *   a product post published, edited or removed   the feed and the post
+ *   a milestone written, shipped or reordered     the product page — and,
+ *                                                 since a post's card carries
+ *                                                 its product's stage, the
+ *                                                 feed when shipping changed
+ *   the listing itself patched (name, tagline,    the product page
+ *   the Try it address)
+ *
+ * CREATING a draft purges nothing: `POST …/product-posts` writes a row no
+ * public read returns. Editing one does purge, because a draft and a
+ * published post are edited at the same address and telling them apart would
+ * take the body; the cost is one tag on a crew member's own save.
+ *
+ * The catalogue's cards carry the stage too and are NOT purged here: they are
+ * read from the table the sweep materialises every ten minutes, so a purge
+ * would refill the cache with the same card.
+ */
+function purgeTagsForCrewWrite(pathname: string): string[] {
+  if (new RegExp(`${CREW_PROFILE}/product-posts/[^/]+(?:/publish)?$`).test(pathname)) return [TAG_POSTS];
+  if (new RegExp(`${CREW_PROFILE}/milestones/[^/]+/shipped$`).test(pathname)) return [TAG_LISTING, TAG_POSTS];
+  if (new RegExp(`${CREW_PROFILE}/milestones(?:/[^/]+)?$`).test(pathname)) return [TAG_LISTING];
+  if (new RegExp(`${CREW_PROFILE}$`).test(pathname)) return [TAG_LISTING];
   return [];
 }
 

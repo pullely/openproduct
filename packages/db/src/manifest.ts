@@ -494,5 +494,23 @@ export const manifest: MigrationManifest = {
       description:
         "openproduct: search_index_state.checked_at — a clean index the sweep checked is a run, so /health stops calling a quiet index stale (OPN-11)",
     },
+    {
+      id: "2265_openproduct_stage_milestones",
+      context: "openproduct",
+      path: "2265_openproduct_stage_milestones/up.sql",
+      checksum:
+        "a4d4a515d98dac0b7d4f6840f4ffa535c3e223d8ac54c396f3577b999425941f",
+      description:
+        "openproduct: a product's stage (idea or shipping), its Try it address backfilled from live_url, and product_milestones (openproduct-redesign OPR-3)",
+    },
+    {
+      id: "2270_openproduct_product_posts",
+      context: "openproduct",
+      path: "2270_openproduct_product_posts/up.sql",
+      checksum:
+        "49f84ca1563b175ee6944359e2ea9317b204c0009d2a85e6156c50b24dd2c1e0",
+      description:
+        "openproduct: product_posts (five template kinds, blocks, draft/published/removed, a comment thread under the new `post` tag) and product_post_reactions, one per person per post (openproduct-redesign OPR-3)",
+    },
   ],
 };
