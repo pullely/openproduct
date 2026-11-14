@@ -1,0 +1,318 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Post, desktop</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600&amp;family=Lora:ital,wght@0,400;0,500;1,400&amp;family=IBM+Plex+Mono:wght@400;500&amp;display=swap">
+<style>
+:root{color-scheme:light}body{margin:0;background:#F6F4EE}
+a{color:#8A6420}a:hover{color:#5E4415}
+@media (prefers-reduced-motion: reduce){header *{transition-duration:0.01ms !important}}
+</style>
+</helmet>
+<div style="background-color: #F6F4EE; background-image: radial-gradient(1100px 460px at 50% -8%, rgba(184,134,47,0.18), transparent 62%), radial-gradient(rgba(20,20,19,0.07) 1px, transparent 1.2px); background-size: auto, 22px 22px; color: #141413; font-family: 'Hanken Grotesk', system-ui, sans-serif; font-size: 15px; line-height: 1.5; min-height: 100%; display: flex; flex-direction: column">
+
+<header style="position: sticky; top: 0; z-index: 5; width: 100%; background: rgba(255,255,255,0.62); backdrop-filter: saturate(160%) blur(16px); -webkit-backdrop-filter: saturate(160%) blur(16px); box-shadow: none">
+<div style="max-width: 1180px; margin: 0 auto; box-sizing: border-box; padding: 10px 24px; display: flex; flex-wrap: wrap; align-items: center; gap: 12px 24px">
+<a href="Feed.dc.html" style="display: flex; align-items: center; gap: 10px; color: #141413; text-decoration: none; font-weight: 600; font-size: 18px; letter-spacing: -0.02em">
+<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 3.5V21" stroke="#141413"></path><circle cx="14" cy="9.5" r="6" stroke="#B8862F"></circle></svg>openproduct</a>
+<nav aria-label="Main" style="display: flex; flex-wrap: wrap; gap: 2px">
+<a href="Feed.dc.html" style="display: flex; align-items: center; min-height: 36px; padding: 0 14px; border-radius: 999px; color: #2B2A27; text-decoration: none; font-weight: 500">Feed</a>
+<a href="Products.dc.html" style="display: flex; align-items: center; min-height: 36px; padding: 0 14px; border-radius: 999px; color: #2B2A27; text-decoration: none; font-weight: 500">Products</a>
+<a href="Seats.dc.html" style="display: flex; align-items: center; min-height: 36px; padding: 0 14px; border-radius: 999px; color: #2B2A27; text-decoration: none; font-weight: 500">Help wanted</a>
+</nav>
+<div style="flex: 1 1 280px; display: flex; flex-wrap: wrap; justify-content: flex-end; align-items: center; gap: 10px">
+<div style="{{qWrap}}">
+<label style="{{qLabel}}">
+<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6B6A66" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-3.5-3.5"></path></svg>
+<span style="position: absolute; left: -9999px">Search</span>
+<input type="search" value="{{q}}" onInput="{{setQ}}" placeholder="Search products and people" style="border: 0; outline: 0; background: transparent; color: #141413; font: inherit; font-size: 16px; flex: 1; min-width: 0">
+</label>
+<div style="{{qCard}}">
+<sc-for list="{{qRows}}" as="r" hint-placeholder-count="3">
+<div style="{{r.wrap}}">
+<a href="{{r.href}}" style="{{r.style}}"><span style="{{r.tile}}">{{r.mono}}</span><span style="flex: 1; min-width: 0; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{r.name}}</span><span style="font-size: 13px; color: #6B6A66; flex-shrink: 0">{{r.kind}}</span></a>
+<sc-if value="{{r.canExpand}}" hint-placeholder-val="{{false}}"><button type="button" onClick="{{r.toggle}}" aria-expanded="{{r.open}}" aria-label="{{r.toggleLabel}}" style="width: 40px; height: 40px; flex-shrink: 0; border: 0; border-radius: 50%; background: transparent; color: #6B6A66; display: flex; align-items: center; justify-content: center; cursor: pointer"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{r.chev}}"></path></svg></button></sc-if>
+</div>
+</sc-for>
+<sc-if value="{{qNone}}" hint-placeholder-val="{{false}}"><div style="padding: 12px 10px; font-size: 13px; color: #6B6A66">No matches</div></sc-if>
+<a href="Search.dc.html" style="display: flex; align-items: center; justify-content: center; min-height: 40px; margin-top: 2px; border-top: 1px solid rgba(20,20,19,0.06); font-size: 13px; font-weight: 600; text-decoration: none">See all results</a>
+</div>
+</div>
+<a href="Activity.dc.html" aria-label="Activity" style="position: relative; width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; text-decoration: none; background: #FFFFFF; color: #6B6A66">
+<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9a6 6 0 0112 0c0 6 2.5 7.5 2.5 7.5h-17S6 15 6 9zM10 20a2 2 0 004 0"></path></svg>
+</a>
+<a href="Me.dc.html" aria-label="Your profile" style="position: relative; width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; text-decoration: none; background: #FFFFFF; color: #6B6A66">
+<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="8" r="4"></circle><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"></path></svg></a>
+</div>
+</div>
+</header>
+
+<div style="width: 100%; max-width: 1180px; margin: 0 auto; box-sizing: border-box; padding: 28px 24px 64px; display: flex; flex-direction: column; gap: 14px">
+
+<div style="display: flex; flex-wrap: wrap; gap: 28px; align-items: flex-start">
+
+<main aria-label="Post" style="flex: 999 1 560px; min-width: 0; max-width: 780px">
+<article style="position: relative; border-radius: 16px; box-shadow: none; background: radial-gradient(620px 240px at 100% 0%, rgba(227,179,76,0.22), transparent 70%), #FFFFFF">
+
+<div style="display: flex; align-items: center; gap: 12px; padding: 20px 24px 10px">
+<a href="Product.dc.html" style="width: 46px; height: 46px; border-radius: 14px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 15px; text-decoration: none; background: #F3E7CC; color: #8A6420">Ak</a>
+<div style="flex: 1; min-width: 0; display: flex; flex-direction: column">
+<a href="Product.dc.html" style="color: #141413; text-decoration: none; font-weight: 600">ackstack</a>
+<span style="font-size: 13px; color: #6B6A66">by <a href="Person.dc.html" style="color: #2B2A27; font-weight: 600; text-decoration: none">[Maker of ackstack]</a> · 30 Sep</span>
+</div>
+<div style="position: relative; flex-shrink: 0">
+<button type="button" onClick="{{toggleMenu}}" aria-pressed="{{followOn}}" style="{{followBtnStyle}}">{{followBtnLabel}}</button>
+</div>
+</div>
+
+<div style="padding: 6px 24px 0; display: flex; flex-direction: column; gap: 14px">
+<div style="display: flex; align-items: center; gap: 12px">
+<span style="width: 40px; height: 40px; border-radius: 50%; background: linear-gradient(135deg, #E3B34C, #B8862F); display: flex; align-items: center; justify-content: center; box-shadow: none; flex-shrink: 0"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2.4" aria-hidden="true"><path d="M5 12l5 5 9-10"></path></svg></span>
+<h1 style="margin: 0; font-weight: 600; font-size: 26px; letter-spacing: -0.02em; line-height: 1.2">The state re-collection calendar</h1>
+</div>
+<div style="color: #2B2A27; font-size: 16px">Policies re-send on each state’s own cycle: NY, the NY Retail Worker Safety Act, IL and CA. A new version supersedes the old one, with per-employee and per-policy CSV exports.</div>
+<div style="display: flex; flex-wrap: wrap; gap: 18px; font-size: 13px; color: #6B6A66">
+<span><span style="color: #141413; font-weight: 600">For</span> employers with staff in NY, IL or CA</span>
+<span><span style="color: #141413; font-weight: 600">Milestone</span> AS3 · 3 of 4 shipped</span>
+</div>
+<div style="display: flex; gap: 4px" role="img" aria-label="3 of 4 milestones shipped"><div style="flex: 1; height: 6px; border-radius: 3px; background: linear-gradient(90deg, #B8862F, #E3B34C)"></div><div style="flex: 1; height: 6px; border-radius: 3px; background: linear-gradient(90deg, #B8862F, #E3B34C)"></div><div style="flex: 1; height: 6px; border-radius: 3px; background: linear-gradient(90deg, #B8862F, #E3B34C)"></div><div style="flex: 1; height: 6px; border-radius: 3px; background: #EDE9DE"></div></div>
+<a href="#" style="display: flex; align-items: center; justify-content: center; gap: 8px; min-height: 40px; border-radius: 999px; background: #141413; color: #FAF9F5; text-decoration: none; font-weight: 600; box-shadow: none">Try it now<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M7 17L17 7M9 7h8v8"></path></svg></a>
+</div>
+
+<div style="padding: 16px 24px 0; display: flex; align-items: center; justify-content: space-between; gap: 10px; font-size: 13px; color: #6B6A66">
+<span style="display: flex; align-items: center; gap: 6px">
+<span style="display: flex">
+<sc-for list="{{summaryIcons}}" as="s" hint-placeholder-count="2">
+<span style="{{s.bubble}}"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2.6" aria-hidden="true"><path d="{{s.d}}"></path></svg></span>
+</sc-for>
+</span>
+<span>{{reactText}}</span>
+</span>
+<span>{{commentCount}}</span>
+</div>
+
+<div style="position: relative; margin: 10px 12px 0; padding: 4px 0 6px; border-top: 1px solid rgba(20,20,19,0.06); display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 2px">
+<sc-if value="{{pickerOpen}}" hint-placeholder-val="{{false}}">
+<div role="group" aria-label="Choose a reaction" style="position: absolute; left: 4px; bottom: 50px; display: flex; gap: 4px; padding: 6px; background: #FFFFFF; border-radius: 999px; box-shadow: none; z-index: 2">
+<sc-for list="{{picker}}" as="k" hint-placeholder-count="4">
+<button type="button" onClick="{{k.pick}}" aria-label="{{k.label}}" aria-pressed="{{k.on}}" title="{{k.label}}" style="{{k.style}}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2.2" aria-hidden="true"><path d="{{k.d}}"></path></svg></button>
+</sc-for>
+</div>
+</sc-if>
+<button type="button" onClick="{{togglePicker}}" aria-expanded="{{pickerOpen}}" style="{{reactBtnStyle}}"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="{{reactIcon}}"></path></svg>{{reactBtnLabel}}</button>
+<button type="button" onClick="{{focusComment}}" style="display: flex; align-items: center; justify-content: center; gap: 6px; min-height: 40px; border: 0; border-radius: 999px; background: transparent; color: #2B2A27; font: inherit; font-size: 13px; font-weight: 500; cursor: pointer"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 5h16v11H8l-4 4z"></path></svg>Comment</button>
+<button type="button" onClick="{{share}}" style="display: flex; align-items: center; justify-content: center; gap: 6px; min-height: 40px; border: 0; border-radius: 999px; background: transparent; color: #2B2A27; font: inherit; font-size: 13px; font-weight: 500; cursor: pointer"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 12v7h16v-7M12 3v12M7 8l5-5 5 5"></path></svg>{{shareLabel}}</button>
+</div>
+
+<section aria-label="Comments" style="padding: 14px 22px 22px; display: flex; flex-direction: column; gap: 16px; border-top: 1px solid rgba(20,20,19,0.06)">
+<sc-for list="{{thread}}" as="c" hint-placeholder-count="2">
+<div style="display: flex; gap: 10px">
+<div style="width: 34px; height: 34px; border-radius: 50%; background: #F0EEE6; color: #2B2A27; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 600; flex-shrink: 0">{{c.mono}}</div>
+<div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px">
+<div style="align-self: flex-start; max-width: 100%; position: relative; background: #F3F1EA; border-radius: 16px; padding: 8px 12px; box-sizing: border-box">
+<div style="display: flex; gap: 6px; align-items: baseline; flex-wrap: wrap"><span style="font-weight: 600; font-size: 13px">{{c.who}}</span><span style="font-size: 13px; color: #8A6420">{{c.role}}</span></div>
+<div style="font-size: 15px; color: #2B2A27">{{c.text}}</div>
+<sc-if value="{{c.liked}}" hint-placeholder-val="{{false}}"><span style="position: absolute; right: -8px; bottom: -10px; display: flex; align-items: center; gap: 3px; padding: 2px 6px 2px 2px; border-radius: 999px; background: #FFFFFF; box-shadow: none; font-size: 11px; color: #6B6A66"><span style="width: 16px; height: 16px; border-radius: 50%; background: #B8862F"></span>1</span></sc-if>
+</div>
+<div style="display: flex; align-items: center; gap: 14px; padding-left: 12px; font-size: 13px">
+<button type="button" onClick="{{c.react}}" aria-pressed="{{c.liked}}" style="{{c.reactStyle}}">Useful</button>
+<button type="button" onClick="{{c.reply}}" style="min-height: 32px; border: 0; background: transparent; padding: 4px 0; font: inherit; font-weight: 600; color: #6B6A66; cursor: pointer">Reply</button>
+<span style="color: #8A877F">{{c.when}}</span>
+</div>
+<sc-if value="{{c.hasReplies}}" hint-placeholder-val="{{true}}">
+<div style="display: flex; flex-direction: column; gap: 10px; padding-top: 6px">
+<sc-for list="{{c.replies}}" as="r" hint-placeholder-count="2">
+<div style="display: flex; gap: 8px">
+<div style="width: 26px; height: 26px; border-radius: 50%; background: #F0EEE6; color: #2B2A27; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 600; flex-shrink: 0">{{r.mono}}</div>
+<div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px">
+<div style="align-self: flex-start; max-width: 100%; position: relative; background: #F3F1EA; border-radius: 16px; padding: 7px 12px; box-sizing: border-box">
+<div style="display: flex; gap: 6px; align-items: baseline; flex-wrap: wrap"><span style="font-weight: 600; font-size: 13px">{{r.who}}</span><span style="font-size: 13px; color: #8A6420">{{r.role}}</span></div>
+<div style="font-size: 13px; color: #2B2A27">{{r.text}}</div>
+<sc-if value="{{r.liked}}" hint-placeholder-val="{{false}}"><span style="position: absolute; right: -8px; bottom: -10px; display: flex; align-items: center; gap: 3px; padding: 2px 6px 2px 2px; border-radius: 999px; background: #FFFFFF; box-shadow: none; font-size: 11px; color: #6B6A66"><span style="width: 16px; height: 16px; border-radius: 50%; background: #B8862F"></span>1</span></sc-if>
+</div>
+<div style="display: flex; align-items: center; gap: 14px; padding-left: 12px; font-size: 13px">
+<button type="button" onClick="{{r.react}}" aria-pressed="{{r.liked}}" style="{{r.reactStyle}}">Useful</button>
+<button type="button" onClick="{{r.reply}}" style="min-height: 32px; border: 0; background: transparent; padding: 4px 0; font: inherit; font-weight: 600; color: #6B6A66; cursor: pointer">Reply</button>
+<span style="color: #8A877F">{{r.when}}</span>
+</div>
+</div>
+</div>
+</sc-for>
+</div>
+</sc-if>
+<sc-if value="{{c.replying}}" hint-placeholder-val="{{false}}">
+<div style="display: flex; gap: 8px; align-items: center; padding-top: 4px">
+<div style="width: 26px; height: 26px; border-radius: 50%; background: #F0EEE6; flex-shrink: 0"></div>
+<label style="flex: 1; display: flex; min-height: 40px; border-radius: 999px; background: #F3F1EA; padding: 0 6px 0 14px; align-items: center; gap: 6px"><span style="position: absolute; left: -9999px">Write a reply</span><input type="text" value="{{c.replyDraft}}" onInput="{{c.setReply}}" onKeyDown="{{c.replyKey}}" placeholder="{{c.replyPlaceholder}}" style="border: 0; outline: 0; background: transparent; color: #141413; font: inherit; font-size: 16px; flex: 1; min-width: 0"><button type="button" onClick="{{c.sendReply}}" disabled="{{c.replyEmpty}}" aria-label="Send reply" style="{{c.sendStyle}}"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"></path></svg></button></label>
+</div>
+</sc-if>
+</div>
+</div>
+</sc-for>
+<div style="display: flex; gap: 10px; align-items: center; padding-top: 4px">
+<div style="width: 34px; height: 34px; border-radius: 50%; background: #F0EEE6; flex-shrink: 0"></div>
+<label style="flex: 1; display: flex; min-height: 40px; border-radius: 999px; background: #F3F1EA; padding: 0 6px 0 16px; align-items: center; gap: 6px"><span style="position: absolute; left: -9999px">Write a comment</span><input type="text" ref="{{commentRef}}" value="{{commentDraft}}" onInput="{{setComment}}" onKeyDown="{{commentKey}}" placeholder="Write a comment" style="border: 0; outline: 0; background: transparent; color: #141413; font: inherit; font-size: 16px; flex: 1; min-width: 0"><button type="button" onClick="{{sendComment}}" disabled="{{commentEmpty}}" aria-label="Post comment" style="{{commentSendStyle}}"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"></path></svg></button></label>
+</div>
+</section>
+</article>
+</main>
+
+<aside style="flex: 1 1 280px; min-width: 0; max-width: 340px; display: flex; flex-direction: column; gap: 18px">
+<section aria-label="About ackstack" style="position: relative; overflow: hidden; background: radial-gradient(320px 140px at 100% 0%, rgba(227,179,76,0.2), transparent 70%), rgba(255,255,255,0.72); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border-radius: 16px; box-shadow: none; padding: 18px; display: flex; flex-direction: column; gap: 12px">
+<div style="font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; color: #6B6A66; letter-spacing: 0.12em">ABOUT</div>
+<div style="display: flex; align-items: center; gap: 12px">
+<a href="Product.dc.html" style="width: 48px; height: 48px; border-radius: 15px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 16px; text-decoration: none; background: #F3E7CC; color: #8A6420; box-shadow: none">Ak</a>
+<div style="flex: 1; min-width: 0; display: flex; flex-direction: column"><a href="Product.dc.html" style="color: #141413; text-decoration: none; font-weight: 600; font-size: 16px">ackstack</a><span style="font-size: 13px; color: #6B6A66">Productivity · shipping, 3 of 4</span></div>
+</div>
+<div style="font-size: 15px; color: #2B2A27">Send policies, collect e-acknowledgments and re-collect them on each state’s schedule.</div>
+<button type="button" onClick="{{toggleProduct}}" aria-pressed="{{productOn}}" style="{{productBtnStyle}}">{{productBtnLabel}}</button>
+</section>
+
+<section aria-label="More from ackstack" style="background: #FFFFFF; border-radius: 16px; box-shadow: none; padding: 18px; display: flex; flex-direction: column; gap: 8px">
+<h2 style="margin: 0 0 4px 4px; font-size: 15px; font-weight: 600">More from ackstack</h2>
+<a href="#" style="display: flex; align-items: center; gap: 12px; min-height: 40px; padding: 8px; border-radius: 14px; background: #F7F5EF; color: #141413; text-decoration: none">
+<span style="width: 36px; height: 36px; border-radius: 11px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; background: #141413"><svg width="14" height="14" viewBox="0 0 24 24" fill="#E3B34C" aria-hidden="true"><path d="M8 5v14l11-7z"></path></svg></span>
+<span style="flex: 1; min-width: 0; display: flex; flex-direction: column"><span style="font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; letter-spacing: 0.1em; color: #6B6A66">DEMO</span><span style="font-weight: 600; font-size: 13px">Collect an acknowledgment, start to finish</span></span>
+</a>
+<a href="#" style="display: flex; align-items: center; gap: 12px; min-height: 40px; padding: 8px; border-radius: 14px; background: #F7F5EF; color: #141413; text-decoration: none">
+<span style="width: 36px; height: 36px; border-radius: 50%; flex-shrink: 0; box-sizing: border-box; border: 2px dashed #2F6F73; display: flex; align-items: center; justify-content: center; color: #2F6F73"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg></span>
+<span style="flex: 1; min-width: 0; display: flex; flex-direction: column"><span style="font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; letter-spacing: 0.1em; color: #1F5357">HELP WANTED</span><span style="font-weight: 600; font-size: 13px">HR-compliance advisor</span><span style="font-size: 13px; color: #6B6A66">Open 7 weeks · nobody yet</span></span>
+</a>
+</section>
+
+<a href="Feed.dc.html" style="align-self: flex-start; display: flex; align-items: center; gap: 6px; min-height: 40px; padding: 0 6px; font-weight: 600; font-size: 13px; text-decoration: none"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M15 6l-6 6 6 6"></path></svg>Back to the feed</a>
+</aside>
+</div>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1500}}'>
+class Component extends DCLogic {
+  constructor(props) { super(props); this.state = { menu: false, follow: {}, picker: false, mine: null, creact: {}, replyTo: null, replyDraft: '', commentDraft: '', added: [], addedReplies: {}, shared: false }; }
+  searchVals() {
+    const q = (this.state || {}).q || '';
+    const exp = (this.state || {}).qExp || {};
+    const w = q.trim().toLowerCase();
+    const open = !!w;
+    const EASE = 'cubic-bezier(0.2, 0.8, 0.2, 1)';
+    const P = [['ackstack', 'Ak', '#F3E7CC', '#8A6420', 1], ['meterwise', 'Mw', '#E6E9F2', '#3A4A75', 1], ['expirio', 'Ex', '#ECE6F3', '#5B3F86', 1], ['rangewise', 'Rw', '#E3EEE8', '#2F5E4C', 1], ['aitally', 'At', '#F0EEE6', '#2B2A27', 1], ['rateboard', 'Rb', '#DDEDEC', '#1F5357', 1], ['grantwell', 'Gw', '#E3EEE8', '#2F5E4C', 1], ['leakbook', 'Lb', '#E6E9F2', '#3A4A75', 1], ['arcdesk', 'Ad', '#ECEAE3', '#2B2A27', 1], ['beacon24', 'B2', '#ECE6F3', '#5B3F86', 0], ['chaseid', 'Ci', '#ECE6F3', '#5B3F86', 0]];
+    const link = 'flex: 1; min-width: 0; display: flex; align-items: center; gap: 10px; min-height: 44px; padding: 0 10px; border-radius: 12px; color: #141413; text-decoration: none';
+    const wrap = 'display: flex; align-items: center; gap: 2px';
+    const prod = (p, child) => ({ href: p[4] ? 'Product.dc.html' : 'ProductIdea.dc.html', name: p[0], mono: p[1], kind: child ? 'Maker' : (p[4] ? 'Shipping' : 'Idea'), canExpand: false,
+      wrap: wrap + (child ? '; margin-left: 24px; padding-left: 8px; border-left: 2px solid #ECEAE3' : ''), style: link,
+      tile: 'width: ' + (child ? 26 : 30) + 'px; height: ' + (child ? 26 : 30) + 'px; border-radius: 9px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 600; background: ' + p[2] + '; color: ' + p[3] });
+    const rows = [];
+    if (w) {
+      P.filter(p => p[0].includes(w)).slice(0, 3).forEach(p => rows.push(prod(p, false)));
+      P.filter(p => ('maker of ' + p[0]).includes(w)).slice(0, 3).forEach(p => {
+        const name = '[Maker of ' + p[0] + ']', isOpen = !!exp[name];
+        rows.push({ href: 'Person.dc.html', name, mono: 'M', kind: 'Person', wrap, style: link, canExpand: true, open: isOpen,
+          toggleLabel: (isOpen ? 'Hide products of ' : 'Show products of ') + name,
+          chev: isOpen ? 'M6 15l6-6 6 6' : 'M6 9l6 6 6-6',
+          toggle: () => this.setState({ qExp: { ...exp, [name]: !isOpen } }),
+          tile: 'width: 30px; height: 30px; border-radius: 50%; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 600; background: #F0EEE6; color: #2B2A27' });
+        if (isOpen) rows.push(prod(p, true));
+      });
+    }
+    return { q, setQ: (e) => this.setState({ q: e.target.value }), qOpen: open, qRows: rows, qNone: open && rows.length === 0,
+      qWrap: 'position: relative; display: flex; flex: 0 1 ' + (open ? '380px' : '260px') + '; transition: flex-basis 0.32s ' + EASE,
+      qCard: 'position: absolute; top: -6px; left: -6px; right: -6px; z-index: 20; box-sizing: border-box; overflow: hidden; background: #FFFFFF; border-radius: 22px; box-shadow: inset 0 0 0 1px rgba(20,20,19,0.1); padding: 54px 6px 6px; display: flex; flex-direction: column; gap: 2px; transform-origin: top center; ' + (open ? 'max-height: 560px; opacity: 1; transform: scale(1); visibility: visible; transition: max-height 0.42s ' + EASE + ', opacity 0.2s ease, transform 0.32s ' + EASE : 'max-height: 52px; opacity: 0; transform: scale(0.98); visibility: hidden; pointer-events: none; transition: max-height 0.26s ' + EASE + ', opacity 0.18s ease, transform 0.26s ' + EASE + ', visibility 0s linear 0.26s'),
+      qLabel: 'position: relative; z-index: 21; flex: 1; min-width: 0; display: flex; align-items: center; gap: 8px; border-radius: 999px; padding: 0 14px; min-height: 40px; transition: background 0.25s ease, box-shadow 0.25s ease; ' + (open ? 'background: #F7F5EF; box-shadow: none' : 'background: rgba(255,255,255,0.75); box-shadow: inset 0 0 0 1px rgba(20,20,19,0.07)') };
+  }
+  renderVals() { return { ...this.pageVals(), ...this.searchVals() }; }
+  pageVals() {
+    const REACT = [
+      { key: 'useful', label: 'Useful', color: '#B8862F', d: 'M9 18h6M10 21h4M12 3a6 6 0 00-4 10.5c.7.7 1 1.5 1 2.5h6c0-1 .3-1.8 1-2.5A6 6 0 0012 3z' },
+      { key: 'use', label: 'I’d use this', color: '#2F6F73', d: 'M12 20s-7-4.4-7-10a4 4 0 017-2.6A4 4 0 0119 10c0 5.6-7 10-7 10z' },
+      { key: 'wow', label: 'Impressive', color: '#5B6B8C', d: 'M12 3l2.6 5.6 6 .7-4.5 4.1 1.2 6L12 16.6 6.7 19.4l1.2-6L3.4 9.3l6-.7z' },
+      { key: 'curious', label: 'Curious', color: '#4F7A6A', d: 'M9.5 9a2.5 2.5 0 015 0c0 2-2.5 2-2.5 4M12 17h.01' }
+    ];
+    const sample = { useful: 3, use: 2 };
+    const comments = [
+      { id: 'c1', mono: 'C', who: '[Contributor]', role: '', when: 'sample', text: 'Does the calendar handle someone who works across two states?', replies: [
+        { id: 'c1r1', mono: 'M', who: '[Maker of ackstack]', role: 'Maker', when: 'sample', text: 'Yes. People are assigned by location, so they get both states’ schedules.' },
+        { id: 'c1r2', mono: 'C', who: '[Contributor]', role: '', when: 'sample', text: 'That’s exactly our case. Thanks.' }] },
+      { id: 'c2', mono: 'R', who: '[Reader]', role: '', when: 'sample', text: 'Half our staff never open email. Is SMS coming?', replies: [
+        { id: 'c2r1', mono: 'M', who: '[Maker of ackstack]', role: 'Maker', when: 'sample', text: 'SMS delivery is the next milestone.' }] }
+    ].concat(this.state.added);
+    const S = this.state;
+    const mine = S.mine;
+    const counts = { ...sample };
+    if (mine) counts[mine] = (counts[mine] || 0) + 1;
+    const total = Object.values(counts).reduce((a, b) => a + b, 0);
+    const others = total - (mine ? 1 : 0);
+    const reactText = mine ? (others ? 'You and ' + others + (others === 1 ? ' other' : ' others') : 'You') : (total ? String(total) : '');
+    const mineDef = REACT.find(k => k.key === mine);
+    const cReact = (id) => { const liked = !!S.creact[id]; return { liked, react: () => this.setState({ creact: { ...this.state.creact, [id]: !liked } }), reactStyle: 'min-height: 32px; border: 0; background: transparent; padding: 4px 0; font: inherit; font-weight: 600; cursor: pointer; color: ' + (liked ? '#8A6420' : '#6B6A66') }; };
+    const sendStyle = (empty, size) => 'width: ' + size + 'px; height: ' + size + 'px; flex-shrink: 0; border: 0; border-radius: 50%; display: flex; align-items: center; justify-content: center; ' + (empty ? 'background: transparent; color: #A8A59C; cursor: default' : 'background: #141413; color: #FAF9F5; cursor: pointer');
+    const thread = comments.map(c => {
+      const replies = (c.replies || []).concat(S.addedReplies[c.id] || []);
+      const replyFn = () => this.setState({ replyTo: c.id, replyDraft: '' });
+      const empty = !S.replyDraft.trim();
+      const send = () => {
+        const t = this.state.replyDraft.trim(); if (!t) return;
+        const list = (this.state.addedReplies[c.id] || []).concat([{ id: c.id + 'y' + Date.now(), mono: 'Y', who: '[You]', role: '', when: 'just now', text: t }]);
+        this.setState({ addedReplies: { ...this.state.addedReplies, [c.id]: list }, replyDraft: '', replyTo: null });
+      };
+      return { ...c, ...cReact(c.id), reply: replyFn,
+        hasReplies: replies.length > 0,
+        replies: replies.map(r => ({ ...r, ...cReact(r.id), reply: replyFn })),
+        replying: S.replyTo === c.id, replyPlaceholder: 'Reply to ' + c.who,
+        replyDraft: S.replyTo === c.id ? S.replyDraft : '',
+        setReply: (e) => this.setState({ replyDraft: e.target.value }),
+        replyKey: (e) => { if (e.key === 'Enter') { e.preventDefault(); send(); } else if (e.key === 'Escape') this.setState({ replyTo: null }); },
+        sendReply: send, replyEmpty: empty, sendStyle: sendStyle(empty, 32) };
+    });
+    const nComments = thread.reduce((a, c) => a + 1 + c.replies.length, 0);
+    const commentEmpty = !S.commentDraft.trim();
+    const sendComment = () => {
+      const t = this.state.commentDraft.trim(); if (!t) return;
+      this.setState({ added: this.state.added.concat([{ id: 'y' + Date.now(), mono: 'Y', who: '[You]', role: '', when: 'just now', text: t, replies: [] }]), commentDraft: '' });
+    };
+    const isOn = (key) => !!S.follow[key];
+    const flip = (key) => this.setState({ follow: { ...this.state.follow, [key]: !isOn(key) } });
+    const pk = 'product:ackstack', mk = 'person:[Maker of ackstack]';
+    const nFollow = isOn(pk) ? 1 : 0;
+    const followItems = [[pk, 'ackstack', 'Product'], [mk, '[Maker of ackstack]', 'Person who posted']].map(([key, name, kind]) => ({
+      name, kind, on: isOn(key), toggle: () => flip(key),
+      box: 'width: 18px; height: 18px; border-radius: 6px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; ' + (isOn(key) ? 'background: #141413' : 'background: #FFFFFF; box-shadow: inset 0 0 0 1.5px #CFCCC2')
+    }));
+    const productOn = isOn(pk);
+    return {
+      menuOpen: false, followOn: isOn(pk), toggleMenu: () => flip(pk), followItems,
+      followBtnLabel: nFollow ? 'Following' : 'Follow',
+      followBtnStyle: 'display: flex; align-items: center; gap: 6px; min-height: 40px; padding: 0 16px; border: 0; border-radius: 999px; font: inherit; font-size: 13px; font-weight: 600; cursor: pointer; ' + (nFollow ? 'background: rgba(20,20,19,0.06); color: #2B2A27' : 'background: #141413; color: #FAF9F5'),
+      summaryIcons: REACT.filter(k => counts[k.key]).sort((a, b) => counts[b.key] - counts[a.key]).slice(0, 3).map((k, i) => ({ d: k.d,
+        bubble: 'width: 20px; height: 20px; border-radius: 50%; border: 2px solid #FFFFFF; display: flex; align-items: center; justify-content: center; margin-left: ' + (i ? '-6px' : '0') + '; background: ' + k.color })),
+      reactText, commentCount: nComments + (nComments === 1 ? ' comment' : ' comments'),
+      pickerOpen: S.picker, togglePicker: () => this.setState({ picker: !this.state.picker }),
+      picker: REACT.map(k => ({ label: k.label, d: k.d, on: mine === k.key,
+        pick: () => this.setState({ picker: false, mine: mine === k.key ? null : k.key }),
+        style: 'width: 40px; height: 40px; border-radius: 50%; border: 0; cursor: pointer; display: flex; align-items: center; justify-content: center; background: ' + k.color + (mine === k.key ? '; box-shadow: 0 0 0 3px #F3E7CC' : '') })),
+      reactIcon: mineDef ? mineDef.d : REACT[0].d, reactBtnLabel: mineDef ? mineDef.label : 'React',
+      reactBtnStyle: 'display: flex; align-items: center; justify-content: center; gap: 6px; min-height: 40px; border: 0; border-radius: 999px; background: transparent; font: inherit; font-size: 13px; cursor: pointer; font-weight: ' + (mineDef ? '600; color: #8A6420' : '500; color: #2B2A27'),
+      shareLabel: S.shared ? 'Link copied' : 'Share',
+      share: () => { this.setState({ shared: true }); clearTimeout(this.shareT); this.shareT = setTimeout(() => this.setState({ shared: false }), 1600); },
+      thread,
+      commentRef: (el) => { this.commentEl = el; },
+      focusComment: () => { if (this.commentEl) this.commentEl.focus(); },
+      commentDraft: S.commentDraft, setComment: (e) => this.setState({ commentDraft: e.target.value }),
+      commentKey: (e) => { if (e.key === 'Enter') { e.preventDefault(); sendComment(); } },
+      sendComment, commentEmpty, commentSendStyle: sendStyle(commentEmpty, 34),
+      productOn, toggleProduct: () => flip(pk),
+      productBtnLabel: productOn ? 'Following' : 'Follow',
+      productBtnStyle: 'min-height: 40px; border: 0; border-radius: 999px; font: inherit; font-weight: 600; cursor: pointer; ' + (productOn ? 'background: rgba(20,20,19,0.06); color: #2B2A27' : 'background: #141413; color: #FAF9F5; box-shadow: none')
+    };
+  }
+  componentWillUnmount() { clearTimeout(this.shareT); }
+}
+</script>
+</body>
+</html>

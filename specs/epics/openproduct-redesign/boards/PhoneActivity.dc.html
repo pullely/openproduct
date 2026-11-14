@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Activity, phone</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600&amp;family=Lora:wght@400;500&amp;family=IBM+Plex+Mono:wght@400;500&amp;display=swap">
+<style>
+:root{color-scheme:light}body{margin:0}
+a{color:#8A6420}a:hover{color:#5E4415}
+</style>
+</helmet>
+<div style="position: relative; width: 390px; height: 844px; box-sizing: border-box; background-color: #F6F4EE; background-image: radial-gradient(500px 260px at 50% -6%, rgba(184,134,47,0.2), transparent 65%), radial-gradient(rgba(20,20,19,0.07) 1px, transparent 1.2px); background-size: auto, 20px 20px; color: #141413; font-family: 'Hanken Grotesk', system-ui, sans-serif; font-size: 15px; line-height: 1.5; display: flex; flex-direction: column; overflow: hidden">
+
+<header style="display: flex; align-items: center; gap: 10px; padding: 12px 14px; background: rgba(255,255,255,0.6); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); box-shadow: none">
+<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 3.5V21" stroke="#141413"></path><circle cx="14" cy="9.5" r="6" stroke="#B8862F"></circle></svg>
+<a href="PhoneSearch.dc.html" style="flex: 1; min-width: 0; display: flex; align-items: center; gap: 8px; background: #FFFFFF; border-radius: 999px; box-shadow: inset 0 0 0 1px rgba(20,20,19,0.07); padding: 0 12px; min-height: 44px; color: #6B6A66; text-decoration: none; font-size: 16px">
+<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#6B6A66" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-3.5-3.5"></path></svg>Search</a>
+<a href="PhoneMe.dc.html" aria-label="Your profile" style="width: 44px; height: 44px; border-radius: 50%; background: #FFFFFF; box-shadow: none; display: flex; align-items: center; justify-content: center; color: #6B6A66; flex-shrink: 0"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="8" r="4"></circle><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"></path></svg></a>
+</header>
+
+<div style="flex: 1; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; padding: 10px 12px 12px">
+
+<div style="flex-shrink: 0; display: flex; align-items: center; justify-content: space-between; gap: 8px">
+<div role="group" aria-label="Show" style="display: flex; gap: 2px; padding: 3px; border-radius: 999px; background: #FFFFFF">
+<sc-for list="{{tabs}}" as="t" hint-placeholder-count="3">
+<button type="button" onClick="{{t.pick}}" aria-pressed="{{t.on}}" style="{{t.style}}">{{t.label}}</button>
+</sc-for>
+</div>
+<button type="button" onClick="{{markAll}}" disabled="{{noUnread}}" style="{{markStyle}}">Mark all read</button>
+</div>
+
+<sc-for list="{{groups}}" as="g" hint-placeholder-count="2">
+<section aria-label="{{g.label}}" style="flex-shrink: 0; display: flex; flex-direction: column; gap: 6px">
+<h2 style="margin: 0; padding: 0 6px; font-family: 'IBM Plex Mono', monospace; font-weight: 400; font-size: 10.5px; letter-spacing: 0.12em; color: #6B6A66">{{g.mono}}</h2>
+<div style="background: #FFFFFF; border-radius: 16px; padding: 6px; display: flex; flex-direction: column; gap: 2px">
+<sc-for list="{{g.rows}}" as="r" hint-placeholder-count="3">
+<div style="{{r.rowStyle}}">
+<span style="{{r.tile}}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="{{r.stroke}}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{r.d}}"></path></svg></span>
+<div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px">
+<div style="font-size: 15px; line-height: 1.4; color: #2B2A27; overflow-wrap: anywhere"><a href="{{r.whoHref}}" style="color: #141413; font-weight: 600; text-decoration: none">{{r.who}}</a> {{r.text}} <a href="{{r.targetHref}}" style="color: #141413; font-weight: 600; text-decoration: none">{{r.target}}</a></div>
+<sc-if value="{{r.hasQuote}}" hint-placeholder-val="{{false}}"><div style="font-size: 13px; color: #6B6A66; padding-left: 10px; border-left: 2px solid #ECEAE3">{{r.quote}}</div></sc-if>
+<span style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: #6B6A66">{{r.when}}</span>
+<sc-if value="{{r.hasLink}}" hint-placeholder-val="{{false}}"><a href="{{r.linkHref}}" style="align-self: flex-start; margin-top: 6px; display: flex; align-items: center; min-height: 44px; padding: 0 18px; border-radius: 999px; background: #141413; color: #FAF9F5; text-decoration: none; font-size: 13px; font-weight: 600">{{r.linkLabel}}</a></sc-if>
+<sc-if value="{{r.pending}}" hint-placeholder-val="{{false}}">
+<div style="display: flex; gap: 6px; margin-top: 6px">
+<button type="button" onClick="{{r.accept}}" style="min-height: 44px; padding: 0 18px; border: 0; border-radius: 999px; background: #141413; color: #FAF9F5; font: inherit; font-size: 13px; font-weight: 600; cursor: pointer">Accept</button>
+<button type="button" onClick="{{r.decline}}" style="min-height: 44px; padding: 0 18px; border: 0; border-radius: 999px; background: rgba(20,20,19,0.06); color: #141413; font: inherit; font-size: 13px; font-weight: 600; cursor: pointer">Decline</button>
+</div>
+</sc-if>
+<sc-if value="{{r.decided}}" hint-placeholder-val="{{false}}"><span style="{{r.decidedStyle}}">{{r.decidedLabel}}</span></sc-if>
+</div>
+<span style="{{r.dot}}"><sc-if value="{{r.unread}}" hint-placeholder-val="{{false}}"><span style="position: absolute; left: -9999px">Unread</span></sc-if></span>
+</div>
+</sc-for>
+</div>
+</section>
+</sc-for>
+<sc-if value="{{empty}}" hint-placeholder-val="{{false}}"><div style="flex-shrink: 0; padding: 24px 14px; border-radius: 16px; background: #FFFFFF; text-align: center; color: #6B6A66">Nothing here yet.</div></sc-if>
+
+</div>
+
+<nav aria-label="Main" style="position: relative; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); margin: 10px 10px 14px; padding: 4px 6px; background: #FFFFFF; border-radius: 16px">
+<a href="PhoneFeed.dc.html" style="min-height: 54px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; color: #6B6A66; text-decoration: none; font-size: 11px">
+<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 11l8-7 8 7v9H4z"></path></svg>Feed</a>
+<a href="PhoneProducts.dc.html" style="min-height: 54px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; color: #6B6A66; text-decoration: none; font-size: 11px">
+<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="2"></rect><rect x="14" y="3" width="7" height="7" rx="2"></rect><rect x="3" y="14" width="7" height="7" rx="2"></rect><rect x="14" y="14" width="7" height="7" rx="2"></rect></svg>Products</a>
+<a href="PhoneSeats.dc.html" style="min-height: 54px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; color: #6B6A66; text-decoration: none; font-size: 11px">
+<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="9" cy="8" r="3.5"></circle><path d="M3 20c.8-3.5 3.2-5.5 6-5.5s5.2 2 6 5.5"></path><path d="M18 8v6M15 11h6"></path></svg>Seats</a>
+<a href="PhoneActivity.dc.html" aria-current="page" style="min-height: 54px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; color: #141413; text-decoration: none; font-size: 11px; font-weight: 600">
+<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 8a6 6 0 0112 0c0 7 3 8 3 8H3s3-1 3-8"></path><path d="M10 20a2 2 0 004 0"></path></svg>Activity</a>
+</nav>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { tab: 'all', read: {}, seat: null };
+  }
+  renderVals() {
+    const ICON = {
+      private: ['M6 11V8a6 6 0 0112 0v3M5 11h14v10H5z', '#3A4A75', '#E6E9F2'],
+      reply: ['M4 5h16v11H9l-5 4z', '#3A4A75', '#E6E9F2'],
+      react: ['M9 18h6M10 21h4M12 3a6 6 0 00-4 10.5c.7.7 1 1.5 1 2.5h6c0-1 .3-1.8 1-2.5A6 6 0 0012 3z', '#8A6420', '#F3E7CC'],
+      follow: ['M9 11a4 4 0 100-8 4 4 0 000 8zM2 21c1-4 4-6 7-6s6 2 7 6M17 11l2 2 4-4', '#2F7A4E', '#E3EEE8'],
+      seat: ['M9 11a4 4 0 100-8 4 4 0 000 8zM2 21c1-4 4-6 7-6s6 2 7 6M19 8v6M16 11h6', '#1F5357', '#DDEDEC'],
+      demo: ['M8 5v14l11-7z', '#141413', '#ECEAE3'],
+      version: ['M3 12V4h8l9 9-8 8zM7.5 7.5h.01', '#3A4A75', '#E6E9F2']
+    };
+    const ROWS = [
+      { id: 'a0', kind: 'private', group: 'today', tabs: ['mentions'], unread: true, who: '[Reader]', whoHref: 'PhonePerson.dc.html', text: 'started a private thread on', target: 'ackstack', targetHref: 'PhoneProduct.dc.html', when: '[1h]' },
+      { id: 'a1', kind: 'reply', group: 'today', tabs: ['mentions'], unread: true, who: '[Contributor]', whoHref: 'PhonePerson.dc.html', text: 'replied to your comment on', target: 'ackstack', targetHref: 'PhonePost.dc.html', quote: '[Their reply]', when: '[2h]' },
+      { id: 'a2', kind: 'seat', group: 'today', tabs: ['seats'], unread: true, who: '[Applicant]', whoHref: 'PhonePerson.dc.html', text: 'requested a seat on ackstack:', target: 'HR-compliance advisor', targetHref: 'PhoneProduct.dc.html', when: '[3h]', seat: true },
+      { id: 'a3', kind: 'react', group: 'today', tabs: [], unread: true, who: '[Reader]', whoHref: 'PhonePerson.dc.html', text: 'reacted Useful to', target: 'The state re-collection calendar', targetHref: 'PhonePost.dc.html', when: '[5h]' },
+      { id: 'a4', kind: 'follow', group: 'today', tabs: [], unread: false, who: '[Reader]', whoHref: 'PhonePerson.dc.html', text: 'followed', target: 'ackstack', targetHref: 'PhoneProduct.dc.html', when: '[6h]' },
+      { id: 'a5', kind: 'demo', group: 'earlier', tabs: [], unread: true, who: 'Orun', whoHref: 'PhoneDemo.dc.html', text: 'finished recording your demo on', target: 'ackstack', targetHref: 'PhoneProduct.dc.html', when: '[1d]', link: ['Review', 'PhoneDemo.dc.html'] },
+      { id: 'a6', kind: 'version', group: 'earlier', tabs: [], unread: false, who: 'meterwise [v1.3.0]', whoHref: 'PhoneProduct.dc.html', text: 'is now live on', target: 'stage', targetHref: 'PhoneFeed.dc.html', when: '[2d]' }
+    ];
+    const st = this.state;
+    const tab = st.tab;
+    const isUnread = (r) => r.unread && !st.read[r.id];
+    const anyUnread = ROWS.some(isUnread);
+    const tabs = [['all', 'All'], ['mentions', 'Mentions'], ['seats', 'Seats']].map(([k, label]) => {
+      const on = tab === k;
+      return { label, on, pick: () => this.setState({ tab: k }),
+        style: 'min-height: 44px; padding: 0 14px; border: 0; border-radius: 999px; font: inherit; font-size: 13px; cursor: pointer; ' + (on ? 'background: #141413; color: #FAF9F5; font-weight: 600' : 'background: transparent; color: #2B2A27; font-weight: 500') };
+    });
+    const seat = st.seat;
+    const toRow = (r) => {
+      const [d, c, tint] = ICON[r.kind];
+      const un = isUnread(r);
+      return {
+        who: r.who, whoHref: r.whoHref, text: r.text, target: r.target, targetHref: r.targetHref, when: r.when, d, stroke: c,
+        hasQuote: !!r.quote, quote: r.quote || '',
+        hasLink: !!r.link, linkLabel: r.link ? r.link[0] : '', linkHref: r.link ? r.link[1] : '#',
+        pending: !!r.seat && !seat, decided: !!r.seat && !!seat,
+        decidedLabel: seat === 'accepted' ? 'Accepted' : 'Declined',
+        decidedStyle: 'margin-top: 4px; font-size: 13px; font-weight: 600; color: ' + (seat === 'accepted' ? '#2F7A4E' : '#6B6A66'),
+        accept: () => this.setState({ seat: 'accepted', read: { ...st.read, [r.id]: true } }),
+        decline: () => this.setState({ seat: 'declined', read: { ...st.read, [r.id]: true } }),
+        unread: un,
+        dot: 'width: 8px; height: 8px; margin-top: 7px; border-radius: 50%; flex-shrink: 0; background: ' + (un ? '#E3B34C' : 'transparent'),
+        tile: 'width: 36px; height: 36px; border-radius: 12px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; background: ' + tint,
+        rowStyle: 'display: flex; align-items: flex-start; gap: 10px; padding: 10px; border-radius: 14px; background: ' + (un ? '#FBF8F0' : 'transparent')
+      };
+    };
+    const shown = ROWS.filter(r => tab === 'all' || r.tabs.indexOf(tab) >= 0);
+    const groups = [['today', 'Today', 'TODAY'], ['earlier', 'Earlier', 'EARLIER']]
+      .map(([k, label, mono]) => ({ label, mono, rows: shown.filter(r => r.group === k).map(toRow) }))
+      .filter(g => g.rows.length > 0);
+    return {
+      tabs, groups, empty: groups.length === 0, noUnread: !anyUnread,
+      markAll: () => { const read = { ...st.read }; ROWS.forEach(r => { read[r.id] = true; }); this.setState({ read }); },
+      markStyle: 'flex-shrink: 0; min-height: 44px; padding: 0 14px; border: 0; border-radius: 999px; font: inherit; font-size: 13px; font-weight: 600; ' + (anyUnread ? 'background: rgba(20,20,19,0.06); color: #141413; cursor: pointer' : 'background: rgba(20,20,19,0.03); color: #6B6A66; cursor: default')
+    };
+  }
+}
+</script>
+</body>
+</html>

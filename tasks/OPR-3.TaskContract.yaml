@@ -1,0 +1,42 @@
+# OPR-3: milestone OPR2, products post for themselves. A product's stage and
+# milestones, template posts and their reactions (design §6), and the surfaces
+# on them: the feed, the shipping and idea product pages, the maker view in
+# place, the post builder and the post page. The studio's listing pages
+# redirect to the product page.
+# The file is the contract; the task itself lives in Orunbase.
+apiVersion: orun.io/v1
+kind: TaskContract
+metadata:
+  name: OPR-3
+  title: "OPR2: products post for themselves"
+spec:
+  goal: A product is an idea or shipping, posts from five templates, and is managed by its crew on its own page.
+  affects:
+    - packages/db/**
+    - packages/contracts/**
+    - core/**
+    - gateway/**
+    - web/**
+    - tests/**
+    - specs/epics/openproduct-redesign/**
+    - tasks/OPR-3.TaskContract.yaml
+    - pnpm-lock.yaml
+    - default/openproduct/openproduct-db
+    - default/openproduct/openproduct-db-migrate
+    - default/openproduct/openproduct-contracts
+    - default/openproduct/openproduct-worker
+    - default/openproduct/openproduct-worker-tests
+    - default/openproduct/openproduct-gateway
+    - default/openproduct/openproduct-gateway-tests
+    - default/openproduct/openproduct-web
+    - default/openproduct/openproduct-web-tests
+    - default/openproduct/openproduct-web-perf
+  deps:
+    - OPR-2
+  doneWhen:
+    - a crew member publishes each of the four authored kinds from the builder, and Post stays disabled until every required block is filled and within its limit
+    - / shows published posts newest first, each in its kind's card, and a visitor with no account sees the same page as anyone else
+    - a product with no shipped milestone renders as the idea page, and one with a shipped milestone as the shipping page with its count of milestones
+    - a crew member edits the name and pitch in place and sees Needs you; a visitor sees neither, and the public HTML is identical for both
+    - /studio/[org]/[profile] redirects to the product's page
+  gates: []

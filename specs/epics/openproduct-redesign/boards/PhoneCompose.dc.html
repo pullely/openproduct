@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>New post, phone</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600&amp;family=Lora:wght@400;500&amp;family=IBM+Plex+Mono:wght@400;500&amp;display=swap">
+<style>
+:root{color-scheme:light}body{margin:0}
+a{color:#8A6420}a:hover{color:#5E4415}
+</style>
+</helmet>
+<div style="position: relative; width: 390px; height: 844px; box-sizing: border-box; background-color: #F6F4EE; background-image: radial-gradient(500px 260px at 50% -6%, rgba(184,134,47,0.2), transparent 65%), radial-gradient(rgba(20,20,19,0.07) 1px, transparent 1.2px); background-size: auto, 20px 20px; color: #141413; font-family: 'Hanken Grotesk', system-ui, sans-serif; font-size: 15px; line-height: 1.5; display: flex; flex-direction: column; overflow: hidden">
+
+<header style="display: flex; align-items: center; gap: 10px; padding: 12px 14px; background: rgba(255,255,255,0.6); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px)">
+<a href="PhoneProduct.dc.html" aria-label="Back to ackstack" style="width: 44px; height: 44px; border-radius: 50%; background: #FFFFFF; color: #141413; display: flex; align-items: center; justify-content: center; flex-shrink: 0"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M15 18l-6-6 6-6"></path></svg></a>
+<span style="flex: 1; min-width: 0; display: flex; flex-direction: column; line-height: 1.25"><span style="font-size: 13px; color: #6B6A66">ackstack</span><span style="font-weight: 600; font-size: 18px; letter-spacing: -0.02em">New post</span></span>
+<button type="button" disabled="{{notReady}}" style="{{postStyle}}">Post</button>
+</header>
+
+<div role="group" aria-label="Kind of post" style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; padding: 10px 12px 0">
+<sc-for list="{{types}}" as="t" hint-placeholder-count="4">
+<button type="button" onClick="{{t.pick}}" aria-pressed="{{t.on}}" style="{{t.style}}">
+<span style="{{t.tile}}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="{{t.stroke}}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{t.d}}"></path></svg></span>
+<span style="font-size: 11px; font-weight: 600; line-height: 1.15">{{t.short}}</span>
+</button>
+</sc-for>
+</div>
+
+<div style="flex: 1; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; padding: 10px 12px 12px">
+
+<article aria-label="{{typeLabel}}" style="{{cardStyle}}">
+<div style="display: flex; align-items: center; gap: 10px">
+<span style="width: 38px; height: 38px; border-radius: 12px; background: #F3E7CC; color: #8A6420; display: flex; align-items: center; justify-content: center; font-weight: 600; flex-shrink: 0">Ak</span>
+<span style="flex: 1; min-width: 0; display: flex; flex-direction: column; line-height: 1.3"><span style="font-weight: 600">ackstack</span><span style="font-size: 13px; color: #6B6A66">by you</span></span>
+<span style="{{badgeStyle}}">{{typeMono}}</span>
+</div>
+
+<sc-for list="{{blocks}}" as="b" hint-placeholder-count="3">
+<div style="display: flex; flex-direction: column; gap: 4px">
+<div style="display: flex; align-items: center; justify-content: space-between; gap: 8px">
+<label for="{{b.id}}" style="font-size: 13px; font-weight: 600">{{b.label}} <span style="{{b.tagStyle}}">{{b.tag}}</span></label>
+<span style="display: flex; align-items: center; gap: 4px">
+<span style="{{b.countStyle}}">{{b.count}}</span>
+<sc-if value="{{b.removable}}" hint-placeholder-val="{{false}}"><button type="button" onClick="{{b.remove}}" aria-label="{{b.removeLabel}}" style="width: 44px; height: 32px; border: 0; background: transparent; color: #6B6A66; display: flex; align-items: center; justify-content: flex-end; cursor: pointer"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg></button></sc-if>
+</span>
+</div>
+<sc-if value="{{b.single}}" hint-placeholder-val="{{true}}"><input id="{{b.id}}" type="text" value="{{b.value}}" onInput="{{b.set}}" placeholder="{{b.hint}}" style="{{b.fieldStyle}}"></sc-if>
+<sc-if value="{{b.multi}}" hint-placeholder-val="{{false}}"><textarea id="{{b.id}}" rows="3" value="{{b.value}}" onInput="{{b.set}}" placeholder="{{b.hint}}" style="{{b.fieldStyle}}"></textarea></sc-if>
+</div>
+</sc-for>
+
+<sc-if value="{{isVersion}}" hint-placeholder-val="{{false}}">
+<div style="padding: 10px 12px; border-radius: 14px; background: #141413; color: #FAF9F5; font-size: 13px; display: flex; align-items: center; gap: 8px"><span style="width: 8px; height: 8px; border-radius: 50%; background: #4ADE80; flex-shrink: 0"></span>Orun adds the deploy status here when it ships.</div>
+</sc-if>
+</article>
+
+<sc-if value="{{hasPalette}}" hint-placeholder-val="{{true}}">
+<section aria-label="Add a block" style="display: flex; flex-direction: column; gap: 8px">
+<div style="font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; letter-spacing: 0.12em; color: #6B6A66; padding: 0 4px">ADD A BLOCK</div>
+<div style="display: flex; flex-wrap: wrap; gap: 6px">
+<sc-for list="{{palette}}" as="a" hint-placeholder-count="4">
+<button type="button" onClick="{{a.add}}" style="display: flex; align-items: center; gap: 6px; min-height: 44px; padding: 0 14px; border: 0; border-radius: 999px; background: #FFFFFF; color: #141413; font: inherit; font-size: 13px; font-weight: 600; cursor: pointer"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg>{{a.label}}</button>
+</sc-for>
+</div>
+</section>
+</sc-if>
+</div>
+
+<div style="display: flex; align-items: center; justify-content: space-between; gap: 10px; margin: 0 10px 14px; padding: 8px 8px 8px 16px; background: #FFFFFF; border-radius: 16px">
+<span style="{{readyStyle}}">{{readyText}}</span>
+<button type="button" style="min-height: 44px; padding: 0 16px; border: 0; border-radius: 999px; background: rgba(20,20,19,0.06); color: #141413; font: inherit; font-size: 13px; font-weight: 600; cursor: pointer">Save draft</button>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  constructor(props) { super(props); this.state = { tpl: 'feature', added: {}, vals: {} }; }
+  renderVals() {
+    const st = this.state;
+    // [key, label, required, multi-line, max, hint]
+    const CATALOG = {
+      feature: [['feature', 'Feature', 1, 0, 60, 'What shipped'], ['does', 'What it does', 1, 1, 200, 'One or two sentences'], ['try', 'Try it', 1, 0, 120, 'Link to the live app'], ['for', 'For', 0, 0, 60, 'Who it is for'], ['milestone', 'Milestone', 0, 0, 20, 'For example AS3'], ['shot', 'Screenshot', 0, 0, 120, 'Image link'], ['demo', 'Demo', 0, 0, 120, 'Pick a recorded demo']],
+      version: [['version', 'Version', 1, 0, 20, 'For example 1.3.0'], ['added', 'Added', 1, 1, 300, 'One change per line'], ['changed', 'Changed', 0, 1, 300, 'One change per line'], ['fixed', 'Fixed', 0, 1, 300, 'One fix per line'], ['security', 'Security', 0, 1, 300, 'One item per line'], ['breaking', 'Breaking change', 0, 1, 200, 'What people must do']],
+      idea: [['problem', 'Problem', 1, 1, 200, 'The problem in one or two sentences'], ['who', 'Who has it', 1, 0, 80, 'The people who feel it'], ['why', 'Why now', 0, 1, 200, 'What changed'], ['detail', 'More detail', 0, 1, 400, 'Anything else'], ['seats', 'Seats needed', 0, 0, 80, 'Roles you need'], ['evidence', 'Evidence', 0, 0, 120, 'Link or source']],
+      seat: [['role', 'Role', 1, 0, 60, 'Name of the seat'], ['work', 'What you’d do', 1, 1, 200, 'The work, plainly'], ['time', 'Time', 0, 0, 40, 'Hours a week'], ['return', 'In return', 0, 0, 80, 'What the person gets'], ['skills', 'Skills', 0, 0, 80, 'Helpful skills']]
+    };
+    const TYPES = [
+      ['feature', 'Feature shipped', 'Feature', 'M5 12l5 5 9-10', '#8A6420', '#F3E7CC'],
+      ['version', 'New version', 'Version', 'M3 12V4h8l9 9-8 8zM7.5 7.5h.01', '#3A4A75', '#E6E9F2'],
+      ['idea', 'New idea', 'Idea', 'M9 18h6M10 21h4M12 3a6 6 0 00-4 10.5c.7.7 1 1.5 1 2.5h6c0-1 .3-1.8 1-2.5A6 6 0 0012 3z', '#5B3F86', '#ECE6F3'],
+      ['seat', 'Help wanted', 'Seat', 'M9 11a4 4 0 100-8 4 4 0 000 8zM2 21c1-4 4-6 7-6s6 2 7 6M19 8v6M16 11h6', '#1F5357', '#DDEDEC']
+    ];
+    const tpl = st.tpl;
+    const cur = TYPES.find(t => t[0] === tpl);
+    const k = (key) => tpl + ':' + key;
+    const val = (key) => st.vals[k(key)] || '';
+    const cat = CATALOG[tpl];
+    const shownDefs = cat.filter(([key, , req]) => req || st.added[k(key)]);
+    const blocks = shownDefs.map(([key, label, req, multi, max, hint]) => {
+      const v = val(key);
+      const left = max - v.length;
+      const missing = req && !v.trim();
+      return {
+        id: 'f-' + key, label, hint, value: v, single: !multi, multi: !!multi,
+        tag: req ? 'required' : 'optional',
+        tagStyle: 'font-weight: 400; color: ' + (missing ? '#8E3B27' : '#6B6A66'),
+        count: left < 0 ? (-left) + ' over' : left + ' left',
+        countStyle: 'font-family: IBM Plex Mono, monospace; font-size: 11px; color: ' + (left < 0 ? '#8E3B27' : '#6B6A66'),
+        removable: !req, removeLabel: 'Remove ' + label,
+        remove: () => this.setState({ added: { ...st.added, [k(key)]: false }, vals: { ...st.vals, [k(key)]: '' } }),
+        set: (e) => this.setState({ vals: { ...st.vals, [k(key)]: e.target.value } }),
+        fieldStyle: 'box-sizing: border-box; width: 100%; min-height: 44px; padding: ' + (multi ? '10px 14px' : '0 14px') + '; border: 0; outline: 0; border-radius: 14px; background: #F7F5EF; color: #141413; font: inherit; font-size: 16px; resize: none; box-shadow: inset 0 0 0 1.5px ' + (missing ? cur[4] + '55' : 'transparent')
+      };
+    });
+    const palette = cat.filter(([key, , req]) => !req && !st.added[k(key)]).map(([key, label]) => ({ label, add: () => this.setState({ added: { ...st.added, [k(key)]: true } }) }));
+    const req = cat.filter(c => c[2]);
+    const filled = req.filter(([key]) => val(key).trim()).length;
+    const over = shownDefs.some(([key, , , , max]) => val(key).length > max);
+    const ready = filled === req.length && !over;
+    return {
+      types: TYPES.map(([key, label, short, d, c, tint]) => {
+        const on = key === tpl;
+        return { short, d, on, stroke: on ? '#FFFFFF' : c, pick: () => this.setState({ tpl: key }),
+          tile: 'width: 32px; height: 32px; border-radius: 10px; display: flex; align-items: center; justify-content: center; background: ' + (on ? c : tint),
+          style: 'display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; min-height: 68px; padding: 6px 2px; border: 0; border-radius: 14px; font: inherit; cursor: pointer; ' + (on ? 'background: #FFFFFF; color: #141413' : 'background: transparent; color: #6B6A66') };
+      }),
+      typeLabel: cur[1], typeMono: cur[1].toUpperCase(),
+      badgeStyle: 'font-family: IBM Plex Mono, monospace; font-size: 10.5px; letter-spacing: 0.12em; color: ' + cur[4],
+      cardStyle: 'border-radius: 16px; padding: 14px; display: flex; flex-direction: column; gap: 12px; background: ' + (tpl === 'idea' ? '#F4F0F8' : '#FFFFFF'),
+      blocks, palette, hasPalette: palette.length > 0, isVersion: tpl === 'version',
+      notReady: !ready,
+      postStyle: 'min-height: 44px; padding: 0 20px; border: 0; border-radius: 999px; font: inherit; font-weight: 600; flex-shrink: 0; ' + (ready ? 'background: #141413; color: #FAF9F5; cursor: pointer' : 'background: #E4E2DA; color: #6B6A66; cursor: default'),
+      readyText: over ? 'Something is too long' : ready ? 'Ready to post' : filled + ' of ' + req.length + ' required filled',
+      readyStyle: 'font-weight: 600; color: ' + (over ? '#8E3B27' : ready ? '#2F7A4E' : '#141413')
+    };
+  }
+}
+</script>
+</body>
+</html>

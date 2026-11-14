@@ -1,0 +1,200 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Help wanted</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600&amp;family=Lora:ital,wght@0,400;0,500;1,400&amp;family=IBM+Plex+Mono:wght@400;500&amp;display=swap">
+<style>
+:root{color-scheme:light}body{margin:0;background:#F6F4EE}
+a{color:#8A6420}a:hover{color:#5E4415}
+@media (prefers-reduced-motion: reduce){header *{transition-duration:0.01ms !important}}
+</style>
+</helmet>
+<div style="background-color: #F6F4EE; background-image: radial-gradient(1100px 460px at 50% -8%, rgba(184,134,47,0.18), transparent 62%), radial-gradient(rgba(20,20,19,0.07) 1px, transparent 1.2px); background-size: auto, 22px 22px; color: #141413; font-family: 'Hanken Grotesk', system-ui, sans-serif; font-size: 15px; line-height: 1.5; min-height: 100%; display: flex; flex-direction: column">
+
+<header style="position: sticky; top: 0; z-index: 5; width: 100%; background: rgba(255,255,255,0.62); backdrop-filter: saturate(160%) blur(16px); -webkit-backdrop-filter: saturate(160%) blur(16px); box-shadow: none">
+<div style="max-width: 1180px; margin: 0 auto; box-sizing: border-box; padding: 10px 24px; display: flex; flex-wrap: wrap; align-items: center; gap: 12px 24px">
+<a href="Feed.dc.html" style="display: flex; align-items: center; gap: 10px; color: #141413; text-decoration: none; font-weight: 600; font-size: 18px; letter-spacing: -0.02em">
+<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 3.5V21" stroke="#141413"></path><circle cx="14" cy="9.5" r="6" stroke="#B8862F"></circle></svg>openproduct</a>
+<nav aria-label="Main" style="display: flex; flex-wrap: wrap; gap: 2px">
+<a href="Feed.dc.html" style="display: flex; align-items: center; min-height: 36px; padding: 0 14px; border-radius: 999px; color: #2B2A27; text-decoration: none; font-weight: 500">Feed</a>
+<a href="Products.dc.html" style="display: flex; align-items: center; min-height: 36px; padding: 0 14px; border-radius: 999px; color: #2B2A27; text-decoration: none; font-weight: 500">Products</a>
+<a href="Seats.dc.html" aria-current="page" style="display: flex; align-items: center; min-height: 36px; padding: 0 14px; border-radius: 999px; background: #141413; color: #FAF9F5; text-decoration: none; font-weight: 600">Help wanted</a>
+</nav>
+<div style="flex: 1 1 280px; display: flex; flex-wrap: wrap; justify-content: flex-end; align-items: center; gap: 10px">
+<div style="{{qWrap}}">
+<label style="{{qLabel}}">
+<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6B6A66" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-3.5-3.5"></path></svg>
+<span style="position: absolute; left: -9999px">Search</span>
+<input type="search" value="{{q}}" onInput="{{setQ}}" placeholder="Search products and people" style="border: 0; outline: 0; background: transparent; color: #141413; font: inherit; font-size: 16px; flex: 1; min-width: 0">
+</label>
+<div style="{{qCard}}">
+<sc-for list="{{qRows}}" as="r" hint-placeholder-count="3">
+<div style="{{r.wrap}}">
+<a href="{{r.href}}" style="{{r.style}}"><span style="{{r.tile}}">{{r.mono}}</span><span style="flex: 1; min-width: 0; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{r.name}}</span><span style="font-size: 13px; color: #6B6A66; flex-shrink: 0">{{r.kind}}</span></a>
+<sc-if value="{{r.canExpand}}" hint-placeholder-val="{{false}}"><button type="button" onClick="{{r.toggle}}" aria-expanded="{{r.open}}" aria-label="{{r.toggleLabel}}" style="width: 40px; height: 40px; flex-shrink: 0; border: 0; border-radius: 50%; background: transparent; color: #6B6A66; display: flex; align-items: center; justify-content: center; cursor: pointer"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{r.chev}}"></path></svg></button></sc-if>
+</div>
+</sc-for>
+<sc-if value="{{qNone}}" hint-placeholder-val="{{false}}"><div style="padding: 12px 10px; font-size: 13px; color: #6B6A66">No matches</div></sc-if>
+<a href="Search.dc.html" style="display: flex; align-items: center; justify-content: center; min-height: 40px; margin-top: 2px; border-top: 1px solid rgba(20,20,19,0.06); font-size: 13px; font-weight: 600; text-decoration: none">See all results</a>
+</div>
+</div>
+<a href="Activity.dc.html" aria-label="Activity" style="position: relative; width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; text-decoration: none; background: #FFFFFF; color: #6B6A66">
+<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9a6 6 0 0112 0c0 6 2.5 7.5 2.5 7.5h-17S6 15 6 9zM10 20a2 2 0 004 0"></path></svg>
+</a>
+<a href="Me.dc.html" aria-label="Your profile" style="position: relative; width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; text-decoration: none; background: #FFFFFF; color: #6B6A66">
+<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="8" r="4"></circle><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"></path></svg></a>
+</div>
+</div>
+</header>
+
+<div style="width: 100%; max-width: 1180px; margin: 0 auto; box-sizing: border-box; padding: 32px 24px 64px; display: flex; flex-direction: column; gap: 24px">
+
+<div style="display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 18px">
+<h1 style="margin: 0; font-family: Lora, Georgia, serif; font-weight: 400; font-size: 40px; line-height: 1.1; letter-spacing: -0.015em">Help wanted</h1>
+<span style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: 0.1em; color: #6B6A66">60 OPEN SEATS ACROSS 30 PRODUCTS</span>
+</div>
+
+<div style="display: flex; flex-wrap: wrap; gap: 28px; align-items: flex-start">
+
+<aside style="flex: 1 1 220px; max-width: 250px; min-width: 0; display: flex; flex-direction: column; gap: 16px">
+<nav aria-label="Seat filters" style="background: #FFFFFF; border-radius: 16px; box-shadow: none; padding: 10px; display: flex; flex-direction: column; gap: 2px">
+<div style="font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; color: #6B6A66; letter-spacing: 0.12em; padding: 6px 10px 8px">OPEN SEATS</div>
+<sc-for list="{{filters}}" as="f" hint-placeholder-count="3">
+<button type="button" onClick="{{f.pick}}" aria-pressed="{{f.on}}" style="{{f.style}}">
+<span style="{{f.tile}}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="{{f.stroke}}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{f.d}}"></path></svg></span>
+<span style="flex: 1; text-align: left">{{f.label}}</span>
+<span style="{{f.countStyle}}">{{f.count}}</span>
+</button>
+</sc-for>
+</nav>
+</aside>
+
+<main style="flex: 999 1 520px; min-width: 0; display: flex; flex-direction: column; gap: 18px">
+
+<div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 400px), 1fr)); gap: 18px">
+<sc-for list="{{seats}}" as="s" hint-placeholder-count="10">
+<article aria-label="{{s.aria}}" style="position: relative; border-radius: 16px; background: #FFFFFF; box-shadow: none; padding: 18px 26px; display: flex; flex-wrap: wrap; align-items: center; gap: 16px">
+<span aria-hidden="true" style="position: absolute; left: -12px; top: 50%; width: 24px; height: 24px; margin-top: -12px; border-radius: 50%; background: #F6F4EE"></span>
+<span aria-hidden="true" style="position: absolute; right: -12px; top: 50%; width: 24px; height: 24px; margin-top: -12px; border-radius: 50%; background: #F6F4EE"></span>
+<div style="width: 52px; height: 52px; border-radius: 50%; border: 2px dashed #2F6F73; box-sizing: border-box; display: flex; align-items: center; justify-content: center; color: #2F6F73; flex-shrink: 0"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg></div>
+<div style="flex: 1 1 160px; min-width: 0; display: flex; flex-direction: column; padding-left: 16px; border-left: 2px dashed #E4E2DA">
+<span style="font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; letter-spacing: 0.12em; color: #1F5357">OPEN SEAT</span>
+<span style="{{s.roleStyle}}">{{s.role}}</span>
+<a href="{{s.href}}" style="display: flex; align-items: center; gap: 7px; margin-top: 4px; color: #2B2A27; text-decoration: none; font-size: 13px; min-width: 0"><span style="{{s.tile}}">{{s.mono}}</span><span style="font-weight: 600">{{s.product}}</span><span style="color: #8A877F; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">· {{s.sub}}</span></a>
+</div>
+<button type="button" onClick="{{s.take}}" aria-pressed="{{s.requested}}" style="{{s.btnStyle}}">{{s.btnLabel}}</button>
+</article>
+</sc-for>
+</div>
+
+<div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; padding-top: 4px">
+<span style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: 0.1em; color: #6B6A66">{{shownLabel}}</span>
+<sc-if value="{{hasMore}}" hint-placeholder-val="{{true}}">
+<button type="button" onClick="{{more}}" style="min-height: 40px; padding: 0 20px; border: 0; border-radius: 999px; background: rgba(20,20,19,0.06); color: #141413; font: inherit; font-weight: 600; cursor: pointer">Show more</button>
+</sc-if>
+</div>
+
+</main>
+</div>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1300}}'>
+class Component extends DCLogic {
+  constructor(props) { super(props); this.state = { filter: 'all', shown: 10, requested: {} }; }
+  searchVals() {
+    const q = (this.state || {}).q || '';
+    const exp = (this.state || {}).qExp || {};
+    const w = q.trim().toLowerCase();
+    const open = !!w;
+    const EASE = 'cubic-bezier(0.2, 0.8, 0.2, 1)';
+    const P = [['ackstack', 'Ak', '#F3E7CC', '#8A6420', 1], ['meterwise', 'Mw', '#E6E9F2', '#3A4A75', 1], ['expirio', 'Ex', '#ECE6F3', '#5B3F86', 1], ['rangewise', 'Rw', '#E3EEE8', '#2F5E4C', 1], ['aitally', 'At', '#F0EEE6', '#2B2A27', 1], ['rateboard', 'Rb', '#DDEDEC', '#1F5357', 1], ['grantwell', 'Gw', '#E3EEE8', '#2F5E4C', 1], ['leakbook', 'Lb', '#E6E9F2', '#3A4A75', 1], ['arcdesk', 'Ad', '#ECEAE3', '#2B2A27', 1], ['beacon24', 'B2', '#ECE6F3', '#5B3F86', 0], ['chaseid', 'Ci', '#ECE6F3', '#5B3F86', 0]];
+    const link = 'flex: 1; min-width: 0; display: flex; align-items: center; gap: 10px; min-height: 44px; padding: 0 10px; border-radius: 12px; color: #141413; text-decoration: none';
+    const wrap = 'display: flex; align-items: center; gap: 2px';
+    const prod = (p, child) => ({ href: p[4] ? 'Product.dc.html' : 'ProductIdea.dc.html', name: p[0], mono: p[1], kind: child ? 'Maker' : (p[4] ? 'Shipping' : 'Idea'), canExpand: false,
+      wrap: wrap + (child ? '; margin-left: 24px; padding-left: 8px; border-left: 2px solid #ECEAE3' : ''), style: link,
+      tile: 'width: ' + (child ? 26 : 30) + 'px; height: ' + (child ? 26 : 30) + 'px; border-radius: 9px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 600; background: ' + p[2] + '; color: ' + p[3] });
+    const rows = [];
+    if (w) {
+      P.filter(p => p[0].includes(w)).slice(0, 3).forEach(p => rows.push(prod(p, false)));
+      P.filter(p => ('maker of ' + p[0]).includes(w)).slice(0, 3).forEach(p => {
+        const name = '[Maker of ' + p[0] + ']', isOpen = !!exp[name];
+        rows.push({ href: 'Person.dc.html', name, mono: 'M', kind: 'Person', wrap, style: link, canExpand: true, open: isOpen,
+          toggleLabel: (isOpen ? 'Hide products of ' : 'Show products of ') + name,
+          chev: isOpen ? 'M6 15l6-6 6 6' : 'M6 9l6 6 6-6',
+          toggle: () => this.setState({ qExp: { ...exp, [name]: !isOpen } }),
+          tile: 'width: 30px; height: 30px; border-radius: 50%; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 600; background: #F0EEE6; color: #2B2A27' });
+        if (isOpen) rows.push(prod(p, true));
+      });
+    }
+    return { q, setQ: (e) => this.setState({ q: e.target.value }), qOpen: open, qRows: rows, qNone: open && rows.length === 0,
+      qWrap: 'position: relative; display: flex; flex: 0 1 ' + (open ? '380px' : '260px') + '; transition: flex-basis 0.32s ' + EASE,
+      qCard: 'position: absolute; top: -6px; left: -6px; right: -6px; z-index: 20; box-sizing: border-box; overflow: hidden; background: #FFFFFF; border-radius: 22px; box-shadow: inset 0 0 0 1px rgba(20,20,19,0.1); padding: 54px 6px 6px; display: flex; flex-direction: column; gap: 2px; transform-origin: top center; ' + (open ? 'max-height: 560px; opacity: 1; transform: scale(1); visibility: visible; transition: max-height 0.42s ' + EASE + ', opacity 0.2s ease, transform 0.32s ' + EASE : 'max-height: 52px; opacity: 0; transform: scale(0.98); visibility: hidden; pointer-events: none; transition: max-height 0.26s ' + EASE + ', opacity 0.18s ease, transform 0.26s ' + EASE + ', visibility 0s linear 0.26s'),
+      qLabel: 'position: relative; z-index: 21; flex: 1; min-width: 0; display: flex; align-items: center; gap: 8px; border-radius: 999px; padding: 0 14px; min-height: 40px; transition: background 0.25s ease, box-shadow 0.25s ease; ' + (open ? 'background: #F7F5EF; box-shadow: none' : 'background: rgba(255,255,255,0.75); box-shadow: inset 0 0 0 1px rgba(20,20,19,0.07)') };
+  }
+  renderVals() { return { ...this.pageVals(), ...this.searchVals() }; }
+  pageVals() {
+    const st = this.state;
+    const P = (name, stage, mono, bg, fg) => ({ name, stage, mono, bg, fg });
+    const PRODUCTS = [
+      P('ackstack', 'shipping', 'Ak', '#F3E7CC', '#8A6420'), P('meterwise', 'shipping', 'Mw', '#E6E9F2', '#3A4A75'),
+      P('expirio', 'shipping', 'Ex', '#ECE6F3', '#5B3F86'), P('rangewise', 'shipping', 'Rw', '#E3EEE8', '#2F5E4C'),
+      P('aitally', 'shipping', 'At', '#F3E7CC', '#8A6420'), P('rateboard', 'shipping', 'Rb', '#DDEDEC', '#1F5357'),
+      P('grantwell', 'shipping', 'Gw', '#E3EEE8', '#2F5E4C'), P('leakbook', 'shipping', 'Lb', '#E6E9F2', '#3A4A75'),
+      P('arcdesk', 'shipping', 'Ad', '#ECEAE3', '#2B2A27')
+    ].concat(['chaseid', 'beacon24', 'stepthrough', 'flakeless', 'pipebill', 'sunsetd', 'seatsweep', 'rightkeep', 'lapsely', 'tenready', 'renewcue', 'marginmap', 'dwelltime', 'waiverly', 'certcrate', 'unitlog', 'voxquote', 'stockstitch', 'paidstone', 'holdfast', 'docketdrop']
+      .map(n => P(n, 'idea', n.slice(0, 1).toUpperCase() + n.slice(1, 2), '#ECE6F3', '#5B3F86')));
+    const KNOWN = { ackstack: [['HR-compliance advisor', 'Open 7 weeks · nobody yet'], ['Payroll / HR partner manager', '[Open since]']] };
+    const ALL = [];
+    PRODUCTS.forEach(p => [0, 1].forEach(i => {
+      const k = KNOWN[p.name] && KNOWN[p.name][i];
+      ALL.push({ id: p.name + ':' + i, p, role: k ? k[0] : '[Seat name]', sub: k ? k[1] : (p.stage === 'idea' ? 'Idea' : 'Shipping') + ' · [Open since]', placeholder: !k });
+    }));
+
+    const HUE = { all: ['#2F6F73', '#DDEDEC'], shipping: ['#B8862F', '#F3E7CC'], idea: ['#8C6A9E', '#ECE6F3'] };
+    const ICON = { all: 'M9 11a4 4 0 100-8 4 4 0 000 8zM2 21c1-4 4-6 7-6s6 2 7 6M19 8v6M16 11h6', shipping: 'M5 12l5 5 9-10', idea: 'M9 18h6M10 21h4M12 3a6 6 0 00-4 10.5c.7.7 1 1.5 1 2.5h6c0-1 .3-1.8 1-2.5A6 6 0 0012 3z' };
+    const LABEL = { all: 'All', shipping: 'On shipping products', idea: 'On ideas' };
+    const filters = ['all', 'shipping', 'idea'].map(k => {
+      const on = st.filter === k;
+      const [c, tint] = HUE[k];
+      const n = k === 'all' ? ALL.length : ALL.filter(s => s.p.stage === k).length;
+      return { label: LABEL[k], on, d: ICON[k], count: String(n),
+        pick: () => this.setState({ filter: k, shown: 10 }),
+        stroke: on ? '#FFFFFF' : c,
+        tile: 'width: 32px; height: 32px; border-radius: 10px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; background: ' + (on ? c : tint) + (on ? '; box-shadow: none' + c : ''),
+        countStyle: 'font-family: IBM Plex Mono, monospace; font-size: 11px; color: ' + (on ? '#141413' : '#8A877F'),
+        style: 'display: flex; align-items: center; gap: 12px; min-height: 40px; padding: 0 10px; border: 0; border-radius: 14px; font: inherit; font-size: 15px; cursor: pointer; ' + (on ? 'background: #FFFFFF; box-shadow: none; color: #141413; font-weight: 600' : 'background: transparent; color: #2B2A27')
+      };
+    });
+
+    const list = ALL.filter(s => st.filter === 'all' || s.p.stage === st.filter);
+    const shown = Math.min(st.shown, list.length);
+    const seats = list.slice(0, shown).map(s => {
+      const req = !!st.requested[s.id];
+      return { href: s.p.stage === 'idea' ? 'ProductIdea.dc.html' : 'Product.dc.html', role: s.role, product: s.p.name, sub: s.sub, mono: s.p.mono,
+        aria: 'Open seat on ' + s.p.name,
+        roleStyle: 'font-weight: 600; font-size: 18px; letter-spacing: -0.015em; ' + (s.placeholder ? 'color: #8A877F; font-style: italic' : 'color: #141413'),
+        tile: 'width: 22px; height: 22px; border-radius: 7px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 9.5px; font-weight: 600; background: ' + s.p.bg + '; color: ' + s.p.fg,
+        requested: req, btnLabel: req ? 'Requested' : 'Take the seat',
+        take: () => this.setState({ requested: { ...st.requested, [s.id]: !req } }),
+        btnStyle: 'display: flex; align-items: center; gap: 6px; min-height: 40px; padding: 0 18px; border: 0; border-radius: 999px; font: inherit; font-weight: 600; cursor: pointer; flex-shrink: 0; ' + (req ? 'background: #DDEDEC; color: #1F5357' : 'background: #2F6F73; color: #FFFFFF; box-shadow: none')
+      };
+    });
+    return {
+      filters, seats,
+      shownLabel: shown + ' OF ' + list.length + ' SHOWN',
+      hasMore: shown < list.length,
+      more: () => this.setState({ shown: st.shown + 10 })
+    };
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,22 @@
+# OPR-1: the spec. Lands the openproduct-redesign doc set, the design boards
+# and the contracts of the four milestones that build it (milestone OPR0).
+# The file is the contract; the task itself lives in Orunbase.
+apiVersion: orun.io/v1
+kind: TaskContract
+metadata:
+  name: OPR-1
+  title: "OPR0: the openproduct-redesign spec"
+spec:
+  goal: The openproduct-redesign design, its boards and the contracts of OPR-2 to OPR-5 are on main.
+  affects:
+    - specs/epics/openproduct-redesign/**
+    - tasks/OPR-1.TaskContract.yaml
+    - tasks/OPR-2.TaskContract.yaml
+    - tasks/OPR-3.TaskContract.yaml
+    - tasks/OPR-4.TaskContract.yaml
+    - tasks/OPR-5.TaskContract.yaml
+  doneWhen:
+    - README.md, design.md, implementation-plan.md, risks-and-open-questions.md and IMPLEMENTATION-STATUS.md are on main under specs/epics/openproduct-redesign/
+    - the 29 design boards and canvas.json are on main under specs/epics/openproduct-redesign/boards/
+    - the epic, its five milestones and tasks OPR-1 to OPR-5 exist in the workspace, each task with its contract attached
+  gates: []

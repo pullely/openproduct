@@ -1,0 +1,191 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Your profile, phone</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600&amp;family=Lora:wght@400;500&amp;family=IBM+Plex+Mono:wght@400;500&amp;display=swap">
+<style>
+:root{color-scheme:light}body{margin:0}
+a{color:#8A6420}a:hover{color:#5E4415}
+</style>
+</helmet>
+<div style="position: relative; width: 390px; height: 844px; box-sizing: border-box; background-color: #F6F4EE; background-image: radial-gradient(500px 260px at 50% -6%, rgba(184,134,47,0.2), transparent 65%), radial-gradient(rgba(20,20,19,0.07) 1px, transparent 1.2px); background-size: auto, 20px 20px; color: #141413; font-family: 'Hanken Grotesk', system-ui, sans-serif; font-size: 15px; line-height: 1.5; display: flex; flex-direction: column; overflow: hidden">
+
+<header style="display: flex; align-items: center; gap: 10px; padding: 12px 14px; background: rgba(255,255,255,0.6); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px)">
+<a href="PhoneFeed.dc.html" aria-label="Back" style="width: 44px; height: 44px; border-radius: 50%; background: #FFFFFF; color: #141413; display: flex; align-items: center; justify-content: center; flex-shrink: 0"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M15 18l-6-6 6-6"></path></svg></a>
+<span style="flex: 1; min-width: 0; font-weight: 600; font-size: 18px; letter-spacing: -0.02em">Profile</span>
+<a href="PhoneSettings.dc.html" aria-label="Settings" style="width: 44px; height: 44px; border-radius: 50%; background: #FFFFFF; display: flex; align-items: center; justify-content: center; color: #6B6A66; flex-shrink: 0"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6h9M17 6h3M4 12h3M11 12h9M4 18h9M17 18h3"></path><circle cx="15" cy="6" r="2"></circle><circle cx="9" cy="12" r="2"></circle><circle cx="15" cy="18" r="2"></circle></svg></a>
+</header>
+
+<div style="flex: 1; min-height: 0; overflow-y: auto; overflow-x: hidden; box-sizing: border-box; padding: 10px 12px 12px">
+<div style="display: flex; flex-direction: column; gap: 10px">
+
+<section aria-label="Your profile" style="background: radial-gradient(360px 160px at 100% 0%, rgba(227,179,76,0.24), transparent 70%), #FFFFFF; border-radius: 16px; padding: 14px; display: flex; flex-direction: column; gap: 10px">
+<div style="display: flex; align-items: center; gap: 12px">
+<div style="width: 52px; height: 52px; border-radius: 50%; background: #141413; color: #FAF9F5; display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 18px; flex-shrink: 0">Y</div>
+<div style="min-width: 0; display: flex; flex-direction: column; gap: 2px">
+<h1 style="margin: 0; font-family: Lora, Georgia, serif; font-weight: 400; font-size: 28px; line-height: 1.1; letter-spacing: -0.015em">[Your name]</h1>
+<span style="color: #2B2A27">[Your headline]</span>
+</div>
+</div>
+<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px">
+<a href="PhonePerson.dc.html" style="display: flex; align-items: center; justify-content: center; gap: 6px; min-height: 44px; border-radius: 999px; background: rgba(20,20,19,0.06); color: #141413; text-decoration: none; font-weight: 600">Public profile<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M7 17L17 7M9 7h8v8"></path></svg></a>
+<a href="PhoneSettings.dc.html" style="display: flex; align-items: center; justify-content: center; gap: 6px; min-height: 44px; border-radius: 999px; background: rgba(20,20,19,0.06); color: #141413; text-decoration: none; font-weight: 600"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16zM13.5 6.5l4 4"></path></svg>Edit profile</a>
+</div>
+</section>
+
+<nav aria-label="Your sections" style="display: flex; gap: 6px; margin: 0 -12px; padding: 0 12px; overflow-x: auto; scrollbar-width: none">
+<sc-for list="{{sections}}" as="s" hint-placeholder-count="5">
+<button type="button" onClick="{{s.pick}}" aria-pressed="{{s.on}}" style="{{s.style}}">
+<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="{{s.stroke}}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{s.d}}"></path></svg>
+<span>{{s.label}}</span>
+<span style="{{s.countStyle}}">{{s.count}}</span>
+</button>
+</sc-for>
+</nav>
+
+<sc-if value="{{isProducts}}" hint-placeholder-val="{{true}}">
+<article aria-label="ackstack" style="background: #FFFFFF; border-radius: 16px; padding: 14px; display: flex; flex-direction: column; gap: 10px">
+<div style="display: flex; align-items: center; gap: 12px">
+<a href="PhoneProduct.dc.html" aria-label="ackstack" style="width: 48px; height: 48px; border-radius: 14px; background: #F3E7CC; color: #8A6420; display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 16px; text-decoration: none; flex-shrink: 0">Ak</a>
+<div style="flex: 1; min-width: 0; display: flex; flex-direction: column">
+<a href="PhoneProduct.dc.html" style="display: flex; align-items: center; min-height: 26px; color: #141413; text-decoration: none; font-weight: 600; font-size: 18px; letter-spacing: -0.015em">ackstack</a>
+<span style="font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; letter-spacing: 0.12em; color: #8A6420">MAKER</span>
+</div>
+<a href="PhoneProduct.dc.html" style="display: flex; align-items: center; min-height: 44px; padding: 0 18px; border-radius: 999px; background: #141413; color: #FAF9F5; text-decoration: none; font-weight: 600; flex-shrink: 0">Manage</a>
+</div>
+<div style="display: flex; gap: 4px"><span style="flex: 1; height: 5px; border-radius: 3px; background: linear-gradient(90deg, #B8862F, #E3B34C)"></span><span style="flex: 1; height: 5px; border-radius: 3px; background: linear-gradient(90deg, #B8862F, #E3B34C)"></span><span style="flex: 1; height: 5px; border-radius: 3px; background: linear-gradient(90deg, #B8862F, #E3B34C)"></span><span style="flex: 1; height: 5px; border-radius: 3px; background: #F0EEE6"></span></div>
+<span style="font-size: 13px; color: #6B6A66">Shipping · 3 of 4 milestones · live on stage · 2 open seats</span>
+</article>
+</sc-if>
+
+<sc-if value="{{isFollowing}}" hint-placeholder-val="{{false}}">
+<sc-if value="{{hasFollowing}}" hint-placeholder-val="{{true}}">
+<section aria-label="Following" style="background: #FFFFFF; border-radius: 16px; padding: 4px 8px; display: flex; flex-direction: column">
+<sc-for list="{{following}}" as="f" hint-placeholder-count="3">
+<div style="{{f.row}}">
+<a href="{{f.href}}" aria-label="{{f.name}}" style="{{f.tile}}">{{f.mono}}</a>
+<div style="flex: 1; min-width: 0; display: flex; flex-direction: column"><a href="{{f.href}}" style="color: #141413; text-decoration: none; font-weight: 600">{{f.name}}</a><span style="font-size: 13px; color: #6B6A66">{{f.kind}}</span></div>
+<button type="button" onClick="{{f.unfollow}}" aria-label="{{f.aria}}" style="min-height: 44px; padding: 0 16px; border: 0; border-radius: 999px; background: rgba(20,20,19,0.06); color: #2B2A27; font: inherit; font-size: 13px; font-weight: 600; cursor: pointer; flex-shrink: 0">Unfollow</button>
+</div>
+</sc-for>
+</section>
+</sc-if>
+<sc-if value="{{noFollowing}}" hint-placeholder-val="{{false}}"><div style="padding: 4px 6px; color: #6B6A66">You don’t follow anything yet.</div></sc-if>
+</sc-if>
+
+<sc-if value="{{isSaved}}" hint-placeholder-val="{{false}}">
+<sc-if value="{{hasSaved}}" hint-placeholder-val="{{true}}">
+<article aria-label="New version" style="background: #FFFFFF; border-radius: 16px; padding: 14px; display: flex; flex-direction: column; gap: 10px">
+<div style="display: flex; align-items: center; gap: 12px">
+<a href="PhoneProduct.dc.html" aria-label="meterwise" style="width: 44px; height: 44px; border-radius: 12px; background: #E6E9F2; color: #3A4A75; display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 15px; text-decoration: none; flex-shrink: 0">Mw</a>
+<div style="flex: 1; min-width: 0; display: flex; flex-direction: column"><a href="PhoneProduct.dc.html" style="color: #141413; text-decoration: none; font-weight: 600">meterwise</a><span style="font-size: 13px; color: #6B6A66">by <a href="PhonePerson.dc.html" style="color: #2B2A27; font-weight: 600; text-decoration: none">[Maker of meterwise]</a> · 30 Sep</span></div>
+<button type="button" onClick="{{unsave}}" aria-label="Unsave" title="Unsave" style="width: 44px; height: 44px; padding: 0; border: 0; border-radius: 50%; background: rgba(20,20,19,0.06); color: #141413; display: flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h12v18l-6-4-6 4z"></path></svg></button>
+</div>
+<a href="PhonePost.dc.html" style="border-radius: 12px; background: #E6E9F2; padding: 10px 12px; display: flex; flex-direction: column; gap: 4px; color: #3A4A75; text-decoration: none">
+<span style="display: flex; align-items: baseline; gap: 10px"><span style="font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; letter-spacing: 0.12em">NEW VERSION</span><span style="font-family: 'IBM Plex Mono', monospace; font-weight: 500; font-size: 18px">[v1.3.0]</span></span>
+<span style="font-size: 13px"><span style="font-family: 'IBM Plex Mono', monospace">+</span> An OpenAI-compatible streaming proxy that meters every call per customer</span>
+</a>
+</article>
+</sc-if>
+<sc-if value="{{noSaved}}" hint-placeholder-val="{{false}}"><div style="padding: 4px 6px; color: #6B6A66">Nothing saved.</div></sc-if>
+</sc-if>
+
+<sc-if value="{{isSeats}}" hint-placeholder-val="{{false}}">
+<sc-if value="{{hasSeat}}" hint-placeholder-val="{{true}}">
+<article aria-label="Seat request" style="background: #FFFFFF; border-radius: 16px; padding: 14px; display: flex; align-items: center; gap: 12px">
+<div style="width: 44px; height: 44px; border-radius: 50%; border: 2px dashed #2F6F73; box-sizing: border-box; display: flex; align-items: center; justify-content: center; color: #2F6F73; flex-shrink: 0"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="8"></circle><path d="M12 8v4l2.5 2"></path></svg></div>
+<div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px">
+<span style="font-weight: 600; font-size: 18px; letter-spacing: -0.015em; line-height: 1.2">HR-compliance advisor</span>
+<span style="font-size: 13px; color: #6B6A66"><a href="PhoneProduct.dc.html" style="font-weight: 600; text-decoration: none">ackstack</a> · <span style="color: #1F5357; font-weight: 600">Requested</span></span>
+</div>
+<button type="button" onClick="{{withdraw}}" style="min-height: 44px; padding: 0 16px; border: 0; border-radius: 999px; background: rgba(20,20,19,0.06); color: #2B2A27; font: inherit; font-size: 13px; font-weight: 600; cursor: pointer; flex-shrink: 0">Withdraw</button>
+</article>
+</sc-if>
+<sc-if value="{{noSeat}}" hint-placeholder-val="{{false}}"><div style="padding: 4px 6px; color: #6B6A66">No seats requested.</div></sc-if>
+</sc-if>
+
+<sc-if value="{{isDrafts}}" hint-placeholder-val="{{false}}">
+<article aria-label="Draft" style="background: #FFFFFF; border-radius: 16px; padding: 14px; display: flex; align-items: center; gap: 12px">
+<span style="width: 44px; height: 44px; border-radius: 12px; background: #E6E9F2; display: flex; align-items: center; justify-content: center; flex-shrink: 0"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#3A4A75" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12V4h8l9 9-8 8zM7.5 7.5h.01"></path></svg></span>
+<div style="flex: 1; min-width: 0; display: flex; flex-direction: column">
+<span style="font-weight: 600">New version <span style="font-family: 'IBM Plex Mono', monospace; font-weight: 500; color: #3A4A75">1.4.0</span></span>
+<span style="font-size: 13px; color: #6B6A66">for ackstack · <span style="color: #1F5357">1 of 2 required</span></span>
+</div>
+<a href="PhoneCompose.dc.html" style="display: flex; align-items: center; min-height: 44px; padding: 0 18px; border-radius: 999px; background: #141413; color: #FAF9F5; text-decoration: none; font-weight: 600; flex-shrink: 0">Continue</a>
+</article>
+</sc-if>
+
+</div>
+</div>
+
+<nav aria-label="Main" style="position: relative; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); margin: 10px 10px 14px; padding: 4px 6px; background: #FFFFFF; border-radius: 16px">
+<a href="PhoneFeed.dc.html" style="min-height: 54px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; color: #6B6A66; text-decoration: none; font-size: 11px">
+<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 11l8-7 8 7v9H4z"></path></svg>Feed</a>
+<a href="PhoneProducts.dc.html" style="min-height: 54px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; color: #6B6A66; text-decoration: none; font-size: 11px">
+<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="2"></rect><rect x="14" y="3" width="7" height="7" rx="2"></rect><rect x="3" y="14" width="7" height="7" rx="2"></rect><rect x="14" y="14" width="7" height="7" rx="2"></rect></svg>Products</a>
+<a href="PhoneSeats.dc.html" style="min-height: 54px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; color: #6B6A66; text-decoration: none; font-size: 11px">
+<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="9" cy="8" r="3.5"></circle><path d="M3 20c.8-3.5 3.2-5.5 6-5.5s5.2 2 6 5.5"></path><path d="M18 8v6M15 11h6"></path></svg>Seats</a>
+<a href="PhoneActivity.dc.html" style="min-height: 54px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; color: #6B6A66; text-decoration: none; font-size: 11px">
+<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 8a6 6 0 0112 0c0 7 3 8 3 8H3s3-1 3-8"></path><path d="M10 20a2 2 0 004 0"></path></svg>Activity</a>
+</nav>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { section: 'products', follows: ['product:ackstack', 'product:expirio', 'person:rangewise'], saved: true, seat: true };
+  }
+  renderVals() {
+    const st = this.state;
+    const sec = st.section;
+    const FOL = {
+      'product:ackstack': { name: 'ackstack', kind: 'Product', mono: 'Ak', t: ['#F3E7CC', '#8A6420'], href: 'PhoneProduct.dc.html' },
+      'product:expirio': { name: 'expirio', kind: 'Product', mono: 'Ex', t: ['#ECE6F3', '#5B3F86'], href: 'PhoneProduct.dc.html' },
+      'person:rangewise': { name: '[Maker of rangewise]', kind: 'Person', mono: 'M', t: ['#F0EEE6', '#2B2A27'], href: 'PhonePerson.dc.html', person: true }
+    };
+    const following = st.follows.map((k, i) => {
+      const f = FOL[k];
+      return {
+        name: f.name, kind: f.kind, mono: f.mono, href: f.href, aria: 'Unfollow ' + f.name,
+        unfollow: () => this.setState({ follows: this.state.follows.filter(x => x !== k) }),
+        row: 'display: flex; align-items: center; gap: 12px; padding: 8px 6px' + (i ? '; border-top: 1px solid rgba(20,20,19,0.06)' : ''),
+        tile: 'width: 44px; height: 44px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 600; text-decoration: none; background: ' + f.t[0] + '; color: ' + f.t[1] + '; border-radius: ' + (f.person ? '50%' : '12px')
+      };
+    });
+    const DEF = [
+      ['products', 'Your products', 1, '#8A6420', 'M4 7l8-4 8 4-8 4zM4 7v10l8 4 8-4V7M12 11v10'],
+      ['following', 'Following', st.follows.length, '#3A4A75', 'M16 11a3 3 0 100-6 3 3 0 000 6zM8 11a3 3 0 100-6 3 3 0 000 6zM2 20c.8-3 3-5 6-5s5.2 2 6 5M14.5 15.2c.5-.1 1-.2 1.5-.2 3 0 5.2 2 6 5'],
+      ['saved', 'Saved', st.saved ? 1 : 0, '#141413', 'M6 3h12v18l-6-4-6 4z'],
+      ['seats', 'Seats', st.seat ? 1 : 0, '#2F6F73', 'M9 11a4 4 0 100-8 4 4 0 000 8zM2 21c1-4 4-6 7-6s6 2 7 6M19 8v6M16 11h6'],
+      ['drafts', 'Drafts', 1, '#5B3F86', 'M4 20h4L19 9l-4-4L4 16zM13.5 6.5l4 4']
+    ];
+    const sections = DEF.map(([k, label, n, c, d]) => {
+      const on = sec === k;
+      return {
+        label, on, d, count: String(n),
+        pick: () => this.setState({ section: k }),
+        stroke: on ? '#FAF9F5' : c,
+        countStyle: 'font-family: IBM Plex Mono, monospace; font-size: 11px; font-weight: 400; color: ' + (on ? '#FAF9F5' : '#6B6A66'),
+        style: 'display: flex; align-items: center; gap: 8px; flex-shrink: 0; min-height: 44px; padding: 0 14px; border: 0; border-radius: 999px; font: inherit; font-size: 15px; white-space: nowrap; cursor: pointer; ' + (on ? 'background: #141413; color: #FAF9F5; font-weight: 600' : 'background: #FFFFFF; color: #2B2A27; font-weight: 500')
+      };
+    });
+    return {
+      sections,
+      isProducts: sec === 'products', isFollowing: sec === 'following', isSaved: sec === 'saved', isSeats: sec === 'seats', isDrafts: sec === 'drafts',
+      following, hasFollowing: following.length > 0, noFollowing: following.length === 0,
+      hasSaved: st.saved, noSaved: !st.saved, unsave: () => this.setState({ saved: false }),
+      hasSeat: st.seat, noSeat: !st.seat, withdraw: () => this.setState({ seat: false })
+    };
+  }
+}
+</script>
+</body>
+</html>

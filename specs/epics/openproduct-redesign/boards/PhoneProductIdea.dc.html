@@ -1,0 +1,281 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Product page, idea, phone</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600&amp;family=Lora:wght@400;500&amp;family=IBM+Plex+Mono:wght@400;500&amp;display=swap">
+<style>
+:root{color-scheme:light}body{margin:0}
+a{color:#8A6420}a:hover{color:#5E4415}
+</style>
+</helmet>
+<div style="position: relative; width: 390px; height: 844px; box-sizing: border-box; background-color: #F6F4EE; background-image: radial-gradient(500px 260px at 50% -6%, rgba(184,134,47,0.2), transparent 65%), radial-gradient(rgba(20,20,19,0.07) 1px, transparent 1.2px); background-size: auto, 20px 20px; color: #141413; font-family: 'Hanken Grotesk', system-ui, sans-serif; font-size: 15px; line-height: 1.5; display: flex; flex-direction: column; overflow: hidden">
+
+<header style="display: flex; align-items: center; gap: 10px; padding: 12px 14px; background: rgba(255,255,255,0.6); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px)">
+<a href="PhoneFeed.dc.html" aria-label="Back" style="width: 44px; height: 44px; border-radius: 50%; background: #FFFFFF; color: #141413; display: flex; align-items: center; justify-content: center; flex-shrink: 0"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M15 18l-6-6 6-6"></path></svg></a>
+<span style="flex: 1; min-width: 0; font-weight: 600; font-size: 18px; letter-spacing: -0.02em">{{name}}</span>
+<div role="group" aria-label="View this page as" style="display: flex; gap: 2px; padding: 3px; border-radius: 999px; background: rgba(20,20,19,0.06); flex-shrink: 0">
+<sc-for list="{{views}}" as="v" hint-placeholder-count="2">
+<button type="button" onClick="{{v.pick}}" aria-pressed="{{v.on}}" aria-label="{{v.label}}" title="{{v.label}}" style="{{v.style}}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{v.d}}"></path></svg></button>
+</sc-for>
+</div>
+<a href="PhoneMe.dc.html" aria-label="Your profile" style="width: 44px; height: 44px; border-radius: 50%; background: #FFFFFF; display: flex; align-items: center; justify-content: center; color: #6B6A66; flex-shrink: 0"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="8" r="4"></circle><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"></path></svg></a>
+</header>
+
+<div style="flex: 1; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; padding: 10px 12px 12px">
+
+<section style="background: #F4F0F8; border-radius: 4px 16px 16px 16px; padding: 14px; display: flex; flex-direction: column; gap: 10px">
+<div style="display: flex; align-items: center; gap: 12px">
+<div style="width: 52px; height: 52px; border-radius: 16px; background: #FFFFFF; color: #5B3F86; box-shadow: inset 0 0 0 1.5px rgba(91,63,134,0.3); display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 18px; flex-shrink: 0">B2</div>
+<div style="min-width: 0; display: flex; flex-direction: column">
+<span style="font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; letter-spacing: 0.12em; color: #5B3F86">AN IDEA, NOT BUILT YET</span>
+<h1 style="margin: 0; font-family: Lora, Georgia, serif; font-weight: 400; font-size: 28px; line-height: 1.1; letter-spacing: -0.015em">{{name}}</h1>
+</div>
+</div>
+<sc-if value="{{reading}}" hint-placeholder-val="{{true}}">
+<p style="margin: 0; font-family: Lora, Georgia, serif; font-style: italic; font-size: 18px; line-height: 1.35; color: #2A1F3D">“{{pitch}}”</p>
+</sc-if>
+<sc-if value="{{editing}}" hint-placeholder-val="{{false}}">
+<label style="display: flex; flex-direction: column; gap: 4px"><span style="display: flex; justify-content: space-between; font-size: 13px; font-weight: 600"><span>The idea in one line</span><span style="{{countStyle}}">{{countLabel}}</span></span>
+<textarea rows="3" value="{{draftPitch}}" onInput="{{setPitch}}" style="box-sizing: border-box; padding: 10px 14px; border: 0; outline: 0; border-radius: 14px; background: #FFFFFF; color: #141413; font: inherit; font-size: 16px; resize: none"></textarea></label>
+<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px">
+<button type="button" onClick="{{cancelEdit}}" style="display: flex; align-items: center; justify-content: center; gap: 6px; min-height: 44px; border: 0; border-radius: 999px; text-decoration: none; font: inherit; font-weight: 600; cursor: pointer; background: rgba(42,31,61,0.08); color: #2A1F3D">Cancel</button>
+<button type="button" onClick="{{saveEdit}}" disabled="{{cantSave}}" style="{{saveStyle}}">Save</button>
+</div>
+</sc-if>
+<div style="font-size: 13px; color: #3D3550">by <a href="PhonePerson.dc.html" style="color: #2A1F3D; font-weight: 600; text-decoration: none">[Maker of beacon24]</a> · 2 open seats</div>
+<sc-if value="{{showMakerActions}}" hint-placeholder-val="{{true}}">
+<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px">
+<button type="button" onClick="{{startEdit}}" style="display: flex; align-items: center; justify-content: center; gap: 6px; min-height: 44px; border: 0; border-radius: 999px; text-decoration: none; font: inherit; font-weight: 600; cursor: pointer; background: rgba(42,31,61,0.08); color: #2A1F3D">Edit details</button>
+<a href="PhoneCompose.dc.html" style="display: flex; align-items: center; justify-content: center; gap: 6px; min-height: 44px; border: 0; border-radius: 999px; text-decoration: none; font: inherit; font-weight: 600; cursor: pointer; background: #2A1F3D; color: #F4F0F8"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg>New post</a>
+</div>
+</sc-if>
+<sc-if value="{{isVisitor}}" hint-placeholder-val="{{false}}">
+<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px">
+<a href="#seats" style="display: flex; align-items: center; justify-content: center; gap: 6px; min-height: 44px; border: 0; border-radius: 999px; text-decoration: none; font: inherit; font-weight: 600; cursor: pointer; grid-column: 1 / -1; background: #2A1F3D; color: #F4F0F8">Take a seat</a>
+<button type="button" onClick="{{toggleUse}}" aria-pressed="{{wouldUse}}" style="{{useStyle}}">{{useLabel}}</button>
+<button type="button" onClick="{{toggleFollow}}" aria-pressed="{{following}}" style="{{followStyle}}">{{followLabel}}</button>
+</div>
+</sc-if>
+<ol aria-label="Where this idea stands" style="list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px">
+<sc-for list="{{track}}" as="t" hint-placeholder-count="3">
+<li style="{{t.style}}">{{t.label}}</li>
+</sc-for>
+</ol>
+</section>
+
+<sc-if value="{{showPrivate}}" hint-placeholder-val="{{true}}">
+<section aria-label="Needs you, visible to the crew only" style="background: #FFFFFF; border-radius: 16px; padding: 6px 8px; display: flex; flex-direction: column">
+<div style="display: flex; align-items: center; gap: 8px; padding: 6px 6px 8px; font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; letter-spacing: 0.12em; color: #6B6A66"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 11V8a6 6 0 0112 0v3M5 11h14v10H5z"></path></svg>NEEDS YOU</div>
+<div style="display: flex; align-items: center; gap: 8px; padding: 6px; border-top: 1px solid rgba(20,20,19,0.06)">
+<span style="flex: 1; min-width: 0; font-size: 13px; line-height: 1.35"><strong style="font-weight: 600">[Applicant]</strong> · [Seat name]</span>
+<sc-if value="{{seatPending}}" hint-placeholder-val="{{true}}">
+<span style="display: flex; gap: 6px"><button type="button" onClick="{{accept}}" style="min-height: 44px; padding: 0 14px; border: 0; border-radius: 999px; font: inherit; font-size: 13px; font-weight: 600; cursor: pointer; background: #141413; color: #FAF9F5">Accept</button><button type="button" onClick="{{decline}}" style="min-height: 44px; padding: 0 14px; border: 0; border-radius: 999px; font: inherit; font-size: 13px; font-weight: 600; cursor: pointer; background: rgba(20,20,19,0.06); color: #141413">Decline</button></span>
+</sc-if>
+<sc-if value="{{seatDecided}}" hint-placeholder-val="{{false}}"><span style="{{seatDecidedStyle}}">{{seatDecidedLabel}}</span></sc-if>
+</div>
+<a href="#talk" onClick="{{openPrivate}}" style="display: flex; align-items: center; justify-content: space-between; gap: 10px; min-height: 44px; padding: 0 6px; border-top: 1px solid rgba(20,20,19,0.06); color: #141413; text-decoration: none; font-size: 13px"><span>Private thread from [Reader]</span><span style="font-weight: 600; color: #8A6420">Open</span></a>
+</section>
+</sc-if>
+
+<section style="background: #FFFFFF; border-radius: 16px; padding: 14px; display: flex; flex-direction: column; gap: 10px">
+<h2 style="margin: 0; font-size: 15px; font-weight: 600">The problem</h2>
+<p style="margin: 0; color: #2B2A27">Software sold in the EU must report actively exploited vulnerabilities: an early warning in 24 hours, a notification in 72, a final report in 14 days.</p>
+<div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px">
+<div style="padding: 10px; border-radius: 14px; background: #F4F0F8; display: flex; flex-direction: column"><span style="font-weight: 600; font-size: 18px; color: #2A1F3D">24 h</span><span style="font-size: 11px; color: #3D3550">Early warning</span></div>
+<div style="padding: 10px; border-radius: 14px; background: #F4F0F8; display: flex; flex-direction: column"><span style="font-weight: 600; font-size: 18px; color: #2A1F3D">72 h</span><span style="font-size: 11px; color: #3D3550">Notification</span></div>
+<div style="padding: 10px; border-radius: 14px; background: #F4F0F8; display: flex; flex-direction: column"><span style="font-weight: 600; font-size: 18px; color: #2A1F3D">14 days</span><span style="font-size: 11px; color: #3D3550">Final report</span></div>
+</div>
+</section>
+
+<section id="seats" style="background: #FFFFFF; border-radius: 16px; padding: 14px; display: flex; flex-direction: column; gap: 10px">
+<h2 style="margin: 0; font-size: 15px; font-weight: 600">Open seats</h2>
+<sc-for list="{{openSeats}}" as="o" hint-placeholder-count="2">
+<div style="display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 14px; background: #F0F7F6">
+<span aria-hidden="true" style="width: 36px; height: 36px; border-radius: 50%; border: 2px dashed #2F6F73; box-sizing: border-box; flex-shrink: 0"></span>
+<span style="flex: 1; min-width: 0; display: flex; flex-direction: column; line-height: 1.3"><span style="font-weight: 600; color: #6B6A66; font-style: italic">{{o.role}}</span><span style="font-size: 13px; color: #6B6A66">{{o.sub}}</span></span>
+<button type="button" onClick="{{o.take}}" aria-pressed="{{o.requested}}" style="{{o.btnStyle}}">{{o.btnLabel}}</button>
+</div>
+</sc-for>
+</section>
+
+<h2 id="talk" style="margin: 6px 4px 0; font-size: 15px; font-weight: 600">Talk</h2>
+<div style="display: flex; flex-direction: column; gap: 10px">
+<section aria-label="Start a thread" style="background: #FFFFFF; border-radius: 16px; box-shadow: none; padding: 10px; display: flex; flex-direction: column; gap: 8px">
+<label style="display: flex"><span style="position: absolute; left: -9999px">Start a thread</span>
+<input type="text" value="{{tkDraft}}" onInput="{{tkSet}}" placeholder="Start a thread" style="flex: 1; min-width: 0; min-height: 44px; box-sizing: border-box; padding: 0 16px; border: 0; outline: 0; border-radius: 999px; background: #F7F5EF; color: #141413; font: inherit; font-size: 16px"></label>
+<div style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px">
+<div role="group" aria-label="Kind of thread" style="display: flex; gap: 2px; padding: 3px; border-radius: 999px; background: rgba(20,20,19,0.06)">
+<sc-for list="{{tkKinds}}" as="k" hint-placeholder-count="3">
+<button type="button" onClick="{{k.pick}}" aria-pressed="{{k.on}}" style="{{k.style}}">{{k.label}}</button>
+</sc-for>
+</div>
+<div role="group" aria-label="Who can see it" style="display: flex; gap: 2px; padding: 3px; border-radius: 999px; background: rgba(20,20,19,0.06)">
+<sc-for list="{{tkVis}}" as="v" hint-placeholder-count="2">
+<button type="button" onClick="{{v.pick}}" aria-pressed="{{v.on}}" style="{{v.style}}"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{v.d}}"></path></svg>{{v.label}}</button>
+</sc-for>
+</div>
+<span style="flex: 1"></span>
+<button type="button" onClick="{{tkPost}}" disabled="{{tkCant}}" style="{{tkPostStyle}}">{{tkPostLabel}}</button>
+</div>
+</section>
+
+<div role="group" aria-label="Show threads" style="align-self: flex-start; display: flex; flex-wrap: wrap; gap: 2px; padding: 3px; border-radius: 999px; background: rgba(20,20,19,0.06)">
+<sc-for list="{{tkFilters}}" as="f" hint-placeholder-count="3">
+<button type="button" onClick="{{f.pick}}" aria-pressed="{{f.on}}" style="{{f.style}}">{{f.label}}<span style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: #6B6A66">{{f.count}}</span></button>
+</sc-for>
+</div>
+
+<sc-for list="{{tkThreads}}" as="t" hint-placeholder-count="3">
+<article style="{{t.card}}">
+<div style="display: flex; align-items: center; gap: 10px">
+<span style="width: 36px; height: 36px; border-radius: 50%; background: #F0EEE6; color: #2B2A27; display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 13px; flex-shrink: 0">{{t.mono}}</span>
+<span style="flex: 1; min-width: 0; display: flex; flex-direction: column; line-height: 1.3"><span style="font-weight: 600">{{t.who}}</span><span style="font-size: 13px; color: #6B6A66">{{t.meta}}</span></span>
+<span style="{{t.badge}}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{t.badgeIcon}}"></path></svg>{{t.badgeLabel}}</span>
+</div>
+<div style="font-size: 18px; letter-spacing: -0.01em; line-height: 1.35">{{t.q}}</div>
+<div style="display: flex; flex-wrap: wrap; align-items: center; gap: 6px">
+<button type="button" onClick="{{t.toggle}}" aria-expanded="{{t.open}}" style="{{t.repliesStyle}}">{{t.repliesLabel}}</button>
+<sc-if value="{{t.canResolve}}" hint-placeholder-val="{{false}}"><button type="button" onClick="{{t.resolve}}" aria-pressed="{{t.resolved}}" style="{{t.resolveStyle}}">{{t.resolveLabel}}</button></sc-if>
+<sc-if value="{{t.showResolved}}" hint-placeholder-val="{{false}}"><span style="display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600; color: #2F7A4E"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5 9-10"></path></svg>Resolved</span></sc-if>
+</div>
+<sc-if value="{{t.open}}" hint-placeholder-val="{{false}}">
+<div style="display: flex; flex-direction: column; gap: 8px; padding-left: 14px; border-left: 2px solid #ECEAE3">
+<sc-for list="{{t.replies}}" as="r" hint-placeholder-count="1">
+<div style="padding: 10px 12px; border-radius: 14px; background: #F7F5EF; display: flex; flex-direction: column; gap: 2px"><span style="display: flex; align-items: center; gap: 8px"><span style="font-weight: 600">{{r.who}}</span><span style="font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; letter-spacing: 0.12em; color: #8A6420">{{r.role}}</span></span><span style="color: #2B2A27">{{r.text}}</span></div>
+</sc-for>
+<sc-if value="{{t.canReply}}" hint-placeholder-val="{{true}}">
+<label style="display: flex"><span style="position: absolute; left: -9999px">Reply</span>
+<input type="text" placeholder="{{t.replyHint}}" style="flex: 1; min-width: 0; min-height: 44px; box-sizing: border-box; padding: 0 16px; border: 0; outline: 0; border-radius: 999px; background: #F7F5EF; color: #141413; font: inherit; font-size: 16px"></label>
+</sc-if>
+</div>
+</sc-if>
+</article>
+</sc-for>
+<sc-if value="{{tkEmpty}}" hint-placeholder-val="{{false}}"><div style="padding: 16px; border-radius: 16px; background: #FFFFFF; text-align: center; color: #6B6A66">No threads</div></sc-if>
+</div>
+</div>
+
+<nav aria-label="Main" style="position: relative; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); margin: 10px 10px 14px; padding: 4px 6px; background: #FFFFFF; border-radius: 16px">
+<a href="PhoneFeed.dc.html" style="min-height: 54px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; color: #6B6A66; text-decoration: none; font-size: 11px">
+<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 11l8-7 8 7v9H4z"></path></svg>Feed</a>
+<a href="PhoneProducts.dc.html" aria-current="page" style="min-height: 54px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; color: #141413; text-decoration: none; font-size: 11px; font-weight: 600">
+<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="2"></rect><rect x="14" y="3" width="7" height="7" rx="2"></rect><rect x="3" y="14" width="7" height="7" rx="2"></rect><rect x="14" y="14" width="7" height="7" rx="2"></rect></svg>Products</a>
+<a href="PhoneSeats.dc.html" style="min-height: 54px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; color: #6B6A66; text-decoration: none; font-size: 11px">
+<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="9" cy="8" r="3.5"></circle><path d="M3 20c.8-3.5 3.2-5.5 6-5.5s5.2 2 6 5.5"></path><path d="M18 8v6M15 11h6"></path></svg>Seats</a>
+<a href="PhoneActivity.dc.html" style="min-height: 54px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; color: #6B6A66; text-decoration: none; font-size: 11px">
+<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 8a6 6 0 0112 0c0 7 3 8 3 8H3s3-1 3-8"></path><path d="M10 20a2 2 0 004 0"></path></svg>Activity</a>
+</nav>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    const pitch = 'EU Cyber Resilience Act reporting in a box';
+    this.state = { view: 'maker', editing: false, pitch, draftPitch: pitch, follow: false, use: false, seat: null, req: {}, talkDraft: '', asked: [] };
+  }
+  talkVals(maker, crewName) {
+    const tk = (this.state || {}).tk || {};
+    const set = (patch) => this.setState({ tk: { ...tk, ...patch } });
+    const draft = tk.draft || '', vis = tk.vis || 'public', kind = tk.kind || 'question', filter = tk.filter || 'all';
+    const open = tk.open || { s1: true }, resolved = tk.resolved || {}, added = tk.added || [];
+    const LOCK = 'M6 11V8a6 6 0 0112 0v3M5 11h14v10H5z', GLOBE = 'M12 3a9 9 0 100 18 9 9 0 000-18zM3 12h18M12 3c3 3 3 15 0 18M12 3c-3 3-3 15 0 18';
+    const KIND = { question: 'Question', issue: 'Issue', idea: 'Idea' };
+    const seg = (on) => 'display: flex; align-items: center; gap: 6px; min-height: 40px; padding: 0 11px; border: 0; border-radius: 999px; font: inherit; font-size: 13px; cursor: pointer; ' + (on ? 'background: #FFFFFF; color: #141413; font-weight: 600' : 'background: transparent; color: #6B6A66; font-weight: 500');
+    // Sample threads are placeholders. A private thread is seen by its author and the product's crew only.
+    const SAMPLE = [
+      { id: 's1', who: '[Reader]', kind: 'question', vis: 'public', when: '[2d]', q: '[Their question]', replies: [{ who: crewName, role: 'CREW', text: '[The answer]' }] },
+      { id: 's2', who: '[Reader]', kind: 'issue', vis: 'public', when: '[4d]', q: '[The issue they hit]', replies: [] },
+      { id: 's3', who: '[Reader]', kind: 'question', vis: 'private', when: '[5h]', q: '[Their private question]', replies: [], crewOnly: true },
+      { id: 's4', who: 'You', kind: 'question', vis: 'private', when: '[1d]', q: '[Your private question]', replies: [{ who: crewName, role: 'CREW', text: '[The answer]' }], visitorOnly: true }
+    ];
+    const visible = added.concat(SAMPLE).filter(t => t.vis === 'public' || t.mine || (maker ? !t.visitorOnly : !t.crewOnly));
+    const shown = visible.filter(t => filter === 'all' || t.vis === filter);
+    const btn = 'display: flex; align-items: center; min-height: 44px; padding: 0 16px; border: 0; border-radius: 999px; font: inherit; font-size: 13px; font-weight: 600; cursor: pointer; ';
+    return {
+      tkDraft: draft, tkSet: (e) => set({ draft: e.target.value }), tkCant: !draft.trim(),
+      tkKinds: Object.keys(KIND).map(k => ({ label: KIND[k], on: kind === k, pick: () => set({ kind: k }), style: seg(kind === k) })),
+      tkVis: [['public', 'Public', GLOBE], ['private', 'Private', LOCK]].map(([k, label, d]) => ({ label, d, on: vis === k, pick: () => set({ vis: k }), style: seg(vis === k) })),
+      tkPostLabel: vis === 'private' ? 'Send to crew' : 'Post',
+      tkPostStyle: 'min-height: 44px; padding: 0 16px; border: 0; border-radius: 999px; font: inherit; font-weight: 600; ' + (draft.trim() ? 'background: #141413; color: #FAF9F5; cursor: pointer' : 'background: #E4E2DA; color: #6B6A66; cursor: default'),
+      tkPost: () => { if (draft.trim()) set({ draft: '', filter: 'all', added: [{ id: 'n' + added.length, who: 'You', mine: true, kind, vis, when: 'Just now', q: draft.trim(), replies: [] }].concat(added) }); },
+      tkFilters: [['all', 'All'], ['public', 'Public'], ['private', 'Private']].map(([k, label]) => ({ label, on: filter === k, pick: () => set({ filter: k }),
+        count: String(visible.filter(t => k === 'all' || t.vis === k).length), style: seg(filter === k) })),
+      tkThreads: shown.map(t => {
+        const priv = t.vis === 'private', isOpen = !!open[t.id], done = !!resolved[t.id], n = t.replies.length;
+        return { who: t.who, q: t.q, mono: t.who === 'You' ? 'Y' : 'R', meta: KIND[t.kind] + ' \u00b7 ' + t.when, open: isOpen, resolved: done,
+          badgeIcon: priv ? LOCK : GLOBE, badgeLabel: priv ? 'PRIVATE' : 'PUBLIC',
+          badge: 'display: flex; align-items: center; gap: 6px; min-height: 26px; padding: 0 10px; border-radius: 999px; flex-shrink: 0; font-family: IBM Plex Mono, monospace; font-size: 10.5px; letter-spacing: 0.12em; ' + (priv ? 'background: #E6E9F2; color: #3A4A75' : 'background: transparent; color: #6B6A66'),
+          card: 'border-radius: 16px; padding: 14px; display: flex; flex-direction: column; gap: 12px; background: #FFFFFF; ' + (priv ? 'box-shadow: inset 0 0 0 1.5px rgba(58,74,117,0.28)' : 'box-shadow: none'),
+          toggle: () => set({ open: { ...open, [t.id]: !isOpen } }),
+          repliesLabel: maker && n === 0 ? 'Answer' : n === 0 ? 'Reply' : n === 1 ? '1 reply' : n + ' replies',
+          repliesStyle: btn + (maker && n === 0 ? 'background: #141413; color: #FAF9F5' : 'background: rgba(20,20,19,0.06); color: #141413'),
+          canResolve: maker && t.kind === 'issue', showResolved: !maker && done,
+          resolve: () => set({ resolved: { ...resolved, [t.id]: !done } }),
+          resolveLabel: done ? 'Resolved' : 'Mark resolved',
+          resolveStyle: btn + (done ? 'background: #E3EEE8; color: #2F5E4C' : 'background: transparent; color: #2B2A27'),
+          replies: t.replies, canReply: true, replyHint: priv ? 'Reply privately' : 'Reply' };
+      }),
+      tkEmpty: shown.length === 0
+    };
+  }
+  renderVals() {
+    const st = this.state;
+    const maker = st.view === 'maker';
+    const editing = maker && st.editing;
+    const left = 120 - st.draftPitch.length;
+    const cantSave = left < 0 || !st.draftPitch.trim();
+    const b44 = 'min-height: 44px; border: 0; border-radius: 999px; font: inherit; font-weight: 600; ';
+    return {
+      name: 'beacon24',
+      isMaker: maker, isVisitor: !maker,
+      ...this.talkVals(maker, '[Maker of beacon24]'),
+      openPrivate: () => this.setState({ tab: 'talk', tk: { ...((this.state || {}).tk || {}), filter: 'private' } }),
+      views: [['maker', 'Manage', 'M4 20h4L19 9l-4-4L4 16zM14 6l4 4'], ['visitor', 'Visitor view', 'M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12zM12 15a3 3 0 100-6 3 3 0 000 6z']].map(([k, label, d]) => ({ label, d, on: st.view === k,
+        pick: () => this.setState({ view: k, editing: false }),
+        style: 'width: 40px; height: 38px; padding: 0; border: 0; border-radius: 999px; display: flex; align-items: center; justify-content: center; cursor: pointer; ' + (st.view === k ? 'background: #FFFFFF; color: #141413; font-weight: 600' : 'background: transparent; color: #6B6A66; font-weight: 500') })),
+      pitch: st.pitch, reading: !editing, editing, draftPitch: st.draftPitch,
+      showMakerActions: maker && !editing, showPrivate: maker && !editing,
+      startEdit: () => this.setState({ editing: true, draftPitch: st.pitch }),
+      cancelEdit: () => this.setState({ editing: false }),
+      saveEdit: () => { if (!cantSave) this.setState({ editing: false, pitch: st.draftPitch.trim() }); },
+      setPitch: (e) => this.setState({ draftPitch: e.target.value }),
+      cantSave,
+      countLabel: left < 0 ? (-left) + ' over' : left + ' left',
+      countStyle: 'font-family: IBM Plex Mono, monospace; font-size: 11px; font-weight: 400; color: ' + (left < 0 ? '#8E3B27' : '#6B6A66'),
+      saveStyle: b44 + (cantSave ? 'background: #E4E2DA; color: #6B6A66; cursor: default' : 'background: #141413; color: #FAF9F5; cursor: pointer'),
+      following: st.follow, followLabel: st.follow ? 'Following' : 'Follow',
+      toggleFollow: () => this.setState({ follow: !st.follow }),
+      followStyle: b44 + 'cursor: pointer; ' + (st.follow ? 'background: rgba(42,31,61,0.08); color: #2A1F3D' : 'background: #FFFFFF; color: #2A1F3D; box-shadow: inset 0 0 0 1.5px rgba(91,63,134,0.4)'),
+      wouldUse: st.use, useLabel: st.use ? 'I\u2019d use this \u00b7 1' : 'I\u2019d use this',
+      toggleUse: () => this.setState({ use: !st.use }),
+      useStyle: b44 + 'cursor: pointer; ' + (st.use ? 'background: #5B3F86; color: #FFFFFF' : 'background: rgba(42,31,61,0.08); color: #2A1F3D'),
+      track: ['Idea', 'First builder', 'First milestone'].map((label, i) => ({ label,
+        style: 'display: flex; align-items: center; min-height: 26px; padding: 0 10px; border-radius: 999px; font-size: 11px; ' + (i === 0 ? 'background: #5B3F86; color: #FFFFFF; font-weight: 600' : 'background: rgba(42,31,61,0.06); color: #3D3550') })),
+      seatPending: !st.seat, seatDecided: !!st.seat,
+      seatDecidedLabel: st.seat === 'accepted' ? 'Accepted' : 'Declined',
+      seatDecidedStyle: 'font-size: 13px; font-weight: 600; color: ' + (st.seat === 'accepted' ? '#2F7A4E' : '#6B6A66'),
+      accept: () => this.setState({ seat: 'accepted' }),
+      decline: () => this.setState({ seat: 'declined' }),
+      openSeats: [0, 1].map(i => { const req = !!st.req[i]; return { role: '[Seat name]', sub: '[Open since]', requested: req,
+        btnLabel: maker ? 'Edit' : req ? 'Requested' : 'Take it',
+        take: () => { if (!maker) this.setState({ req: { ...st.req, [i]: !req } }); },
+        btnStyle: 'min-height: 44px; padding: 0 16px; border: 0; border-radius: 999px; font: inherit; font-size: 13px; font-weight: 600; cursor: pointer; flex-shrink: 0; ' + (req && !maker ? 'background: #DDEDEC; color: #1F5357' : 'background: #2F6F73; color: #FFFFFF') }; }),
+      talkDraft: st.talkDraft, cantAsk: !st.talkDraft.trim(),
+      setTalk: (e) => this.setState({ talkDraft: e.target.value }),
+      ask: () => { if (st.talkDraft.trim()) this.setState({ talkDraft: '', asked: [{ who: 'You', when: 'Just now', q: st.talkDraft.trim() }].concat(st.asked) }); },
+      askStyle: 'min-height: 44px; padding: 0 16px; border: 0; border-radius: 999px; font: inherit; font-weight: 600; flex-shrink: 0; ' + (st.talkDraft.trim() ? 'background: #141413; color: #FAF9F5; cursor: pointer' : 'background: #E4E2DA; color: #6B6A66; cursor: default'),
+      threads: st.asked, noThreads: st.asked.length === 0
+    };
+  }
+}
+</script>
+</body>
+</html>

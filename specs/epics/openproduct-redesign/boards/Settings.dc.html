@@ -1,0 +1,278 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Settings, desktop</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600&amp;family=Lora:ital,wght@0,400;0,500;1,400&amp;family=IBM+Plex+Mono:wght@400;500&amp;display=swap">
+<style>
+:root{color-scheme:light}body{margin:0;background:#F6F4EE}
+a{color:#8A6420}a:hover{color:#5E4415}
+@media (prefers-reduced-motion: reduce){header *{transition-duration:0.01ms !important}}
+</style>
+</helmet>
+<div style="background-color: #F6F4EE; background-image: radial-gradient(1100px 460px at 50% -8%, rgba(184,134,47,0.18), transparent 62%), radial-gradient(rgba(20,20,19,0.07) 1px, transparent 1.2px); background-size: auto, 22px 22px; color: #141413; font-family: 'Hanken Grotesk', system-ui, sans-serif; font-size: 15px; line-height: 1.5; min-height: 100%; display: flex; flex-direction: column">
+
+<header style="position: sticky; top: 0; z-index: 5; width: 100%; background: rgba(255,255,255,0.62); backdrop-filter: saturate(160%) blur(16px); -webkit-backdrop-filter: saturate(160%) blur(16px); box-shadow: none">
+<div style="max-width: 1180px; margin: 0 auto; box-sizing: border-box; padding: 10px 24px; display: flex; flex-wrap: wrap; align-items: center; gap: 12px 24px">
+<a href="Feed.dc.html" style="display: flex; align-items: center; gap: 10px; color: #141413; text-decoration: none; font-weight: 600; font-size: 18px; letter-spacing: -0.02em">
+<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 3.5V21" stroke="#141413"></path><circle cx="14" cy="9.5" r="6" stroke="#B8862F"></circle></svg>openproduct</a>
+<nav aria-label="Main" style="display: flex; flex-wrap: wrap; gap: 2px">
+<a href="Feed.dc.html" style="display: flex; align-items: center; min-height: 36px; padding: 0 14px; border-radius: 999px; color: #2B2A27; text-decoration: none; font-weight: 500">Feed</a>
+<a href="Products.dc.html" style="display: flex; align-items: center; min-height: 36px; padding: 0 14px; border-radius: 999px; color: #2B2A27; text-decoration: none; font-weight: 500">Products</a>
+<a href="Seats.dc.html" style="display: flex; align-items: center; min-height: 36px; padding: 0 14px; border-radius: 999px; color: #2B2A27; text-decoration: none; font-weight: 500">Help wanted</a>
+</nav>
+<div style="flex: 1 1 280px; display: flex; flex-wrap: wrap; justify-content: flex-end; align-items: center; gap: 10px">
+<div style="{{qWrap}}">
+<label style="{{qLabel}}">
+<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6B6A66" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-3.5-3.5"></path></svg>
+<span style="position: absolute; left: -9999px">Search</span>
+<input type="search" value="{{q}}" onInput="{{setQ}}" placeholder="Search products and people" style="border: 0; outline: 0; background: transparent; color: #141413; font: inherit; font-size: 16px; flex: 1; min-width: 0">
+</label>
+<div style="{{qCard}}">
+<sc-for list="{{qRows}}" as="r" hint-placeholder-count="3">
+<div style="{{r.wrap}}">
+<a href="{{r.href}}" style="{{r.style}}"><span style="{{r.tile}}">{{r.mono}}</span><span style="flex: 1; min-width: 0; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{r.name}}</span><span style="font-size: 13px; color: #6B6A66; flex-shrink: 0">{{r.kind}}</span></a>
+<sc-if value="{{r.canExpand}}" hint-placeholder-val="{{false}}"><button type="button" onClick="{{r.toggle}}" aria-expanded="{{r.open}}" aria-label="{{r.toggleLabel}}" style="width: 40px; height: 40px; flex-shrink: 0; border: 0; border-radius: 50%; background: transparent; color: #6B6A66; display: flex; align-items: center; justify-content: center; cursor: pointer"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{r.chev}}"></path></svg></button></sc-if>
+</div>
+</sc-for>
+<sc-if value="{{qNone}}" hint-placeholder-val="{{false}}"><div style="padding: 12px 10px; font-size: 13px; color: #6B6A66">No matches</div></sc-if>
+<a href="Search.dc.html" style="display: flex; align-items: center; justify-content: center; min-height: 40px; margin-top: 2px; border-top: 1px solid rgba(20,20,19,0.06); font-size: 13px; font-weight: 600; text-decoration: none">See all results</a>
+</div>
+</div>
+<a href="Activity.dc.html" aria-label="Activity" style="position: relative; width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; text-decoration: none; background: #FFFFFF; color: #6B6A66">
+<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9a6 6 0 0112 0c0 6 2.5 7.5 2.5 7.5h-17S6 15 6 9zM10 20a2 2 0 004 0"></path></svg>
+</a>
+<a href="Me.dc.html" aria-label="Your profile" style="position: relative; width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; text-decoration: none; background: #FFFFFF; color: #6B6A66">
+<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="8" r="4"></circle><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"></path></svg></a>
+</div>
+</div>
+</header>
+
+<div style="width: 100%; max-width: 1080px; margin: 0 auto; box-sizing: border-box; padding: 32px 24px 64px; display: flex; flex-direction: column; gap: 22px">
+
+<div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px">
+<h1 style="margin: 0; font-family: Lora, Georgia, serif; font-weight: 400; font-size: 40px; line-height: 1.1; letter-spacing: -0.015em">Settings</h1>
+<div style="display: flex; align-items: center; gap: 12px">
+<span role="status" style="{{statusStyle}}">{{statusText}}</span>
+<sc-if value="{{dirty}}" hint-placeholder-val="{{false}}"><button type="button" onClick="{{discard}}" style="min-height: 40px; padding: 0 16px; border: 0; border-radius: 999px; background: rgba(20,20,19,0.06); color: #2B2A27; font: inherit; font-weight: 600; cursor: pointer">Discard</button></sc-if>
+<button type="button" onClick="{{save}}" disabled="{{clean}}" style="{{saveStyle}}">Save</button>
+</div>
+</div>
+
+<div style="display: flex; flex-wrap: wrap; gap: 28px; align-items: flex-start">
+
+<nav aria-label="Settings sections" style="flex: 1 1 220px; max-width: 260px; min-width: 0; background: #FFFFFF; border-radius: 16px; box-shadow: none; padding: 10px; display: flex; flex-direction: column; gap: 2px">
+<div style="font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; color: #6B6A66; letter-spacing: 0.12em; padding: 6px 10px 8px">ACCOUNT SETTINGS</div>
+<sc-for list="{{sections}}" as="s" hint-placeholder-count="4">
+<button type="button" onClick="{{s.pick}}" aria-current="{{s.current}}" style="{{s.style}}">
+<span style="{{s.tile}}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="{{s.stroke}}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{s.d}}"></path></svg></span>
+<span style="flex: 1; text-align: left">{{s.label}}</span>
+<sc-if value="{{s.changed}}" hint-placeholder-val="{{false}}"><span aria-label="Unsaved changes" style="width: 8px; height: 8px; border-radius: 50%; background: #B8862F"></span></sc-if>
+</button>
+</sc-for>
+</nav>
+
+<main style="flex: 999 1 520px; min-width: 0; max-width: 720px">
+
+<sc-if value="{{isProfile}}" hint-placeholder-val="{{true}}">
+<section aria-labelledby="h-profile" style="background: #FFFFFF; border-radius: 16px; box-shadow: none; padding: 18px; display: flex; flex-direction: column; gap: 22px">
+<h2 id="h-profile" style="margin: 0; font-size: 18px; font-weight: 600; letter-spacing: -0.01em">Profile</h2>
+<div style="display: flex; align-items: center; gap: 18px; flex-wrap: wrap">
+<div style="{{avatarStyle}}"><svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="8" r="4"></circle><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"></path></svg></div>
+<div style="display: flex; flex-direction: column; gap: 6px; align-items: flex-start">
+<button type="button" onClick="{{changeAvatar}}" style="min-height: 40px; padding: 0 18px; border: 0; border-radius: 999px; background: rgba(20,20,19,0.06); color: #141413; font: inherit; font-weight: 600; cursor: pointer">Change</button>
+<span style="font-size: 13px; color: #6B6A66">{{avatarNote}}</span>
+</div>
+</div>
+<label style="display: flex; flex-direction: column; gap: 6px">
+<span style="font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; letter-spacing: 0.1em; color: #6B6A66">NAME</span>
+<input type="text" value="{{name}}" onInput="{{setName}}" placeholder="[Your name]" style="min-height: 44px; box-sizing: border-box; padding: 0 18px; border: 0; outline: 0; border-radius: 999px; background: #F5F3EC; box-shadow: inset 0 0 0 1px rgba(20,20,19,0.06); color: #141413; font: inherit; font-size: 16px">
+</label>
+<label style="display: flex; flex-direction: column; gap: 6px">
+<span style="display: flex; justify-content: space-between"><span style="font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; letter-spacing: 0.1em; color: #6B6A66">HEADLINE</span><span style="{{headCountStyle}}">{{headCount}}</span></span>
+<input type="text" value="{{headline}}" onInput="{{setHeadline}}" placeholder="[What you build]" style="min-height: 44px; box-sizing: border-box; padding: 0 18px; border: 0; outline: 0; border-radius: 999px; background: #F5F3EC; box-shadow: inset 0 0 0 1px rgba(20,20,19,0.06); color: #141413; font: inherit; font-size: 16px">
+</label>
+</section>
+</sc-if>
+
+<sc-if value="{{isNotif}}" hint-placeholder-val="{{false}}">
+<section aria-labelledby="h-notif" style="background: #FFFFFF; border-radius: 16px; box-shadow: none; padding: 18px; display: flex; flex-direction: column; gap: 6px">
+<h2 id="h-notif" style="margin: 0 0 10px; font-size: 18px; font-weight: 600; letter-spacing: -0.01em">Notifications</h2>
+<sc-for list="{{toggles}}" as="t" hint-placeholder-count="5">
+<div style="display: flex; align-items: center; gap: 14px; min-height: 56px; padding: 0 4px; border-top: 1px solid rgba(20,20,19,0.06)">
+<span style="flex: 1; min-width: 0; display: flex; flex-direction: column"><span style="font-weight: 600">{{t.label}}</span><span style="font-size: 13px; color: #6B6A66">{{t.hint}}</span></span>
+<button type="button" onClick="{{t.toggle}}" aria-pressed="{{t.on}}" aria-label="{{t.label}}" style="width: 56px; height: 40px; flex-shrink: 0; padding: 0; border: 0; background: transparent; display: flex; align-items: center; justify-content: center; cursor: pointer">
+<span style="{{t.track}}"><span style="{{t.knob}}"></span></span>
+</button>
+</div>
+</sc-for>
+</section>
+</sc-if>
+
+<sc-if value="{{isProducts}}" hint-placeholder-val="{{false}}">
+<section aria-labelledby="h-products" style="background: #FFFFFF; border-radius: 16px; box-shadow: none; padding: 18px; display: flex; flex-direction: column; gap: 16px">
+<h2 id="h-products" style="margin: 0; font-size: 18px; font-weight: 600; letter-spacing: -0.01em">Products you make</h2>
+<div style="display: flex; flex-direction: column; gap: 12px; padding: 14px; border-radius: 16px; background: #F7F5EF">
+<div style="display: flex; flex-wrap: wrap; align-items: center; gap: 12px">
+<a href="Product.dc.html" style="width: 46px; height: 46px; border-radius: 14px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 15px; text-decoration: none; background: #F3E7CC; color: #8A6420">Ak</a>
+<div style="flex: 1 1 160px; min-width: 0; display: flex; flex-direction: column">
+<a href="Product.dc.html" style="color: #141413; text-decoration: none; font-weight: 600">ackstack</a>
+<span style="font-size: 13px; color: #6B6A66">Shipping, 3 of 4 · 2 open seats</span>
+</div>
+<span style="display: flex; align-items: center; min-height: 28px; padding: 0 10px; border-radius: 999px; background: #F3E7CC; color: #8A6420; font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: 0.08em">MAKER</span>
+<button type="button" onClick="{{toggleInvite}}" aria-expanded="{{inviteOpen}}" style="display: flex; align-items: center; gap: 6px; min-height: 40px; padding: 0 16px; border: 0; border-radius: 999px; background: rgba(20,20,19,0.06); color: #141413; font: inherit; font-weight: 600; cursor: pointer"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg>Invite to crew</button>
+</div>
+<sc-if value="{{inviteOpen}}" hint-placeholder-val="{{false}}">
+<div style="display: flex; flex-wrap: wrap; gap: 8px; align-items: center">
+<label style="flex: 1 1 220px; display: flex; min-height: 40px; border-radius: 999px; background: #FFFFFF; box-shadow: inset 0 0 0 1px rgba(20,20,19,0.08); padding: 0 16px; align-items: center"><span style="position: absolute; left: -9999px">Orunbase username</span><input type="text" value="{{inviteName}}" onInput="{{setInvite}}" placeholder="Orunbase username" style="border: 0; outline: 0; background: transparent; color: #141413; font: inherit; font-size: 16px; flex: 1; min-width: 0"></label>
+<button type="button" onClick="{{sendInvite}}" disabled="{{inviteEmpty}}" style="{{inviteBtnStyle}}">Invite</button>
+</div>
+</sc-if>
+<sc-if value="{{invited}}" hint-placeholder-val="{{false}}"><div style="font-size: 13px; color: #2F7A4E">{{invitedText}}</div></sc-if>
+</div>
+</section>
+</sc-if>
+
+<sc-if value="{{isAccount}}" hint-placeholder-val="{{false}}">
+<section aria-labelledby="h-account" style="background: #FFFFFF; border-radius: 16px; box-shadow: none; padding: 18px; display: flex; flex-direction: column; gap: 18px">
+<h2 id="h-account" style="margin: 0; font-size: 18px; font-weight: 600; letter-spacing: -0.01em">Account</h2>
+<div style="display: flex; flex-wrap: wrap; align-items: center; gap: 14px; padding: 14px; border-radius: 16px; background: #F7F5EF">
+<span style="width: 44px; height: 44px; border-radius: 14px; flex-shrink: 0; background: #141413; display: flex; align-items: center; justify-content: center"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#FAF9F5" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M12 3v9l6 3" stroke="#E3B34C"></path></svg></span>
+<span style="flex: 1 1 180px; min-width: 0; display: flex; flex-direction: column"><span style="font-weight: 600">Signed in with Orunbase</span><span style="font-size: 13px; color: #6B6A66">[Orunbase account]</span></span>
+<button type="button" onClick="{{signOut}}" style="min-height: 40px; padding: 0 18px; border: 0; border-radius: 999px; background: rgba(20,20,19,0.06); color: #141413; font: inherit; font-weight: 600; cursor: pointer">{{signOutLabel}}</button>
+</div>
+<div style="display: flex; flex-direction: column; gap: 10px; padding-top: 6px; border-top: 1px solid rgba(20,20,19,0.06)">
+<sc-if value="{{deleteIdle}}" hint-placeholder-val="{{true}}">
+<button type="button" onClick="{{askDelete}}" style="align-self: flex-start; min-height: 40px; padding: 0 2px; border: 0; background: transparent; color: #B4533C; font: inherit; font-weight: 600; cursor: pointer">Delete account</button>
+</sc-if>
+<sc-if value="{{deleteAsk}}" hint-placeholder-val="{{false}}">
+<div role="alertdialog" aria-label="Confirm delete" style="display: flex; flex-wrap: wrap; align-items: center; gap: 10px; padding: 12px 14px; border-radius: 16px; background: #F6E3DD">
+<span style="flex: 1 1 220px; font-size: 13px; color: #8E3B27">Delete your openproduct account? Your Orunbase account stays.</span>
+<button type="button" onClick="{{cancelDelete}}" style="min-height: 40px; padding: 0 16px; border: 0; border-radius: 999px; background: #FFFFFF; color: #2B2A27; font: inherit; font-weight: 600; cursor: pointer">Cancel</button>
+<button type="button" onClick="{{confirmDelete}}" style="min-height: 40px; padding: 0 16px; border: 0; border-radius: 999px; background: #B4533C; color: #FFFFFF; font: inherit; font-weight: 600; cursor: pointer">Delete</button>
+</div>
+</sc-if>
+<sc-if value="{{deleteDone}}" hint-placeholder-val="{{false}}"><div style="font-size: 13px; color: #6B6A66">Design preview: nothing was deleted.</div></sc-if>
+</div>
+</section>
+</sc-if>
+
+</main>
+</div>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1100}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    const saved = { name: '[Your name]', headline: '[Maker of ackstack]', avatar: 0, n: { replies: true, reactions: true, followers: true, seats: true, digest: false } };
+    this.state = { section: 'profile', saved, draft: JSON.parse(JSON.stringify(saved)), justSaved: false, inviteOpen: false, inviteName: '', invited: '', signedOut: false, del: 'idle' };
+  }
+  componentWillUnmount() { clearTimeout(this.savedT); }
+  searchVals() {
+    const q = (this.state || {}).q || '';
+    const exp = (this.state || {}).qExp || {};
+    const w = q.trim().toLowerCase();
+    const open = !!w;
+    const EASE = 'cubic-bezier(0.2, 0.8, 0.2, 1)';
+    const P = [['ackstack', 'Ak', '#F3E7CC', '#8A6420', 1], ['meterwise', 'Mw', '#E6E9F2', '#3A4A75', 1], ['expirio', 'Ex', '#ECE6F3', '#5B3F86', 1], ['rangewise', 'Rw', '#E3EEE8', '#2F5E4C', 1], ['aitally', 'At', '#F0EEE6', '#2B2A27', 1], ['rateboard', 'Rb', '#DDEDEC', '#1F5357', 1], ['grantwell', 'Gw', '#E3EEE8', '#2F5E4C', 1], ['leakbook', 'Lb', '#E6E9F2', '#3A4A75', 1], ['arcdesk', 'Ad', '#ECEAE3', '#2B2A27', 1], ['beacon24', 'B2', '#ECE6F3', '#5B3F86', 0], ['chaseid', 'Ci', '#ECE6F3', '#5B3F86', 0]];
+    const link = 'flex: 1; min-width: 0; display: flex; align-items: center; gap: 10px; min-height: 44px; padding: 0 10px; border-radius: 12px; color: #141413; text-decoration: none';
+    const wrap = 'display: flex; align-items: center; gap: 2px';
+    const prod = (p, child) => ({ href: p[4] ? 'Product.dc.html' : 'ProductIdea.dc.html', name: p[0], mono: p[1], kind: child ? 'Maker' : (p[4] ? 'Shipping' : 'Idea'), canExpand: false,
+      wrap: wrap + (child ? '; margin-left: 24px; padding-left: 8px; border-left: 2px solid #ECEAE3' : ''), style: link,
+      tile: 'width: ' + (child ? 26 : 30) + 'px; height: ' + (child ? 26 : 30) + 'px; border-radius: 9px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 600; background: ' + p[2] + '; color: ' + p[3] });
+    const rows = [];
+    if (w) {
+      P.filter(p => p[0].includes(w)).slice(0, 3).forEach(p => rows.push(prod(p, false)));
+      P.filter(p => ('maker of ' + p[0]).includes(w)).slice(0, 3).forEach(p => {
+        const name = '[Maker of ' + p[0] + ']', isOpen = !!exp[name];
+        rows.push({ href: 'Person.dc.html', name, mono: 'M', kind: 'Person', wrap, style: link, canExpand: true, open: isOpen,
+          toggleLabel: (isOpen ? 'Hide products of ' : 'Show products of ') + name,
+          chev: isOpen ? 'M6 15l6-6 6 6' : 'M6 9l6 6 6-6',
+          toggle: () => this.setState({ qExp: { ...exp, [name]: !isOpen } }),
+          tile: 'width: 30px; height: 30px; border-radius: 50%; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 600; background: #F0EEE6; color: #2B2A27' });
+        if (isOpen) rows.push(prod(p, true));
+      });
+    }
+    return { q, setQ: (e) => this.setState({ q: e.target.value }), qOpen: open, qRows: rows, qNone: open && rows.length === 0,
+      qWrap: 'position: relative; display: flex; flex: 0 1 ' + (open ? '380px' : '260px') + '; transition: flex-basis 0.32s ' + EASE,
+      qCard: 'position: absolute; top: -6px; left: -6px; right: -6px; z-index: 20; box-sizing: border-box; overflow: hidden; background: #FFFFFF; border-radius: 22px; box-shadow: inset 0 0 0 1px rgba(20,20,19,0.1); padding: 54px 6px 6px; display: flex; flex-direction: column; gap: 2px; transform-origin: top center; ' + (open ? 'max-height: 560px; opacity: 1; transform: scale(1); visibility: visible; transition: max-height 0.42s ' + EASE + ', opacity 0.2s ease, transform 0.32s ' + EASE : 'max-height: 52px; opacity: 0; transform: scale(0.98); visibility: hidden; pointer-events: none; transition: max-height 0.26s ' + EASE + ', opacity 0.18s ease, transform 0.26s ' + EASE + ', visibility 0s linear 0.26s'),
+      qLabel: 'position: relative; z-index: 21; flex: 1; min-width: 0; display: flex; align-items: center; gap: 8px; border-radius: 999px; padding: 0 14px; min-height: 40px; transition: background 0.25s ease, box-shadow 0.25s ease; ' + (open ? 'background: #F7F5EF; box-shadow: none' : 'background: rgba(255,255,255,0.75); box-shadow: inset 0 0 0 1px rgba(20,20,19,0.07)') };
+  }
+  renderVals() { return { ...this.pageVals(), ...this.searchVals() }; }
+  pageVals() {
+    const S = this.state, d = S.draft, sv = S.saved;
+    const setDraft = (patch) => this.setState({ draft: { ...this.state.draft, ...patch }, justSaved: false });
+    const NOTIF = [
+      ['replies', 'Replies', 'Someone replies to you'],
+      ['reactions', 'Reactions', 'On your posts and comments'],
+      ['followers', 'New followers', 'You or your products'],
+      ['seats', 'Seat requests', 'Someone asks for a seat on your crew'],
+      ['digest', 'Weekly digest', 'One email a week']
+    ];
+    const profileChanged = d.name !== sv.name || d.headline !== sv.headline || d.avatar !== sv.avatar;
+    const notifChanged = NOTIF.some(([k]) => d.n[k] !== sv.n[k]);
+    const dirty = profileChanged || notifChanged;
+    const SECT = [
+      ['profile', 'Profile', 'M12 12a4 4 0 100-8 4 4 0 000 8zM4 21c1.5-4 4.5-6 8-6s6.5 2 8 6', '#B8862F', '#F3E7CC', profileChanged],
+      ['notif', 'Notifications', 'M6 16V11a6 6 0 0112 0v5l2 2H4zM10 21h4', '#5B6B8C', '#E6E9F2', notifChanged],
+      ['products', 'Products you make', 'M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z', '#2F7A4E', '#E3EEE8', false],
+      ['account', 'Account', 'M5 11h14v10H5zM8 11V7a4 4 0 018 0v4', '#141413', '#ECEAE3', false]
+    ];
+    const sections = SECT.map(([k, label, dd, c, tint, changed]) => {
+      const on = S.section === k;
+      return { label, d: dd, changed, current: on ? 'page' : 'false', stroke: on ? '#FFFFFF' : c,
+        pick: () => this.setState({ section: k }),
+        tile: 'width: 32px; height: 32px; border-radius: 10px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; background: ' + (on ? c : tint) + (on ? '; box-shadow: none' + c : ''),
+        style: 'display: flex; align-items: center; gap: 12px; min-height: 40px; padding: 0 10px; border: 0; border-radius: 14px; font: inherit; font-size: 15px; cursor: pointer; ' + (on ? 'background: #FFFFFF; box-shadow: none; color: #141413; font-weight: 600' : 'background: transparent; color: #2B2A27') };
+    });
+    const toggles = NOTIF.map(([k, label, hint]) => {
+      const on = !!d.n[k];
+      return { label, hint, on, toggle: () => setDraft({ n: { ...this.state.draft.n, [k]: !on } }),
+        track: 'position: relative; width: 44px; height: 26px; border-radius: 999px; transition: background 0.2s; background: ' + (on ? '#141413' : 'rgba(20,20,19,0.14)') + (on ? '; box-shadow: none' : ''),
+        knob: 'position: absolute; top: 3px; left: ' + (on ? '21px' : '3px') + '; width: 20px; height: 20px; border-radius: 50%; transition: left 0.2s; box-shadow: none; background: ' + (on ? '#E3B34C' : '#FFFFFF') };
+    });
+    const HUES = [['#F5F3EC', '#6B6A66'], ['#F3E7CC', '#8A6420'], ['#E6E9F2', '#3A4A75'], ['#ECE6F3', '#5B3F86']];
+    const [abg, afg] = HUES[d.avatar % HUES.length];
+    const headLen = d.headline.length;
+    const inviteEmpty = !S.inviteName.trim();
+    return {
+      sections, isProfile: S.section === 'profile', isNotif: S.section === 'notif', isProducts: S.section === 'products', isAccount: S.section === 'account',
+      dirty, clean: !dirty,
+      save: () => { if (!dirty) return; this.setState({ saved: JSON.parse(JSON.stringify(this.state.draft)), justSaved: true }); clearTimeout(this.savedT); this.savedT = setTimeout(() => this.setState({ justSaved: false }), 2200); },
+      discard: () => this.setState({ draft: JSON.parse(JSON.stringify(this.state.saved)) }),
+      statusText: dirty ? 'Unsaved changes' : (S.justSaved ? 'Saved' : ''),
+      statusStyle: 'font-size: 13px; color: ' + (dirty ? '#8A6420' : '#2F7A4E'),
+      saveStyle: 'min-height: 40px; padding: 0 22px; border: 0; border-radius: 999px; font: inherit; font-weight: 600; ' + (dirty ? 'background: #141413; color: #FAF9F5; cursor: pointer; box-shadow: none' : 'background: rgba(20,20,19,0.08); color: #8A877F; cursor: default'),
+      name: d.name, headline: d.headline,
+      setName: (e) => setDraft({ name: e.target.value }),
+      setHeadline: (e) => setDraft({ headline: e.target.value }),
+      headCount: headLen + '/80',
+      headCountStyle: 'font-family: IBM Plex Mono, monospace; font-size: 10.5px; color: ' + (headLen > 80 ? '#B4533C' : '#A8A59C'),
+      avatarStyle: 'width: 76px; height: 76px; border-radius: 50%; flex-shrink: 0; display: flex; align-items: center; justify-content: center; box-shadow: none; background: ' + abg + '; color: ' + afg,
+      avatarNote: d.avatar !== sv.avatar ? '[New photo]' : '[Your photo]',
+      changeAvatar: () => setDraft({ avatar: this.state.draft.avatar + 1 }),
+      toggles,
+      inviteOpen: S.inviteOpen, toggleInvite: () => this.setState({ inviteOpen: !this.state.inviteOpen, invited: '' }),
+      inviteName: S.inviteName, setInvite: (e) => this.setState({ inviteName: e.target.value }),
+      inviteEmpty,
+      sendInvite: () => { const n = this.state.inviteName.trim(); if (n) this.setState({ invited: n, inviteName: '', inviteOpen: false }); },
+      inviteBtnStyle: 'min-height: 40px; padding: 0 20px; border: 0; border-radius: 999px; font: inherit; font-weight: 600; ' + (inviteEmpty ? 'background: rgba(20,20,19,0.08); color: #8A877F; cursor: default' : 'background: #141413; color: #FAF9F5; cursor: pointer'),
+      invited: !!S.invited, invitedText: 'Invite sent to ' + S.invited + ' (design preview).',
+      signOutLabel: S.signedOut ? 'Signed out (preview)' : 'Sign out',
+      signOut: () => this.setState({ signedOut: !this.state.signedOut }),
+      deleteIdle: S.del === 'idle', deleteAsk: S.del === 'ask', deleteDone: S.del === 'done',
+      askDelete: () => this.setState({ del: 'ask' }), cancelDelete: () => this.setState({ del: 'idle' }), confirmDelete: () => this.setState({ del: 'done' })
+    };
+  }
+}
+</script>
+</body>
+</html>

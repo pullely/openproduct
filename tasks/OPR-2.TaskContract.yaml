@@ -1,0 +1,30 @@
+# OPR-2: milestone OPR1, the new look. Every page that exists today takes the
+# new design on today's data: tokens, fonts, logo, one header, the phone tab
+# bar, and each page to its desktop and phone board. No schema change and no
+# new API route. The guards that pin today's surface are rewritten to hold
+# the new one (design §9).
+# The file is the contract; the task itself lives in Orunbase.
+apiVersion: orun.io/v1
+kind: TaskContract
+metadata:
+  name: OPR-2
+  title: "OPR1: the new look"
+spec:
+  goal: Every page of openproduct.live renders in the redesign's palette, type and shell on today's data, on phone and desktop.
+  affects:
+    - web/**
+    - tests/web/**
+    - tests/web-perf/**
+    - specs/epics/openproduct-redesign/**
+    - tasks/OPR-2.TaskContract.yaml
+    - pnpm-lock.yaml
+    - default/openproduct/openproduct-web
+    - default/openproduct/openproduct-web-tests
+    - default/openproduct/openproduct-web-perf
+  doneWhen:
+    - every page reachable from the header, the footer or the phone tab bar renders in the new palette and type on stage, with no page left in the old look
+    - Products, Help wanted, Search, a person, Your profile, Activity, Settings and Sign in match their desktop and phone boards
+    - typing in the header search opens the results card in place, and a person row shows their products only after it is expanded
+    - the fonts load from the site's own origin, and the wire and per-route budgets pass or carry a recorded amendment
+    - /builds/roles, /builds/newest and /me/notifications redirect to their new addresses
+  gates: []

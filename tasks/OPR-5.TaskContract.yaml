@@ -1,0 +1,38 @@
+# OPR-5: milestone OPR4, demos. A recorded run of the real product, made by
+# Orunbase, reviewed by the maker and posted as a Demo post (design §8).
+# Starts once risks R1 (how the platform records a demo) is answered.
+# The file is the contract; the task itself lives in Orunbase.
+apiVersion: orun.io/v1
+kind: TaskContract
+metadata:
+  name: OPR-5
+  title: "OPR4: demos"
+spec:
+  goal: A product's crew records a demo of the running product, reviews it and posts it, and nothing is public before they press Post.
+  affects:
+    - packages/db/**
+    - packages/contracts/**
+    - core/**
+    - gateway/**
+    - web/**
+    - tests/**
+    - specs/epics/openproduct-redesign/**
+    - tasks/OPR-5.TaskContract.yaml
+    - pnpm-lock.yaml
+    - default/openproduct/openproduct-db
+    - default/openproduct/openproduct-db-migrate
+    - default/openproduct/openproduct-contracts
+    - default/openproduct/openproduct-worker
+    - default/openproduct/openproduct-worker-tests
+    - default/openproduct/openproduct-gateway
+    - default/openproduct/openproduct-gateway-tests
+    - default/openproduct/openproduct-web
+    - default/openproduct/openproduct-web-tests
+    - default/openproduct/openproduct-web-perf
+  deps:
+    - OPR-4
+  doneWhen:
+    - a crew member starts a recording for a product from its page, and a run in which a step fails keeps nothing
+    - a finished recording is visible only to the crew until one of them presses Post
+    - the posted demo plays in the feed with its steps, and names the environment it ran against
+  gates: []

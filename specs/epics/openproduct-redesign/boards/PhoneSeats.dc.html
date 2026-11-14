@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Help wanted, phone</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600&amp;family=Lora:wght@400;500&amp;family=IBM+Plex+Mono:wght@400;500&amp;display=swap">
+<style>
+:root{color-scheme:light}body{margin:0}
+a{color:#8A6420}a:hover{color:#5E4415}
+</style>
+</helmet>
+<div style="position: relative; width: 390px; height: 844px; box-sizing: border-box; background-color: #F6F4EE; background-image: radial-gradient(500px 260px at 50% -6%, rgba(184,134,47,0.2), transparent 65%), radial-gradient(rgba(20,20,19,0.07) 1px, transparent 1.2px); background-size: auto, 20px 20px; color: #141413; font-family: 'Hanken Grotesk', system-ui, sans-serif; font-size: 15px; line-height: 1.5; display: flex; flex-direction: column; overflow: hidden">
+
+<header style="display: flex; align-items: center; gap: 10px; padding: 12px 14px; background: rgba(255,255,255,0.6); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px)">
+<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 3.5V21" stroke="#141413"></path><circle cx="14" cy="9.5" r="6" stroke="#B8862F"></circle></svg>
+<a href="PhoneSearch.dc.html" aria-label="Search" style="flex: 1; min-width: 0; display: flex; align-items: center; gap: 8px; background: #FFFFFF; border-radius: 999px; box-shadow: inset 0 0 0 1px rgba(20,20,19,0.07); padding: 0 12px; min-height: 44px; box-sizing: border-box; color: #6B6A66; text-decoration: none; font-size: 16px">
+<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#6B6A66" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-3.5-3.5"></path></svg>
+<span>Search</span>
+</a>
+<a href="PhoneMe.dc.html" aria-label="Your profile" style="width: 44px; height: 44px; border-radius: 50%; background: #FFFFFF; display: flex; align-items: center; justify-content: center; color: #6B6A66; flex-shrink: 0"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="8" r="4"></circle><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"></path></svg></a>
+</header>
+
+<div style="flex: 1; min-height: 0; overflow-y: auto; overflow-x: hidden; box-sizing: border-box; padding: 10px 12px 12px; display: flex; flex-direction: column; gap: 10px">
+
+<div style="display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 4px 10px; padding: 0 2px">
+<h1 style="margin: 0; font-family: Lora, Georgia, serif; font-weight: 400; font-size: 28px; line-height: 1.1; letter-spacing: -0.015em">Help wanted</h1>
+<span style="font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; letter-spacing: 0.12em; color: #6B6A66; white-space: nowrap">60 SEATS · 30 PRODUCTS</span>
+</div>
+
+<div role="group" aria-label="Seat filters" style="display: flex; gap: 6px; flex-shrink: 0; overflow-x: auto">
+<sc-for list="{{filters}}" as="f" hint-placeholder-count="3">
+<button type="button" onClick="{{f.pick}}" aria-pressed="{{f.on}}" style="{{f.style}}">{{f.label}}<span style="{{f.countStyle}}">{{f.count}}</span></button>
+</sc-for>
+</div>
+
+<sc-for list="{{seats}}" as="s" hint-placeholder-count="4">
+<article aria-label="{{s.aria}}" style="position: relative; flex-shrink: 0; overflow: hidden; border-radius: 16px; background: #FFFFFF; display: flex; flex-direction: column">
+<span aria-hidden="true" style="position: absolute; left: -11px; bottom: 53px; width: 22px; height: 22px; border-radius: 50%; background: #F6F4EE"></span>
+<span aria-hidden="true" style="position: absolute; right: -11px; bottom: 53px; width: 22px; height: 22px; border-radius: 50%; background: #F6F4EE"></span>
+<div style="display: flex; align-items: center; gap: 12px; padding: 14px 18px 12px">
+<div style="width: 44px; height: 44px; border-radius: 50%; border: 2px dashed #2F6F73; box-sizing: border-box; display: flex; align-items: center; justify-content: center; color: #2F6F73; flex-shrink: 0"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg></div>
+<div style="flex: 1; min-width: 0; display: flex; flex-direction: column">
+<span style="font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; letter-spacing: 0.12em; color: #1F5357">OPEN SEAT</span>
+<span style="{{s.roleStyle}}">{{s.role}}</span>
+<span style="font-size: 13px; color: #6B6A66">{{s.sub}}</span>
+</div>
+</div>
+<div style="display: flex; align-items: center; justify-content: space-between; gap: 10px; height: 64px; box-sizing: border-box; margin: 0 18px; border-top: 2px dashed #E4E2DA">
+<a href="{{s.href}}" style="flex: 1; min-width: 0; display: flex; align-items: center; gap: 8px; min-height: 44px; color: #141413; text-decoration: none; font-size: 13px"><span style="{{s.tile}}">{{s.mono}}</span><span style="font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{s.product}}</span></a>
+<button type="button" onClick="{{s.take}}" aria-pressed="{{s.requested}}" style="{{s.btnStyle}}">{{s.btnLabel}}</button>
+</div>
+</article>
+</sc-for>
+
+<div style="display: flex; align-items: center; justify-content: space-between; gap: 10px; min-height: 44px; padding: 0 2px; flex-shrink: 0">
+<span style="font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; letter-spacing: 0.12em; color: #6B6A66">{{shownLabel}}</span>
+<sc-if value="{{hasMore}}" hint-placeholder-val="{{true}}">
+<button type="button" onClick="{{more}}" style="min-height: 44px; padding: 0 20px; border: 0; border-radius: 999px; background: rgba(20,20,19,0.06); color: #141413; font: inherit; font-weight: 600; cursor: pointer">Show more</button>
+</sc-if>
+</div>
+
+</div>
+
+<nav aria-label="Main" style="position: relative; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); margin: 10px 10px 14px; padding: 4px 6px; background: #FFFFFF; border-radius: 16px">
+<a href="PhoneFeed.dc.html" style="min-height: 54px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; color: #6B6A66; text-decoration: none; font-size: 11px">
+<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 11l8-7 8 7v9H4z"></path></svg>Feed</a>
+<a href="PhoneProducts.dc.html" style="min-height: 54px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; color: #6B6A66; text-decoration: none; font-size: 11px">
+<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="2"></rect><rect x="14" y="3" width="7" height="7" rx="2"></rect><rect x="3" y="14" width="7" height="7" rx="2"></rect><rect x="14" y="14" width="7" height="7" rx="2"></rect></svg>Products</a>
+<a href="PhoneSeats.dc.html" aria-current="page" style="min-height: 54px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; color: #141413; text-decoration: none; font-size: 11px; font-weight: 600">
+<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="9" cy="8" r="3.5"></circle><path d="M3 20c.8-3.5 3.2-5.5 6-5.5s5.2 2 6 5.5"></path><path d="M18 8v6M15 11h6"></path></svg>Seats</a>
+<a href="PhoneActivity.dc.html" style="min-height: 54px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; color: #6B6A66; text-decoration: none; font-size: 11px">
+<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 8a6 6 0 0112 0c0 7 3 8 3 8H3s3-1 3-8"></path><path d="M10 20a2 2 0 004 0"></path></svg>Activity</a>
+</nav>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  constructor(props) { super(props); this.state = { filter: 'all', shown: 10, requested: {} }; }
+  renderVals() {
+    const st = this.state;
+    const P = (name, stage, mono, bg, fg) => ({ name, stage, mono, bg, fg });
+    const PRODUCTS = [
+      P('ackstack', 'shipping', 'Ak', '#F3E7CC', '#8A6420'), P('meterwise', 'shipping', 'Mw', '#E6E9F2', '#3A4A75'),
+      P('expirio', 'shipping', 'Ex', '#ECE6F3', '#5B3F86'), P('rangewise', 'shipping', 'Rw', '#E3EEE8', '#2F5E4C'),
+      P('aitally', 'shipping', 'At', '#F3E7CC', '#8A6420'), P('rateboard', 'shipping', 'Rb', '#DDEDEC', '#1F5357'),
+      P('grantwell', 'shipping', 'Gw', '#E3EEE8', '#2F5E4C'), P('leakbook', 'shipping', 'Lb', '#E6E9F2', '#3A4A75'),
+      P('arcdesk', 'shipping', 'Ad', '#ECEAE3', '#2B2A27')
+    ].concat(['chaseid', 'beacon24', 'stepthrough', 'flakeless', 'pipebill', 'sunsetd', 'seatsweep', 'rightkeep', 'lapsely', 'tenready', 'renewcue', 'marginmap', 'dwelltime', 'waiverly', 'certcrate', 'unitlog', 'voxquote', 'stockstitch', 'paidstone', 'holdfast', 'docketdrop']
+      .map(n => P(n, 'idea', n.slice(0, 1).toUpperCase() + n.slice(1, 2), '#ECE6F3', '#5B3F86')));
+    const KNOWN = { ackstack: [['HR-compliance advisor', 'Open 7 weeks · nobody yet'], ['Payroll / HR partner manager', '[Open since]']] };
+    const ALL = [];
+    PRODUCTS.forEach(p => [0, 1].forEach(i => {
+      const k = KNOWN[p.name] && KNOWN[p.name][i];
+      ALL.push({ id: p.name + ':' + i, p, role: k ? k[0] : '[Seat name]', sub: k ? k[1] : (p.stage === 'idea' ? 'Idea' : 'Shipping') + ' · [Open since]', placeholder: !k });
+    }));
+
+    const LABEL = { all: 'All', shipping: 'On shipping products', idea: 'On ideas' };
+    const filters = ['all', 'shipping', 'idea'].map(k => {
+      const on = st.filter === k;
+      const n = k === 'all' ? ALL.length : ALL.filter(s => s.p.stage === k).length;
+      return { label: LABEL[k], on, count: String(n),
+        pick: () => this.setState({ filter: k, shown: 10 }),
+        countStyle: 'font-family: IBM Plex Mono, monospace; font-size: 11px; color: ' + (on ? '#D9D6CC' : '#6B6A66'),
+        style: 'flex: 1 0 auto; display: flex; align-items: center; justify-content: center; gap: 6px; min-height: 44px; padding: 0 12px; border: 0; border-radius: 999px; font: inherit; font-size: 13px; cursor: pointer; white-space: nowrap; ' + (on ? 'background: #141413; color: #FAF9F5; font-weight: 600' : 'background: #FFFFFF; color: #2B2A27; font-weight: 500')
+      };
+    });
+
+    const list = ALL.filter(s => st.filter === 'all' || s.p.stage === st.filter);
+    const shown = Math.min(st.shown, list.length);
+    const seats = list.slice(0, shown).map(s => {
+      const req = !!st.requested[s.id];
+      return { href: s.p.stage === 'idea' ? 'PhoneProductIdea.dc.html' : 'PhoneProduct.dc.html', role: s.role, product: s.p.name, sub: s.sub, mono: s.p.mono,
+        aria: 'Open seat on ' + s.p.name,
+        roleStyle: 'font-weight: 600; font-size: 18px; letter-spacing: -0.015em; line-height: 1.25; ' + (s.placeholder ? 'color: #6B6A66; font-style: italic' : 'color: #141413'),
+        tile: 'width: 26px; height: 26px; border-radius: 8px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 10.5px; font-weight: 600; background: ' + s.p.bg + '; color: ' + s.p.fg,
+        requested: req, btnLabel: req ? 'Requested' : 'Take the seat',
+        take: () => this.setState({ requested: { ...st.requested, [s.id]: !req } }),
+        btnStyle: 'min-height: 44px; padding: 0 18px; border: 0; border-radius: 999px; font: inherit; font-size: 13px; font-weight: 600; cursor: pointer; flex-shrink: 0; white-space: nowrap; ' + (req ? 'background: #DDEDEC; color: #1F5357' : 'background: #2F6F73; color: #FFFFFF')
+      };
+    });
+    return {
+      filters, seats,
+      shownLabel: shown + ' OF ' + list.length + ' SHOWN',
+      hasMore: shown < list.length,
+      more: () => this.setState({ shown: st.shown + 10 })
+    };
+  }
+}
+</script>
+</body>
+</html>

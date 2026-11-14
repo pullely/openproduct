@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Person profile, phone</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600&amp;family=Lora:wght@400;500&amp;family=IBM+Plex+Mono:wght@400;500&amp;display=swap">
+<style>
+:root{color-scheme:light}body{margin:0}
+a{color:#8A6420}a:hover{color:#5E4415}
+</style>
+</helmet>
+<div style="position: relative; width: 390px; height: 844px; box-sizing: border-box; background-color: #F6F4EE; background-image: radial-gradient(500px 260px at 50% -6%, rgba(184,134,47,0.2), transparent 65%), radial-gradient(rgba(20,20,19,0.07) 1px, transparent 1.2px); background-size: auto, 20px 20px; color: #141413; font-family: 'Hanken Grotesk', system-ui, sans-serif; font-size: 15px; line-height: 1.5; display: flex; flex-direction: column; overflow: hidden">
+
+<header style="display: flex; align-items: center; gap: 10px; padding: 12px 14px; background: rgba(255,255,255,0.6); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px)">
+<a href="PhoneFeed.dc.html" aria-label="Back" style="width: 44px; height: 44px; border-radius: 50%; background: #FFFFFF; color: #141413; display: flex; align-items: center; justify-content: center; flex-shrink: 0"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M15 18l-6-6 6-6"></path></svg></a>
+<span style="flex: 1; min-width: 0; font-weight: 600; font-size: 18px; letter-spacing: -0.02em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">Profile</span>
+<a href="PhoneMe.dc.html" aria-label="Your profile" style="width: 44px; height: 44px; border-radius: 50%; background: #FFFFFF; display: flex; align-items: center; justify-content: center; color: #6B6A66; flex-shrink: 0"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="8" r="4"></circle><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"></path></svg></a>
+</header>
+
+<main style="flex: 1; min-height: 0; overflow-y: auto; box-sizing: border-box; padding: 10px 12px 12px; display: flex; flex-direction: column; gap: 10px">
+
+<section style="flex-shrink: 0; background: #FFFFFF; border-radius: 16px; overflow: hidden; display: flex; flex-direction: column">
+<div style="height: 72px; background: radial-gradient(300px 120px at 85% 0%, rgba(227,179,76,0.4), transparent 70%), linear-gradient(120deg, #EDEAE0, #FAF9F5)"></div>
+<div style="padding: 0 14px 12px; display: flex; flex-direction: column; gap: 6px">
+<div style="display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; margin-top: -36px">
+<div style="width: 72px; height: 72px; box-sizing: content-box; border: 4px solid #FFFFFF; margin-left: -4px; border-radius: 50%; background: #F0EEE6; display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 28px; color: #2B2A27; flex-shrink: 0">M</div>
+<button type="button" onClick="{{toggleFollow}}" aria-pressed="{{following}}" style="{{followStyle}}">{{followLabel}}</button>
+</div>
+<h1 style="margin: 0; font-family: Lora, Georgia, serif; font-weight: 400; font-size: 28px; line-height: 1.1; letter-spacing: -0.015em">[Maker of ackstack]</h1>
+<div style="color: #2B2A27">[Their one-line headline]</div>
+<div style="font-size: 13px; color: #6B6A66">Maker of 1 product · on openproduct since [date]</div>
+</div>
+<div role="group" aria-label="Profile sections" style="display: flex; gap: 6px; padding: 0 10px 10px">
+<sc-for list="{{sections}}" as="s" hint-placeholder-count="3">
+<button type="button" onClick="{{s.pick}}" aria-pressed="{{s.on}}" style="{{s.style}}">{{s.label}}</button>
+</sc-for>
+</div>
+</section>
+
+<sc-if value="{{isPosts}}" hint-placeholder-val="{{true}}">
+<article aria-label="Feature shipped" style="flex-shrink: 0; border-radius: 16px; background: radial-gradient(360px 160px at 100% 0%, rgba(227,179,76,0.24), transparent 70%), #FFFFFF; padding: 14px; display: flex; flex-direction: column; gap: 8px">
+<div style="display: flex; align-items: center; gap: 8px"><span style="width: 26px; height: 26px; border-radius: 50%; background: linear-gradient(135deg, #E3B34C, #B8862F); display: flex; align-items: center; justify-content: center; flex-shrink: 0"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2.6" aria-hidden="true"><path d="M5 12l5 5 9-10"></path></svg></span><a href="PhonePost.dc.html" style="flex: 1; min-width: 0; display: flex; align-items: center; min-height: 44px; font-weight: 600; font-size: 18px; letter-spacing: -0.015em; line-height: 1.2; color: #141413; text-decoration: none">The state re-collection calendar</a></div>
+<div style="color: #2B2A27">Policies re-send on each state's own cycle: NY, the NY Retail Worker Safety Act, IL and CA.</div>
+<div style="display: flex; align-items: center; gap: 4px; font-size: 13px; color: #6B6A66">for <a href="PhoneProduct.dc.html" style="display: flex; align-items: center; min-height: 44px; font-weight: 600; text-decoration: none">ackstack</a> · 30 Sep</div>
+</article>
+</sc-if>
+
+<sc-if value="{{showSeat}}" hint-placeholder-val="{{true}}">
+<article aria-label="Help wanted" style="flex-shrink: 0; border-radius: 16px; background: #FFFFFF; padding: 14px; display: flex; flex-direction: column; gap: 10px">
+<div style="display: flex; align-items: center; gap: 12px">
+<div style="width: 44px; height: 44px; border-radius: 50%; border: 2px dashed #2F6F73; box-sizing: border-box; display: flex; align-items: center; justify-content: center; color: #2F6F73; flex-shrink: 0"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg></div>
+<div style="flex: 1; min-width: 0; display: flex; flex-direction: column">
+<span style="font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; letter-spacing: 0.12em; color: #1F5357">OPEN SEAT · ACKSTACK</span>
+<span style="font-weight: 600; font-size: 18px; letter-spacing: -0.015em; line-height: 1.2">HR-compliance advisor</span>
+<span style="font-size: 13px; color: #6B6A66">Open 7 weeks · nobody yet</span>
+</div>
+</div>
+<a href="PhoneSeats.dc.html" style="display: flex; align-items: center; justify-content: center; min-height: 44px; border-radius: 999px; background: #2F6F73; color: #FFFFFF; text-decoration: none; font-weight: 600">Take the seat</a>
+</article>
+</sc-if>
+
+<sc-if value="{{isProducts}}" hint-placeholder-val="{{false}}">
+<section aria-label="Products" style="flex-shrink: 0; background: #FFFFFF; border-radius: 16px; padding: 8px; display: flex; flex-direction: column">
+<a href="PhoneProduct.dc.html" style="display: flex; gap: 12px; align-items: center; min-height: 56px; padding: 0 6px; border-radius: 14px; text-decoration: none; color: #141413">
+<div style="width: 44px; height: 44px; border-radius: 14px; background: #F3E7CC; color: #8A6420; display: flex; align-items: center; justify-content: center; font-weight: 600; flex-shrink: 0">Ak</div>
+<div style="display: flex; flex-direction: column; flex: 1; min-width: 0"><span style="font-weight: 600">ackstack</span><span style="font-size: 13px; color: #6B6A66">Maker · shipping, 3 of 4</span></div>
+<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#8A877F" stroke-width="2.2" aria-hidden="true"><path d="M9 6l6 6-6 6"></path></svg>
+</a>
+</section>
+</sc-if>
+
+</main>
+
+<nav aria-label="Main" style="position: relative; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); margin: 10px 10px 14px; padding: 4px 6px; background: #FFFFFF; border-radius: 16px">
+<a href="PhoneFeed.dc.html" style="min-height: 54px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; color: #6B6A66; text-decoration: none; font-size: 11px">
+<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 11l8-7 8 7v9H4z"></path></svg>Feed</a>
+<a href="PhoneProducts.dc.html" style="min-height: 54px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; color: #6B6A66; text-decoration: none; font-size: 11px">
+<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="2"></rect><rect x="14" y="3" width="7" height="7" rx="2"></rect><rect x="3" y="14" width="7" height="7" rx="2"></rect><rect x="14" y="14" width="7" height="7" rx="2"></rect></svg>Products</a>
+<a href="PhoneSeats.dc.html" style="min-height: 54px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; color: #6B6A66; text-decoration: none; font-size: 11px">
+<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="9" cy="8" r="3.5"></circle><path d="M3 20c.8-3.5 3.2-5.5 6-5.5s5.2 2 6 5.5"></path><path d="M18 8v6M15 11h6"></path></svg>Seats</a>
+<a href="PhoneActivity.dc.html" style="min-height: 54px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; color: #6B6A66; text-decoration: none; font-size: 11px">
+<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 8a6 6 0 0112 0c0 7 3 8 3 8H3s3-1 3-8"></path><path d="M10 20a2 2 0 004 0"></path></svg>Activity</a>
+</nav>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  constructor(props) { super(props); this.state = { section: 'posts', follow: false }; }
+  renderVals() {
+    const sec = this.state.section;
+    const on = this.state.follow;
+    return {
+      sections: [['posts', 'Posts'], ['products', 'Products'], ['seats', 'Seats']].map(([k, label]) => ({
+        label, on: sec === k, pick: () => this.setState({ section: k }),
+        style: 'min-height: 44px; padding: 0 16px; border: 0; border-radius: 999px; font: inherit; cursor: pointer; ' + (sec === k ? 'background: #141413; color: #FAF9F5; font-weight: 600' : 'background: transparent; color: #2B2A27; font-weight: 500')
+      })),
+      isPosts: sec === 'posts', isProducts: sec === 'products',
+      showSeat: sec === 'posts' || sec === 'seats',
+      following: on,
+      followLabel: on ? 'Following' : 'Follow',
+      toggleFollow: () => this.setState({ follow: !on }),
+      followStyle: 'min-height: 44px; padding: 0 22px; border: 0; border-radius: 999px; font: inherit; font-weight: 600; cursor: pointer; ' + (on ? 'background: rgba(20,20,19,0.06); color: #2B2A27' : 'background: #141413; color: #FAF9F5')
+    };
+  }
+}
+</script>
+</body>
+</html>

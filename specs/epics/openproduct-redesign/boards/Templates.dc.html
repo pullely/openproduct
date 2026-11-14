@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Post templates</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600&amp;family=Lora:wght@400;500&amp;family=IBM+Plex+Mono:wght@400;500&amp;display=swap">
+<style>
+:root{color-scheme:light}body{margin:0;background:#F6F4EE}
+a{color:#8A6420}a:hover{color:#5E4415}
+</style>
+</helmet>
+<div style="background-color: #F6F4EE; background-image: radial-gradient(1100px 460px at 50% -8%, rgba(184,134,47,0.18), transparent 62%), radial-gradient(rgba(20,20,19,0.07) 1px, transparent 1.2px); background-size: auto, 22px 22px; color: #141413; font-family: 'Hanken Grotesk', system-ui, sans-serif; font-size: 15px; line-height: 1.5; min-height: 100%">
+<div style="max-width: 1180px; margin: 0 auto; box-sizing: border-box; padding: 48px 24px 72px; display: flex; flex-direction: column; gap: 32px">
+
+<header style="display: flex; flex-direction: column; gap: 10px; max-width: 760px">
+<div style="font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; color: #8A6420; letter-spacing: 0.12em">SPEC · POSTING ON OPENPRODUCT</div>
+<h1 style="margin: 0; font-family: Lora, Georgia, serif; font-weight: 400; font-size: 40px; line-height: 1.1; letter-spacing: -0.015em">Five kinds of post, and nothing else</h1>
+<p style="margin: 0; font-size: 18px; color: #2B2A27">openproduct is not a place to share anything. Every post is one of these templates, filled in field by field, so posts of the same kind look the same and can be compared, filtered and trusted.</p>
+</header>
+
+<section style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 250px), 1fr)); gap: 12px">
+<div style="background: #FFFFFF; border-radius: 16px; box-shadow: none; padding: 18px; display: flex; flex-direction: column; gap: 4px"><span style="font-weight: 600">Every post shows who and what</span><span style="font-size: 13px; color: #2B2A27">The product it's about and the person who posted it. Both can be followed.</span></div>
+<div style="background: #FFFFFF; border-radius: 16px; box-shadow: none; padding: 18px; display: flex; flex-direction: column; gap: 4px"><span style="font-weight: 600">Automatic posts say so</span><span style="font-size: 13px; color: #2B2A27">Demos and deployment status come from Orun and say so. A demo names the maker who approved it.</span></div>
+<div style="background: #FFFFFF; border-radius: 16px; box-shadow: none; padding: 18px; display: flex; flex-direction: column; gap: 4px"><span style="font-weight: 600">Talk lives under posts</span><span style="font-size: 13px; color: #2B2A27">Comments, replies and reactions are open on every post. There is no free-standing status update.</span></div>
+<div style="background: #FFFFFF; border-radius: 16px; box-shadow: none; padding: 18px; display: flex; flex-direction: column; gap: 4px"><span style="font-weight: 600">Only makers post for a product</span><span style="font-size: 13px; color: #2B2A27">You can post only for products you're on the crew of.</span></div>
+</section>
+
+<section style="display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 360px), 1fr)); gap: 16px">
+<sc-for list="{{tpls}}" as="t" hint-placeholder-count="6">
+<article style="background: #FFFFFF; border-radius: 16px; box-shadow: none; overflow: hidden; display: flex; flex-direction: column">
+<div style="{{t.headStyle}}">
+<div style="display: flex; align-items: center; justify-content: space-between; gap: 10px">
+<span style="display: flex; align-items: center; gap: 8px; font-weight: 600; font-size: 18px"><span style="{{t.dot}}"></span>{{t.label}}</span>
+<span style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: #2B2A27">{{t.who}}</span>
+</div>
+<div style="font-size: 13px; color: #2B2A27">{{t.when}}</div>
+</div>
+<div style="padding: 6px 18px 4px">
+<sc-for list="{{t.fields}}" as="f" hint-placeholder-count="4">
+<div style="display: flex; align-items: baseline; gap: 10px; padding: 8px 0; border-bottom: 1px solid #F0EEE6">
+<span style="flex: 1; font-size: 15px">{{f.name}}</span>
+<span style="font-size: 13px; color: #6B6A66">{{f.rule}}</span>
+<span style="{{f.reqStyle}}">{{f.req}}</span>
+</div>
+</sc-for>
+</div>
+<div style="padding: 10px 18px 16px; font-size: 13px; color: #6B6A66">{{t.basis}}</div>
+</article>
+</sc-for>
+</section>
+
+<section style="display: flex; flex-direction: column; gap: 10px; max-width: 760px">
+<h2 style="margin: 0; font-family: Lora, Georgia, serif; font-weight: 400; font-size: 26px">Left out on purpose</h2>
+<ul style="margin: 0; padding-left: 20px; color: #2B2A27; display: flex; flex-direction: column; gap: 6px">
+<li><span style="font-weight: 600">Deployments as posts.</span> Where a version is live shows on its New version card and on the product page, filled in by Orun from each run.</li>
+<li><span style="font-weight: 600">Free text, links and images on their own.</span> They belong inside a template's fields.</li>
+<li><span style="font-weight: 600">Reposts.</span> Share sends a link; it doesn't put the post in your followers' feed again.</li>
+</ul>
+</section>
+
+<div><a href="Feed.dc.html" style="display: inline-flex; align-items: center; min-height: 40px; padding: 0 20px; border-radius: 999px; background: #141413; color: #FAF9F5; text-decoration: none; font-weight: 600">Back to the feed</a></div>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1900}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const F = (name, rule, req) => ({ name, rule, req: req ? 'Required' : 'Optional',
+      reqStyle: 'width: 66px; text-align: right; flex-shrink: 0; font-family: IBM Plex Mono, monospace; font-size: 11px; color: ' + (req ? '#141413' : '#8A877F') });
+    const T = (label, color, bg, who, when, fields, basis) => ({ label, who, when, fields, basis,
+      dot: 'width: 10px; height: 10px; border-radius: 3px; background: ' + color,
+      headStyle: 'padding: 16px 18px; display: flex; flex-direction: column; gap: 4px; background: ' + bg });
+    const tpls = [
+      T('Feature shipped', '#B8862F', '#F3E7CC', 'POSTED BY A MAKER', 'Something new that people can use today.', [
+        F('Feature name', 'up to 80 characters', true), F('What it does', 'up to 280 characters', true), F('Who it’s for', 'one line', true),
+        F('Milestone', 'picked from the build track', false), F('Try it link', 'checked before posting', true), F('Demo', 'attach a recorded demo', false)
+      ], 'Answers the four questions a reader has: what, for whom, how far along, where to try it.'),
+      T('New version', '#5B6B8C', '#E6E9F2', 'POSTED BY A MAKER', 'A numbered release with its changes listed.', [
+        F('Version', 'semantic, like 1.3.0', true), F('Changes', 'grouped: Added, Changed, Fixed, Removed, Security', true),
+        F('Breaking changes', 'flagged in red when present', false), F('Upgrade note', 'up to 280 characters', false), F('Where it\u2019s live', 'added by Orun from each deploy', true)
+      ], 'Follows Keep a Changelog and Semantic Versioning, which developers already read every day.'),
+      T('Demo', '#141413', '#F0EEE6', 'ORUN, AUTOMATICALLY', 'A recorded run of the real app, approved by a maker.', [
+        F('Flow', 'a Playwright script', true), F('Steps', 'each with pass or fail', true), F('Environment', 'stage, seed data', true),
+        F('Title', 'up to 80 characters', true), F('Caption', 'up to 280 characters', false)
+      ], 'Only passing runs can be posted, and only after a maker reviews them.'),
+      T('New idea', '#8C6A9E', '#ECE6F3', 'POSTED BY A MAKER', 'A problem worth building for, before any code.', [
+        F('The problem', 'up to 280 characters', true), F('Who has it', 'one line', true), F('Why now', 'one line', false), F('Seats needed', 'one or more roles', true)
+      ], 'Ideas must name who has the problem, so they can be judged on more than a pitch.'),
+      T('Help wanted', '#2F6F73', '#DDEDEC', 'POSTED BY A MAKER', 'An open seat on the crew.', [
+        F('Role', 'up to 60 characters', true), F('What you’d do', 'up to three points', true), F('Time', 'hours a week', true), F('In return', 'credit, paid, or equity', true)
+      ], 'Taking the seat goes through the workspace door that already exists.')
+    ];
+    return { tpls };
+  }
+}
+</script>
+</body>
+</html>
