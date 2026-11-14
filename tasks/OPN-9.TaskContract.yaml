@@ -1,0 +1,33 @@
+# OPN-9: the first task of milestone OPN3, the stage switch (design §6,
+# steps 1 and 2). The platform's stage pointers move to this repository's
+# hosts in an orun-cloud pull request of its own. Here, the seam keys that
+# pull request needs are rotated on both sides in one step, and core and the
+# gateway redeploy with them. The auth seam key is new on the platform (it
+# was never set there, so it cuts nothing off), and is seeded for prod too,
+# which closes OPN2's one departure: password sign-up on prod. Prod's listing
+# seam stays with the monorepo deployment until the prod switch (OPN-10).
+# The file is the contract; the task lives in Orunbase.
+apiVersion: orun.io/v1
+kind: TaskContract
+metadata:
+  name: OPN-9
+  title: "OPN3: stage joins the platform's seam"
+spec:
+  goal: The platform's stage seam points at this repository's stage deployment, with fresh keys shared by both sides, and the listing flow runs end to end on stage.
+  affects:
+    - core/component.yaml
+    - gateway/component.yaml
+    - specs/epics/openproduct-standalone/**
+    - tasks/OPN-9.TaskContract.yaml
+    - default/openproduct/openproduct-worker
+    - default/openproduct/openproduct-gateway
+    - default/openproduct/openproduct-worker-tests
+    - default/openproduct/openproduct-gateway-tests
+  doneWhen:
+    - LISTING_SEAM_SECRET (stage) and OPENPRODUCT_AUTH_SEAM_SECRET (stage and prod) are fresh values, each written once to the platform's escrow and to this workspace, never printed
+    - the platform's stage LISTING_SEAM_URL and the console's stage hand-off name this repository's stage hosts (an orun-cloud pull request)
+    - core and the gateway redeploy on stage and prod with the rotated keys
+    - a visitor signs up with a password on stage and on prod
+    - on stage, a listing is created, linked through the console, published, joined and purged end to end, with the seam deliveries landing in this gateway
+    - IMPLEMENTATION-STATUS.md records it, with the prod switch left for OPN-10
+  gates: []

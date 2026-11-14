@@ -45,8 +45,11 @@ spec:
   # the Worker deploys and answers 503 on the paths that need it.
   # runtimeSecrets (below) names them for the composition's secrets-live step,
   # which pushes the stored ones with `wrangler secret bulk` after deploy.
-  #   LISTING_SEAM_SECRET   generated per environment (OPN-K); the platform
-  #                         learns it at that environment's switch (OPN3)
+  #   LISTING_SEAM_SECRET   per environment (OPN-K), shared with the
+  #                         platform's escrow (integrations/listing-seam/<env>)
+  #                         from that environment's switch: stage at OPN-9,
+  #                         prod at OPN-10. A rotation writes one fresh value
+  #                         to both sides, then redeploys this Worker.
   #   OPENPRODUCT_OPERATORS the operators' platform subject ids, set by the owner
   optionalSecretEnv:
     LISTING_SEAM_SECRET: "secret://ws_VTNEQKAP/openproduct/{{ .environment }}/LISTING_SEAM_SECRET"

@@ -43,10 +43,16 @@ spec:
   # Runtime Worker secrets, best-effort: a key not yet stored is skipped, so
   # the Worker deploys and the paths that need it answer 503 or degrade.
   # runtimeSecrets (below) names them for the composition's secrets-live step.
-  #   LISTING_SEAM_SECRET          generated per environment (OPN-K)
-  #   OPENPRODUCT_AUTH_SEAM_SECRET generated per environment (OPN-K); password
-  #                                sign-in works once the platform's
-  #                                identity-worker holds the same value (OPN3)
+  #   LISTING_SEAM_SECRET          per environment (OPN-K), shared with the
+  #                                platform's escrow from that environment's
+  #                                switch: stage at OPN-9, prod at OPN-10
+  #   OPENPRODUCT_AUTH_SEAM_SECRET per environment (OPN-K), shared with the
+  #                                platform's escrow
+  #                                (integrations/openproduct-auth-seam/<env>,
+  #                                delivered to identity-worker) on stage and
+  #                                prod since OPN-9; password sign-in needs it
+  #   A rotation writes one fresh value to both sides, then redeploys this
+  #   Worker and the platform's consumer.
   #   SCREENSHOT_CAPTURE_URL/TOKEN the capture service, set by the owner
   # GITHUB_TOKEN (the repository reads, OX-D) is NOT listed yet, on purpose:
   # secrets-live reads each name from the job's environment, and CI's
