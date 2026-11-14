@@ -93,13 +93,14 @@ Design §6, in order:
 1. **orun-cloud PR (stage):** `LISTING_SEAM_URL` (stage) and `openproductWebBase` become configuration, set to the new stage hosts, and the stage seam keys rotate on both sides. Then the full listing flow is run on stage.
 2. **orun-cloud PR (prod):** `LISTING_SEAM_URL` (prod) becomes `https://api.openproduct.live`, and the prod keys rotate on both sides.
 3. **A task in this repository:** `OPENPRODUCT_CUSTOM_DOMAIN` is set for prod and the two domain components apply, after the `openproduct.live` zone moves to the new Cloudflare account (risk OPN-G).
-4. The old prod `core` is set `READ_ONLY=true`.
+
+The old prod `core` is not set read-only. The owner accepted losing its data (2026-11-14), so OPN4's teardown follows the switch with no read-only week.
 
 **Done when**
 - on stage, a listing is created, linked through the console, published, joined and purged end to end, with seam deliveries landing in the new gateway
 - `openproduct.live` and `api.openproduct.live` are served by the new account's Workers, and "Sign in with Orunbase" completes
 - the platform posts seam webhooks to `https://api.openproduct.live`, and both prod seam keys are rotated on both sides
-- the old prod `core` is `READ_ONLY=true` and receives no seam deliveries
+- the old prod `core` receives no seam deliveries
 
 ## OPN4 — openproduct, listed on openproduct.live
 
@@ -128,7 +129,7 @@ guard enforces the inversion.
 
 ## Sequencing note
 
-- **Boundaries.** OPN0 ends at review. OPN1 ends at your go/no-go on D1. OPN2 ends where the next step needs another repository and an outside change (the zone). OPN3 ends where the next step destroys things irreversibly, which only you approve, after a week of the old deployment sitting read-only.
+- **Boundaries.** OPN0 ends at review. OPN1 ends at your go/no-go on D1. OPN2 ends where the next step needs another repository and an outside change (the zone). OPN3 ends where the next step destroys things irreversibly, which only you approve. There is no read-only week first (your call, 2026-11-14).
 - **The first milestone does not show the app running.** This is a move, not a new app: the first thing worth seeing is D1 serving the real catalogue and search slice on stage, with numbers. The app runs from here at the end of OPN2.
 - **The local slice proof** can run ahead of OPN1 in a scratch copy of the cut (it did, 2026-11-09). OPN-2 then carries that work into the tree.
 - **Prerequisites:** OPN2 needs orun-cloud#1905. OPN3 needs the two orun-cloud PRs and the registrar check (risk OPN-G).

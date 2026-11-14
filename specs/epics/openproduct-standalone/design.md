@@ -241,14 +241,17 @@ prerequisites and does not own their files.
 **Order:**
 1. Switch stage.
 2. Run the listing, link-grant, join-request and purge flows end to end on stage.
-3. Set the old prod `core` to `READ_ONLY=true`.
-4. Move the zone, apply the domain components, re-point `LISTING_SEAM_URL` and rotate the prod keys.
-5. Smoke-test.
-6. The old deployment stays read-only for one week, then OPN4 destroys it.
+3. Move the zone, apply the domain components, re-point `LISTING_SEAM_URL` and rotate the prod keys.
+4. Smoke-test.
+5. OPN4 destroys the old deployment once the owner approves.
 
-**Rollback:** before step 4, revert the stage pointers. After step 4, move the
-zone back and re-point the seam. The old prod is read-only but intact until
-OPN4.
+There is no read-only step and no read-only week. The owner accepted losing
+the old deployment's data (2026-11-14), so nothing on it needs keeping while
+the new one settles. The order used to set the old prod `core` to
+`READ_ONLY=true` before the zone move and keep it read-only for a week.
+
+**Rollback:** before step 3, revert the stage pointers. After step 3, move the
+zone back and re-point the seam. The old prod is intact until OPN4.
 
 ## 7. The public repository
 
