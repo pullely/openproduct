@@ -521,5 +521,14 @@ export const manifest: MigrationManifest = {
       description:
         "openproduct: an index over a person's published product posts by position, for the Posts section of their page (openproduct-redesign OPR-3)",
     },
+    {
+      id: "2280_openproduct_thread_visibility",
+      context: "openproduct",
+      path: "2280_openproduct_thread_visibility/up.sql",
+      checksum:
+        "4a5df300ac183b8f33d2adda104c1c1fdde549fecffc94d50ccbd5e6df43441f",
+      description:
+        "openproduct: threads.visibility (public or private; a private thread cannot be made public or moved to another product, and no post can be moved to another thread), threads.kind (question, issue, suggestion) and threads.resolved_at, with two partial indexes over private threads; the inbox's kind and target checks widened for private-thread rows and launch.listing (openproduct-redesign OPR-4)",
+    },
   ],
 };

@@ -13,7 +13,6 @@ import {
   INSTALL_HEADING,
   LISTING_FORUM_TITLE,
   PRICING_PROVENANCE_NOTE,
-  THREAD_COMPOSER_TITLE,
   alternativesFor,
   badgeHtml,
   badgeMarkdown,
@@ -38,7 +37,6 @@ import {
   shareUrl,
   takingOffersLine,
   thumbnailOf,
-  threadComposerHref,
   topicPath,
   type Alternative,
   type Demand,
@@ -110,7 +108,7 @@ import { AnchorForward } from "./anchor-forward";
 import { BadgeSnippet, type BadgeChoice } from "./badge-snippet";
 import { Changes } from "./changes";
 import { Comments } from "./comments";
-import { EarlierDiscussions } from "./discussions";
+import { TalkSection } from "../talk/talk-section";
 import { InstallLine } from "./install-line";
 import { LaunchHealth } from "./launch-health";
 import { MakerHeaderActions, ProductPitch, VisitorOnly } from "./maker/details";
@@ -1871,15 +1869,22 @@ export function PostList({
 
 type Discussion = Awaited<ReturnType<typeof fetchDiscussion>>;
 
+
 /**
- * Talk (boards `Product` Talk tab, `ProductIdea`): the product's discussion,
- * in the new look.
+ * Talk (boards `Product` Talk tab, `ProductIdea`, and their phone boards;
+ * openproduct-redesign OPR-4, design §7).
  *
- * WHAT IS HERE IS WHAT THE PRODUCT ALREADY HAS: the door to start a thread
- * (the existing composer), the one conversation under the product with its
- * comment box, and the titled threads about it as a list of links. The board's kinds of thread,
- * its public/private switch, its filters and "Mark resolved" are milestone
- * OPR3 and are not drawn — nothing stands in for them.
+ *   the composer   one field, the thread's kind, who can see it, and the
+ *                  button — a plain form, the same for every visitor
+ *   the filter     All / Public, and Private for a signed-in reader
+ *   the threads    the product's PUBLIC threads, drawn here; each opens at
+ *                  its own address, where its replies are
+ *   Discussion     the one conversation under the product, with its box
+ *
+ * NOTHING PRIVATE IS IN THIS RENDER. `fetchDiscussion` is the public read,
+ * which holds no private thread; a reader's private threads arrive in their
+ * own browser after load (`talk/talk-list.tsx`), so this stays one cached
+ * document for everybody (I6).
  */
 export function TalkCards({
   slug,
@@ -1896,17 +1901,9 @@ export function TalkCards({
   const comments = discussion?.launch?.posts.length ?? 0;
   return (
     <>
-      <section aria-label={THREAD_COMPOSER_TITLE} className="flex flex-col rounded-[16px] bg-card p-3 max-sm:p-2.5">
-        {/* The board's field, as the door it is today: the composer is a page
-            of its own (a thread has a title, a category and a product). */}
-        <AppLink
-          href={threadComposerHref(slug)}
-          data-start-thread
-          className={`flex h-[44px] items-center rounded-full bg-well px-4 text-nozoom text-muted-foreground no-underline hover:bg-sunken ${FOCUS}`}
-        >
-          {THREAD_COMPOSER_TITLE}
-        </AppLink>
-      </section>
+      {/* `null` is "the threads could not be read", which is not "there are
+          none" (OD5): the section then claims no count and no emptiness. */}
+      <TalkSection slug={slug} threads={discussion?.threads ?? null} onPage={onPage} />
 
       <section id="discussion" aria-labelledby="discussion-heading" className={SECTION_CARD} {...{ [SECTION_ATTRIBUTE]: true }}>
         <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-2">
@@ -1930,12 +1927,6 @@ export function TalkCards({
         {/* DQ0b — the comment box FIRST: something to say, and what other
             people said. */}
         <Comments slug={slug} launch={discussion?.launch ?? null} onPage={onPage} />
-
-        {/* PP0 (WC-6) — ONE CONVERSATION. What remains is a link list for
-            the titled threads about this product, which renders nothing when
-            there are none. A failed read (`null`) and an empty list stay
-            different answers (OD5). */}
-        <EarlierDiscussions threads={discussion?.threads ?? null} />
       </section>
 
     </>

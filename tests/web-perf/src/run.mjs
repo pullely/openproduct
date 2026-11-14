@@ -13,6 +13,7 @@
 //   node src/run.mjs axe        the axe pass, both ramps and both widths
 //   node src/run.mjs targets    QE3's 44px floor on every route at phone width
 //   node src/run.mjs snapshots  QE4's geometry and colour snapshots (XP4_UPDATE_SNAPSHOTS=1 records)
+//   node src/run.mjs talk       OPR-4's walk: threads public and private, as four people
 //   node src/run.mjs walk       the two-width route walk (a report, not a gate)
 //   node src/run.mjs refresh    N consecutive router.refresh()/replace() calls must each land
 
@@ -143,6 +144,14 @@ try {
   if (lane === "all" || lane === "authed") {
     const { runAuthed } = await import("./authed.mjs");
     code = (await runAuthed(base)) || code;
+  }
+  // OPR-4 — Talk, public and private, as four people. A GATE: it is the
+  // browser's half of the privacy rule (no public document holds a private
+  // thread; its address is the not-found for anybody else) and the walk of
+  // the milestone's four done-when lines.
+  if (lane === "all" || lane === "talk") {
+    const { runTalk } = await import("./talk.mjs");
+    code = (await runTalk(base, gateway)) || code;
   }
   if (lane === "all" || lane === "snapshots") {
     const { runSnapshots } = await import("./snapshots.mjs");

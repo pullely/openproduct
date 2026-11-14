@@ -8,7 +8,7 @@ the code departed from `design.md`.
 | OPR0 — the spec | ✅ done (2026-11-14) | [#15](https://github.com/pullely/openproduct/pull/15) |
 | OPR1 — the new look | ✅ done (2026-11-14) | [#16](https://github.com/pullely/openproduct/pull/16) |
 | OPR2 — products post for themselves | ✅ done (2026-11-15) | [#17](https://github.com/pullely/openproduct/pull/17) |
-| OPR3 — threads, public and private | | |
+| OPR3 — threads, public and private | ✅ done (2026-11-15) | [#18](https://github.com/pullely/openproduct/pull/18) |
 | OPR4 — demos | waits on risks R1 | |
 
 ## Inputs
@@ -117,6 +117,48 @@ page; the product page is where its crew runs it.
 Private threads, a thread's kind and "resolved", the Talk tab's
 public/private filter, and the Mentions and Seats tabs of Activity.
 
+## OPR3 — as built (OPR-4)
+
+Talk on a product: a thread has a kind and is public or private.
+
+- **Data.** Migration `2280`: `threads.visibility` (default `public`),
+  `threads.kind` (null for older threads and for comment threads),
+  `threads.resolved_at` (issues only). The database itself refuses to
+  make a private thread public, to move a private thread to another
+  product, and to move a post between threads.
+- **The privacy rule** is two SQL predicates in the repository. Every
+  public read of threads or posts carries the public one; three signed-in
+  reads carry the other (the author, or a maintainer of the product at
+  the time of the read). Replying and voting are guarded the same way.
+  `packages/db/src/pg/thread-privacy.test.ts` lists every statement that
+  touches threads, posts, votes or mutes and fails when one is added
+  unclassified; it runs every public read against a seeded private
+  thread.
+- **Routes.** `POST /threads` takes `kind` and `visibility`; private
+  list, read and reply under `/threads/private`; resolve and reopen for
+  the crew. Anyone not allowed gets one 404, signed in or not; private
+  answers are never cached.
+- **Nothing private is in a public page, the feed, the sitemap, search,
+  the digest, the MCP tools or another person's export.** The export of a
+  person's own rows names a thread's title only if it is public or they
+  can read it now.
+- **Notifications.** A new private thread reaches the crew's Needs you
+  and Activity; a crew reply reaches the author; an author reply reaches
+  the crew. A row holds who and where, never a title or text. No mentions
+  and no upvote notices come out of a private thread.
+- **Web.** Talk on the shipping page's tab and on the idea page: one
+  composer with the kind and the Public/Private switch, the All / Public
+  / Private filter, kind and Resolved on rows, Mark resolved for the
+  crew. The cached page draws public threads only; private rows arrive
+  after load for a signed-in reader. A private thread's page is the same
+  shell for everyone and shows not-found to anyone not allowed.
+- **Addresses.** `/studio/<org>/<profile>/discussions` → the product's
+  Talk; lock, unlock and answer stay on the Settings card.
+- **Budgets.** `/product-00/talk` went up (JS 184,900, document 26,250).
+  Nothing else moved.
+- **Also fixed:** the inbox's kind check never allowed `launch.listing`,
+  so those rows had been refused since PP1; `2280` allows it.
+
 ## Departures from the design
 
 - **Sorted Products pages are paths, not a query.** Design §5 wrote
@@ -179,3 +221,36 @@ public/private filter, and the Mentions and Seats tabs of Activity.
   member's first visit to a product page shifts once when the maker
   controls arrive. The seat list can be up to 60 seconds stale after a
   write.
+
+### From OPR3
+
+- **Crew, for a private thread, is the product's maintainers**, the same
+  list every crew route checks. A confirmed person on the roster who is
+  not a maintainer cannot read private threads. Design §7 said
+  "confirmed crew".
+- **"Leaves the crew" has two real paths only** (design §7.4): the
+  person deletes their account, or the product is deleted. The site has
+  no way to remove a maintainer and gets no event when someone leaves a
+  workspace on Orunbase, so such a person keeps access until their
+  maintainer row is removed by hand. This is how every crew route has
+  worked since OX4; it needs an owner decision (a "remove maintainer"
+  act, or an event from Orunbase).
+- **Moderators cannot read a private thread** (design §7.6): the private
+  view has no report control.
+- **An author who deletes their account** leaves the private thread
+  readable by the crew, with the author anonymised.
+- **A private thread needs only a signed-in person**; a public thread
+  still needs a public profile.
+- **Replies open on the thread's own address**, not inline in the list.
+- **A thread starts with a title only** (160 characters).
+- **Private threads sit above public ones under All**, not mixed by
+  time.
+- **The third kind reads "Suggestion"**; the phone boards say "Idea".
+  Issues are filed under the forum's Question tag.
+- **The quiet Post button uses body ink**: the board's grey is under
+  4.5:1.
+- **Activity keeps All / Comments / Launches.** No notice is a mention
+  or a seat request, so the Mentions and Seats tabs are left out.
+- **Known edges.** A reader with private threads sees the list shift
+  once when they arrive. A resolved public issue shows on the cached
+  Talk page within a minute.

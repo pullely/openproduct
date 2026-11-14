@@ -194,6 +194,11 @@ export function purgeTagsForWrite(pathname: string, action: string): string[] {
   // is not purged with it: this layer cannot tell a product post's thread
   // from a forum thread without a read, and the count is true again within
   // the document's sixty seconds.
+  // OPR-4 — a reply in a PRIVATE thread changes no cached document: a
+  // private thread is in none of them. (A new private thread arrives on the
+  // same path as a public one — the visibility is in the body, which this
+  // layer does not read — so that purge stays; it costs one tag.)
+  if (/^\/v1\/openproduct\/threads\/private(?:\/|$)/.test(pathname)) return [];
   if (action === "post" || action === "thread-create") return [TAG_THREADS];
   if (action === "endorse" && /^\/v1\/openproduct\/posts\/[^/]+\/vote$/.test(pathname)) {
     return [TAG_THREADS];

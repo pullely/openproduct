@@ -741,6 +741,50 @@ function listed(alias: string): string {
   return `${a}visibility = 'public' AND ${a}moderation_state = 'visible'`;
 }
 
+/**
+ * OPR-4 (design §7) — THE PUBLIC HALF OF THE PRIVACY RULE, as one predicate.
+ *
+ * A private thread and its posts are readable by its author and the
+ * product's crew, and by nobody else. Every read of `threads` or `posts`
+ * that is not the signed-in path below carries this predicate on the thread
+ * it reads, in SQL — so a private thread's title, its text, and the fact
+ * that it exists are absent from the rows, not filtered by a caller that
+ * might forget. `pg/thread-privacy.test.ts` lists every method here that
+ * touches either table and fails until a new one is classified.
+ */
+function publicThread(alias: string): string {
+  return `${alias}.visibility = 'public'`;
+}
+
+/**
+ * OPR-4 — THE OTHER HALF: who may read a private thread, decided per
+ * statement. The reader is the thread's author, or is on the product's crew
+ * NOW (`listing_maintainers`, the table every crew route authorises from).
+ * Nothing stores a grant, so a crew row that goes takes the access with it at
+ * the next read.
+ *
+ * WHAT REMOVES A CREW ROW, so this is not read as more than it is: the
+ * person's own exit (`eraseSubject`), and the listing's or its workspace's
+ * deletion (which takes the threads too). No route removes a maintainer and
+ * the platform sends no event when a person leaves a workspace, so there is
+ * no stored "still a member" fact this predicate could also ask for; a
+ * person who leaves the workspace and keeps their account stays on the crew
+ * until an operator deletes the row. That is `listing_maintainers`' own
+ * model (OX4), for every crew route, not a rule of this predicate.
+ *
+ * Only the signed-in reads (`listPrivateThreads`, `getPrivateThread`,
+ * `listPrivatePosts`) and the two write guards use it.
+ */
+function privateThreadReadableBy(alias: string, readerParam: string): string {
+  return `${alias}.visibility = 'private'
+            AND (${alias}.author_subject_id = ${readerParam}
+                 OR EXISTS (
+                      SELECT 1 FROM openproduct.listing_maintainers prm
+                       WHERE prm.profile_id = ${alias}.profile_id
+                         AND prm.subject_id = ${readerParam}
+                    ))`;
+}
+
 function handleJoinFor(subjectCol: string): string {
   return `LEFT JOIN openproduct.contributors hc
              ON hc.subject_id = ${subjectCol}
@@ -1287,6 +1331,13 @@ type ThreadRow = {
   post_count: number | string;
   profile_id?: string;
   answer_post_id?: string | null;
+  // OPR-4 — optional, because not every read selects them (and a row read
+  // before 2280 has none). Absent means a public thread with no kind.
+  visibility?: string | null;
+  kind?: string | null;
+  resolved_at?: string | Date | null;
+  awaiting_crew?: boolean | null;
+  slug?: string | null;
 };
 
 type PostRow = {
@@ -1321,6 +1372,11 @@ function threadOf(row: ThreadRow): ThreadRecord {
     postCount: Number(row.post_count ?? 0),
     profileId: row.profile_id ?? null,
     answerPostId: row.answer_post_id ?? null,
+    visibility: row.visibility === "private" ? "private" : "public",
+    kind:
+      row.kind === "question" || row.kind === "issue" || row.kind === "suggestion" ? row.kind : null,
+    resolvedAt: iso(row.resolved_at ?? null),
+    slug: row.slug ?? null,
   };
 }
 
@@ -1512,7 +1568,8 @@ const PUBLIC_PRODUCT_POST_SELECT = `
             JOIN openproduct.threads th ON th.id = po.thread_id
            WHERE po.thread_id = pp.thread_id
              AND po.moderation_state = 'visible'
-             AND th.state <> 'removed') AS comment_count
+             AND th.state <> 'removed'
+             AND ${publicThread("th")}) AS comment_count
     FROM openproduct.product_posts pp
     JOIN openproduct.profiles p ON p.id = pp.profile_id
     LEFT JOIN LATERAL (
@@ -4506,6 +4563,7 @@ export function createOpenproductRepository(sql: SqlExecutor): OpenproductReposi
       const res = await sql.execute<ThreadRow>(
         `SELECT t.id, t.tag, t.title, t.state, t.created_at, t.last_post_at,
                 t.author_subject_id, h.handle AS author_handle, hc.display_name AS author_name,
+                t.kind, t.resolved_at,
                 (SELECT count(*) FROM openproduct.posts p
                   WHERE p.thread_id = t.id AND p.moderation_state = 'visible') AS post_count
            FROM openproduct.threads t
@@ -4513,6 +4571,7 @@ export function createOpenproductRepository(sql: SqlExecutor): OpenproductReposi
            ${handleJoinFor("t.author_subject_id")}
           WHERE t.profile_id = $1
             AND ${listed("pr")}
+            AND ${publicThread("t")}
             AND t.state <> 'removed'
             AND ($2::text IS NULL OR t.tag = $2)
             AND ($4::boolean IS NOT TRUE OR t.tag <> '${LAUNCH_THREAD_TAG}')
@@ -4544,6 +4603,7 @@ export function createOpenproductRepository(sql: SqlExecutor): OpenproductReposi
             AND t.tag = '${LAUNCH_THREAD_TAG}'
             AND t.state <> 'removed'
             AND ${listed("pr")}
+            AND ${publicThread("t")}
           ORDER BY t.created_at
           LIMIT 1`,
         [profileId],
@@ -4580,18 +4640,24 @@ export function createOpenproductRepository(sql: SqlExecutor): OpenproductReposi
       return id ? { id, created: false } : null;
     },
 
-    /** One thread, by id, with the same listed guard. */
+    /**
+     * One PUBLIC thread, by id, with the same listed guard.
+     *
+     * OPR-4 — a private thread is not here: to this read it does not exist,
+     * which is what makes every route built on it answer 404 for one. The
+     * signed-in read is `getPrivateThread`.
+     */
     async getThread(id) {
       const res = await sql.execute<ThreadRow>(
         `SELECT t.id, t.tag, t.title, t.state, t.created_at, t.last_post_at,
                 t.author_subject_id, h.handle AS author_handle, hc.display_name AS author_name,
-                t.profile_id, t.answer_post_id,
+                t.profile_id, t.answer_post_id, t.kind, t.resolved_at, pr.slug,
                 (SELECT count(*) FROM openproduct.posts p
                   WHERE p.thread_id = t.id AND p.moderation_state = 'visible') AS post_count
            FROM openproduct.threads t
            JOIN openproduct.profiles pr ON pr.id = t.profile_id
            ${handleJoinFor("t.author_subject_id")}
-          WHERE t.id = $1 AND ${listed("pr")}`,
+          WHERE t.id = $1 AND ${listed("pr")} AND ${publicThread("t")}`,
         [id],
       );
       const row = res.rows[0];
@@ -4622,13 +4688,14 @@ export function createOpenproductRepository(sql: SqlExecutor): OpenproductReposi
         `SELECT * FROM (
            SELECT t.id, t.tag, t.title, t.state, t.created_at, t.last_post_at,
                   t.author_subject_id, h.handle AS author_handle, hc.display_name AS author_name,
-                  t.profile_id, pr.slug,
+                  t.profile_id, pr.slug, t.kind, t.resolved_at,
                   (SELECT count(*) FROM openproduct.posts p
                      WHERE p.thread_id = t.id AND p.moderation_state = 'visible') AS post_count
              FROM openproduct.threads t
              JOIN openproduct.profiles pr ON pr.id = t.profile_id
              ${handleJoinFor("t.author_subject_id")}
             WHERE ${listed("pr")}
+              AND ${publicThread("t")}
               AND t.state <> 'removed'
               AND t.tag <> '${LAUNCH_THREAD_TAG}'
               AND t.tag <> '${PRODUCT_POST_THREAD_TAG}'
@@ -4660,6 +4727,7 @@ export function createOpenproductRepository(sql: SqlExecutor): OpenproductReposi
            FROM openproduct.threads t
            JOIN openproduct.profiles pr ON pr.id = t.profile_id
           WHERE ${listed("pr")}
+            AND ${publicThread("t")}
             AND t.state <> 'removed'
             AND t.last_post_at IS NOT NULL
             -- OPR-3 — a product post's comments are reached from the post.
@@ -4692,11 +4760,136 @@ export function createOpenproductRepository(sql: SqlExecutor): OpenproductReposi
            JOIN openproduct.threads t ON t.id = p.thread_id
            ${handleJoinFor("p.author_subject_id")}
           WHERE p.thread_id = $1
+            -- OPR-4 — a private thread's posts are not in this read, whoever
+            -- holds its id. They are read by listPrivatePosts.
+            AND ${publicThread("t")}
           ORDER BY p.created_at ASC
           LIMIT $2`,
         [threadId, capped],
       );
       return res.rows.map(postOf);
+    },
+
+    // ─── OPR-4: the one signed-in path to a private thread (design §7) ─────
+    //
+    // THREE READS, ONE PREDICATE. `privateThreadReadableBy` is in each
+    // statement: the reader is the thread's author or on the product's crew
+    // at the moment of the read. A reader who is neither gets no row — the
+    // same answer as a thread that does not exist, so the handler's 404 does
+    // not disclose one. None of the three is called from a public route.
+    //
+    // THE NAME. A public page shows a name only when its owner made a public
+    // profile (CG1). Here the reader is the crew the author chose to write
+    // to, or the author the crew chose to answer, so the name each wrote
+    // about themselves is shown whether or not their page is public — the
+    // rule a request to join already follows.
+
+    /**
+     * A product's private threads, as this reader may see them: an author
+     * gets their own, a crew member gets all of them. Most recently active
+     * first. `awaitingCrew` says the last word is not the crew's.
+     */
+    async listPrivateThreads(profileId, readerSubjectId, limit = 50) {
+      const capped = Math.max(1, Math.min(Math.trunc(limit) || 0, 100));
+      const res = await sql.execute<ThreadRow>(
+        `SELECT t.id, t.tag, t.title, t.state, t.created_at, t.last_post_at,
+                t.author_subject_id, h.handle AS author_handle,
+                COALESCE(hc.display_name, pc.display_name) AS author_name,
+                t.profile_id, t.answer_post_id, t.kind, t.resolved_at, t.visibility, pr.slug,
+                (SELECT count(*) FROM openproduct.posts p
+                  WHERE p.thread_id = t.id AND p.moderation_state = 'visible') AS post_count,
+                NOT COALESCE((
+                  SELECT EXISTS (
+                           SELECT 1 FROM openproduct.listing_maintainers lpm
+                            WHERE lpm.profile_id = t.profile_id
+                              AND lpm.subject_id = lp.author_subject_id
+                         )
+                    FROM openproduct.posts lp
+                   WHERE lp.thread_id = t.id
+                   ORDER BY lp.created_at DESC, lp.id DESC
+                   LIMIT 1
+                ), false) AS awaiting_crew
+           FROM openproduct.threads t
+           JOIN openproduct.profiles pr ON pr.id = t.profile_id
+           ${handleJoinFor("t.author_subject_id")}
+           LEFT JOIN openproduct.contributors pc ON pc.subject_id = t.author_subject_id
+          WHERE t.profile_id = $1
+            AND ${listed("pr")}
+            AND t.state <> 'removed'
+            AND ${privateThreadReadableBy("t", "$2")}
+          ORDER BY t.last_post_at DESC NULLS LAST, t.created_at DESC, t.id DESC
+          LIMIT $3`,
+        [profileId, readerSubjectId, capped],
+      );
+      return res.rows.map((row) => ({ ...threadOf(row), awaitingCrew: row.awaiting_crew === true }));
+    },
+
+    /** One private thread, for a reader who may see it; null for anyone else. */
+    async getPrivateThread(id, readerSubjectId) {
+      const res = await sql.execute<ThreadRow>(
+        `SELECT t.id, t.tag, t.title, t.state, t.created_at, t.last_post_at,
+                t.author_subject_id, h.handle AS author_handle,
+                COALESCE(hc.display_name, pc.display_name) AS author_name,
+                t.profile_id, t.answer_post_id, t.kind, t.resolved_at, t.visibility, pr.slug,
+                (SELECT count(*) FROM openproduct.posts p
+                  WHERE p.thread_id = t.id AND p.moderation_state = 'visible') AS post_count
+           FROM openproduct.threads t
+           JOIN openproduct.profiles pr ON pr.id = t.profile_id
+           ${handleJoinFor("t.author_subject_id")}
+           LEFT JOIN openproduct.contributors pc ON pc.subject_id = t.author_subject_id
+          WHERE t.id = $1
+            AND ${listed("pr")}
+            AND t.state <> 'removed'
+            AND ${privateThreadReadableBy("t", "$2")}`,
+        [id, readerSubjectId],
+      );
+      const row = res.rows[0];
+      return row ? { ...threadOf(row), slug: row.slug ?? null } : null;
+    },
+
+    /** A private thread's posts, oldest first, for a reader who may see it.
+     *  The predicate is in THIS statement too: the posts do not depend on the
+     *  caller having read the thread first. */
+    async listPrivatePosts(threadId, readerSubjectId, limit = 200) {
+      const capped = Math.max(1, Math.min(Math.trunc(limit) || 0, 500));
+      const res = await sql.execute<PostRow>(
+        `SELECT p.id, p.author_subject_id,
+                CASE WHEN p.moderation_state = 'visible' THEN p.body ELSE '' END AS body,
+                p.moderation_state, p.created_at, p.edited_at, p.parent_post_id, p.tag,
+                h.handle AS author_handle,
+                COALESCE(hc.display_name, pc.display_name) AS author_name,
+                (t.answer_post_id = p.id) AS is_answer
+           FROM openproduct.posts p
+           JOIN openproduct.threads t ON t.id = p.thread_id
+           JOIN openproduct.profiles pr ON pr.id = t.profile_id
+           ${handleJoinFor("p.author_subject_id")}
+           LEFT JOIN openproduct.contributors pc ON pc.subject_id = p.author_subject_id
+          WHERE p.thread_id = $1
+            AND ${listed("pr")}
+            AND t.state <> 'removed'
+            AND ${privateThreadReadableBy("t", "$2")}
+          ORDER BY p.created_at ASC
+          LIMIT $3`,
+        [threadId, readerSubjectId, capped],
+      );
+      return res.rows.map(postOf);
+    },
+
+    /**
+     * Resolved, or open again — an ISSUE'S, and the crew's act (the handler
+     * authorises; this only refuses a thread that is not an issue). The
+     * moment is public on a public issue and travels with a private one to
+     * the people who may read it.
+     */
+    async setThreadResolved(id, resolvedAt) {
+      const res = await sql.execute<{ id: string }>(
+        `UPDATE openproduct.threads
+            SET resolved_at = $2::timestamptz, updated_at = now()
+          WHERE id = $1 AND kind = 'issue' AND state <> 'removed'
+         RETURNING id`,
+        [id, resolvedAt],
+      );
+      return res.rows.length > 0;
     },
 
     async createThread(input) {
@@ -4705,11 +4898,23 @@ export function createOpenproductRepository(sql: SqlExecutor): OpenproductReposi
         // (FO1 "latest" orders by it). Leaving created_at to the column's
         // now() made two threads started back to back tie on a coarse clock
         // and sort either way.
+        // OPR-4 — visibility is written HERE, once, and never again: no
+        // statement in this file updates it, and 2280's trigger refuses one
+        // that would turn a private thread public.
         `INSERT INTO openproduct.threads
-           (id, profile_id, tag, title, author_subject_id, last_post_at, created_at)
-         VALUES ($1, $2, $3, $4, $5, $6, $6)
+           (id, profile_id, tag, title, author_subject_id, last_post_at, created_at, kind, visibility)
+         VALUES ($1, $2, $3, $4, $5, $6, $6, $7, $8)
          RETURNING id`,
-        [input.id, input.profileId, input.tag, input.title, input.authorSubjectId, input.at],
+        [
+          input.id,
+          input.profileId,
+          input.tag,
+          input.title,
+          input.authorSubjectId,
+          input.at,
+          input.kind ?? null,
+          input.visibility === "private" ? "private" : "public",
+        ],
       );
       return res.rows[0]?.id ?? null;
     },
@@ -4725,11 +4930,16 @@ export function createOpenproductRepository(sql: SqlExecutor): OpenproductReposi
      */
     async createPost(input) {
       const moved = await sql.execute<{ id: string }>(
-        `UPDATE openproduct.threads
+        // OPR-4 — AND THE WRITER MAY READ IT. A public thread takes a post
+        // from anybody; a private one only from its author or the crew, in
+        // this statement, so no route can put words into a private thread —
+        // or learn that it exists from a post landing — by holding its id.
+        `UPDATE openproduct.threads t
             SET last_post_at = $2, updated_at = $2
-          WHERE id = $1 AND state IN ('open', 'answered')
-         RETURNING id`,
-        [input.threadId, input.at],
+          WHERE t.id = $1 AND t.state IN ('open', 'answered')
+            AND (${publicThread("t")} OR (${privateThreadReadableBy("t", "$3")}))
+         RETURNING t.id`,
+        [input.threadId, input.at, input.authorSubjectId],
       );
       if (moved.rows.length === 0) return null;
 
@@ -5159,8 +5369,15 @@ export function createOpenproductRepository(sql: SqlExecutor): OpenproductReposi
       // useful and would put the rule in two places.
       try {
         const res = await sql.execute<{ post_id: string }>(
+          // OPR-4 — a comment in a private thread takes a vote only from
+          // somebody who may read the thread; for anyone else the post is
+          // not there, which is the refusal every other miss here gets.
           `INSERT INTO openproduct.post_votes (post_id, subject_id, created_at)
-           VALUES ($1, $2, $3)
+           SELECT vp.id, $2, $3
+             FROM openproduct.posts vp
+             JOIN openproduct.threads vt ON vt.id = vp.thread_id
+            WHERE vp.id = $1
+              AND (${publicThread("vt")} OR (${privateThreadReadableBy("vt", "$2")}))
            ON CONFLICT (post_id, subject_id) DO UPDATE
               SET withdrawn_at = NULL
            RETURNING post_id`,
@@ -5285,13 +5502,25 @@ export function createOpenproductRepository(sql: SqlExecutor): OpenproductReposi
       // NF0 — who wrote it and which thread it is in, in one read. Unfiltered
       // for `getSlugForThread`'s reason: this feeds a row in somebody's own
       // inbox, and the page decides what a reader may see when they follow it.
-      const res = await sql.execute<{ author_subject_id: string; thread_id: string }>(
-        `SELECT author_subject_id, thread_id FROM openproduct.posts
-          WHERE id = $1 AND moderation_state = 'visible'`,
+      //
+      // OPR-4 — it also says whether that thread is private, so the caller
+      // can decline to tell anybody about a post in one. No title, no text.
+      const res = await sql.execute<{ author_subject_id: string; thread_id: string; visibility: string }>(
+        `SELECT po.author_subject_id, po.thread_id, th.visibility
+           FROM openproduct.posts po
+           JOIN openproduct.threads th ON th.id = po.thread_id
+          WHERE po.id = $1 AND po.moderation_state = 'visible'`,
         [postId],
       );
       const row = res.rows[0];
-      return row ? { authorSubjectId: row.author_subject_id, threadId: row.thread_id } : null;
+      return row
+        ? {
+            authorSubjectId: row.author_subject_id,
+            threadId: row.thread_id,
+            // Anything that is not exactly `public` reads as private.
+            threadVisibility: row.visibility === "public" ? "public" : "private",
+          }
+        : null;
     },
 
     async getSlugForThread(threadId) {
@@ -6654,6 +6883,7 @@ export function createOpenproductRepository(sql: SqlExecutor): OpenproductReposi
              WHERE po.author_subject_id = $1
                AND po.moderation_state = 'visible'
                AND th.state <> 'removed'
+               AND ${publicThread("th")}
                AND ${listed("p")}) AS comments`,
         [subjectId],
       );
@@ -6795,6 +7025,7 @@ export function createOpenproductRepository(sql: SqlExecutor): OpenproductReposi
           WHERE po.author_subject_id = $1
             AND po.moderation_state = 'visible'
             AND th.state <> 'removed'
+            AND ${publicThread("th")}
             AND ${listed("p")}
           GROUP BY p.slug, p.tagline
           ORDER BY max(po.created_at) DESC, p.slug
@@ -6851,6 +7082,7 @@ export function createOpenproductRepository(sql: SqlExecutor): OpenproductReposi
             WHERE po.author_subject_id = $1
               AND po.moderation_state = 'visible'
               AND th.state <> 'removed'
+              AND ${publicThread("th")}
               AND ${listed("p")}
            UNION ALL
            SELECT 'confirmed', pp.confirmed_at, p.slug, p.tagline,
@@ -7418,6 +7650,7 @@ export function createOpenproductRepository(sql: SqlExecutor): OpenproductReposi
                    JOIN openproduct.threads th ON th.id = po.thread_id
                   WHERE th.profile_id = l.profile_id
                     AND th.state <> 'removed'
+                    AND ${publicThread("th")}
                     AND po.moderation_state = 'visible') AS comment_count,
                 ${CARD_COLUMNS}
            FROM openproduct.launches l
@@ -8476,11 +8709,16 @@ export function createOpenproductRepository(sql: SqlExecutor): OpenproductReposi
       const threads = new Map<string, { title: string; slug: string | null }>();
       if (threadIds.size > 0) {
         const res = await sql.execute<{ id: string; title: string; slug: string | null }>(
+          // OPR-4 — a row of theirs can point at a thread they may no longer
+          // read: a mute on any id, or a reply written while on a crew they
+          // have since left. The title is the AUTHOR'S words, so it is named
+          // only for a public thread or one this subject may read now.
           `SELECT t.id, t.title, p.slug
              FROM openproduct.threads t
              LEFT JOIN openproduct.profiles p ON p.id = t.profile_id
-            WHERE t.id = ANY($1::uuid[])`,
-          [[...threadIds]],
+            WHERE t.id = ANY($1::uuid[])
+              AND (${publicThread("t")} OR (${privateThreadReadableBy("t", "$2")}))`,
+          [[...threadIds], subjectId],
         );
         for (const r of res.rows) threads.set(r.id, { title: r.title, slug: r.slug });
       }

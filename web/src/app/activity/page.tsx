@@ -7,7 +7,7 @@ import { readSession } from "../auth/session-server";
 import { BTN_SOFT_SMALL, EYEBROW, PAGE_TITLE, SEGMENT, SEGMENT_OFF, SEGMENT_ON, SEGMENTS } from "../ui/design";
 import { AppLink } from "../ui/link";
 import { agoOf } from "../ui/time";
-import { GLYPH_FIRST, GLYPH_LAUNCH, GLYPH_REPLY, GLYPH_UPVOTE, Glyph } from "../me/glyph";
+import { GLYPH_FIRST, GLYPH_LAUNCH, GLYPH_PRIVATE, GLYPH_REPLY, GLYPH_UPVOTE, Glyph } from "../me/glyph";
 import { fetchInbox } from "../me/me-api";
 import { ACTIVITY_MAIN } from "../me/nav";
 import { signInFor } from "../me/section";
@@ -53,9 +53,11 @@ const MARK_ALL_READ = "Mark all read";
 /**
  * The subsets, named for what they hold.
  *
- * The board's own are Mentions and Seats; today's five kinds are neither. Two
- * of them are about a comment the reader wrote (a reply to it, upvotes on
- * it) and three are about a launch (a product reaching first on its day, a
+ * The board's own are Mentions and Seats; no kind the inbox holds is either
+ * (a mention is mailed, not listed here, and a seat request lives on
+ * Orunbase). Two kinds are about a comment the reader wrote (a reply to it,
+ * upvotes on it), three are about a private thread the reader is in
+ * (OPR-4), and three are about a launch (a product reaching first on its day, a
  * launch in a topic or of a product the reader follows) — so those are the
  * two subsets, and a kind added later is sorted here or the build fails.
  */
@@ -65,6 +67,11 @@ const SUBSET_OF: Record<InboxKind, "comments" | "launches"> = {
   "rank.first": "launches",
   "launch.topic": "launches",
   "launch.listing": "launches",
+  // OPR-4 — a private thread started, replied to, or answered: a
+  // conversation the reader is in.
+  "thread.private": "comments",
+  "thread.private.reply": "comments",
+  "thread.private.answered": "comments",
 };
 
 const TABS = [
@@ -91,6 +98,10 @@ const TILE_OF: Record<InboxKind, { glyph: string; tile: string }> = {
   "rank.first": { glyph: GLYPH_FIRST, tile: "bg-amber-soft text-amber-ink" },
   "launch.topic": { glyph: GLYPH_LAUNCH, tile: "bg-version-soft text-version" },
   "launch.listing": { glyph: GLYPH_LAUNCH, tile: "bg-version-soft text-version" },
+  // OPR-4 — the lock on slate: Talk's own mark for a private thread.
+  "thread.private": { glyph: GLYPH_PRIVATE, tile: "bg-version-soft text-version" },
+  "thread.private.reply": { glyph: GLYPH_PRIVATE, tile: "bg-version-soft text-version" },
+  "thread.private.answered": { glyph: GLYPH_PRIVATE, tile: "bg-version-soft text-version" },
 };
 
 /** A kind this build does not know — the service can learn one before the

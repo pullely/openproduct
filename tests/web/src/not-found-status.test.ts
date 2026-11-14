@@ -152,7 +152,10 @@ describe("R11 — a page that can 404 has no skeleton above it", () => {
     // A 404 that rendered a blank page, or the console's, satisfies the status
     // and fails the reader. The perf lane asserts this against a real
     // response; here it is the source of the page that response comes from.
-    const notFound = read("not-found.tsx");
+    // OPR-4 — the body is `ui/not-found-body.tsx`: the 404 draws it, and so
+    // does a private thread's page for anybody who may not read the thread.
+    expect(read("not-found.tsx")).toContain("return <NotFoundBody />;");
+    const notFound = read("ui/not-found-body.tsx");
     // In the product's own word: a build under openproduct-calm CL5, a
     // product again since openproduct-redesign OPR1. The perf lane's
     // `NOT_FOUND_HEADING` looks for these same words in the response.

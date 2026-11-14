@@ -418,8 +418,11 @@ describe("the frame mounts it once, and every surface says which words it uses",
     // the frame. Either way the words are named.
     const framed = PAGES.filter((page) => code(page).includes("<StudioFrame") || code(page).includes("<StudioLive"));
     // Ten since OPR-3: the studio's landing (the list of your listings) is
-    // "Your products" on `/me` and `/studio` redirects there.
-    expect(framed.length).toBeGreaterThanOrEqual(10);
+    // "Your products" on `/me` and `/studio` redirects there. Nine since
+    // OPR-4: a listing's discussions page forwards to Talk, and its
+    // Discussions card answers on the settings page, in that page's words.
+    expect(framed.length).toBeGreaterThanOrEqual(9);
+    expect(LISTING_VOCABULARY.notices).toMatchObject(DISCUSSION_VOCABULARY.notices ?? {});
     for (const page of framed) {
       expect([page, /vocabulary=\{[A-Z_]+\}/.test(code(page))]).toEqual([page, true]);
     }

@@ -199,9 +199,15 @@ describe("an anchor other pages still link to lands on the tab that has it", () 
     const changes = markupOf("[slug]/changes.tsx");
     const newPost = markupOf("[slug]/maker/new-post.tsx");
     // `comment-…` ids are the conversation's own; `talk` and `seats` are
-    // spellings kept for the boards' own anchors.
-    for (const id of Object.keys(ANCHOR_TABS).filter((id) => id !== "seats" && id !== "talk")) {
-      const source = id === "changed" ? changes : id === "post" ? newPost : page;
+    // spellings kept for the boards' own anchors. OPR-4 — `threads` is the
+    // Talk list's id, and `private` is not an id at all: it is the fragment
+    // that opens that list on its Private filter, which the list reads.
+    const talkList = markupOf("talk/talk-list.tsx");
+    expect(talkList).toContain('id="threads"');
+    expect(read("talk/talk-list.tsx")).toContain("window.location.hash !== `#${TALK_PRIVATE_ANCHOR}`");
+    expect(ANCHOR_TABS.private).toBe("talk");
+    for (const id of Object.keys(ANCHOR_TABS).filter((id) => id !== "seats" && id !== "talk" && id !== "private")) {
+      const source = id === "changed" ? changes : id === "post" ? newPost : id === "threads" ? talkList : page;
       expect([id, new RegExp(`\\bid="${id}"`).test(source)]).toEqual([id, true]);
     }
   });

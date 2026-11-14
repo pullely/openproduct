@@ -43,6 +43,7 @@ import {
 } from "@openproduct/contracts";
 
 import { PENDING, pendingLabel, pendingProps } from "@openproduct-web/app/ui/pending";
+import { publicThreadCount } from "@openproduct-web/app/talk/model";
 import { FOOTER_LINKS, SEARCH_PLACEHOLDER } from "@openproduct-web/app/shell/shell";
 import { NO_MATCHES, toRows, visibleRows } from "@openproduct-web/app/shell/palette-rows";
 
@@ -2252,6 +2253,16 @@ describe("CB1 — the discussion surface", () => {
     expect(page).not.toContain("threads.length");
     const discussions = read("[slug]/discussions.tsx");
     expect(discussions).toMatch(/threads === null/);
+    // OPR-4 — Talk's filter shows counts, and holds the same rule: the count
+    // is null when the threads could not be read, and a null draws neither a
+    // number nor "No threads".
+    expect(read("talk/talk-section.tsx")).toContain("publicCount={publicThreadCount(threads)}");
+    expect(read("talk/talk-section.tsx")).not.toContain("threads.length");
+    expect(publicThreadCount(null)).toBeNull();
+    expect(publicThreadCount([])).toBe(0);
+    const list = read("talk/talk-list.tsx");
+    expect(list).toContain("all: publicCount === null ? null : publicCount + privateCount");
+    expect(list).toContain("counts[name] === null ? null :");
   });
 
   it("gives the maintainer's studio view NO remove control", () => {
@@ -2263,7 +2274,11 @@ describe("CB1 — the discussion surface", () => {
     const studio = read("studio/[org]/[profile]/sections.tsx");
     expect(studio).not.toMatch(/value="remove"/);
     expect(studio).toMatch(/value=\{locked \? "unlock" : "lock"\}/);
-    expect(read("studio/[org]/[profile]/discussions/page.tsx")).not.toMatch(/value="remove"/);
+    // OPR-4 — the discussions page forwards to Talk; the card on the
+    // settings page is the one place these controls are drawn, and Talk
+    // offers the crew Mark resolved and nothing that removes.
+    expect(read("studio/[org]/[profile]/settings/page.tsx")).not.toMatch(/value="remove"/);
+    expect(read("talk/thread-actions.tsx") + read("talk/resolve-control.tsx")).not.toMatch(/remove|delete/i);
   });
 
   it("labels the report control by subject kind, from the contract's map", () => {

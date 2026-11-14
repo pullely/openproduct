@@ -4,6 +4,8 @@
 // ledger row and a reason, taken by an operator. See the page's header.
 import { NextResponse, type NextRequest } from "next/server";
 
+import { listingSettingsPath } from "@openproduct/contracts";
+
 import { SESSION_COOKIE, decodeSession } from "../../../../../auth/auth";
 import { studioAnswer } from "../../../../answer";
 import { maintainThread } from "../../../../../me/me-api";
@@ -15,8 +17,10 @@ export async function POST(
   context: { params: Promise<{ org: string; profile: string }> },
 ): Promise<NextResponse> {
   const { org, profile } = await context.params;
-  const page = `/studio/${encodeURIComponent(org)}/${encodeURIComponent(profile)}/discussions`;
-  const back = (query: string) => answer.back(`${page}${query}`);
+  // OPR-4 — back to the settings page's Discussions card, where these forms
+  // are drawn: the discussions page itself forwards to Talk now.
+  const page = `${listingSettingsPath(org, profile)}`;
+  const back = (query: string) => answer.back(`${page}${query}#discussions`);
 
   // OPP15 — the same act, answered as a `303` to a browser posting the form
   // and as that same address in JSON to the save island. One decision below,

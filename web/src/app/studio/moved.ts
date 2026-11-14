@@ -45,3 +45,27 @@ export function listingBaseDestination(
  * unpublished would go on being sent to a public page that is not there.
  */
 export const LISTING_BASE_STATUS = 307;
+
+/**
+ * Where a listing's discussions address goes (openproduct-redesign OPR-4,
+ * design §5): to Talk.
+ *
+ *   a PUBLISHED listing   → its Talk: `/{slug}/talk`, or `/{slug}#talk` for
+ *                           an idea, whose page has no tabs
+ *   a DRAFT, or unreadable → the settings page's Discussions card, for the
+ *                           reasons `listingBaseDestination` gives
+ *
+ * Locking a thread and marking an answer stay where they were drawn beside
+ * the overview: the Discussions card on the settings page.
+ */
+export function listingDiscussionsDestination(
+  org: string,
+  profile: string,
+  listing: (NonNullable<MovedListing> & { stage?: string | null }) | null,
+  search = "",
+): string {
+  if (listing && listing.visibility === "public" && SLUG_RE.test(listing.slug)) {
+    return listing.stage === "idea" ? `/${listing.slug}#talk` : `/${listing.slug}/talk`;
+  }
+  return `${listingSettingsPath(org, profile)}${search}#discussions`;
+}

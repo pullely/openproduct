@@ -15,6 +15,7 @@
 import type { MediaThumbnail } from "./media.js";
 
 import type { ProductPostBlock } from "./product-post-blocks.js";
+import type { CrewPrivateThreadNotice } from "./talk.js";
 
 // ---------------------------------------------------------------------------
 // Stage and milestones (§6.1)
@@ -355,9 +356,12 @@ export const CREW_SEAT_REQUESTER_KEYS = ["displayName", "handle"] as const;
 export interface CrewNeedsYou {
   requests: CrewSeatRequest[];
   drafts: CrewProductPost[];
+  /** OPR-4 — private threads where the last word is not the crew's. Who
+   *  started each and when; never its title or its text. */
+  threads: CrewPrivateThreadNotice[];
 }
 
-export const CREW_NEEDS_YOU_KEYS = ["drafts", "requests"] as const;
+export const CREW_NEEDS_YOU_KEYS = ["drafts", "requests", "threads"] as const;
 
 /** A product somebody follows or a person lists. */
 export interface ProductRef {

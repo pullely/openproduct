@@ -57,7 +57,10 @@ export const STUDIO_BUDGETS = {
 // one a baseline build says.
 // The strip's first tab was "Overview" until openproduct-redesign OPR-3; the
 // editor's front page is the listing's settings page now, and its tab says so.
-const TABS = ["Details", "Media", "Topics and stack", "People", "Discussions", "Settings"];
+// OPR-4 — the strip has no Discussions tab any more: that address forwards to
+// Talk on the product's own page, which is not a step of the editor. The
+// cycle is the tabs the strip still has.
+const TABS = ["Details", "Media", "Topics and stack", "People", "Settings"];
 // The baseline's only boundary was the studio's own ("Loading your studio").
 const SKELETON = /Loading (this part of )?your (listing|studio)/;
 

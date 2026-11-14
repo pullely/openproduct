@@ -388,7 +388,8 @@ describe("the crew routes, for the signed-in maker", () => {
     const { org, profile } = root();
     const read = (await get<{ profile: { slug: string; visibility: string } }>(`/v1/organizations/${org}/openproduct/profiles/${profile}`)).data.profile;
     expect(read).toMatchObject({ slug: fixture.CREW_SLUG, visibility: "public" });
-    expect(fixture.MOVED.at(-1)).toEqual({
+    // (Found by its address: OPR-4 pushed the discussions forward after it.)
+    expect(fixture.MOVED.find((row) => row.from === `/studio/${fixture.STUDIO_ORG}/${fixture.STUDIO_PROFILE}`)).toEqual({
       from: `/studio/${fixture.STUDIO_ORG}/${fixture.STUDIO_PROFILE}`,
       to: `/studio/${fixture.STUDIO_ORG}/${fixture.STUDIO_PROFILE}/settings`,
       status: 307,

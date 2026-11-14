@@ -73,6 +73,12 @@ export const LISTING_NOTICES: Readonly<Record<string, string>> = {
   created: "Listing created. Everything below can be edited before publishing.",
   linked: "Linked. This listing can publish against its workspace again.",
   saved: "Saved.",
+  // OPR-4 — the Discussions card's acts answer here now: the discussions
+  // page forwards to Talk, and the card on Settings is where a thread is
+  // locked. The sentences are `DISCUSSION_VOCABULARY`'s own.
+  locked: "Locked. The thread is still readable; nobody can add to it.",
+  unlocked: "Open again.",
+  answered: "Marked as the answer.",
   checked: "Repository checked.",
   reviewed: "Reviewed. This listing can now be published.",
   published: "Published. The public page serves within a minute.",

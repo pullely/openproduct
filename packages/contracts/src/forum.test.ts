@@ -65,6 +65,8 @@ describe("the address", () => {
   it("the row carries the thread's public shape and the listing's slug, nothing more", () => {
     expect([...FORUM_THREAD_KEYS]).toEqual([
       "id", "tag", "title", "authorHandle", "authorName", "state", "createdAt", "lastPostAt", "postCount", "slug",
+      // OPR-4 — the thread's kind and its resolved moment; never a visibility.
+      "kind", "resolvedAt",
     ]);
   });
 });

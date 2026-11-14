@@ -72,6 +72,7 @@ import {
   type Uuid,
 } from "../ids.js";
 import { thumbnailsForSlugs } from "./media.js";
+import { privateThreadNotices } from "./talk.js";
 import { requireUserSubject } from "./me.js";
 import { authorizeFor, type ProfileHandlerDeps } from "./profiles.js";
 import { auditProductWrite, offerFeaturePost, publishDraft, type PostWriteContext, type SelfPostDeps } from "./self-posts.js";
@@ -113,6 +114,8 @@ export interface ProductPostHandlerDeps {
     | "reorderProductMilestones"
     | "setProductMilestoneShipped"
     | "listPendingApplicationsForProfile"
+    // OPR-4 — the crew's private threads, through the signed-in read.
+    | "listPrivateThreads"
   >;
   now?: () => Date;
   generateId?: () => Uuid;
@@ -1047,9 +1050,12 @@ export async function handleNeedsYou(
 ): Promise<Response> {
   const crew = await crewOf(env, actor, orgId, profileId, deps, requestId);
   if (!crew.ok) return crew.response;
-  const [requests, drafts] = await Promise.all([
+  const [requests, drafts, threads] = await Promise.all([
     deps.repo.listPendingApplicationsForProfile(profileId),
     deps.repo.listProductPostDrafts(profileId),
+    // OPR-4 — read AS THE ACTOR: the repository gives a private thread only
+    // to its author or the crew, whoever reached this door.
+    privateThreadNotices(deps, profileId, actor).catch(() => []),
   ]);
   const needsYou: CrewNeedsYou = {
     requests: requests.map((request) => ({
@@ -1061,6 +1067,7 @@ export async function handleNeedsYou(
       createdAt: request.createdAt,
     })),
     drafts: drafts.map(crewProductPost),
+    threads,
   };
   return successResponse({ needsYou }, requestId);
 }

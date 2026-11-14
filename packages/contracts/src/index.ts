@@ -923,6 +923,12 @@ export * from "./discussions.js";
 export * from "./render-subset.js";
 
 /**
+ * OPR-4 — Talk: a thread's kind, public or private, and resolved. The
+ * private wire shapes and the signed-in routes that carry them.
+ */
+export * from "./talk.js";
+
+/**
  * CB2 — the demand signal, floored at three (OPC-F). The mock's
  * `1 waiting on a decision` is not shippable as drawn: on a small opening,
  * beside a visible activity feed, "1 waiting" is a name.
