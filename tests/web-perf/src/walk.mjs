@@ -50,7 +50,8 @@ const STUDIO_ROUTES = [
   // NF0 — the inbox. Signed out like the rest of this list, and for the same
   // reason: the fixture answers openproduct's public reads and not a person's
   // own, so a "signed in" walk here would be measuring an error state.
-  "/me/notifications",
+  // OPR1 — its address is `/activity`; `/me/notifications` redirects there.
+  "/activity",
 ];
 
 async function inspect(page, screenWidth, tapMin, minTextPx) {

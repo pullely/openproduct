@@ -23,7 +23,7 @@ export interface Binding {
 }
 
 export const BINDINGS: readonly Binding[] = [
-  { key: "k", shows: "⌘K", does: "Search products, makers and topics" },
+  { key: "k", shows: "⌘K", does: "Search products and people" },
   { key: "/", shows: "/", does: "Search, without a modifier" },
   { key: "j", shows: "j", does: "Move to the next launch, or the next section of a listing" },
   { key: "k", shows: "k", does: "Move to the previous launch, or the previous section" },

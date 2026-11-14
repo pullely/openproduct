@@ -39,7 +39,9 @@ export function MeNav({
           personal page that already knows, and a second count would be a
           second number to keep in step. The badge lives in the shell, where
           it arrives after paint from the overlay. */}
-      {item("notifications", "/me/notifications", "Notifications")}
+      {/* OPR1 — the inbox's address is `/activity` (the old one redirects),
+          which is also where the header's bell goes. */}
+      {item("notifications", "/activity", "Notifications")}
       {item(null, "/me#digest", "Digest")}
     </nav>
   );

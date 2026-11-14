@@ -216,11 +216,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           href="/digest/feed.json"
         />
         {/* THE WAY PAST THE SHELL (openproduct-commons XP4).
-            The top panel is a wordmark, a search field, five section links and
-            two account controls: ELEVEN tab stops, on every route, before a
-            keyboard user reaches a single word of the page they opened. XP4's
-            keyboard walk measured that — the first facet on the directory is
-            the eleventh stop — and this is the standard answer to it.
+            The header is a wordmark, three section links, a search field,
+            the Activity bell and the profile control: SEVEN tab stops, on
+            every route, before a keyboard user reaches a single word of the
+            page they opened. XP4's keyboard walk measured the bar of its day
+            at eleven, and this is the standard answer to it at any count.
             FIRST IN THE BODY, because a skip link that is not the first tab
             stop skips nothing. Visually hidden until it has focus, at which
             point it becomes an ordinary visible control: `sr-only` alone would
@@ -234,9 +234,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         {/* OPP13 — the click, shown. Renders nothing until the router takes
             a soft navigation, so the document is unchanged (I6). */}
         <NavigationProgress />
-        {/* The commons shell (openproduct-commons XP0): the design's sticky
-            glass bar, the same markup for every visitor — the one personal
-            thing inside it is the account chip's own island. */}
+        {/* The header (openproduct-commons XP0; the boards' sticky frosted
+            bar since openproduct-redesign OPR1): the same markup for every
+            visitor — what is personal inside it (the profile control, the
+            bell's unread dot) arrives in its own islands after paint. */}
         <TopPanel />
         <AuthNotice />
         {/* The page owns its own container; the shell owns the frame around
@@ -251,13 +252,15 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         {/* The footer, as the design draws it — and a product or person page
             renders its own in its place (shell/site-footer.tsx). */}
         <SiteFooter />
-        {/* FR1 — the sections, at the bottom, on a phone. It is `fixed`, so it
-            takes no space in this column; the reserve that keeps the last row
-            of a page above it is `--tabbar-reserve` on `body`, in
-            globals.css, where the bar's own height is also written. */}
+        {/* The phone's four tabs (FR1; the board's floating bar since OPR1).
+            It is `fixed`, so it takes no space in this column; the reserve
+            that keeps the last row of a page above it is `--tabbar-reserve`
+            on `body`, in globals.css, where the bar's height is also
+            written. */}
         <SectionBar />
         {/* FR4 — the keyboard layer. It renders nothing until `?` is pressed;
-            `⌘K` and `/` stay in `palette.tsx`, next to the field they focus. */}
+            `⌘K` and `/` stay in `palette.tsx` (the header search), next to
+            the field they focus. */}
         <KeyboardLayer />
       </body>
     </html>

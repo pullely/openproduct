@@ -92,7 +92,14 @@ export async function GET(request: Request): Promise<Response> {
     // into Upvoted and redirect there, so they left this list). A finite set
     // of distinct documents is what a sitemap is for; a facet permutation is
     // not.
-    ...BUILD_ORDER_SEGMENTS.map((order) => ({ path: `builds/${order}`, lastmod: null })),
+    //
+    // OPR1 — the Roles order moved to the Help wanted section's own address
+    // (`/builds/roles` redirects there), and Products is a section with an
+    // address of its own. A sitemap lists the address a page lives at, never
+    // one that redirects.
+    ...BUILD_ORDER_SEGMENTS.filter((order) => order !== "roles").map((order) => ({ path: `builds/${order}`, lastmod: null })),
+    { path: "products", lastmod: null },
+    { path: "help-wanted", lastmod: null },
     // QE1 — every day that holds a board, at its own address (LC3): a
     // settled day is a document that never changes, which is the best kind
     // of sitemap entry there is.

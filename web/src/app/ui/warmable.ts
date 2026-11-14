@@ -7,7 +7,7 @@
 // may never open; `/auth/*` are route handlers that redirect off this origin.
 // A prefix is a path SEGMENT — `/mentors` is not under `/me`.
 
-export const UNWARMED_PREFIXES = ["/me", "/studio", "/auth", "/signin", "/search"] as const;
+export const UNWARMED_PREFIXES = ["/me", "/activity", "/studio", "/auth", "/signin", "/search"] as const;
 
 export function warmable(href: string): boolean {
   if (!href.startsWith("/") || href.startsWith("//")) return false;

@@ -51,7 +51,13 @@ describe("the leaderboard is the Upvoted order now", () => {
   it("the sitemap names the orders, and none of the leaderboard's ranges", () => {
     const sitemap = markupOf("sitemap.xml/route.ts");
     expect(sitemap).not.toMatch(/path: "leaderboard/);
-    expect(sitemap).toContain("BUILD_ORDER_SEGMENTS.map((order) => ({ path: `builds/${order}`, lastmod: null }))");
+    // Every order that is still an address of its own. Roles is the Help
+    // wanted section since OPR1 (`/builds/roles` redirects to it), so it is
+    // filtered out here and listed at its new address.
+    expect(sitemap).toContain(
+      'BUILD_ORDER_SEGMENTS.filter((order) => order !== "roles").map((order) => ({ path: `builds/${order}`, lastmod: null }))',
+    );
+    expect(sitemap).toContain('{ path: "help-wanted", lastmod: null }');
   });
 });
 

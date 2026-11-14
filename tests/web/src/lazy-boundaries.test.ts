@@ -120,7 +120,7 @@ describe("every lazily-loaded component is mounted conditionally", () => {
 });
 
 describe("what is NOT behind a boundary, and must never be", () => {
-  it("the search FIELD renders eagerly — only its dropdown is lazy", () => {
+  it("the search FIELD renders eagerly — only its results card is lazy", () => {
     // `palette.tsx` renders the header's visible `role="combobox"` input on
     // every page for every visitor. Putting THAT behind `ssr: false` would
     // delete it from the server render and reintroduce exactly the layout
@@ -136,17 +136,17 @@ describe("what is NOT behind a boundary, and must never be", () => {
     // And the field itself is imported the ordinary way by the bar that holds
     // it, so no later change can quietly make the whole palette lazy.
     const bar = readFileSync(resolve(SRC, "app/shell/top-panel.tsx"), "utf-8");
-    expect(bar).toContain('import { CommandPalette } from "./palette"');
-    expect(bar).toContain("<CommandPalette />");
+    expect(bar).toContain('import { HeaderSearch } from "./palette"');
+    expect(bar).toContain("<HeaderSearch />");
   });
 
-  it("the dropdown owns no state, so the split moved bytes and not behaviour", () => {
+  it("the card owns no state, so the split moved bytes and not behaviour", () => {
     // The panel is pure presentation: every piece of state and every effect
     // stayed in `palette.tsx`. That is what keeps the combobox's keyboard
     // model in one place — the alternative put the Arrow/Enter handling on one
     // side of a lazy boundary and the rows it navigates on the other.
     const panel = readFileSync(resolve(SRC, "app/shell/palette-panel.tsx"), "utf-8");
-    expect(panel).not.toMatch(/React\.useState|React\.useEffect|React\.useCallback/);
+    expect(panel).not.toMatch(/useState|useEffect|useCallback|useRef|useMemo/);
     expect(panel).not.toContain("fetch(");
   });
 });

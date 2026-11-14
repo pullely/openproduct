@@ -1,4 +1,5 @@
-// The inbox, arriving (openproduct-performance OPP9).
+// The inbox, arriving (openproduct-performance OPP9), at `/activity` since
+// openproduct-redesign OPR1 moved the page.
 //
 // ITS OWN, BECAUSE IT DRAWS ROWS, unlike the shared one: an inbox is a list
 // of rows of a known height, so reserving five of them reserves real space
@@ -10,12 +11,12 @@
 // be three". An empty inbox is a real state, and a screenful of grey rows
 // promising mail that is not there is the worse of the two lies.
 
-import { LoadingAnnouncement, Shimmer, ShimmerLine } from "../../ui/skeleton";
-import { ME_MAIN, ME_NAV_WIDTHS } from "../nav";
+import { LoadingAnnouncement, Shimmer, ShimmerLine } from "../ui/skeleton";
+import { ME_MAIN, ME_NAV_WIDTHS } from "../me/nav";
 
 export default function NotificationsLoading() {
   return (
-    // The SAME frame as `me/notifications/page.tsx`.
+    // The SAME frame as `activity/page.tsx`.
     // `min-h` for the reason `me/loading.tsx` records: a skeleton shorter than its
     // content leaves the footer high, and the footer then travels the whole
     // difference when the content lands.

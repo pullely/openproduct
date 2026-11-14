@@ -22,6 +22,8 @@ import {
   type PublicProfileCard,
 } from "@openproduct/contracts";
 
+import { FOOTER_LINKS } from "@openproduct-web/app/shell/shell";
+
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const APP_DIR = resolve(__dirname, "../../../web/src/app");
 const read = (file: string) => readFileSync(resolve(APP_DIR, file), "utf-8");
@@ -167,8 +169,10 @@ describe("the addresses are discoverable", () => {
 
   it("the footer links to the index, so the whole vocabulary is one click away", () => {
     // CL2 — the margin's *Built with* panel was the door; the footer is now,
-    // on every page that draws the site footer.
-    expect(code("shell/site-footer.tsx")).toContain("href={STACKS_PATH}");
+    // on every page that draws the site footer. Since OPR1 the footer maps
+    // `FOOTER_LINKS`, so the door is an entry of that list.
+    expect(FOOTER_LINKS.some((link) => link.href === STACKS_PATH)).toBe(true);
+    expect(code("shell/site-footer.tsx")).toContain("FOOTER_LINKS.map");
   });
 });
 

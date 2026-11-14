@@ -1,21 +1,23 @@
 import type { SectionIcon } from "./shell";
 
-import { BuildIcon, PeopleIcon, RoleIcon, TopicIcon } from "../ui/icons";
+import { ActivityIcon, FeedIcon, ProductsIcon, SeatIcon } from "../ui/icons";
 
 /**
- * A section's glyph (OB1, D6). The two navs — the header's pills and the
- * phone's bar — render the same list, so they render the same glyph from the
- * same switch; a second mapping is a second answer to "what does this mean".
+ * A destination's glyph (first drawn at OB1, D6; the set is the boards' since
+ * openproduct-redesign OPR1). ONE SWITCH: the phone's tab bar is the only nav
+ * that draws glyphs — the header's pills are words — but the mapping lives
+ * here rather than in the bar, so a destination's name and its picture are
+ * each written once.
  */
 export function SectionGlyph({ icon, className }: { readonly icon: SectionIcon; readonly className?: string }) {
   switch (icon) {
-    case "build":
-      return <BuildIcon className={className} />;
-    case "role":
-      return <RoleIcon className={className} />;
-    case "topic":
-      return <TopicIcon className={className} />;
-    case "people":
-      return <PeopleIcon className={className} />;
+    case "feed":
+      return <FeedIcon className={className} />;
+    case "products":
+      return <ProductsIcon className={className} />;
+    case "seats":
+      return <SeatIcon className={className} />;
+    case "activity":
+      return <ActivityIcon className={className} />;
   }
 }

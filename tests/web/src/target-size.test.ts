@@ -116,10 +116,6 @@ describe("the standalone links that had to be told", () => {
   // rather than a word in a sentence: a footer's row, a row of formula ids,
   // an avatar, a range pill, a card's title.
   it.each([
-    // Five since AG0: the API's own front door joined the four.
-    // OB1 — six: Collections left the bar and is linked from here.
-    // CL2 — seven: Stacks, the door the front page's margin used to be.
-    ["shell/site-footer.tsx", 7],
     // CL2 — the build tile's category link and the strip's formula caption
     // (the margin, which carried seven of these, left the front page).
     ["feed/build-tile.tsx", 1],
@@ -139,6 +135,56 @@ describe("the standalone links that had to be told", () => {
     ["digest/page.tsx", 2],
   ])("%s carries the floor on %i of them", (file, count) => {
     expect(read(file).match(/\btap(-h)?\b/g)?.length).toBe(count);
+  });
+
+  it("shell/site-footer.tsx carries the floor on every link it renders", () => {
+    // It was seven links, each wearing `tap` by hand (five at AG0, six at
+    // OB1, seven at CL2). Since openproduct-redesign OPR1 the footer maps a
+    // list (`FOOTER_LINKS`), so the floor is ONE class string that both
+    // kinds of link take — a link added to the list cannot arrive without it.
+    const footer = read("shell/site-footer.tsx")
+      .replace(/\/\*[\s\S]*?\*\//g, "")
+      .replace(/^\s*\/\/.*$/gm, "");
+    expect(footer).toMatch(/const link = "tap /);
+    expect(footer).toContain("FOOTER_LINKS.map");
+    const anchors = footer.match(/<(?:a|AppLink)\b[^>]*>/g) ?? [];
+    expect(anchors.length).toBe(2);
+    for (const anchor of anchors) expect(anchor).toContain("className={link}");
+  });
+
+  it("the chrome's own controls are 40px in the header and 44px on a phone", () => {
+    const strip = (file: string) =>
+      read(file)
+        .replace(/\/\*[\s\S]*?\*\//g, "")
+        .replace(/^\s*\/\/.*$/gm, "");
+    // The Activity bell: a 40px disc in the header. On a phone it is not
+    // displayed — Activity is a 54px tab there.
+    const bell = strip("shell/notification-bell.tsx");
+    expect(bell).toMatch(/relative grid h-\[40px\] w-\[40px\] shrink-0 place-items-center rounded-full/);
+    expect(bell).toContain("max-sm:hidden");
+    expect(strip("shell/section-bar.tsx")).toContain("min-h-[54px]");
+    // The profile control: 40px, and 44px on a phone, in BOTH branches (the
+    // sign-in disc and the account disc).
+    const chip = strip("shell/account-chip.tsx");
+    const discs = chip.match(/grid h-\[40px\] w-\[40px\][^"]*/g) ?? [];
+    expect(discs.length).toBe(2);
+    for (const disc of discs) {
+      expect(disc).toContain("rounded-full");
+      expect(disc).toContain("max-sm:h-[44px] max-sm:w-[44px]");
+    }
+    // The phone's search field and the mark's link: 44px.
+    const bar = strip("shell/top-panel.tsx");
+    expect(bar).toMatch(/aria-label="Search"\s+className="[^"]*min-h-\[44px\]/);
+    expect(bar).toMatch(/max-sm:min-h-\[44px\] max-sm:min-w-\[44px\]/);
+    // The header's pills are 36px, the board's size for a pointer; they are
+    // not displayed on a phone.
+    expect(bar).toMatch(/flex h-\[36px\] shrink-0 items-center/);
+    // The account menu's rows: 40px, 44px on a phone.
+    expect(chip).toMatch(/flex min-h-\[40px\] items-center[^"]*max-sm:min-h-\[44px\]/);
+    // The search card's rows are 44px and its chevron 40px (desktop only).
+    const card = strip("shell/palette-panel.tsx");
+    expect(card).toContain("min-h-[44px]");
+    expect(card).toMatch(/grid h-\[40px\] w-\[40px\]/);
   });
 
   it.each([

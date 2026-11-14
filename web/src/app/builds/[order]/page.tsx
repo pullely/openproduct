@@ -27,6 +27,11 @@ import { PAGE, PAGE_HEAD, PAGE_SUBTITLE, PAGE_TITLE } from "../../ui/design";
  * these is one cacheable document (OPC-1). `/` is Most active, and these
  * three are views of the same list under the same control.
  *
+ * `/builds/roles` IS NOT SERVED FROM HERE ANY MORE: since openproduct-redesign
+ * OPR1 it redirects (from the edge, `next.config.mjs`) to `/help-wanted`,
+ * which renders this page's body for the Roles order. The order itself stays
+ * in the contract and in this component.
+ *
  * THE WHOLE CATALOGUE, THEN THE ORDER. The catalogue API pages in Most
  * active's order (OS-1), so a different order needs every listed build first:
  * `fetchAllDirectoryProjects` walks the pages (bounded, as the sitemap's walk

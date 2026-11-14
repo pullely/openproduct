@@ -11,7 +11,7 @@
 //   - the badge shows nothing rather than zero while the overlay is loading
 //   - the unread dot carries a word, not only a colour
 
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -35,7 +35,7 @@ const markupOf = (file: string) =>
     .replace(/\/\*[\s\S]*?\*\//g, "")
     .replace(/^\s*\/\/.*$/gm, "");
 
-const page = () => read("me/notifications/page.tsx");
+const page = () => read("activity/page.tsx");
 const readRoute = () => read("me/notifications/read/route.ts");
 
 describe("the page that is about the reader", () => {
@@ -49,7 +49,27 @@ describe("the page that is about the reader", () => {
   });
 
   it("sends a signed-out reader to sign in, and back here afterwards", () => {
-    expect(page()).toContain("/signin?return_to=%2Fme%2Fnotifications");
+    // "Here" is `/activity` since openproduct-redesign OPR1: returning to
+    // the old address would work, through one more redirect.
+    expect(page()).toContain("/signin?return_to=%2Factivity");
+    expect(page()).not.toContain("%2Fme%2Fnotifications");
+  });
+
+  it("lives at /activity, and the old address arrives there from the edge", () => {
+    // One implementation, one address. The page MOVED to `/activity` (no
+    // module is left at the old path to render a second copy), it is still
+    // uncached, and `/me/notifications` is a `redirects()` entry — issued
+    // before the renderer, so the status is a real 308 (the lesson `/create`
+    // taught, in next.config.mjs).
+    expect(existsSync(resolve(APP_DIR, "me/notifications/page.tsx"))).toBe(false);
+    expect(existsSync(resolve(APP_DIR, "activity/loading.tsx"))).toBe(true);
+    expect(page()).toContain('export const dynamic = "force-dynamic";');
+    const config = readFileSync(resolve(APP_DIR, "../../next.config.mjs"), "utf-8");
+    expect(config).toContain('{ source: "/me/notifications", destination: "/activity", permanent: true }');
+    // The form's POST target is a different path and is NOT redirected: a
+    // 308 would replay the POST at a page.
+    expect(config).not.toMatch(/source: "\/me\/notifications\/(?::|read)/);
+    expect(page()).toContain('action="/me/notifications/read"');
   });
 
   it("tells a failed read apart from an empty inbox (OD5)", () => {
@@ -67,7 +87,7 @@ describe("the page that is about the reader", () => {
     // Every line a reader sees comes from the contract's phrasebook, so a
     // wording somebody regrets is a deploy rather than a backfill.
     expect(page()).toContain("inboxSentence(item)");
-    const markup = markupOf("me/notifications/page.tsx");
+    const markup = markupOf("activity/page.tsx");
     for (const phrase of ["replied", "reached #1", "launched in", "was upvoted"]) {
       expect(markup).not.toContain(phrase);
     }
@@ -108,7 +128,8 @@ describe("reading is not a write", () => {
     // on this estate.
     const src = readRoute();
     expect(src).toContain("303");
-    expect(src).toContain('new URL("/me/notifications", request.url)');
+    // The page's address is `/activity` since OPR1.
+    expect(src).toContain('new URL("/activity", request.url)');
   });
 
   it("does not invent a page state for a mark that failed", () => {
@@ -140,12 +161,18 @@ describe("the badge", () => {
     const chip = read("shell/account-chip.tsx");
     expect(chip).toContain("overlay.overlay.unread");
     const shell = read("shell/shell.ts");
-    expect(shell).toContain('href: "/me/notifications"');
-    expect(shell).toContain('countKey: "unread"');
+    expect(shell).toContain('export const ACTIVITY_PATH = "/activity";');
+    expect(shell).toContain('href: ACTIVITY_PATH, countKey: "unread"');
+    // The header's bell and the phone's Activity tab wear a DOT fed by the
+    // same read, and nothing until it answers.
+    const bell = read("shell/notification-bell.tsx");
+    expect(bell).toContain("unreadCount(useOverlay(");
+    expect(bell).toContain("href={ACTIVITY_PATH}");
+    expect(bell).toMatch(/unread > 0 \? <UnreadDot/);
   });
 
   it("appears in the contributor's own nav beside the other personal pages", () => {
-    expect(read("me/nav.tsx")).toContain('item("notifications", "/me/notifications", "Notifications")');
+    expect(read("me/nav.tsx")).toContain('item("notifications", "/activity", "Notifications")');
   });
 });
 

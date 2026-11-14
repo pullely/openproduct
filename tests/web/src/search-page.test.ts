@@ -17,7 +17,7 @@ import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { SEARCH_SCOPE_NOTE, SEE_ALL_RESULTS } from "@openproduct/contracts";
-import { toRows } from "@openproduct-web/app/shell/palette-rows";
+import { toRows, visibleRows } from "@openproduct-web/app/shell/palette-rows";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const APP_DIR = resolve(__dirname, "../../../web/src/app");
@@ -129,27 +129,35 @@ describe("the form is a form", () => {
   });
 });
 
-describe("the palette's door out — and the link OL2 broke", () => {
-  it("points a stack row at a page that KEEPS its promise", () => {
+describe("the header search's door out — and the link OL2 broke", () => {
+  const NOBODY: ReadonlySet<string> = new Set();
+
+  it("never sends a query to the feed with a filter nobody reads", () => {
     // THIS WAS BROKEN IN PRODUCTION FOR THE WHOLE OF OL2'S LIFE, and the
-    // shape of that bug is what this test is really about. DS3 wrote
-    // `/?stack=…` when `/` was the directory; OL2 moved the directory to
-    // `/products` and left `/` as the launch feed. The row still ARRIVED
-    // somewhere real — which is why nothing caught it — and the filter was
-    // silently dropped, so a row promising "every product built with it"
-    // delivered the front page.
+    // shape of that bug is what this test is really about. DS3's stack row
+    // wrote `/?stack=…` when `/` was the directory; OL2 moved the directory
+    // and left `/` as the feed. The row still ARRIVED somewhere real — which
+    // is why nothing caught it — and the filter was silently dropped.
     //
-    // The destination has moved twice since and now three times: to
-    // `/products`, then — when the directory was retired — to
-    // `/search?q=TypeScript`, and now, with VC1, to the page that exists for
-    // exactly this question. `/stack/typescript` IS every product built with
-    // it, so the row's promise and its destination are the same claim again,
-    // which is the property the OL2 bug broke and the one worth pinning.
-    const rows = toRows([], "TypeScript");
-    expect(rows[0]!.href).toBe("/stack/typescript");
-    // Never the feed with a query nobody reads, in any of its spellings.
-    expect(rows[0]!.href).not.toMatch(/^\/\?/);
-    expect(rows[0]!.href).not.toBe("/");
+    // The row moved three times after that and, with openproduct-redesign
+    // OPR1, left the field: the card under the header search holds products
+    // and people (board `Feed`). What is worth pinning survives the row:
+    // every destination the card can offer for a query is a real page for
+    // THAT query — a product, a person, or the results page with the words
+    // in its address — and never `/` with a query string.
+    const rows = visibleRows(
+      toRows(
+        [{ kind: "product", entityId: "kettleworks", title: "kettleworks", summary: null, matched: "name" }],
+        [{ handle: "ada", displayName: "Ada", matched: "name" }],
+      ),
+      NOBODY,
+      "TypeScript",
+    );
+    expect(rows.map((r) => r.href)).toEqual(["/kettleworks", "/@ada", "/search?q=TypeScript"]);
+    for (const row of rows) {
+      expect(row.href).not.toMatch(/^\/\?/);
+      expect(row.href).not.toBe("/");
+    }
   });
 
   it("no longer knows a directory path at all — the next move has nowhere to carry", () => {
@@ -162,7 +170,7 @@ describe("the palette's door out — and the link OL2 broke", () => {
   });
 
   it("ends every query with a way to see all results", () => {
-    const rows = toRows([], "anything at all");
+    const rows = visibleRows([], NOBODY, "anything at all");
     const last = rows.at(-1)!;
     expect(last.type).toBe("all");
     expect(last.title).toBe(SEE_ALL_RESULTS);
@@ -171,21 +179,24 @@ describe("the palette's door out — and the link OL2 broke", () => {
 
   it("offers that door even when nothing else matched", () => {
     // "Nothing here, and here is where to look properly" is more useful than
-    // an empty box, and the results page can say why in a way a palette has
-    // no room for.
-    expect(toRows([], "wibble").map((r) => r.type)).toEqual(["all"]);
+    // an empty box, and the results page can say why in a way a card has no
+    // room for.
+    expect(visibleRows(toRows([]), NOBODY, "wibble").map((r) => r.type)).toEqual(["all"]);
   });
 
   it("offers NO door when nothing has been typed", () => {
-    // An empty palette should not offer to search for nothing.
-    expect(toRows([], "")).toEqual([]);
-    expect(toRows([], "   ")).toEqual([]);
+    // An empty field should not offer to search for nothing.
+    expect(visibleRows([], NOBODY, "")).toEqual([]);
+    expect(visibleRows([], NOBODY, "   ")).toEqual([]);
   });
 
-  it("surfaces topics, which are destinations in a way a stack is not", () => {
-    const rows = toRows([], "infrastructure");
-    const topic = rows.find((r) => r.type === "topic");
-    expect(topic).toBeDefined();
-    expect(topic!.href).toBe("/topics/infrastructure");
+  it("leaves topics to the page the door leads to, which answers them", () => {
+    // The card holds two classes (products and people). A topic is still a
+    // destination and a query for one is still answered — on the results
+    // page, one `See all results` away, under its own heading.
+    expect(toRows([]).some((r) => (r.type as string) === "topic")).toBe(false);
+    expect(visibleRows([], NOBODY, "infrastructure").at(-1)!.href).toBe("/search?q=infrastructure");
+    expect(page()).toContain("SEARCH_HEADINGS.topics");
+    expect(page()).toContain("doc.topics.map");
   });
 });

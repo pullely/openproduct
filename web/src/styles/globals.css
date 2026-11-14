@@ -50,10 +50,14 @@
        lifts off the edge over the last scroll of the page. Two files spelling
        the same expression is how they drift apart.
 
-       4.5rem is 63px under this console's 14px root — a hair more than the
-       bar's own 56px, which is the slack it already shipped with. Kept
-       verbatim so naming it changes no page's spacing. */
-    --tabbar-reserve: calc(env(safe-area-inset-bottom) + 4.5rem);
+       88px since openproduct-redesign OPR1: the bar is 62px tall (54px tabs
+       in 4px of padding) and floats 14px above the screen's bottom edge, so
+       it covers 76px; the other 12px is the gap between the last row of a
+       page and the bar. The home indicator's inset is added on top, as the
+       bar itself adds it (`shell/section-bar.tsx`). Absolute pixels, like
+       the bar: it does not grow with the root font size, so neither may
+       its reserve. */
+    --tabbar-reserve: calc(env(safe-area-inset-bottom) + 88px);
 
     /* OPR1 — THE REDESIGN'S PALETTE (openproduct-redesign design.md §3).
        Every value below is one of the boards' hexes carried into OKLCH; the
@@ -870,8 +874,8 @@
      page components. `section-bar.tsx` is `fixed`, so it takes no space in the
      document and would otherwise sit on top of the last row of every page —
      which on the launches page is a product, and on a product page is the
-     comment box. The reserve is the bar's 56px plus the phone's own home
-     indicator, which is exactly what `--tabbar-reserve` already spells; the
+     comment box. The reserve is the height the bar covers plus the phone's
+     own home indicator, which is exactly what `--tabbar-reserve` spells; the
      token's note says two files spelling the same expression is how they
      drift apart, so this reads the token rather than restating it.
 

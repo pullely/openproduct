@@ -839,10 +839,11 @@ export async function runA11y(base) {
         // (XP0's own done-when). That is not a missing menu; it is the other
         // branch, and it has its own rule: no overlay request is made.
         const signIn = await page.evaluate(() => {
-          const el = [...document.querySelectorAll("header a, header button")].find((e) =>
-            /sign in/i.test(e.textContent ?? ""),
-          );
-          return el ? (el.textContent ?? "").trim() : null;
+          // The control is a round disc with a glyph since OPR1, so its name is
+          // its `aria-label`; the text is read as the fallback it used to be.
+          const nameOf = (e) => (e.getAttribute("aria-label") ?? e.textContent ?? "").trim();
+          const el = [...document.querySelectorAll("header a, header button")].find((e) => /sign in/i.test(nameOf(e)));
+          return el ? nameOf(el) : null;
         });
         check("account menu: signed out shows a named Sign in control instead", !!signIn, signIn ?? "neither a menu trigger nor a sign-in control in the header");
       } else {
@@ -856,12 +857,12 @@ export async function runA11y(base) {
         // second half is the one that gets forgotten, and losing focus to
         // <body> drops a keyboard user back at the top of the document.
         await page.evaluate(() => {
-          (document.querySelector("header [aria-haspopup]") ?? document.querySelector("header [aria-expanded]"))?.focus();
+          document.querySelector('header [aria-haspopup="menu"]')?.focus();
         });
         await page.keyboard.press("Enter");
         await page.waitForTimeout(300);
         const opened = await page.evaluate(() => ({
-          expanded: (document.querySelector("header [aria-haspopup]") ?? document.querySelector("header [aria-expanded]"))?.getAttribute("aria-expanded"),
+          expanded: document.querySelector('header [aria-haspopup="menu"]')?.getAttribute("aria-expanded"),
           menu: !!document.querySelector('[role="menu"]'),
         }));
         check("account menu: Enter opens it", opened.expanded === "true" || opened.menu, `expanded=${opened.expanded} role=menu ${opened.menu}`);
@@ -869,7 +870,9 @@ export async function runA11y(base) {
         await page.keyboard.press("Escape");
         await page.waitForTimeout(300);
         const closed = await page.evaluate(() => {
-          const trigger = document.querySelector("header [aria-haspopup]") ?? document.querySelector("header [aria-expanded]");
+          // `="menu"`, as the lookup above: the header search is a combobox with
+          // a popup of its own since OPR1, and it comes first in the header.
+          const trigger = document.querySelector('header [aria-haspopup="menu"]');
           return {
             expanded: trigger?.getAttribute("aria-expanded"),
             focusReturned: document.activeElement === trigger,
@@ -1066,7 +1069,7 @@ export async function runA11y(base) {
         // width exactly one is in the accessibility tree. That is asserted
         // below rather than assumed, because it is the whole reason the
         // duplicate name is not a defect.
-        const named = [...document.querySelectorAll('nav[aria-label="Sections"]')];
+        const named = [...document.querySelectorAll('nav[aria-label="Main"]')];
         const shown = named.filter((el) => el.getBoundingClientRect().height > 0);
         const nav = shown[0];
         if (!nav) return { named: named.length, shown: shown.length };
@@ -1109,15 +1112,17 @@ export async function runA11y(base) {
       check(
         "bottom bar: it is rendered at 375",
         !!bar && bar.cells > 0,
-        bar ? `${bar.cells} cells` : "no nav[aria-label=Sections]",
+        bar ? `${bar.cells} cells` : "no nav[aria-label=Main]",
       );
       check(
-        "bottom bar: exactly one Sections landmark is in the tree at this width",
+        "bottom bar: exactly one Main landmark is in the tree at this width",
         !!bar && bar.shown === 1,
         bar ? `${bar.shown} shown of ${bar.named} named` : "none",
       );
       if (bar && bar.cells > 0) {
-        check("bottom bar: it is a named landmark", bar.landmark === "Sections", bar.landmark ?? "(none)");
+        // "Main" since openproduct-redesign OPR1 (boards `Products`, `PhoneFeed`);
+        // it was "Sections".
+        check("bottom bar: it is a named landmark", bar.landmark === "Main", bar.landmark ?? "(none)");
         check("bottom bar: it is a list, so its size is announced", bar.list, `${bar.cells} items`);
         check(
           "bottom bar: exactly one cell claims to be the current page",
@@ -1149,14 +1154,14 @@ export async function runA11y(base) {
         // there at all, and that a person can see when it has.
         // `.fixed` is the bottom bar's own class and the header's nav does not
         // carry it — the narrowest true statement that separates the two.
-        const first = await keyboardReach(page, "nav.fixed[aria-label=\"Sections\"] a[href]");
+        const first = await keyboardReach(page, "nav.fixed[aria-label=\"Main\"] a[href]");
         check("bottom bar: the first cell is reachable by Tab, with a visible ring", first.ok, first.why);
 
         // Every cell, not just the first: a bar whose third link is
         // `tabindex="-1"` passes the check above and strands a reader in the
         // middle of the row.
         const reachable = await page.evaluate(() => {
-          const links = [...document.querySelectorAll('nav.fixed[aria-label="Sections"] a[href]')];
+          const links = [...document.querySelectorAll('nav.fixed[aria-label="Main"] a[href]')];
           const stranded = links.filter((a) => Number(a.getAttribute("tabindex")) < 0);
           return { total: links.length, stranded: stranded.length };
         });

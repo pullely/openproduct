@@ -88,10 +88,11 @@ describe("WC2-8's three numbers", () => {
 });
 
 describe("the four documents nobody asked for", () => {
-  it("the phone's section bar does not prefetch on sight", () => {
+  it("the phone's tab bar does not prefetch on sight", () => {
     // The audit's W·15: four RSC documents, ~44 KB, on every phone home load.
+    // The bar is four tabs again since OPR1, so the cost would be the same.
     const bar = code(resolve(APP, "shell/section-bar.tsx"));
-    const link = (bar.match(/<AppLink\b[\s\S]*?>/g) ?? []).find((l) => l.includes("href={section.href}"));
+    const link = (bar.match(/<AppLink\b[\s\S]*?>/g) ?? []).find((l) => l.includes("href={tab.href}"));
     expect(link).toContain("prefetch={false}");
   });
 });

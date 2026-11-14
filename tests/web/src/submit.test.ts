@@ -227,13 +227,15 @@ describe("SB0 — the design's address, and the one it replaced", () => {
     // A link left on `/create` still arrives, so this would not be a bug a
     // visitor could see — it would be an extra hop on the product's own
     // busiest call to action, and a slow accretion of them.
-    // `products/page.tsx` left this list with the directory: `/products` is a
-    // `redirects()` entry to `/` now, and the launches page carries no call
-    // to action of its own — the bar's button is the one.
-    for (const file of ["shell/top-panel.tsx"]) {
-      expect([file, read(file).includes('href="/create"')]).toEqual([file, false]);
-      expect([file, read(file).includes('href="/submit"')]).toEqual([file, true]);
+    // The call to action was the header's outlined pill until
+    // openproduct-redesign OPR1: the boards' bar has no room for it, so the
+    // door is an entry of the footer's list now (`FOOTER_LINKS`), on every
+    // page that draws the site footer.
+    for (const file of ["shell/top-panel.tsx", "shell/site-footer.tsx", "shell/shell.ts"]) {
+      expect([file, read(file).includes('"/create"')]).toEqual([file, false]);
     }
+    expect(read("shell/shell.ts")).toContain('{ label: "Open a build", href: "/submit" }');
+    expect(read("shell/site-footer.tsx")).toContain("FOOTER_LINKS.map");
   });
 
   it("collects exactly what it collected before, and the reason is the design", () => {

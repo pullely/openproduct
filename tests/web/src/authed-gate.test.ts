@@ -45,13 +45,20 @@ describe("OV4 — the authenticated walk is a gate", () => {
     expect(read(resolve(PERF, "studio.mjs"))).not.toContain("function sessionCookie(");
   });
 
-  it("walks every signed-in page the app has — a page added under /me or /studio must join the list", () => {
+  it("walks every signed-in page the app has — a page added under /me, /studio or /activity must join the list", () => {
     const fixture = read(resolve(PERF, "fixture.mjs"));
     const block = fixture.slice(fixture.indexOf("export const AUTHED_ROUTES = ["), fixture.indexOf("];", fixture.indexOf("export const AUTHED_ROUTES = [")));
     const listed = [...block.matchAll(/\{ path: (?:"([^"]+)"|`([^`]+)`)/g)]
       .map((m) => m[1] ?? m[2] ?? "")
       .map((p) => p.replace("${STUDIO_ORG}", "[org]").replace("${STUDIO_PROFILE}", "[profile]"));
-    const pages = [...pagesUnder(resolve(APP, "me")), ...pagesUnder(resolve(APP, "studio"))];
+    // `/activity` is the inbox: a signed-in page that left `/me` for an
+    // address of its own at openproduct-redesign OPR1, and is still walked.
+    const pages = [
+      ...pagesUnder(resolve(APP, "me")),
+      ...pagesUnder(resolve(APP, "studio")),
+      ...pagesUnder(resolve(APP, "activity")),
+    ];
+    expect(pages).toContain("/activity");
     expect(pages.length).toBeGreaterThanOrEqual(16);
     const unwalked = pages.filter((p) => !listed.includes(p));
     expect(unwalked).toEqual([]);

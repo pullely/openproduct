@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 
 import {
@@ -7,16 +8,24 @@ import {
   type InboxItem,
 } from "@openproduct/contracts";
 
-import { readSession } from "../../auth/session-server";
-import { BTN_SMALL, PAGE_TITLE } from "../../ui/design";
-import { fetchInbox } from "../me-api";
-import { ME_MAIN, MeNav } from "../nav";
-import { MeUnavailable } from "../unavailable";
+import { readSession } from "../auth/session-server";
+import { BTN_SMALL, PAGE_TITLE } from "../ui/design";
+import { fetchInbox } from "../me/me-api";
+import { ME_MAIN, MeNav } from "../me/nav";
+import { MeUnavailable } from "../me/unavailable";
 
-import { AppLink } from "../../ui/link";
+import { AppLink } from "../ui/link";
 
 /**
- * The inbox (openproduct-launch NF0).
+ * Activity — the inbox (openproduct-launch NF0), at `/activity` since
+ * openproduct-redesign OPR1.
+ *
+ * THE ADDRESS MOVED AND THE PAGE DID NOT CHANGE. It lived at
+ * `/me/notifications`, which redirects here from the edge
+ * (`next.config.mjs`); the header's bell and the phone's fourth tab go here.
+ * The body below is the inbox as it was — it is rebuilt to the `Activity`
+ * board by its own change. The one read action keeps its address
+ * (`/me/notifications/read`): a form posts to it, and it is not redirected.
  *
  * THE ONE OPENPRODUCT SURFACE THAT IS ABOUT THE READER. Every public page here
  * is one cacheable document that resolves no actor (OPC-1, I6); this one is
@@ -35,12 +44,14 @@ import { AppLink } from "../../ui/link";
  */
 export const dynamic = "force-dynamic";
 
+export const metadata: Metadata = { title: "Activity" };
+
 export default async function InboxPage() {
   const session = await readSession();
-  if (!session) redirect("/signin?return_to=%2Fme%2Fnotifications");
+  if (!session) redirect("/signin?return_to=%2Factivity");
 
   const result = await fetchInbox(session.accessToken);
-  if (result.kind === "unauthorized") redirect("/signin?return_to=%2Fme%2Fnotifications");
+  if (result.kind === "unauthorized") redirect("/signin?return_to=%2Factivity");
   if (result.kind === "unavailable") return <MeUnavailable active="notifications" />;
 
   const { items, unread } = result.data;

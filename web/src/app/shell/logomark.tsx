@@ -14,8 +14,20 @@
  *
  * `stroke` is both strokes' weight in the 24-unit box: 2.6, the boards'
  * value, with round caps and no fill.
+ *
+ * `className` is for a size that depends on the viewport (the header draws
+ * 24px, and 26px on a phone): a CSS width and height take precedence over
+ * the `size` attributes, which stay as the size before the stylesheet lands.
  */
-export function Logomark({ size = 22, stroke = 2.6 }: { size?: number; stroke?: number }) {
+export function Logomark({
+  size = 22,
+  stroke = 2.6,
+  className = "",
+}: {
+  size?: number;
+  stroke?: number;
+  className?: string;
+}) {
   return (
     <svg
       width={size}
@@ -26,7 +38,7 @@ export function Logomark({ size = 22, stroke = 2.6 }: { size?: number; stroke?: 
       strokeLinecap="round"
       aria-hidden="true"
       focusable="false"
-      className="shrink-0"
+      className={`shrink-0 ${className}`}
     >
       <path d="M8 3.5V21" stroke="currentColor" />
       <circle cx="14" cy="9.5" r="6" className="stroke-endorse" />

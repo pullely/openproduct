@@ -32,7 +32,7 @@ describe("one kind of tab on your pages (CP-R2)", () => {
 
 describe("every signed-in list is tiles (CP-R6)", () => {
   it.each([
-    ["me/notifications/page.tsx", "data-notification-tiles", "rounded-[16px] border border-border px-6 py-4"],
+    ["activity/page.tsx", "data-notification-tiles", "rounded-[16px] border border-border px-6 py-4"],
     ["me/saved/page.tsx", "data-saved-tiles", "rounded-[20px] border border-border bg-card px-7 py-5"],
     ["me/applications/page.tsx", "data-application-tiles", "rounded-[20px] border border-border bg-card px-7 py-5"],
     ["studio/page.tsx", "data-studio-tiles", "rounded-[20px] border border-border bg-card px-7 py-5"],
@@ -45,7 +45,7 @@ describe("every signed-in list is tiles (CP-R6)", () => {
   });
 
   it("an unread notification keeps the accent's soft fill — its one other meaning", () => {
-    expect(code("me/notifications/page.tsx")).toContain('item.unread ? "bg-endorse-soft" : "bg-card"');
+    expect(code("activity/page.tsx")).toContain('item.unread ? "bg-endorse-soft" : "bg-card"');
   });
 
   it("the studio's panels take the tile's radius", () => {

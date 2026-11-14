@@ -2,120 +2,67 @@
 
 import { usePathname } from "next/navigation";
 
-import { STACKS_PATH } from "@openproduct/contracts";
-
-import { SECTIONS } from "./shell";
+import { hasOwnFooter } from "./section-for";
+import { FOOTER_LINKS } from "./shell";
 
 import { AppLink } from "../ui/link";
 import { ThemeToggle } from "../ui/theme-toggle";
 
 /**
- * The site's footer, as the design draws it: one sentence about whose surface
- * this is, and four quiet underlined links.
+ * The site's footer (restyled at openproduct-redesign OPR1): one sentence
+ * about whose surface this is, the links to every section that has no board,
+ * and the theme control.
  *
- * A 1px `--line` rule, then the bar's own gutter (it spans the window, as the
- * bar does since openproduct-calm CL1), the two halves spaced apart at 13.5px
- * in `--muted`, wrapping on a narrow page. The links are the prototype's own words — the digest, its
- * feed, the transparency page ("What we removed, and how often we were
- * wrong") and the checks page ("What runs automatically").
+ * THE HOME OF WHAT LEFT THE BAR. The header is Feed, Products and Help
+ * wanted (design.md §2 rule 4). Topics, People, Stacks, Pricing,
+ * Collections, the forum, the digest and its feed, the docs and the
+ * transparency report keep their routes and are linked from here
+ * (`FOOTER_LINKS` in `shell.ts`); design.md §5 says so in as many words.
+ * Nothing was removed from the site.
+ *
+ * In the page's own column (1180px, 24px gutters) under a hairline, 13px in
+ * `--muted`; the links are a wrapping row of plain words, each a 44px target
+ * on a phone (`tap`).
  *
  * A client component for `usePathname` only — the path resolves during the
- * server render too, so the output is static for every visitor (I6). The
- * design gives a product page and a person page footers of their OWN (what
- * was observed at publish, the report door, the page's short address), so
- * this one steps aside on those routes and the page renders its own.
+ * server render too, so the output is static for every visitor (I6). A
+ * product page and a person page carry footers of their OWN (what was
+ * observed at publish, the report door, the page's short address), so this
+ * one steps aside on those routes and the page renders its own.
  */
 export function SiteFooter() {
   const pathname = usePathname() ?? "/";
   if (hasOwnFooter(pathname)) return null;
+  const link = "tap text-muted-foreground no-underline hover:text-foreground hover:underline hover:underline-offset-[3px]";
   return (
-    <footer className="border-t border-line">
-      <div className="flex w-full flex-wrap items-center justify-between gap-5 px-[44px] pb-10 pt-7 text-[13.5px] text-muted-foreground max-lg:px-7 max-sm:px-4">
-        <span className="max-w-[52ch]">
-          Products built in the open. Every build is a public repo and a public workspace on
-          Orunbase.
-        </span>
-        <span className="flex flex-wrap items-center gap-4 max-sm:gap-x-4 max-sm:gap-y-0">
-          <AppLink className="tap underline underline-offset-[3px] hover:text-foreground" href="/digest">
-            Weekly digest
-          </AppLink>
-          {/* OB1 — collections left the bar; this is their door now. */}
-          <AppLink className="tap underline underline-offset-[3px] hover:text-foreground" href="/collections">
-            Collections
-          </AppLink>
-          {/* CL2 — the stack index's door. It was the front page margin's
-              *Built with* panel until the margin left with render C (CL-R5). */}
-          <AppLink className="tap underline underline-offset-[3px] hover:text-foreground" href={STACKS_PATH}>
-            Stacks
-          </AppLink>
-          <a
-            className="tap underline underline-offset-[3px] hover:text-foreground"
-            href="/digest/feed.xml"
-          >
-            RSS
-          </a>
-          <AppLink className="tap underline underline-offset-[3px] hover:text-foreground" href="/transparency">
-            What we removed, and how often we were wrong
-          </AppLink>
-          {/* AG0 — THE API'S FRONT DOOR, and its absence is the finding. This
-              footer linked `/docs/checks`, a CHILD of a page it did not link,
-              so the only ways to `/docs` were from its own two children —
-              themselves reached from footnotes under a formula. The audit
-              browsed the entire site and did not find the API. It is shipped,
-              it is anonymous, it is cached, and it has been running for
-              months; an API nobody can find has the same value as one that
-              does not exist. */}
-          <AppLink className="tap underline underline-offset-[3px] hover:text-foreground" href="/docs">
-            The API
-          </AppLink>
-          <AppLink className="tap underline underline-offset-[3px] hover:text-foreground" href="/docs/checks">
-            What runs automatically
-          </AppLink>
-          {/* FR1 — the theme control, at the end of the page rather than in
-              the bar. A preference that is not content belongs here on a
-              text-first site, and the header has 343px at 375 with four
-              things in it already. */}
+    <footer className="mx-auto box-border w-full max-w-[1180px] px-6 max-sm:px-4">
+      <div className="flex flex-col gap-4 border-t border-line pb-10 pt-6 text-[13px] text-muted-foreground">
+        <nav aria-label="More" className="flex flex-wrap items-center gap-x-5 gap-y-1 max-sm:gap-y-0">
+          {FOOTER_LINKS.map((item) =>
+            // A feed is a document, not a page: the client router cannot
+            // soft-navigate to it, so it is a real anchor.
+            item.plain ? (
+              <a key={item.href} className={link} href={item.href}>
+                {item.label}
+              </a>
+            ) : (
+              <AppLink key={item.href} className={link} href={item.href}>
+                {item.label}
+              </AppLink>
+            ),
+          )}
+        </nav>
+        <div className="flex flex-wrap items-center justify-between gap-x-5 gap-y-3">
+          <span className="max-w-[60ch]">
+            Products built in the open. Every build is a public repo and a public workspace on
+            Orunbase.
+          </span>
+          {/* FR1 — the theme control, at the end of the page. A preference
+              that is not content belongs here on a text-first site; the
+              account menu carries it too, for a signed-in visitor. */}
           <ThemeToggle />
-        </span>
+        </div>
       </div>
     </footer>
   );
-}
-
-/** Top-level routes that are neither a section nor a product's page. */
-const RESERVED_TOP_LEVEL = new Set([
-  "api",
-  "auth",
-  // OB1 — no longer sections, still routes with the site footer.
-  "collections",
-  "leaderboard",
-  "create",
-  "digest",
-  "docs",
-  "launches",
-  "list",
-  "me",
-  "people",
-  "report",
-  "search",
-  "studio",
-  "submit",
-  "threads",
-  "transparency",
-]);
-
-/**
- * A product page (`/kettleworks`) or a person's page (`/people/ada`, served
- * at `/@ada`) carries its own footer. Everything else takes this one.
- */
-export function hasOwnFooter(pathname: string): boolean {
-  const segments = pathname.split("?")[0]!.split("/").filter((s) => s.length > 0);
-  if (segments.length === 1) {
-    const head = segments[0]!;
-    if (head.startsWith("@")) return true;
-    if (RESERVED_TOP_LEVEL.has(head)) return false;
-    if (SECTIONS.some((s) => s.href === `/${head}`)) return false;
-    return true;
-  }
-  return segments.length === 2 && segments[0] === "people";
 }

@@ -134,7 +134,7 @@ describe("the intent prefetch", () => {
     expect(link).toContain("prefetch = false");
   });
 
-  it("the palette's own push reports the click too", () => {
+  it("the header search's own push reports the click too", () => {
     const palette = code("shell/palette.tsx");
     expect(palette).toContain("navigationStarted(href, window.location.pathname + window.location.search)");
     expect(palette.indexOf("navigationStarted(")).toBeLessThan(palette.indexOf("router.push(href)"));
@@ -143,7 +143,9 @@ describe("the intent prefetch", () => {
 
 describe("viewport prefetch on the fixed set", () => {
   const sectionLinks = (source: string) =>
-    (source.match(/<AppLink\b[\s\S]*?>/g) ?? []).filter((link) => link.includes("href={section.href}"));
+    (source.match(/<AppLink\b[\s\S]*?>/g) ?? []).filter(
+      (link) => link.includes("href={section.href}") || link.includes("href={tab.href}"),
+    );
 
   it("is OFF on both bars and the wordmark — QE0's budget on the wire", () => {
     // OPP13 turned it on; the audit counted what it costs (four RSC

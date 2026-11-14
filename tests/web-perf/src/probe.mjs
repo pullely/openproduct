@@ -352,7 +352,7 @@ const SURFACES = [
   ["Account", "/me", "Your profile"],
   ["Account", "/me/saved", "Saved products"],
   ["Account", "/me/applications", "Applications"],
-  ["Account", "/me/notifications", "Notifications"],
+  ["Account", "/activity", "Notifications"],
   ["Studio", "/studio", "Studio home"],
 ];
 

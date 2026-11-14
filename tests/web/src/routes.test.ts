@@ -43,8 +43,8 @@ import {
 } from "@openproduct/contracts";
 
 import { PENDING, pendingLabel, pendingProps } from "@openproduct-web/app/ui/pending";
-import { SEARCH_PLACEHOLDER } from "@openproduct-web/app/shell/shell";
-import { toRows } from "@openproduct-web/app/shell/palette-rows";
+import { FOOTER_LINKS, SEARCH_PLACEHOLDER } from "@openproduct-web/app/shell/shell";
+import { NO_MATCHES, toRows, visibleRows } from "@openproduct-web/app/shell/palette-rows";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const APP_DIR = resolve(__dirname, "../../../web/src/app");
@@ -578,43 +578,50 @@ describe("DS3 — the palette answers from the index, not from the page", () => 
 
   it("every class the placeholder promises is ANSWERED — the standing 'not yet' is gone", () => {
     const source = palette();
-    // OB1 — builds, makers, topics: the same three classes, in the words the
-    // product uses now.
-    expect(SEARCH_PLACEHOLDER).toBe("Search builds, makers, topics");
-    // All three are real rows now. `makers` used to carry a standing "not
-    // yet" so the placeholder would not be a lie; `/v1/search` resolves
-    // public profiles live, so the promise is kept and the apology is gone.
+    // openproduct-redesign OPR1 — products and people: the two classes the
+    // card under the field holds (board `Feed`). The placeholder named a
+    // third, topics, while the dropdown derived topic rows; the card does
+    // not, so the placeholder stopped promising them. They are still
+    // answered by the results page (`search-page.test.ts`).
+    expect(SEARCH_PLACEHOLDER).toBe("Search products and people");
+    // Both are real rows. `people` used to carry a standing "not yet" so the
+    // placeholder would not be a lie; `/v1/search` resolves public profiles
+    // live, so the promise is kept and the apology is gone.
     const rowsModule = readFileSync(resolve(APP_DIR, "shell/palette-rows.ts"), "utf-8");
-    expect(rowsModule).toContain('type: "topic"');
     expect(rowsModule).toContain('type: "product"');
     expect(rowsModule).toContain('type: "person"');
     expect(source).not.toContain("people become searchable");
-    // The people come from the SAME read as the launches — one request, not a
+    // The people come from the SAME read as the products — one request, not a
     // second round trip per keystroke.
     expect(source).toContain("body.data?.makers ?? []");
   });
 
-  it("a stack result is a QUESTION, and since VC1 it links to the page that answers it", () => {
-    // WHAT THIS USED TO SAY, AND WHY IT CHANGED. The reasoning was: "the
-    // honest answer to TypeScript is not a page about TypeScript but every
-    // launch built with it — and the directory that used to answer that with
-    // a facet is gone (`/` is the launches), so the search page is where the
-    // question goes". Right at the time, and the destination was
-    // `/search?q=TypeScript`.
+  it("a row's destination is the page for that thing, and the query's is the results page", () => {
+    // WHAT THIS USED TO PIN. A stack row ("TypeScript") was a QUESTION, and
+    // its destination moved from `/?stack=…` to `/search?q=…` to, with VC1,
+    // `/stack/typescript` — each time so that the row's promise and its
+    // destination were the same claim. The stack row left the field with
+    // OPR1 (the card holds products and people); the rule it taught stays.
     //
-    // VC1 gives that answer an address. `/stack/typescript` IS every product
-    // built with it, so the question now resolves to the page that holds it
-    // rather than to a search for its own name — and a filter that lands on a
-    // query string is the one thing VC1's done-when forbids.
-    //
-    // It asserts the row's DESTINATION, not the source string: a test that
-    // spells out the thing it is checking cannot notice when that thing moves.
-    expect(toRows([], "TypeScript")[0]!.href).toBe("/stack/typescript");
-    // The vocabulary is still resolved from the contract, not retyped here,
-    // and so is the path.
+    // It asserts DESTINATIONS, not source strings: a test that spells out
+    // the thing it is checking cannot notice when that thing moves.
+    const rows = visibleRows(
+      toRows(
+        [{ kind: "product", entityId: "kettleworks", title: "kettleworks", summary: null, matched: "name" }],
+        [{ handle: "ada", displayName: "Ada", matched: "name" }],
+      ),
+      new Set<string>(),
+      "TypeScript",
+    );
+    expect(rows.map((r) => [r.type, r.href])).toEqual([
+      ["product", "/kettleworks"],
+      ["person", "/@ada"],
+      ["all", "/search?q=TypeScript"],
+    ]);
+    // The paths are still resolved from the contract, not retyped here.
     const rowsModule = readFileSync(resolve(APP_DIR, "shell/palette-rows.ts"), "utf-8");
-    expect(rowsModule).toContain('labelOf("stack", folded)');
-    expect(rowsModule).toContain("stackPath(folded)");
+    expect(rowsModule).toContain("makerPath(maker.handle)");
+    expect(rowsModule).toContain("searchPath(query)");
   });
 
   it("the shortcut does not fight the browser's own, or a form field", () => {
@@ -631,17 +638,23 @@ describe("DS3 — the palette answers from the index, not from the page", () => 
     for (const key of ["ArrowDown", "ArrowUp", "Enter", "Escape"]) {
       expect(source).toContain(`event.key === "${key}"`);
     }
-    expect(source).toContain('role="listbox"');
-    expect(source).toContain('role="option"');
-    expect(source).toContain("aria-selected={i === active}");
-    // NOT `aria-modal` ANY MORE, and that is the change rather than a
-    // regression: the field answers in a dropdown anchored under itself, not
-    // in a full-screen overlay. It is a combobox, so it says so — and it
-    // closes on Escape and on a click outside, which is what a non-modal
-    // popup owes a reader who wants out.
+    // THE POPUP IS A CARD OF LINKS, NOT A LISTBOX, since OPR1: a person's
+    // row carries a button beside it (the chevron that shows their
+    // products), and a listbox may hold only options. So the field is a
+    // combobox whose popup is a labelled group of links, and the row the
+    // arrow keys have reached is named from the field.
     expect(source).toContain('role="combobox"');
+    expect(source).toContain('aria-haspopup="dialog"');
+    expect(source).toContain('role="dialog"');
+    expect(source).toContain('aria-label="Search results"');
+    expect(source).toContain("aria-activedescendant={open && active >= 0 ? rowDomId(active) : undefined}");
+    expect(source).toContain("data-active={index === active ? \"\" : undefined}");
+    expect(source).not.toContain('role="listbox"');
+    // NOT `aria-modal`: the field answers in a card it becomes the top of,
+    // not in a full-screen overlay — and it closes on Escape and on a click
+    // outside, which is what a non-modal popup owes a reader who wants out.
     expect(source).toContain("aria-expanded={open}");
-    expect(source).toContain('aria-controls="search-results"');
+    expect(source).toContain("aria-controls={CARD_ID}");
     expect(source).not.toContain('aria-modal');
     expect(source).toContain('document.addEventListener("mousedown", onPointer)');
   });
@@ -653,37 +666,43 @@ describe("DS3 — the palette answers from the index, not from the page", () => 
     const source = palette();
     expect(source).toContain("setFailed(true)");
     expect(source).toContain("Search is not answering right now");
-    expect(source).toMatch(/Nothing matched/);
+    // The empty state is the board's two words, and it is a different branch.
+    expect(NO_MATCHES).toBe("No matches");
+    expect(source).toMatch(/\{failed \? \([\s\S]*?\) : answered && results\.length === 0 \? \(/);
   });
 });
 
 describe("DS3 — toRows", () => {
-  it("puts a recognised stack first, then the products", () => {
+  it("puts the products first, then the people, and the door out last", () => {
     const results = [
       { kind: "product" as const, entityId: "kettleworks", title: "kettleworks", summary: "A queue", matched: "name-prefix" },
     ];
-    const rows = toRows(results, "TypeScript");
-    // SR0 appended the "see all results" row, last and always. It is the
-    // fallback rather than the answer, so it sits after everything.
+    const rows = visibleRows(
+      toRows(results, [{ handle: "ada", displayName: "Ada Lovelace", matched: "name" }]),
+      new Set<string>(),
+      "TypeScript",
+    );
+    // SR0's "see all results" row, last and always. It is the fallback
+    // rather than the answer, so it sits after everything.
     expect(rows.map((r) => [r.type, r.id])).toEqual([
-      ["stack", "typescript"],
       ["product", "kettleworks"],
+      ["person", "ada"],
       ["all", "__all__"],
     ]);
-    // The stack row goes to its own page since VC1; the "see all results" row
-    // is still the search, which is what it has always been.
-    expect(rows[0]!.href).toBe("/stack/typescript");
     expect(rows[2]!.href).toBe("/search?q=TypeScript");
   });
 
-  it("emits no stack row for a word the vocabulary does not know", () => {
-    // An open vocabulary means our list will always be behind somebody's.
-    // Offering a facet that matches nothing is worse than offering none.
+  it("derives no row from the query itself: a word is not a result", () => {
+    // The dropdown used to turn a recognised stack name or topic into a row
+    // of its own. The card holds what the READ returned — so a word the
+    // index and the people read know nothing about yields no row at all.
     //
     // SR0 — "see all results" survives, and deliberately: "nothing here, and
-    // here is where to look properly" is more useful than an empty box, and
-    // the results page can say why in a way a palette has no room for.
-    expect(toRows([], "wibble").map((r) => r.type)).toEqual(["all"]);
+    // here is where to look properly" is more useful than an empty box.
+    expect(toRows([])).toEqual([]);
+    for (const word of ["wibble", "TypeScript", "infrastructure"]) {
+      expect(visibleRows(toRows([]), new Set<string>(), word).map((r) => r.type)).toEqual(["all"]);
+    }
   });
 
   it("ignores a result of a kind it does not render", () => {
@@ -692,11 +711,8 @@ describe("DS3 — toRows", () => {
     // an index entry about a person is a cached answer to "is this profile
     // public" whose staleness is unbounded. So a `person` row can only reach
     // here from a corrupt index, and it must not fall through as a product.
-    const rows = toRows(
-      [{ kind: "person", entityId: "ada", title: "Ada", summary: null, matched: "exact-name" } as never],
-      "ada",
-    );
-    expect(rows.map((r) => r.type)).toEqual(["all"]);
+    const rows = toRows([{ kind: "person", entityId: "ada", title: "Ada", summary: null, matched: "exact-name" } as never]);
+    expect(rows).toEqual([]);
   });
 });
 
@@ -2373,7 +2389,14 @@ describe("LC3 — the launch board, ranked separately from the directory", () =>
     // could compute a day. The rule this pins is the same one.
     const redirects = /async redirects\(\)[\s\S]*?^  \},/m.exec(config())?.[0] ?? "";
     expect(redirects).toContain('{ source: "/launches", destination: "/", permanent: true }');
-    expect(redirects).toContain('{ source: "/products", destination: "/", permanent: true }');
+    // `/products` redirected here too until openproduct-redesign OPR1 made
+    // it a page (`feed.test.ts`); no entry for it may remain, or the pill
+    // would land on `/`.
+    expect(redirects).not.toContain('source: "/products"');
+    // The two addresses OPR1 moved arrive the same way: from the edge, each
+    // at a stable destination.
+    expect(redirects).toContain('{ source: "/builds/roles", destination: "/help-wanted", permanent: true }');
+    expect(redirects).toContain('{ source: "/me/notifications", destination: "/activity", permanent: true }');
     expect(redirects).not.toMatch(/destination: "\/launches\//);
     expect(dayPage()).not.toContain("redirect(");
     expect(dayPage()).not.toContain("permanentRedirect");
@@ -2449,18 +2472,17 @@ describe("LC3 — the launch board, ranked separately from the directory", () =>
     expect(dayPage()).toMatch(/later \?/);
   });
 
-  it("the nav entry is live, and OL2 pointed it at the feed", () => {
+  it("the nav's first entry is the front page, and a day's board is not orphaned by it", () => {
     const shell = readFileSync(resolve(APP_DIR, "shell/shell.ts"), "utf-8");
     // A nav that kept saying "not yet" beside a page that works is a nav
     // nobody reads — that part is unchanged since LC3.
     //
-    // WHERE IT POINTS CHANGED AT OL2. The feed IS the launches page, which is
-    // what the design's own nav says, so the pill is the front page now. The
-    // archive index at `/launches` did not go away and is not orphaned: every
-    // named day on the feed links to its own board, which is a better way in
-    // than a pill was.
-    expect(shell).toMatch(/id: "launches"[\s\S]{0,200}href: "\/"/);
-    expect(shell).toMatch(/id: "launches"[\s\S]{0,200}status: "live"/);
+    // WHERE IT POINTS: `/`, since OL2. The pill was "Launches", then
+    // "Builds"; since openproduct-redesign OPR1 it is "Feed". The archive
+    // did not go away and is not orphaned: a build's own launch line links
+    // to its day's board, which is a better way in than a pill was.
+    expect(shell).toMatch(/id: "feed"[\s\S]{0,60}href: "\/"/);
+    expect(shell).not.toContain('"planned"');
     // OB4 — the day board left the front page; each day keeps its archive
     // address, reached from a build's own launch line.
     expect(existsSync(resolve(APP_DIR, "launches/[day]/page.tsx"))).toBe(true);
@@ -2589,11 +2611,16 @@ describe("LC4 — collections, signed and curator-attributed", () => {
   it("the footer is its door since OB1, and the route is reserved rather than a product", () => {
     // Collections left the bar with openproduct-open-builds OB1. The index is
     // still live and still reachable from every page that takes the footer.
+    // Since OPR1 the footer maps `FOOTER_LINKS` and shares ONE list of
+    // reserved heads with `sectionFor` (they were two, and had drifted).
     const footer = readFileSync(resolve(APP_DIR, "shell/site-footer.tsx"), "utf-8");
-    expect(footer).toContain('href="/collections"');
-    expect(footer).toMatch(/RESERVED_TOP_LEVEL = new Set\(\[[\s\S]*"collections"/);
+    expect(footer).toContain("FOOTER_LINKS.map");
+    expect(footer).toContain('import { hasOwnFooter } from "./section-for";');
+    expect(footer).not.toContain("new Set(");
+    expect(FOOTER_LINKS.some((link) => link.href === "/collections")).toBe(true);
     const sectionFor = readFileSync(resolve(APP_DIR, "shell/section-for.ts"), "utf-8");
-    expect(sectionFor).toMatch(/RESERVED_HEADS = new Set\(\[[\s\S]*"collections"/);
+    expect(sectionFor).toMatch(/RESERVED_HEADS: ReadonlySet<string> = new Set\(\[[\s\S]*"collections"/);
+    expect(sectionFor).toMatch(/if \(RESERVED_HEADS\.has\(head\)\) return false;/);
   });
 });
 
@@ -2712,7 +2739,9 @@ describe("the transparency page is generated, and says nobody's name", () => {
 
   it("is reachable from the footer and from the docs index", () => {
     // A transparency record nobody can find is a document, not an account.
-    expect(code("shell/site-footer.tsx")).toContain('href="/transparency"');
+    // The footer maps `FOOTER_LINKS` since OPR1; the record is an entry.
+    expect(FOOTER_LINKS.some((link) => link.href === "/transparency")).toBe(true);
+    expect(code("shell/site-footer.tsx")).toContain("FOOTER_LINKS.map");
     expect(code("docs/page.tsx")).toContain('href="/transparency"');
   });
 });

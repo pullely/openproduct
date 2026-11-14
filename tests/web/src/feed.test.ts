@@ -112,20 +112,51 @@ describe("`/` is Open builds, and there is no second list (OB4)", () => {
     expect(read("page.tsx")).not.toMatch(/searchParams/);
   });
 
-  it("the directory and the board index are redirects to `/`, issued at the edge", () => {
-    expect(existsSync(resolve(APP_DIR, "products/page.tsx"))).toBe(false);
+  it("the board index is a redirect to `/`, issued at the edge, and the faceted directory is gone", () => {
     expect(existsSync(resolve(APP_DIR, "launches/page.tsx"))).toBe(false);
     expect(existsSync(resolve(APP_DIR, "list/directory.tsx"))).toBe(false);
     const config = readFileSync(resolve(APP_DIR, "../../next.config.mjs"), "utf-8");
-    expect(config).toContain('{ source: "/products", destination: "/", permanent: true }');
     expect(config).toContain('{ source: "/launches", destination: "/", permanent: true }');
     // A day's own board survives as the archive, outside the nav.
     expect(existsSync(resolve(APP_DIR, "launches/[day]/page.tsx"))).toBe(true);
   });
 
-  it("the front page is canonical at `/`, and the sitemap names no second list", () => {
+  it("`/products` is a page again, and it is the SAME list — not a second implementation", () => {
+    // It redirected to `/` from the day the faceted directory was retired.
+    // openproduct-redesign OPR1 makes Products a section of the header with
+    // an address of its own, and `/` becomes the feed of posts (OPR2). Until
+    // the Products page is rebuilt to its board, the address renders the
+    // front page's own component: one list, two addresses, no copy to drift.
+    const products = read("products/page.tsx");
+    expect(products).toContain('export { default } from "../page";');
+    expect(products).toContain("export const revalidate = 60;");
+    expect(products).not.toMatch(/searchParams|cookies\(|headers\(/);
+    // No longer a redirect — a redirect and a page at one address would be
+    // the redirect winning, and the pill landing on `/`.
+    const config = readFileSync(resolve(APP_DIR, "../../next.config.mjs"), "utf-8");
+    expect(config).not.toContain('source: "/products"');
+  });
+
+  it("each list address is canonical at itself, and the sitemap names both", () => {
     expect(read("page.tsx")).toContain("${publicApexOrigin()}/`");
-    expect(read("sitemap.xml/route.ts")).not.toContain('{ path: "products"');
+    expect(read("products/page.tsx")).toContain("${publicApexOrigin()}/products`");
+    expect(read("sitemap.xml/route.ts")).toContain('{ path: "products", lastmod: null }');
+  });
+
+  it("Help wanted is the Roles order at its own address, and the old one redirects", () => {
+    // `/help-wanted` renders the order page's own body, asked for the Roles
+    // order — the same component, not a copy.
+    const page = read("help-wanted/page.tsx");
+    expect(page).toContain('import BuildsInOrderPage from "../builds/[order]/page";');
+    expect(page).toContain('<BuildsInOrderPage params={Promise.resolve({ order: "roles" })} />');
+    expect(page).toContain("export const revalidate = 60;");
+    expect(page).toContain("${publicApexOrigin()}/help-wanted`");
+    expect(page).not.toMatch(/searchParams|cookies\(|headers\(/);
+    const config = readFileSync(resolve(APP_DIR, "../../next.config.mjs"), "utf-8");
+    expect(config).toContain('{ source: "/builds/roles", destination: "/help-wanted", permanent: true }');
+    // The other two orders keep working at their addresses for now.
+    expect(config).not.toMatch(/source: "\/builds\/(?:newest|upvoted|:order)"/);
+    expect(read("sitemap.xml/route.ts")).toContain('{ path: "help-wanted", lastmod: null }');
   });
 
   it("distinguishes a failed read from an empty catalogue", () => {
@@ -336,13 +367,14 @@ describe("no link promises a directory that no longer exists", () => {
     }
   });
 
-  it("the wordmark and the Products pill both point at the root, because the root is the list", () => {
+  it("the wordmark and the Feed pill point at the root; Products has an address of its own", () => {
     expect(read("shell/top-panel.tsx")).toContain('href="/"');
     const shell = read("shell/shell.ts");
-    // PL0 — the label is the list's name; the id stays, because `sectionFor`
-    // and the archive's paths key on it. OB1 — the list is the builds.
-    expect(shell).toContain('{ id: "launches", label: "Builds", href: "/", status: "live", icon: "build" }');
-    expect(shell).not.toContain('"/products"');
+    // OPR1 — the header is Feed, Products, Help wanted. `/products` is in
+    // the shell again, and this time it is a page (above), not a promise.
+    expect(shell).toContain('{ id: "feed", label: "Feed", href: "/", icon: "feed" }');
+    expect(shell).toContain('{ id: "products", label: "Products", href: "/products", icon: "products" }');
+    expect(existsSync(resolve(APP_DIR, "products/page.tsx"))).toBe(true);
   });
 });
 

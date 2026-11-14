@@ -902,8 +902,9 @@ const TRANSPARENCY = {
  *  and the proof that it landed cannot drift apart. */
 export const ROUTES = [
   // The archetypes come first: they are what XP4's budgets name. `/` is the
-  // launches, and the ONLY list — the faceted directory that used to answer
-  // at `/products` is in `MOVED` below, a redirect here.
+  // list of builds. `/products` was a redirect here until
+  // openproduct-redesign OPR1 made Products a section with its own address;
+  // it is a route below.
   { path: "/", name: "feed (launch board)", archetype: true, expect: SAMPLE_SLUG },
   { path: `/${SAMPLE_SLUG}`, name: "listing (tabbed detail)", archetype: true, expect: "Frontend contributor" },
   { path: "/people", name: "contributors (card grid)", archetype: true, expect: "Ada Lovelace" },
@@ -935,7 +936,11 @@ export const ROUTES = [
   // are pages of their own. `CARDS[0]` is on all three: it has open roles.
   { path: "/builds/upvoted", name: "builds · upvoted", expect: CARDS[0].slug },
   { path: "/builds/newest", name: "builds · newest", expect: CARDS[0].slug },
-  { path: "/builds/roles", name: "builds · roles", expect: CARDS[0].slug },
+  // OPR1 — the header's other two sections. Help wanted is the Roles order
+  // at its own address (`/builds/roles` is in `MOVED` below); Products draws
+  // the list `/` draws until its page is rebuilt to its board.
+  { path: "/help-wanted", name: "help wanted", expect: CARDS[0].slug },
+  { path: "/products", name: "products", expect: SAMPLE_SLUG },
   // QE2 — every public address is walked. These had none of the three lanes
   // over them: HB2's year, PP3's pricing pages, FO1's forum and its two
   // variants, FO2's listing forum. A public route the axe pass does not
@@ -1002,14 +1007,16 @@ export const ROUTES = [
  */
 export const MOVED = [
   { from: "/create", to: "/submit", status: 308 },
-  // THERE ARE NOT TWO PAGES. The faceted directory and the board index were
-  // two more addresses for the launches; both are `redirects()` entries to
-  // `/` now, issued at the edge for the reason `/create` is.
-  { from: "/products", to: "/", status: 308 },
+  // The board index was one more address for the launches; it is a
+  // `redirects()` entry to `/`, issued at the edge for the reason `/create`
+  // is. (`/products` was the other; it is a page again since OPR1.)
   { from: "/launches", to: "/", status: 308 },
   // OB7 (#1875) — the leaderboard and every range of it are Upvoted now.
   { from: "/leaderboard", to: "/builds/upvoted", status: 308 },
   { from: "/leaderboard/month", to: "/builds/upvoted", status: 308 },
+  // openproduct-redesign OPR1 — the two addresses the new chrome moved.
+  { from: "/builds/roles", to: "/help-wanted", status: 308 },
+  { from: "/me/notifications", to: "/activity", status: 308 },
 ];
 
 /**
@@ -1100,7 +1107,8 @@ export const AUTHED_ROUTES = [
   { path: "/me", name: "me · profile", expect: "Download your data" },
   { path: "/me/saved", name: "me · saved", expect: "Saved products" },
   { path: "/me/applications", name: "me · applications", expect: "Your applications" },
-  { path: "/me/notifications", name: "me · notifications", expect: "Mark all as read" },
+  // OPR1 — the inbox's address is `/activity` (the old one is in `MOVED`).
+  { path: "/activity", name: "activity", expect: "Mark all as read" },
   { path: "/studio", name: "studio · listings", expect: "Your listings" },
   { path: "/studio/collections", name: "studio · collections", expect: "Collections" },
   { path: "/studio/reports", name: "studio · reports", expect: "Reports" },

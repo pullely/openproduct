@@ -91,14 +91,15 @@ const nextConfig = {
   async redirects() {
     return [
       { source: "/create", destination: "/submit", permanent: true },
-      // THERE ARE NOT TWO PAGES. The faceted directory at `/products` and the
-      // board index at `/launches` were two more addresses for the list the
-      // front page already shows; the design draws one `Launches` pill and
-      // one list, and `/` is it. Both old addresses still ARRIVE — permanent,
-      // so a crawler moves its weight rather than keeping two entries for
-      // one list — and for the reason above they arrive from the edge, never
-      // from a route module. A day's own board keeps `/launches/<day>`.
-      { source: "/products", destination: "/", permanent: true },
+      // THE BOARD INDEX AT `/launches` was one more address for the list the
+      // front page shows. The old address still ARRIVES — permanent, so a
+      // crawler moves its weight rather than keeping two entries for one
+      // list — and for the reason above it arrives from the edge, never from
+      // a route module. A day's own board keeps `/launches/<day>`.
+      //
+      // `/products` USED TO BE HERE TOO, redirecting to `/`. It is a page
+      // again since openproduct-redesign OPR1 (`app/products/page.tsx`): the
+      // header's Products pill needs an address, and `/` becomes the feed.
       { source: "/launches", destination: "/", permanent: true },
       // OB7 (openproduct-open-builds D5) — THE LEADERBOARD FOLDED INTO THE
       // UPVOTED ORDER. It ranked launches by the upvotes each day's board
@@ -108,6 +109,15 @@ const nextConfig = {
       // the reason above.
       { source: "/leaderboard", destination: "/builds/upvoted", permanent: true },
       { source: "/leaderboard/:range", destination: "/builds/upvoted", permanent: true },
+      // openproduct-redesign OPR1 (design.md §5) — TWO ADDRESSES MOVED.
+      // The builds asking for people were the list's Roles order; they are
+      // the Help wanted section now, at an address of its own. The inbox was
+      // one of the `/me` pages; it is Activity, where the header's bell
+      // goes. Both old addresses arrive from the edge, for the reason above.
+      // Each source is the exact path: `/me/notifications/read`, the form's
+      // POST target, is a different path and is not redirected.
+      { source: "/builds/roles", destination: "/help-wanted", permanent: true },
+      { source: "/me/notifications", destination: "/activity", permanent: true },
     ];
   },
   // `output: "standalone"` is required by the @opennextjs/cloudflare adapter,
