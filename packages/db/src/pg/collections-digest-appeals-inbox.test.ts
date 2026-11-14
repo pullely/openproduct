@@ -992,7 +992,7 @@ describe("openproduct — the inbox (openproduct-launch NF0)", () => {
 
     it("finds a comment's author and its thread in one read", async () => {
       await seedThread();
-      expect(await repo.getPostAuthor(P1)).toEqual({ authorSubjectId: ADA, threadId: TH });
+      expect(await repo.getPostAuthor(P1)).toEqual({ authorSubjectId: ADA, threadId: TH, threadVisibility: "public" });
       expect(await repo.getPostAuthor(asUuid("bbbbbbbb-ffff-4fff-8fff-bbbbbbbbbbbf"))).toBeNull();
     });
 

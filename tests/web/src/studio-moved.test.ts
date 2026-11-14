@@ -42,7 +42,8 @@ import { fileURLToPath } from "node:url";
 
 import { LISTING_SETTINGS_SEGMENT, listingBasePath, listingSettingsPath } from "@openproduct/contracts";
 
-import { LISTING_BASE_STATUS, listingBaseDestination } from "@openproduct-web/app/studio/moved";
+import { moreSettingsLinks } from "@openproduct-web/app/[slug]/maker/model";
+import { LISTING_BASE_STATUS, listingBaseDestination, listingDiscussionsDestination } from "@openproduct-web/app/studio/moved";
 import { GET, STUDIO_MOVED_TO } from "@openproduct-web/app/studio/route";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -65,7 +66,9 @@ const KEPT: readonly { page: string; why: string; proof: readonly [file: string,
   { page: "studio/[org]/[profile]/people/page.tsx", why: "the roster", proof: ["studio/[org]/[profile]/people/page.tsx", 'name="intent" value="maintainers"'] },
   { page: "studio/[org]/[profile]/people/page.tsx", why: "role openings", proof: ["studio/[org]/[profile]/people/page.tsx", 'name="intent" value="opening-save"'] },
   { page: "studio/[org]/[profile]/launches/page.tsx", why: "scheduling a launch", proof: ["studio/[org]/[profile]/launches/page.tsx", 'name="intent" value="schedule"'] },
-  { page: "studio/[org]/[profile]/discussions/page.tsx", why: "moderating a discussion", proof: ["studio/[org]/[profile]/discussions/actions/route.ts", 'intent === "lock"'] },
+  // OPR-4 — the discussions page forwards to Talk (below). Locking a thread
+  // is still the studio's: the Discussions card on the settings page.
+  { page: "studio/[org]/[profile]/settings/page.tsx", why: "moderating a discussion", proof: ["studio/[org]/[profile]/discussions/actions/route.ts", 'intent === "lock"'] },
   { page: "studio/reports/page.tsx", why: "moderation", proof: ["studio/reports/page.tsx", "<StudioFrame"] },
   { page: "studio/appeals/page.tsx", why: "moderation", proof: ["studio/appeals/page.tsx", "<StudioFrame"] },
   { page: "studio/collections/page.tsx", why: "curation", proof: ["studio/collections/page.tsx", "<StudioFrame"] },
@@ -104,7 +107,7 @@ describe("`/studio` is \"Your products\" on `/me`", () => {
       "studio/[org]/[profile]/layout.tsx",
       "studio/[org]/[profile]/listing-shell.tsx",
       "studio/[org]/[profile]/launches/page.tsx",
-      "studio/[org]/[profile]/discussions/page.tsx",
+      "studio/[org]/[profile]/discussions/route.ts",
       "studio/reports/page.tsx",
       "studio/appeals/page.tsx",
       "studio/collections/page.tsx",
@@ -136,6 +139,40 @@ describe("a step is redirected only when the product page can do its job", () =>
     // Neither is a `redirects()` entry: the listing's depends on its state.
     const config = readFileSync(resolve(APP_DIR, "../../next.config.mjs"), "utf-8");
     expect(config).not.toMatch(/source: "\/studio\/:org/);
+  });
+
+  it("a listing's discussions address goes to Talk; a draft's to the Discussions card on its settings (OPR-4)", () => {
+    // Published and shipping: the Talk tab. An idea has no tabs: its section.
+    expect(listingDiscussionsDestination("org_1", "opp_1", { visibility: "public", slug: "ackstack", stage: "shipping" })).toBe("/ackstack/talk");
+    expect(listingDiscussionsDestination("org_1", "opp_1", { visibility: "public", slug: "ackstack" })).toBe("/ackstack/talk");
+    expect(listingDiscussionsDestination("org_1", "opp_1", { visibility: "public", slug: "kettle", stage: "idea" })).toBe("/kettle#talk");
+    // A draft, or anything unreadable: the settings page's Discussions card.
+    expect(listingDiscussionsDestination("org_1", "opp_1", { visibility: "private", slug: "kettle" }, "?notice=locked")).toBe(
+      "/studio/org_1/opp_1/settings?notice=locked#discussions",
+    );
+    expect(listingDiscussionsDestination("org_1", "opp_1", null)).toBe("/studio/org_1/opp_1/settings#discussions");
+    expect(listingDiscussionsDestination("org_1", "opp_1", { visibility: "public", slug: "../evil" })).toBe(
+      "/studio/org_1/opp_1/settings#discussions",
+    );
+    // A route handler with a real status line, like the other two forwards;
+    // there is no page at the address any more, and no skeleton above it.
+    const route = code("studio/[org]/[profile]/discussions/route.ts");
+    expect(route).toMatch(/^export const dynamic = "force-dynamic";$/m);
+    expect(route).toContain("NextResponse.redirect(new URL(to, request.url), LISTING_BASE_STATUS)");
+    expect(route).toContain('response.headers.set("cache-control", "no-store");');
+    expect(route).not.toMatch(/permanentRedirect|from "next\/navigation"/);
+    expect(existsSync(resolve(APP_DIR, "studio/[org]/[profile]/discussions/page.tsx"))).toBe(false);
+    expect(existsSync(resolve(APP_DIR, "studio/[org]/[profile]/discussions/loading.tsx"))).toBe(false);
+    // The acts the page offered still post to `./actions` and come back to
+    // the card that draws them.
+    expect(code("studio/[org]/[profile]/discussions/actions/route.ts")).toContain("#discussions");
+    expect(code("studio/[org]/[profile]/settings/page.tsx")).toContain("<DiscussionsCard");
+    // Nothing offers the address as a place to go: not the strip, not
+    // "More settings".
+    expect(code("studio/[org]/[profile]/step-strip.tsx")).not.toContain("/discussions");
+    expect(
+      moreSettingsLinks({ org: "org_1", profile: "opp_1" }).map((link) => link.label),
+    ).toEqual(["Settings", "Details", "Media", "Topics", "People", "Launches"]);
   });
 
   it("a published listing's base address goes to its product page; a draft's to its settings", () => {

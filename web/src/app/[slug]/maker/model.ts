@@ -153,7 +153,21 @@ export function draftsOf(needsYou: CrewNeedsYou | null): CrewProductPost[] {
 
 /** Nothing waits on the crew: the block is not drawn at all. */
 export function needsYouEmpty(needsYou: CrewNeedsYou | null): boolean {
-  return (needsYou?.requests ?? []).length === 0 && draftsOf(needsYou).length === 0;
+  return (
+    (needsYou?.requests ?? []).length === 0 &&
+    draftsOf(needsYou).length === 0 &&
+    (needsYou?.threads ?? []).length === 0
+  );
+}
+
+/** OPR-4 — a private thread's row, as the two boards word it. */
+export const PRIVATE_THREAD_STARTED = "started a private thread";
+export const PRIVATE_THREAD_FROM = "Private thread from";
+
+/** Talk on its Private filter: where "Open" on that row goes. A shipping
+ *  product's tab; an idea's page forwards the same fragment to its section. */
+export function privateThreadsPath(slug: string): string {
+  return `/${slug}/talk#private`;
 }
 
 // ─── milestones ────────────────────────────────────────────────────────────
@@ -242,7 +256,8 @@ export function moreSettingsLinks(crew: Pick<OverlayCrew, "org" | "profile">): R
     { label: "Topics", href: `${base}/topics` },
     { label: "People", href: `${base}/people` },
     { label: "Launches", href: `${base}/launches` },
-    { label: "Discussions", href: `${base}/discussions` },
+    // OPR-4 — no Discussions entry: it only led to a page that is Talk now,
+    // and Talk is this page's own tab.
   ];
 }
 

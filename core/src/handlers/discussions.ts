@@ -47,6 +47,14 @@ import {
   forumFormula,
   parseForumOrder,
   parseForumTag,
+  THREAD_KINDS,
+  THREAD_KIND_TAG,
+  THREAD_VISIBILITIES,
+  inboxThreadRef,
+  isThreadKind,
+  isThreadVisibility,
+  type ThreadKind,
+  type ThreadVisibility,
 } from "@openproduct/contracts";
 import type { OpenproductRepository, PostRecord, ThreadRecord } from "@openproduct/db";
 
@@ -89,6 +97,8 @@ export interface DiscussionHandlerDeps {
     | "listThreadParticipants"
     | "listMutes"
     | "queueNotification"
+    // OPR-4 — the crew a private thread is for.
+    | "listMaintainerSubjects"
   >;
   generateId?: () => Uuid;
   now?: () => Date;
@@ -101,7 +111,7 @@ const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
  * record — the OD3 rule, applied where getting it wrong publishes an opaque
  * subject id (I3) beside somebody's words.
  */
-function publicThread(record: ThreadRecord): PublicThread {
+export function publicThread(record: ThreadRecord): PublicThread {
   return {
     id: record.id,
     tag: record.tag as ThreadTag,
@@ -112,10 +122,14 @@ function publicThread(record: ThreadRecord): PublicThread {
     createdAt: record.createdAt,
     lastPostAt: record.lastPostAt,
     postCount: record.postCount,
+    // OPR-4 — what a Talk thread is, and whether its issue is resolved. No
+    // visibility: this projection is only ever given a public thread.
+    kind: record.kind ?? null,
+    resolvedAt: record.resolvedAt ?? null,
   };
 }
 
-function publicPost(
+export function publicPost(
   record: PostRecord,
   votes = 0,
   maintainers: ReadonlySet<string> = new Set(),
@@ -567,13 +581,16 @@ export async function handlePublicThread(
   // A REMOVED THREAD IS NOT A 404 — TS-3, the same rule the listing page
   // follows. The address resolves and says what happened; the posts do not
   // travel, because removing a thread removes the conversation.
+  // OPR-4 — the product the thread is on, beside it: the page links back to
+  // its Talk, and asks the overlay whether the reader is on its crew.
+  const slug = thread.slug ?? null;
   if (thread.state === "removed") {
-    return successResponse({ thread: publicThread(thread), posts: [] }, requestId);
+    return successResponse({ thread: publicThread(thread), posts: [], slug }, requestId);
   }
 
   const posts = await deps.repo.listPosts(thread.id, 200);
   return successResponse(
-    { thread: publicThread(thread), posts: await withVotes(deps, posts, thread.profileId) },
+    { thread: publicThread(thread), posts: await withVotes(deps, posts, thread.profileId), slug },
     requestId,
   );
 }
@@ -583,6 +600,10 @@ interface ThreadBody {
   tag?: unknown;
   title?: unknown;
   body?: unknown;
+  /** OPR-4 — question, issue or suggestion. */
+  kind?: unknown;
+  /** OPR-4 — public (the default) or private. Chosen here, once. */
+  visibility?: unknown;
 }
 
 /**
@@ -592,6 +613,17 @@ interface ThreadBody {
  * the discussion tab can never show a card that opens onto nothing, and it
  * removes the state where somebody creates a thread, loses the tab, and
  * leaves a title nobody can answer.
+ *
+ * OPR-4 — A THREAD STARTED FROM TALK carries a `kind` and a `visibility`
+ * (design §7). Its one field is the title, so with a kind the tag is filed
+ * for the author (`THREAD_KIND_TAG`) and the opening post is optional: the
+ * title is the question, and the replies are the conversation.
+ *
+ * A PRIVATE THREAD IS WRITTEN FOR THE CREW AND PUBLISHED NOWHERE. So it does
+ * not ask for a public profile — that gate exists so every PUBLIC word is
+ * signed (CB-2) — only for a person. The crew is told in its Activity; no
+ * mention is resolved and no participant mail is queued, because either
+ * would tell somebody outside the thread that it exists.
  */
 export async function handleCreateThread(
   env: Env,
@@ -600,7 +632,18 @@ export async function handleCreateThread(
   actor: ActorContext,
   deps: DiscussionHandlerDeps,
 ): Promise<Response> {
-  const eligible = await requireProfile(actor, requestId, deps);
+  let body: ThreadBody;
+  try {
+    body = (await request.clone().json()) as ThreadBody;
+  } catch {
+    body = {};
+  }
+  // Decided before the eligibility gate, because the gate depends on it. An
+  // unknown visibility is refused below, after the gate, like any other field.
+  const wantsPrivate = body.visibility === "private";
+  const eligible = wantsPrivate
+    ? requirePerson(actor, requestId)
+    : await requireProfile(actor, requestId, deps);
   if (eligible) return eligible;
 
   // PP0 (WC-6) — ONE LAUNCH, ONE CONVERSATION. The route stays, so a form
@@ -610,7 +653,6 @@ export async function handleCreateThread(
   if (TITLED_THREADS_COLLAPSED) {
     return errorResponse("gone", DISCUSSIONS_COLLAPSED_MESSAGE, 410, requestId);
   }
-  let body: ThreadBody;
   try {
     body = (await request.json()) as ThreadBody;
   } catch {
@@ -621,18 +663,45 @@ export async function handleCreateThread(
   const profileId = slug ? await deps.repo.getPublicProfileId(slug) : null;
   if (!profileId) return errorResponse("not_found", "Not found", 404, requestId);
 
-  const tag = body.tag;
-  if (typeof tag !== "string" || !(THREAD_TAGS as readonly string[]).includes(tag)) {
+  // OPR-4 — the kind and the visibility, each refused rather than coerced:
+  // `visibility: "crew"` silently becoming public would publish something
+  // its author meant for the crew.
+  let kind: ThreadKind | null = null;
+  if (body.kind !== undefined && body.kind !== null) {
+    if (!isThreadKind(body.kind)) {
+      return validationError(requestId, { kind: [`Must be one of: ${THREAD_KINDS.join(", ")}`] });
+    }
+    kind = body.kind;
+  }
+  let visibility: ThreadVisibility = "public";
+  if (body.visibility !== undefined && body.visibility !== null) {
+    if (!isThreadVisibility(body.visibility)) {
+      return validationError(requestId, { visibility: [`Must be one of: ${THREAD_VISIBILITIES.join(", ")}`] });
+    }
+    visibility = body.visibility;
+  }
+  // A private thread is a Talk thread: it has a kind.
+  if (visibility === "private" && kind === null) {
+    return validationError(requestId, { kind: [`Must be one of: ${THREAD_KINDS.join(", ")}`] });
+  }
+
+  // With a kind the tag is filed for the author; without one it is CB1's
+  // composer and the author picks.
+  const rawTag = body.tag ?? (kind ? THREAD_KIND_TAG[kind] : undefined);
+  if (typeof rawTag !== "string" || !(THREAD_TAGS as readonly string[]).includes(rawTag)) {
     return validationError(requestId, { tag: [`Must be one of: ${THREAD_TAGS.join(", ")}`] });
   }
+  const tag = rawTag;
 
   const title = typeof body.title === "string" ? body.title.trim() : "";
   if (title.length === 0 || title.length > MAX_THREAD_TITLE) {
     return validationError(requestId, { title: [`Must be 1 to ${MAX_THREAD_TITLE} characters`] });
   }
 
+  // CB1's composer requires an opening post. Talk's one field is the title,
+  // so with a kind the opening post is optional — and still bounded.
   const opening = typeof body.body === "string" ? body.body.trim() : "";
-  if (opening.length === 0 || opening.length > MAX_POST_BODY) {
+  if (opening.length > MAX_POST_BODY || (opening.length === 0 && kind === null)) {
     return validationError(requestId, { body: [`Must be 1 to ${MAX_POST_BODY} characters`] });
   }
 
@@ -647,18 +716,119 @@ export async function handleCreateThread(
     title,
     authorSubjectId: actor.subjectId,
     at,
+    kind,
+    visibility,
   });
   if (!created) return errorResponse("internal_error", "Could not start the discussion", 500, requestId);
 
-  await deps.repo.createPost({
-    id: make(),
-    threadId,
-    authorSubjectId: actor.subjectId,
-    body: opening,
-    at,
-  });
+  if (opening.length > 0) {
+    await deps.repo.createPost({
+      id: make(),
+      threadId,
+      authorSubjectId: actor.subjectId,
+      body: opening,
+      at,
+    });
+  }
 
-  return successResponse({ threadId }, requestId, 201);
+  // OPR-4 — a private thread reaches the crew's Activity (and, through the
+  // crew's own read, its "Needs you"). The row holds the author's handle and
+  // the thread's address; nothing the thread says.
+  if (visibility === "private") {
+    await notifyPrivateThread(deps, {
+      kind: "thread.private",
+      threadId,
+      slug,
+      actorSubjectId: actor.subjectId,
+      recipients: await crewSubjects(deps, profileId),
+      eventRef: threadId,
+    });
+  }
+
+  return successResponse({ threadId, visibility }, requestId, 201);
+}
+
+/** The product's crew, as subjects — or nobody when the read fails: a
+ *  notification is a courtesy and must not fail the act. */
+export async function crewSubjects(
+  deps: { repo: Pick<OpenproductRepository, "listMaintainerSubjects"> },
+  profileId: string,
+): Promise<string[]> {
+  try {
+    return await deps.repo.listMaintainerSubjects(profileId as Uuid);
+  } catch {
+    return [];
+  }
+}
+
+/**
+ * OPR-4 — tell the people a private thread is for, and only them.
+ *
+ * THE RECIPIENTS ARE GIVEN, never derived from the thread's participants:
+ * somebody who replied while on the crew and has since left is a participant
+ * and is not a reader. The caller passes the crew now, or the author.
+ *
+ * WHAT IS WRITTEN: an inbox row (`notifications`) with the actor's handle and
+ * `{slug}/{threadId}`, and — for a reply — a row in CB4's mail outbox, whose
+ * copy is one fixed sentence per kind with no title and no text in it
+ * (`NOTIFICATION_COPY`). No mention is ever resolved for a private thread.
+ *
+ * SWALLOWS EVERYTHING, like every fan-out here.
+ */
+export async function notifyPrivateThread(
+  deps: {
+    repo: Pick<
+      OpenproductRepository,
+      "getActiveHandleForSubject" | "writeNotification" | "listMutes" | "queueNotification"
+    >;
+    generateId?: (() => Uuid) | undefined;
+  },
+  input: {
+    kind: "thread.private" | "thread.private.reply" | "thread.private.answered";
+    threadId: string;
+    slug: string;
+    actorSubjectId: string;
+    recipients: readonly string[];
+    /** The thread's id for a new thread; the post's id for a reply. */
+    eventRef: string;
+  },
+): Promise<void> {
+  try {
+    const handle = (await deps.repo.getActiveHandleForSubject(input.actorSubjectId))?.handle ?? null;
+    await fanOut(deps as unknown as InboxWriter, {
+      kind: input.kind,
+      subjectIds: input.recipients,
+      actorSubjectId: input.actorSubjectId,
+      actorHandle: handle,
+      targetKind: "thread",
+      targetRef: inboxThreadRef(input.slug, input.threadId),
+      eventRef: input.eventRef,
+    });
+  } catch {
+    // Deliberately swallowed — the act already happened.
+  }
+  if (input.kind === "thread.private") return;
+  try {
+    const mutes = await deps.repo.listMutes(input.threadId, [...input.recipients]);
+    const recipients = notificationRecipients({
+      participants: [...input.recipients],
+      actorSubjectId: input.actorSubjectId,
+      threadMuted: mutes.thread,
+      globallyMuted: mutes.global,
+    });
+    const make = deps.generateId ?? generateId;
+    for (const subjectId of recipients) {
+      await deps.repo.queueNotification({
+        id: make(),
+        subjectId,
+        kind: "reply",
+        threadId: input.threadId,
+        eventRef: eventRef("reply", input.eventRef),
+      });
+    }
+  } catch {
+    // Deliberately swallowed.
+  }
 }
 
 /** POST a reply. */
@@ -842,6 +1012,15 @@ async function notifyUpvote(
     // ever somebody else's comment — but the fan-out drops the actor anyway,
     // because a rule enforced in one place is a rule that moves.
     if (!author) return;
+    // OPR-4 — NOTHING IS SAID ABOUT A POST IN A PRIVATE THREAD. Its author
+    // may have left the crew since they wrote it and can no longer read the
+    // thread, and a row that says "your comment there has 3 upvotes" is news
+    // from a room they are no longer in. Checking whether the recipient can
+    // read it NOW would be the finer rule; a private thread has two parties
+    // and no audience, so the count is not worth a second read. Anything
+    // that is not exactly `public` is withheld, including a repository that
+    // does not say.
+    if (author.threadVisibility !== "public") return;
     const slug = await deps.repo.getSlugForThread(author.threadId);
     if (!slug) return;
     const counts = await deps.repo.countPostVotes([postId]);
@@ -926,6 +1105,15 @@ export async function handleMaintainThread(
   }
 
   return validationError(requestId, { intent: ["Must be one of: lock, unlock, answer"] });
+}
+
+/** OPR-4 — the gate for a private thread: a person, signed in. Nothing is
+ *  published, so no public profile is asked for. */
+export function requirePerson(actor: ActorContext, requestId: string): Response | undefined {
+  if (actor.subjectType !== "user") {
+    return errorResponse("forbidden", "Posts come from people — this credential is not one", 403, requestId);
+  }
+  return undefined;
 }
 
 /**

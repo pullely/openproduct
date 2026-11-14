@@ -19,7 +19,6 @@ import { useSelectedLayoutSegment } from "next/navigation";
 import {
   LISTING_SETTINGS_SEGMENT,
   STRIP_STEPS,
-  listingBasePath,
   listingSettingsPath,
   listingStepPath,
 } from "@openproduct/contracts";
@@ -35,7 +34,6 @@ export function StepStrip({ org, profileId }: { org: string; profileId: string }
   // The settings page is the strip's home (OPR-3): the layout's own address
   // only forwards, so no tab is ever "current" on it.
   const segment = useSelectedLayoutSegment();
-  const base = listingBasePath(org, profileId);
   const tabs = [
     {
       key: "overview",
@@ -50,9 +48,9 @@ export function StepStrip({ org, profileId }: { org: string; profileId: string }
       href: listingStepPath(org, profileId, step),
       current: step.segment !== null && step.segment === segment,
     })),
-    // CB1's surface is not a step of the listing — nothing on it is authored —
-    // but it is a section of the editor, so it sits at the end of the strip.
-    { key: "discussions", label: "Discussions", href: `${base}/discussions`, current: segment === "discussions" },
+    // OPR-4 — no Discussions entry: that address forwards to Talk on the
+    // product's own page, and a strip entry that left the editor would not
+    // be a step of it. The Discussions card stays on Settings.
   ];
   return (
     <nav aria-label="Listing steps" className="mt-4 border-t border-line px-5 py-2.5 max-sm:px-3">

@@ -374,9 +374,18 @@ describe("the read cursor moves only when somebody moves it", () => {
 });
 
 describe("the four kinds, and the fifth that is not here", () => {
-  it("ships exactly four", () => {
+  it("ships exactly four, a followed listing's launch, and the three about a private thread (OPR-4)", () => {
     expect([...INBOX_KINDS].sort()).toEqual(
-      ["launch.listing", "launch.topic", "post.reply", "post.upvoted", "rank.first"],
+      [
+        "launch.listing",
+        "launch.topic",
+        "post.reply",
+        "post.upvoted",
+        "rank.first",
+        "thread.private",
+        "thread.private.answered",
+        "thread.private.reply",
+      ],
     );
   });
 

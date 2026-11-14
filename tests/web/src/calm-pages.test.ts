@@ -72,7 +72,10 @@ describe("a build is a build in the words too", () => {
     // Was: "No build lives at this address", a paragraph, and two buttons
     // (Open builds, Search). The redesign says product, the header carries
     // search on every page, and a page gets one `h1` and one action.
-    const page = code("not-found.tsx");
+    // OPR-4 — the 404's body is `ui/not-found-body.tsx`, drawn by the 404
+    // and by a private thread's page for anybody who may not read it.
+    expect(code("not-found.tsx")).toContain("return <NotFoundBody />;");
+    const page = code("ui/not-found-body.tsx");
     expect(page.match(/<h1\b/g)).toHaveLength(1);
     expect(page).toContain("<h1 className={PAGE_TITLE}>No product lives at this address</h1>");
     expect(page.match(/<Link\b/g)).toHaveLength(1);

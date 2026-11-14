@@ -103,7 +103,16 @@ describe("one read for both halves of the section", () => {
     expect(src.split("<Comments").length - 1).toBe(1);
     expect(src).not.toContain("<Discussions");
     expect(src).not.toContain(">Discussions<");
-    expect(src.indexOf("<Comments")).toBeLessThan(src.indexOf("<EarlierDiscussions"));
+    // OPR-4 — the titled threads are Talk's list now (`talk/talk-list.tsx`),
+    // above the conversation: each a card that opens at the thread's own
+    // address. The link list under the box is not drawn any more, and the
+    // list still has no composer of its own inside the conversation.
+    expect(src).not.toContain("<EarlierDiscussions");
+    expect(src.indexOf("<TalkSection")).toBeGreaterThan(-1);
+    expect(src.indexOf("<TalkSection")).toBeLessThan(src.indexOf("<Comments"));
+    const section = markupOf("talk/talk-section.tsx");
+    expect(section.split("<TalkComposer").length - 1).toBe(1);
+    expect(section.indexOf("<TalkComposer")).toBeLessThan(section.indexOf("<TalkList"));
     const earlier = markupOf("[slug]/discussions.tsx");
     expect(earlier).not.toContain("<form");
     expect(earlier).not.toContain("threads/new");
@@ -112,6 +121,8 @@ describe("one read for both halves of the section", () => {
   it("a failed read and an empty one stay different (OD5)", () => {
     // `null` is "we could not read them", which is NOT "there are none".
     expect(read(PAGE)).toContain("discussion?.threads ?? null");
+    // OPR-4 — and Talk's list keeps the difference: a null draws no count.
+    expect(read("talk/talk-section.tsx")).toContain("publicCount={publicThreadCount(threads)}");
     expect(read(PAGE)).toContain("discussion?.launch ?? null");
   });
 

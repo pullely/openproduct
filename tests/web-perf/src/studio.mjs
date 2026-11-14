@@ -226,14 +226,16 @@ export async function runStudio(base) {
     // (`step-strip.tsx`). So the strip holds the steps between those two, in
     // order.
     const stripText = stripLinks.map((l) => l.text);
+    // OPR-4 — the strip ends at the last step. Its Discussions entry is gone:
+    // that address forwards to Talk on the product's own page, and an entry
+    // that left the editor would not be one of its steps.
     check(
-      "the strip links every step — the media step has a page since MD2 — between Settings and Discussions",
-      stripLinks.length === STEPS.length + 2 &&
+      "the strip links every step — the media step has a page since MD2 — after Settings, and nothing after them",
+      stripLinks.length === STEPS.length + 1 &&
         stripText[0] === "Settings" &&
         /\/settings$/.test(stripLinks[0]?.href ?? "") &&
         STEPS.every((step, i) => stripText[i + 1] === step.label) &&
-        stripText[STEPS.length + 1] === "Discussions" &&
-        /\/discussions$/.test(stripLinks[STEPS.length + 1]?.href ?? ""),
+        !stripLinks.some((link) => /\/discussions$/.test(link.href ?? "")),
       JSON.stringify(stripText),
     );
     // MD2 — THE SPAN IS GONE. This lane used to assert the media step rendered

@@ -41,13 +41,20 @@ export const INBOX_KINDS = [
   "post.upvoted",
   // PP1 — a listing you follow launched.
   "launch.listing",
+  // OPR-4 — a private thread: it started (to the crew), its author replied
+  // (to the crew), the crew replied (to its author). NO TITLE AND NO TEXT in
+  // any of them: the row holds a handle and the thread's address, and the
+  // thread itself is read where the privacy rule is enforced.
+  "thread.private",
+  "thread.private.reply",
+  "thread.private.answered",
 ] as const;
 export type InboxKind = (typeof INBOX_KINDS)[number];
 
 /** What a row points AT. Resolved when the page renders, so a row about
  *  something since removed stops resolving rather than carrying a stale copy
  *  of it (TS3). */
-export const INBOX_TARGETS = ["listing", "post", "topic"] as const;
+export const INBOX_TARGETS = ["listing", "post", "topic", "thread"] as const;
 export type InboxTarget = (typeof INBOX_TARGETS)[number];
 
 /** One row, as a page receives it. No prose: the sentence is composed. */
@@ -59,7 +66,8 @@ export interface InboxItem {
    *  browser. */
   readonly actor: string | null;
   readonly targetKind: InboxTarget;
-  /** A slug, a post id, or a topic value. */
+  /** A slug, a post id, or a topic value. For a `thread` target:
+   *  `{slug}/{threadId}` (`inboxThreadRef`). */
   readonly targetRef: string;
   /** The one number some kinds need — a rank, an upvote count. */
   readonly figure: number | null;
@@ -93,6 +101,27 @@ export const INBOX_ITEM_KEYS = [
  */
 export function inboxSentence(item: Pick<InboxItem, "kind" | "actor" | "targetRef" | "figure">): string {
   switch (item.kind) {
+    // OPR-4 — the three about a private thread. The product is named, the
+    // person is named (the reader may read the thread, where the same name
+    // is), and nothing the thread says is.
+    case "thread.private": {
+      const { slug } = parseInboxThreadRef(item.targetRef);
+      return item.actor === null
+        ? `Somebody started a private thread on ${slug}.`
+        : `@${item.actor} started a private thread on ${slug}.`;
+    }
+    case "thread.private.reply": {
+      const { slug } = parseInboxThreadRef(item.targetRef);
+      return item.actor === null
+        ? `Somebody replied in a private thread on ${slug}.`
+        : `@${item.actor} replied in a private thread on ${slug}.`;
+    }
+    case "thread.private.answered": {
+      const { slug } = parseInboxThreadRef(item.targetRef);
+      return item.actor === null
+        ? `The crew of ${slug} replied to your private thread.`
+        : `@${item.actor} replied to your private thread on ${slug}.`;
+    }
     case "rank.first":
       return item.figure === null
         ? `${item.targetRef} reached #1 on its launch day.`
@@ -124,11 +153,28 @@ export function inboxSentence(item: Pick<InboxItem, "kind" | "actor" | "targetRe
  *  itself what the reader may see (XP-5: never a link that goes nowhere). */
 export function inboxHref(item: Pick<InboxItem, "kind" | "targetKind" | "targetRef">): string {
   if (item.targetKind === "topic") return `/topics/${item.targetRef}`;
+  // OPR-4 — a private thread's own address. The page there decides who may
+  // read it; for anybody else it is the site's not-found.
+  if (item.targetKind === "thread") {
+    const { threadId } = parseInboxThreadRef(item.targetRef);
+    return `/threads/private/${threadId}`;
+  }
   // The conversation is on the product's Talk tab (openproduct-redesign
   // OPR-3): the tab's own address, not the bare page and a forward from it.
   // An idea's page has no tabs and sends its tab addresses to itself.
   if (item.targetKind === "post") return `/${item.targetRef}/talk#discussion`;
   return `/${item.targetRef}`;
+}
+
+/** OPR-4 — a `thread` target's ref: the product's slug and the thread's id.
+ *  A slug holds no `/`, so the pair splits back unambiguously. */
+export function inboxThreadRef(slug: string, threadId: string): string {
+  return `${slug}/${threadId}`;
+}
+
+export function parseInboxThreadRef(ref: string): { slug: string; threadId: string } {
+  const at = ref.indexOf("/");
+  return at < 0 ? { slug: ref, threadId: "" } : { slug: ref.slice(0, at), threadId: ref.slice(at + 1) };
 }
 
 /**

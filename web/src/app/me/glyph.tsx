@@ -60,6 +60,8 @@ export const GLYPH_REPLY = "M4 5h16v11H9l-5 4z";
 export const GLYPH_UPVOTE = "M12 19V6M6 12l6-6 6 6";
 /** A launch: a tag. */
 export const GLYPH_LAUNCH = "M3 12V4h8l9 9-8 8zM7.5 7.5h.01";
+/** OPR-4 — the lock: a private thread. */
+export const GLYPH_PRIVATE = "M6 11V8a6 6 0 0112 0v3M5 11h14v10H5z";
 /** First on its day: a flag. */
 export const GLYPH_FIRST = "M5 21V4M5 4h13l-3 4.5 3 4.5H5";
 

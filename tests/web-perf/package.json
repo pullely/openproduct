@@ -16,6 +16,7 @@
     "snapshots": "node src/run.mjs snapshots",
     "snapshots:update": "XP4_UPDATE_SNAPSHOTS=1 node src/run.mjs snapshots",
     "walk": "node src/run.mjs walk",
+    "talk": "node src/run.mjs talk",
     "refresh": "node src/run.mjs refresh",
     "lint": "echo 'web-perf: plain ESM scripts'",
     "pixel": "node src/run.mjs pixel",

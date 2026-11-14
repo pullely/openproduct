@@ -81,6 +81,10 @@ export const FORUM_THREAD_KEYS = [
   "lastPostAt",
   "postCount",
   "slug",
+  // OPR-4 — a forum row is a public thread with its listing, so it carries
+  // the thread's kind and resolved moment too.
+  "kind",
+  "resolvedAt",
 ] as const;
 
 export interface Forum {

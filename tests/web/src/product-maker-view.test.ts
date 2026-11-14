@@ -32,6 +32,7 @@ import {
   type CrewNeedsYou,
   type CrewProductPost,
   type OverlayCrew,
+  CREW_PRIVATE_THREAD_NOTICE_KEYS,
 } from "@openproduct/contracts";
 
 import {
@@ -55,6 +56,9 @@ import {
   manageRoute,
   movedOrder,
   needsYouEmpty,
+  PRIVATE_THREAD_FROM,
+  PRIVATE_THREAD_STARTED,
+  privateThreadsPath,
   newPostKinds,
   seatRequestReviewHref,
   seatRequestText,
@@ -509,17 +513,31 @@ describe("Needs you: a seat request is reviewed on Orunbase", () => {
     expect(needs).toContain("href={continuePostPath(slug, draft.id)}");
     expect(needs).toContain("Continue");
     // A published post is not a draft, whatever the answer carries.
-    const mixed: CrewNeedsYou = { requests: [], drafts: [draft(), draft({ id: "ppo_2", state: "published" })] };
+    const mixed: CrewNeedsYou = { requests: [], drafts: [draft(), draft({ id: "ppo_2", state: "published" })], threads: [] };
     expect(draftsOf(mixed).map((post) => post.id)).toEqual(["ppo_00000000000000000000000000000001"]);
   });
 
   it("is absent when nothing waits, and is read only for the crew on Manage", () => {
     expect(needsYouEmpty(null)).toBe(true);
-    expect(needsYouEmpty({ requests: [], drafts: [] })).toBe(true);
-    expect(needsYouEmpty({ requests: [], drafts: [draft({ state: "published" })] })).toBe(true);
-    expect(needsYouEmpty({ requests: [request], drafts: [] })).toBe(false);
-    expect(needsYouEmpty({ requests: [], drafts: [draft()] })).toBe(false);
+    expect(needsYouEmpty({ requests: [], drafts: [], threads: [] })).toBe(true);
+    expect(needsYouEmpty({ requests: [], drafts: [draft({ state: "published" })], threads: [] })).toBe(true);
+    expect(needsYouEmpty({ requests: [request], drafts: [], threads: [] })).toBe(false);
+    expect(needsYouEmpty({ requests: [], drafts: [draft()], threads: [] })).toBe(false);
+    // OPR-4 — a private thread the crew has not answered waits on them too.
+    const waiting = { id: "0b0b0b0b-0000-4000-8000-000000000001", authorHandle: "lin", authorName: "Lin", createdAt: "2026-11-15T09:00:00.000Z" };
+    expect(needsYouEmpty({ requests: [], drafts: [], threads: [waiting] })).toBe(false);
+    // An answer from before the key existed has none: nothing waits.
+    expect(needsYouEmpty({ requests: [], drafts: [] } as unknown as CrewNeedsYou)).toBe(true);
     const needs = code(`${MAKER_DIR}/needs-you.tsx`);
+    // OPR-4 — the private thread's row is the boards' sentence and one link,
+    // to Talk on its Private filter. It names who started the thread and
+    // never what it says: the answer it is drawn from has no title in it.
+    expect(PRIVATE_THREAD_STARTED).toBe("started a private thread");
+    expect(PRIVATE_THREAD_FROM).toBe("Private thread from");
+    expect(privateThreadsPath("ackstack")).toBe("/ackstack/talk#private");
+    expect(needs).toContain("href={privateThreadsPath(slug)}");
+    expect(needs).not.toMatch(/thread\.title|thread\.body/);
+    expect([...CREW_PRIVATE_THREAD_NOTICE_KEYS]).toEqual(["authorHandle", "authorName", "createdAt", "id"]);
     // No fetch before the gate opens.
     expect(needs).toMatch(/React\.useEffect\(\(\) => \{\s*if \(!managing\) return;/);
     expect(needs).toContain('crewRead<{ needsYou?: CrewNeedsYou }>(slug, "needs-you")');
@@ -747,8 +765,10 @@ describe("seats and the quiet line", () => {
       { label: "Topics", href: "/studio/org_1/opp_1/topics" },
       { label: "People", href: "/studio/org_1/opp_1/people" },
       { label: "Launches", href: "/studio/org_1/opp_1/launches" },
-      { label: "Discussions", href: "/studio/org_1/opp_1/discussions" },
     ]);
+    // OPR-4 — no Discussions entry: that address is Talk now, and Talk is
+    // this page's own tab.
+    expect(moreSettingsLinks(CREW).some((link) => /discussions/i.test(link.label + link.href))).toBe(false);
     const model = code(`${MAKER_DIR}/model.ts`);
     expect(model).toContain("const base = listingBasePath(crew.org, crew.profile);");
     // No literal studio address in the page's source: the routes suite

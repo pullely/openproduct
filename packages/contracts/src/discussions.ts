@@ -306,6 +306,11 @@ export interface PublicThread {
   /** How many visible posts. A removed one is not counted, because a count
    *  that includes what a reader cannot see is a count that reads as a bug. */
   postCount: number;
+  /** OPR-4 — question, issue or suggestion, for a thread started from Talk;
+   *  null for an older thread and for the system's own. */
+  kind: "question" | "issue" | "suggestion" | null;
+  /** OPR-4 — when the crew marked an issue resolved, or null. */
+  resolvedAt: string | null;
 }
 
 export const PUBLIC_THREAD_KEYS = [
@@ -318,6 +323,10 @@ export const PUBLIC_THREAD_KEYS = [
   "createdAt",
   "lastPostAt",
   "postCount",
+  // OPR-4 — what a Talk thread is, and whether its issue is resolved. NO
+  // visibility: every thread in a public payload is public (see `talk.ts`).
+  "kind",
+  "resolvedAt",
 ] as const;
 
 // ---------------------------------------------------------------------------

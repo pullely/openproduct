@@ -13,6 +13,9 @@ import { crewRead } from "./act";
 import {
   NEEDS_YOU_ARIA,
   NEEDS_YOU_LABEL,
+  PRIVATE_THREAD_FROM,
+  PRIVATE_THREAD_STARTED,
+  privateThreadsPath,
   SEAT_REQUEST_ACTION,
   continuePostPath,
   draftLine,
@@ -40,8 +43,11 @@ import { useMaker } from "./use-maker";
  *                   pretends to.
  *   a draft         "Draft: …" and "Continue", to the builder on that draft.
  *
- * The board's "Demo ready to review" row arrives with demos (OPR4) and its
- * "started a private thread" row with private threads (OPR3).
+ *   a private       who started it, and "Open": Talk on its Private filter
+ *   thread          (OPR-4). The row has no title — the thread is the crew's
+ *                   to open and read, not this block's to quote.
+ *
+ * The board's "Demo ready to review" row arrives with demos (OPR4).
  */
 export function NeedsYou({ slug }: { slug: string }) {
   const { managing, crew } = useMaker(slug);
@@ -88,6 +94,36 @@ export function NeedsYou({ slug }: { slug: string }) {
                 {SEAT_REQUEST_ACTION}
               </a>
             ) : null}
+          </div>
+        );
+      })}
+      {/* OPR-4 — a private thread the crew has not had the last word in.
+          Who started it, never what it says: the thread is opened to be
+          read. "Open" goes to Talk on its Private filter. */}
+      {(needsYou?.threads ?? []).map((thread) => {
+        const name = thread.authorName ?? thread.authorHandle ?? "Somebody";
+        return (
+          <div key={thread.id} className={ROW} data-needs-you-thread>
+            <span className="min-w-0 flex-[1_1_240px] text-[15px] text-foreground max-sm:text-[13px] max-sm:leading-[1.35]">
+              {/* Desktop board: "{name} started a private thread". Phone
+                  board: "Private thread from {name}". */}
+              <span className="max-sm:hidden">
+                {thread.authorHandle ? (
+                  <AppLink href={`/@${thread.authorHandle}`} className="tap-h font-semibold text-foreground no-underline hover:underline">
+                    {name}
+                  </AppLink>
+                ) : (
+                  <span className="font-semibold">{name}</span>
+                )}{" "}
+                {PRIVATE_THREAD_STARTED}
+              </span>
+              <span className="sm:hidden">
+                {PRIVATE_THREAD_FROM} {name}
+              </span>
+            </span>
+            <AppLink href={privateThreadsPath(slug)} className={`${BTN_SOFT_SMALL} ${FOCUS}`}>
+              Open
+            </AppLink>
           </div>
         );
       })}

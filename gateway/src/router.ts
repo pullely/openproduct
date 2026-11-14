@@ -133,6 +133,26 @@ const PUBLIC_THREADS_RE = /^\/v1\/public\/openproduct\/projects\/([A-Za-z0-9-]{1
 const PUBLIC_THREAD_RE = /^\/v1\/public\/openproduct\/threads\/([0-9a-fA-F-]{36})$/;
 /** CB1 — the writes. Never on the public branch. */
 const THREADS_WRITE_RE = /^\/v1\/openproduct\/threads(?:\/[^/]+)*$/;
+/**
+ * OPR-4 — private threads (design §7). They live under the signed-in thread
+ * family above, so they are never on the public branch, never cached, and
+ * every answer says `no-store`.
+ *
+ * ONE MORE THING THIS LAYER OWES THEM: a caller with no session gets the
+ * 404 a missing thread gets, not the 401 every other signed-in route gives.
+ * The 401 would already be the same for every id; the 404 is what the rule
+ * says — anybody who may not read a private thread is told only that there
+ * is nothing here.
+ */
+const PRIVATE_THREADS_RE = /^\/v1\/openproduct\/threads\/private(?:\/[^/]+)*$/;
+const PRIVATE_THREAD_POSTS_RE = /^\/v1\/openproduct\/threads\/private\/([^/]+)\/posts$/;
+/** OPR-4 — the crew marks an issue resolved, or opens it again. */
+const THREAD_RESOLVED_RE = /^\/v1\/openproduct\/threads\/([^/]+)\/resolved$/;
+
+/** Is this one of the private-thread routes? Exported for the route guard. */
+export function isPrivateThreadRoute(pathname: string): boolean {
+  return PRIVATE_THREADS_RE.test(pathname);
+}
 
 /** DQ0b — a comment on a listing. Its own path rather than `/threads` with an
  *  absent tag, so it can be rate-limited as the act it is: a reply on a page
@@ -350,6 +370,15 @@ export function classifyWrite(pathname: string, method: string): WriteClassifica
   // on one. A per-listing bound would need the slug, the slug is in the body,
   // and reading a body to make a limit decision is a thing this layer does not
   // do. Saying so plainly is better than a comment that reassures.
+  // OPR-4 — a reply in a private thread is a post in that thread, bounded
+  // exactly as a public one is; matched first because `private` is not an id.
+  const privatePost = PRIVATE_THREAD_POSTS_RE.exec(pathname);
+  if (privatePost) return { action: "post", target: privatePost[1]! };
+  // OPR-4 — marking an issue resolved changes what the thread's public
+  // documents say, so it is a `post` on that thread: the same per-thread
+  // bound, and the same purge.
+  const resolved = THREAD_RESOLVED_RE.exec(pathname);
+  if (resolved) return { action: "post", target: resolved[1]! };
   const threadPost = /^\/v1\/openproduct\/threads\/([^/]+)\/posts$/.exec(pathname);
   if (threadPost) return { action: "post", target: threadPost[1]! };
   if (pathname === "/v1/openproduct/threads") return { action: "thread-create", target: null };
@@ -383,7 +412,7 @@ export function classifyWrite(pathname: string, method: string): WriteClassifica
   return null;
 }
 
-function isPublicRoute(pathname: string): boolean {
+export function isPublicRoute(pathname: string): boolean {
   return (
     pathname === PUBLIC_DIRECTORY_PATH ||
     PUBLIC_PROFILE_RE.test(pathname) ||
@@ -885,7 +914,12 @@ async function handleAuthenticated(
   }
 
   const session = await resolveSubject(request, env, fetch, env.CORE);
-  if (!session.ok) return errorResponse(session.code, session.message, session.status, requestId);
+  if (!session.ok) {
+    // OPR-4 — nobody signed in is "anybody else": the same 404, with the
+    // same body, that core gives a signed-in stranger and a missing id.
+    if (isPrivateThreadRoute(pathname)) return errorResponse("not_found", "Not found", 404, requestId);
+    return errorResponse(session.code, session.message, session.status, requestId);
+  }
   const limited = await rateLimitGate("identity", session.subject.subjectId, env, requestId);
   if (limited) return limited;
   const orgMatch = ORG_OPENPRODUCT_RE.exec(pathname);

@@ -84,7 +84,58 @@ function isGuarded(source: string, at: number): boolean {
   return /(\?|&&)\s*\(?$/.test(before);
 }
 
+/**
+ * A SECOND SHAPE OF THE SAME RULE (openproduct-redesign OPR-4).
+ *
+ * `talk/gates.tsx` exports three lazy components and renders none: it is a
+ * client file whose whole job is to be the boundary. The components are
+ * mounted by SERVER files (`talk/talk-section.tsx` and what it draws), and
+ * the condition is the page's — a product's four tabs are one module, and
+ * only the Talk tab (and an idea's page, which shows Talk) renders the
+ * section. So "is it mounted conditionally" is answered one file up, and
+ * the suite below asks it there instead of exempting the file silently.
+ *
+ * The behavioural half is the budget lane's, as it is for the others:
+ * `/product-00`, `/about`, `/crew` and the post's page read the same JS they
+ * did before Talk gained its composer; `/product-00/talk` alone reads more
+ * (`tests/web-perf/src/budgets.mjs` names the numbers).
+ */
+const SERVER_MOUNTED_GATES = ["app/talk/gates.tsx"];
+
 describe("every lazily-loaded component is mounted conditionally", () => {
+  it("Talk's gates are mounted by the server, and only where the page draws Talk (OPR-4)", () => {
+    const gates = lazyComponents().filter((c) => SERVER_MOUNTED_GATES.includes(c.file));
+    expect(gates.map((c) => c.name).sort()).toEqual(["TalkList", "TalkTitleField", "ThreadActions"]);
+    // The gate file renders none of them itself: a gate that mounted its own
+    // component unconditionally would be the bug this file exists for.
+    for (const gate of gates) expect([gate.name, new RegExp(`<${gate.name}\\b`).test(code(resolve(SRC, gate.file)))]).toEqual([gate.name, false]);
+    // Each is rendered from Talk's own server files, through the gate…
+    const users: Record<string, string> = {
+      TalkList: "app/talk/talk-section.tsx",
+      TalkTitleField: "app/talk/composer.tsx",
+      ThreadActions: "app/talk/thread-row.tsx",
+    };
+    for (const [name, file] of Object.entries(users)) {
+      const source = code(resolve(SRC, file));
+      expect([name, source.includes(`<${name}`) && /from "\.\/gates"/.test(source)]).toEqual([name, true]);
+      expect([file, /^"use client";/m.test(source)]).toEqual([file, false]);
+    }
+    // …and the section is drawn by the product page in exactly one place,
+    // `TalkCards`, which the shipping page mounts only on the Talk tab.
+    const page = code(resolve(SRC, "app/[slug]/product-page.tsx"));
+    expect(page.match(/<TalkSection\b/g)).toHaveLength(1);
+    expect(page).toMatch(/\{tab === "talk" \? <TalkCards slug=\{slug\} discussion=\{discussion\} \/> : null\}/);
+    // The only other mount is the idea's page, which shows Talk to everybody.
+    expect(page.match(/<TalkCards\b/g)).toHaveLength(2);
+    expect(page).toContain("<TalkCards slug={slug} discussion={discussion} onPage />");
+    // No other file renders the section or reaches past the gate.
+    for (const file of walk(SRC)) {
+      const rel = file.slice(SRC.length + 1);
+      if (rel.startsWith("app/talk/") || rel === "app/[slug]/product-page.tsx") continue;
+      expect([rel, /talk\/(talk-section|gates|client|talk-list|title-field|thread-actions)"/.test(code(file))]).toEqual([rel, false]);
+    }
+  });
+
   it("finds the boundaries at all, so this suite cannot go quietly vacuous", () => {
     // If somebody deletes both splits the byte win goes with them, and a test
     // that only iterates over what it finds would go green on an empty list.
@@ -93,7 +144,11 @@ describe("every lazily-loaded component is mounted conditionally", () => {
     expect(names).toContain("app/shell/palette.tsx:PalettePanel");
   });
 
-  it.each(lazyComponents().map((c) => [`${c.file}:${c.name}`, c] as const))(
+  it.each(
+    lazyComponents()
+      .filter((c) => !SERVER_MOUNTED_GATES.includes(c.file))
+      .map((c) => [`${c.file}:${c.name}`, c] as const),
+  )(
     "%s is only rendered inside a condition",
     (_label, component) => {
       const uses = [...component.source.matchAll(new RegExp(`<${component.name}\\b`, "g"))];

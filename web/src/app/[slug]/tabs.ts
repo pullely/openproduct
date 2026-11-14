@@ -105,6 +105,9 @@ export function productTabLinks(slug: string, current: ProductTab): readonly Pro
 export const ANCHOR_TABS: Readonly<Record<string, ProductTab>> = {
   discussion: "talk",
   talk: "talk",
+  // OPR-4 — Talk's list, and Talk opened on its Private filter.
+  threads: "talk",
+  private: "talk",
   "people-wanted": "crew",
   seats: "crew",
   makers: "crew",

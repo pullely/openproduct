@@ -9,11 +9,45 @@ import {
   inboxEventKey,
   inboxHref,
   inboxSentence,
+  inboxThreadRef,
+  parseInboxThreadRef,
 } from "./inbox.js";
 
 describe("the four kinds", () => {
   it("are the design's five, minus the one that breaks FL0's promise", () => {
-    expect(INBOX_KINDS).toEqual(["rank.first", "post.reply", "launch.topic", "post.upvoted", "launch.listing"]);
+    // OPR-4 added the three about a private thread.
+    expect(INBOX_KINDS).toEqual([
+      "rank.first",
+      "post.reply",
+      "launch.topic",
+      "post.upvoted",
+      "launch.listing",
+      "thread.private",
+      "thread.private.reply",
+      "thread.private.answered",
+    ]);
+  });
+
+  it("a private thread's row names the product and the person, and links to the thread's own address", () => {
+    const ref = inboxThreadRef("acme-thing", "0b0b0b0b-0000-4000-8000-000000000001");
+    expect(parseInboxThreadRef(ref)).toEqual({ slug: "acme-thing", threadId: "0b0b0b0b-0000-4000-8000-000000000001" });
+    expect(inboxSentence({ kind: "thread.private", actor: "ada", targetRef: ref, figure: null })).toBe(
+      "@ada started a private thread on acme-thing.",
+    );
+    expect(inboxSentence({ kind: "thread.private.reply", actor: null, targetRef: ref, figure: null })).toBe(
+      "Somebody replied in a private thread on acme-thing.",
+    );
+    expect(inboxSentence({ kind: "thread.private.answered", actor: null, targetRef: ref, figure: null })).toBe(
+      "The crew of acme-thing replied to your private thread.",
+    );
+    for (const kind of ["thread.private", "thread.private.reply", "thread.private.answered"] as const) {
+      // The sentence is composed from a handle and a slug: the row has no
+      // field a title or a body could be in.
+      expect(inboxSentence({ kind, actor: "ada", targetRef: ref, figure: null })).not.toContain("0b0b0b0b");
+      expect(inboxHref({ kind, targetKind: "thread", targetRef: ref })).toBe(
+        "/threads/private/0b0b0b0b-0000-4000-8000-000000000001",
+      );
+    }
   });
 
   it("HAS NO `follow.maker`, and that absence is the decision", () => {

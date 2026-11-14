@@ -662,8 +662,10 @@ export async function fetchForum(
 export async function fetchThread(
   id: string,
   fetchImpl?: PublicFetch,
-): Promise<{ thread: PublicThread; posts: PublicPost[] } | null> {
-  return readPublic<{ thread: PublicThread; posts: PublicPost[] }>(
+): Promise<{ thread: PublicThread; posts: PublicPost[]; slug?: string | null } | null> {
+  // OPR-4 — `slug` is the product the thread is on. A document cached
+  // before it existed carries none.
+  return readPublic<{ thread: PublicThread; posts: PublicPost[]; slug?: string | null }>(
     `/v1/public/openproduct/threads/${encodeURIComponent(id)}`,
     fetchImpl,
   );

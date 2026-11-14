@@ -781,7 +781,7 @@ describe("NF0 — the inbox rows a comment writes", () => {
     figure: number | null;
   }
 
-  function inboxHarness(over: { author?: { authorSubjectId: string; threadId: string } | null; slug?: string | null } = {}) {
+  function inboxHarness(over: { author?: { authorSubjectId: string; threadId: string; threadVisibility?: "public" | "private" } | null; slug?: string | null } = {}) {
     const rows: Row[] = [];
     const repo = {
       async getPublicProfileId(slug: string) {
@@ -823,7 +823,7 @@ describe("NF0 — the inbox rows a comment writes", () => {
         return over.slug === undefined ? "acme-thing" : over.slug;
       },
       async getPostAuthor() {
-        return over.author === undefined ? { authorSubjectId: LIN, threadId: THREAD } : over.author;
+        return over.author === undefined ? { authorSubjectId: LIN, threadId: THREAD, threadVisibility: "public" } : over.author;
       },
       async countPostVotes(ids: readonly string[]) {
         return new Map(ids.map((id) => [id, 3]));
@@ -950,6 +950,36 @@ describe("NF0 — the inbox rows a comment writes", () => {
     );
     expect(res.status).toBe(200);
     expect(h.rows.filter((r) => r.kind === "post.upvoted")).toEqual([]);
+  });
+
+  it("writes no post.upvoted for a comment in a PRIVATE thread — or one whose thread is not said to be public (OPR-4)", async () => {
+    // The comment's author may have left the crew since they wrote it; a row
+    // saying their comment there was upvoted is news from a thread they can
+    // no longer read. The vote itself is cast (the repository decided that).
+    const vote = (h: ReturnType<typeof inboxHarness>) =>
+      route(
+        new Request(`https://openproduct.internal/internal/openproduct/posts/${POST}/vote`, {
+          method: "PUT",
+          headers: {
+            "x-request-id": "req_dq1",
+            "x-actor-subject-id": AUTHOR,
+            "x-actor-subject-type": "user",
+          },
+        }),
+        env(),
+        h.deps,
+      );
+    const priv = inboxHarness({ author: { authorSubjectId: LIN, threadId: THREAD, threadVisibility: "private" } });
+    expect((await vote(priv)).status).toBe(200);
+    expect(priv.rows).toEqual([]);
+    // Fail closed: a read that does not say is treated as private.
+    const unsaid = inboxHarness({ author: { authorSubjectId: LIN, threadId: THREAD } });
+    expect((await vote(unsaid)).status).toBe(200);
+    expect(unsaid.rows).toEqual([]);
+    // And the public case still writes its row.
+    const pub = inboxHarness({ author: { authorSubjectId: LIN, threadId: THREAD, threadVisibility: "public" } });
+    expect((await vote(pub)).status).toBe(200);
+    expect(pub.rows.filter((r) => r.kind === "post.upvoted")).toHaveLength(1);
   });
 });
 

@@ -7,6 +7,7 @@ import {
   POSTING_NOTICE,
   THREAD_LOCKED_NOTE,
   THREAD_REMOVED_NOTE,
+  THREAD_KIND_LABELS,
   THREAD_TAG_LABELS,
   threadAcceptsPosts,
   postPermalink,
@@ -32,6 +33,8 @@ import { AppLink } from "../../ui/link";
 import { ROW_ATTRIBUTE } from "../../ui/keys";
 import { absoluteOf, agoOf } from "../../ui/time";
 import { fetchThread, publicApexOrigin } from "../../public-api";
+import { ResolveControl } from "../../talk/resolve-control";
+import { TalkStarted } from "../../talk/started";
 import { FORUM_PAGE } from "../forum-view";
 
 /**
@@ -250,6 +253,8 @@ export default async function ThreadPage({ params }: PageProps) {
   if (!read) notFound();
 
   const { thread, posts } = read;
+  // OPR-4 — the product the thread is on, when the document names it.
+  const slug = read.slug ?? null;
   const open = threadAcceptsPosts(thread.state);
   // FO3 — RE3's share control, for the thread. `null` without a canonical
   // origin, as on the listing: sharing a preview host is sharing the wrong
@@ -265,20 +270,43 @@ export default async function ThreadPage({ params }: PageProps) {
 
   return (
     <main className={FORUM_PAGE}>
-      {/* The way back to the index, as the design draws it. */}
+      {/* OPR-4 — arriving from the composer: drop the draft from the tab. */}
+      <TalkStarted />
+      {/* The way back: to the product's Talk when the thread names its
+          product, and to the index either way. */}
       <nav aria-label="Breadcrumb" className={CRUMBS}>
         <AppLink href="/threads" className="tap inline-flex items-center gap-1.5 hover:text-foreground">
           <span aria-hidden="true">←</span> All threads
         </AppLink>
+        {slug ? (
+          <>
+            <span aria-hidden="true" className="text-border-strong">
+              /
+            </span>
+            <AppLink href={`/${slug}/talk`} className="tap hover:text-foreground">
+              {slug}
+            </AppLink>
+          </>
+        ) : null}
       </nav>
 
       <div className="mt-[18px] flex flex-wrap items-center gap-2.5">
+        {/* OPR-4 — a thread started from Talk says its kind; an older one
+            its forum category. */}
         <span className={THREAD_TAG_PILL}>
-          {THREAD_TAG_LABELS[thread.tag]}
+          {thread.kind ? THREAD_KIND_LABELS[thread.kind] : THREAD_TAG_LABELS[thread.tag]}
         </span>
         {thread.state === "answered" ? (
           <span className={EYEBROW}>answered</span>
         ) : null}
+        {/* OPR-4 — a resolved issue says so to everybody; the product's crew
+            get the button instead, in their own browser. */}
+        {thread.state === "removed" ? null : (
+          <ResolveControl
+            slug={slug}
+            thread={{ id: thread.id, kind: thread.kind ?? null, state: thread.state, resolvedAt: thread.resolvedAt ?? null }}
+          />
+        )}
       </div>
 
       <h1 className={`${PAGE_TITLE} mt-2.5 max-w-[34ch]`}>{thread.title}</h1>

@@ -108,6 +108,13 @@ import {
   type DiscussionHandlerDeps,
 } from "./handlers/discussions.js";
 import {
+  handleCreatePrivatePost,
+  handleGetPrivateThread,
+  handleListPrivateThreads,
+  handleResolveThread,
+  type TalkHandlerDeps,
+} from "./handlers/talk.js";
+import {
   handleRebuildSearchIndex,
   handleSearch,
   type SearchHandlerDeps,
@@ -425,6 +432,13 @@ const THREAD_COMMENT_PATH = "/internal/openproduct/comments";
 // it.
 const POST_VOTE_RE = /^\/internal\/openproduct\/posts\/([^/]+)\/vote$/;
 const THREAD_MANAGE_RE = /^\/internal\/openproduct\/threads\/([^/]+)$/;
+// OPR-4 — private threads: the one signed-in path (design §7). `private` is
+// not a thread id, and these are matched before the routes that take one.
+const PRIVATE_THREADS_PATH = "/internal/openproduct/threads/private";
+const PRIVATE_THREAD_RE = /^\/internal\/openproduct\/threads\/private\/([^/]+)$/;
+const PRIVATE_THREAD_POSTS_RE = /^\/internal\/openproduct\/threads\/private\/([^/]+)\/posts$/;
+// OPR-4 — the crew marks an issue resolved (PUT) or opens it again (DELETE).
+const THREAD_RESOLVED_RE = /^\/internal\/openproduct\/threads\/([^/]+)\/resolved$/;
 // CG3 — the maintainer's door, and the named person's answer.
 const ORG_ROSTER_RE = /^\/internal\/openproduct\/listings\/([^/]+)\/people$/;
 // LC0 — the launch scheduler's door. Keyed by ORG AND LISTING, unlike the
@@ -953,7 +967,10 @@ async function dispatch(
     url.pathname === THREAD_COMMENT_PATH ||
     POST_VOTE_RE.test(url.pathname) ||
     THREAD_POSTS_RE.test(url.pathname) ||
-    THREAD_MANAGE_RE.test(url.pathname)
+    THREAD_MANAGE_RE.test(url.pathname) ||
+    PRIVATE_THREAD_RE.test(url.pathname) ||
+    PRIVATE_THREAD_POSTS_RE.test(url.pathname) ||
+    THREAD_RESOLVED_RE.test(url.pathname)
   ) {
     return discussionRoutes(request, url, env, requestId, scope, injected);
   }
@@ -1236,6 +1253,28 @@ async function discussionRoutes(
   if (url.pathname === THREADS_PATH) {
     if (request.method !== "POST") return methodNotAllowed(requestId);
     return handleCreateThread(env, request, requestId, actor, deps);
+  }
+  // OPR-4 — private threads, BEFORE the routes that read `private` as an id.
+  // Every refusal on them is the same 404 (see `handlers/talk.ts`).
+  const talkDeps = deps as unknown as TalkHandlerDeps;
+  if (url.pathname === PRIVATE_THREADS_PATH) {
+    if (request.method !== "GET") return methodNotAllowed(requestId);
+    return handleListPrivateThreads(env, requestId, url, actor, talkDeps);
+  }
+  const privatePosts = PRIVATE_THREAD_POSTS_RE.exec(url.pathname);
+  if (privatePosts) {
+    if (request.method !== "POST") return methodNotAllowed(requestId);
+    return handleCreatePrivatePost(env, request, requestId, decodeURIComponent(privatePosts[1]!), actor, talkDeps);
+  }
+  const privateThread = PRIVATE_THREAD_RE.exec(url.pathname);
+  if (privateThread) {
+    if (request.method !== "GET") return methodNotAllowed(requestId);
+    return handleGetPrivateThread(env, requestId, decodeURIComponent(privateThread[1]!), actor, talkDeps);
+  }
+  const resolved = THREAD_RESOLVED_RE.exec(url.pathname);
+  if (resolved) {
+    if (request.method !== "PUT" && request.method !== "DELETE") return methodNotAllowed(requestId);
+    return handleResolveThread(env, request, requestId, decodeURIComponent(resolved[1]!), actor, talkDeps);
   }
   if (url.pathname === THREAD_COMMENT_PATH) {
     if (request.method !== "POST") return methodNotAllowed(requestId);

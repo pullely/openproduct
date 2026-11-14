@@ -520,7 +520,32 @@ const BUDGETS = {
   // and Talk three times — concurrently, as the note above says of Updates.
   [`/${SAMPLE_SLUG}/about`]: { js: 177_314, doc: 24_900, cls: 0.02, lcp: 2000, reads: 2, images: 400_000 },
   [`/${SAMPLE_SLUG}/crew`]: { js: 177_314, doc: 21_700, cls: 0.02, lcp: 2000, reads: 2, images: 400_000 },
-  [`/${SAMPLE_SLUG}/talk`]: { js: 177_314, doc: 24_100, cls: 0.02, lcp: 2000, reads: 3, images: 400_000 },
+  //
+  // OPR-4 — TALK RE-MEASURED, AND ONLY TALK, WITH THE NUMBERS NAMED
+  // (2026-11-15). Talk gained its composer (a field, the thread's kind, the
+  // Public / Private switch), the All / Public / Private filter with the
+  // signed-in read behind it, a card per thread, and the crew's Mark
+  // resolved. On the first full build with it every tab AND the post's page
+  // read 181,376 B against 177,314 — the tabs are one module and the post's
+  // page shares their chunks, so all of them were carrying a tab they do not
+  // draw. Three things, each measured by this lane on a full build:
+  //
+  //   a reader's private rows are a chunk of their own, fetched only once
+  //   there is a private thread to draw            181,376 → 180,777 (all)
+  //   Talk's client pieces (the list, the field's draft, a row's actions)
+  //   are asked for through `talk/gates.tsx` with `next/dynamic`, so only a
+  //   page that renders Talk fetches them           180,777 → 177,075 (the
+  //   other tabs; the post's page 188,107 → 184,405); Talk itself 184,731
+  //   across three chunks, each with its own copy of what the three share
+  //   those three are one module, so one chunk      184,731 → 180,777 (Talk)
+  //
+  // So: Updates, About and Crew read 177,013 B across 20 chunks and the
+  // post's page 184,343 B across 22 — each inside the limit it had, which
+  // DID NOT MOVE. Talk reads 180,777 B across 21 chunks and a document of
+  // 25,556 B (the form, the filter and a card per thread are in the document,
+  // where a link list was). 184,900 and 26,250 are those plus the ~2.3% and
+  // ~2.8% this table carries. The wire budget did not move.
+  [`/${SAMPLE_SLUG}/talk`]: { js: 184_900, doc: 26_250, cls: 0.02, lcp: 2000, reads: 3, images: 400_000 },
   // OPR-3 — A POST'S OWN PAGE (design §5: `/{slug}/posts/{id}`), budgeted the
   // day it was added. 183,214 B across 19 chunks: the full card with its
   // reaction controls, and the live thread under it (the comment field, the

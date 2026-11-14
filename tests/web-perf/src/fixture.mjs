@@ -439,7 +439,241 @@ const THREAD = {
   createdAt: EARLIER,
   lastPostAt: EARLIER,
   postCount: 2,
+  // OPR-4 — a thread says what it is; only an issue is ever resolved.
+  kind: "question",
+  resolvedAt: null,
 };
+
+// ─── OPR-4 — Talk: an issue the crew resolved, and a private thread ─────────
+//
+// THE PRIVACY RULE, IN THE FIXTURE (design §7). The real rule is the
+// repository's SQL; this gateway stands in for it in the browser lanes, so
+// it has to refuse the way the real one does or the lanes would be walking
+// a product that leaks:
+//
+//   * a private thread is in NO public answer — not a product's threads, not
+//     the forum, not the thread read by id (which answers 404 for it);
+//   * the signed-in routes under `/v1/openproduct/threads/private` answer by
+//     the BEARER: the thread's author and the product's crew get it, anybody
+//     else — another signed-in person, or no bearer at all — gets the 404 a
+//     missing thread gets.
+//
+// The title and the text are MARKER STRINGS (`PRIVATE_MARKERS`). The leak
+// lane walks every public page signed out, and the signed-in pages as a
+// third person, and fails if either marker is anywhere in what came back.
+
+/** A public issue on the idea product, resolved by its crew: "Resolved"
+ *  shows to everybody. */
+export const SAMPLE_ISSUE_THREAD = "0b0b0b0b-0000-4000-8000-0000000000a1";
+const ISSUE_THREAD = {
+  id: SAMPLE_ISSUE_THREAD,
+  tag: "question",
+  title: "The export button does nothing on Safari",
+  authorHandle: "person-02",
+  authorName: "Person 2",
+  state: "open",
+  createdAt: EARLIER,
+  lastPostAt: EARLIER,
+  postCount: 1,
+  kind: "issue",
+  resolvedAt: EARLIER,
+};
+
+/** A public issue on the CREW product that is still open: the one the crew
+ *  walker marks resolved. Its resolved moment is the fixture's to remember
+ *  (`TALK_STATE.resolved`), as core's would be. */
+export const SAMPLE_OPEN_ISSUE_THREAD = "0b0b0b0b-0000-4000-8000-0000000000a2";
+function openIssueThread() {
+  return {
+    id: SAMPLE_OPEN_ISSUE_THREAD,
+    tag: "question",
+    title: "Signing in twice on a slow connection",
+    authorHandle: "person-03",
+    authorName: "Person 3",
+    state: "open",
+    createdAt: EARLIER,
+    lastPostAt: null,
+    postCount: 0,
+    kind: "issue",
+    resolvedAt: TALK_STATE.resolved[SAMPLE_OPEN_ISSUE_THREAD] ?? null,
+  };
+}
+
+/** The private thread: started by the second walker ("Lin") on the crew
+ *  product, answered once by its crew (Ada). */
+export const SAMPLE_PRIVATE_THREAD = "0b0b0b0b-0000-4000-8000-0000000000b1";
+/** A private thread started DURING a walk (the fixture's one mutable Talk fact). */
+export const STARTED_PRIVATE_THREAD = "0b0b0b0b-0000-4000-8000-0000000000b2";
+export const PRIVATE_MARKERS = {
+  title: "ZQPRIVATE-TITLE-7f3a91 an invoice went to the wrong address",
+  body: "ZQPRIVATE-BODY-c41d08 the account it belongs to is in here",
+  reply: "ZQPRIVATE-CREW-9be2f5 fixed, and thank you for saying so quietly",
+};
+/** What a leak looks like, whichever of the three it is. */
+export const PRIVATE_MARKER = "ZQPRIVATE";
+
+/** The bearers the fixture knows. `tok_walk` is Ada, on the crew of
+ *  `CREW_SLUG`; `tok_reader` is Lin, who started the private thread;
+ *  `tok_third` is a signed-in person who is neither. Any other bearer
+ *  (`tok_fixture`, the budgets lane's) is signed in and nobody in particular. */
+export const READER_TOKEN = "tok_reader";
+export const THIRD_TOKEN = "tok_third";
+const CREW_TOKEN = "tok_walk";
+
+const TALK_STATE = {
+  /** A private thread started in a walk, by its author's bearer. */
+  started: /** @type {Record<string, {title: string, kind: string, resolvedAt: string | null}>} */ ({}),
+  replies: /** @type {Array<{token: string, body: string}>} */ ([]),
+  /** Issues the crew marked resolved in a walk: id → moment. */
+  resolved: /** @type {Record<string, string>} */ ({}),
+};
+
+function privateThreadFor(token) {
+  return {
+    id: SAMPLE_PRIVATE_THREAD,
+    tag: "question",
+    title: PRIVATE_MARKERS.title,
+    authorHandle: null,
+    authorName: "Lin Park",
+    state: "open",
+    createdAt: EARLIER,
+    lastPostAt: EARLIER,
+    postCount: 2 + TALK_STATE.replies.length,
+    kind: "question",
+    resolvedAt: null,
+    visibility: "private",
+    mine: token === READER_TOKEN,
+    awaitingCrew: TALK_STATE.replies.length > 0 && TALK_STATE.replies.at(-1).token !== CREW_TOKEN,
+  };
+}
+
+function privatePost(id, author, crew, text) {
+  return {
+    id,
+    tag: null,
+    authorHandle: crew ? SAMPLE_HANDLE : null,
+    authorName: author,
+    body: [{ kind: "paragraph", children: [{ kind: "text", value: text }] }],
+    state: "visible",
+    createdAt: EARLIER,
+    editedAt: null,
+    isAnswer: false,
+    authorIsMaintainer: crew,
+    parentPostId: null,
+    votes: 0,
+  };
+}
+
+/**
+ * The signed-in Talk routes, answered BY THE BEARER. `null` is the 404 —
+ * the one refusal, for a stranger and for a missing id alike.
+ */
+function talkAnswer(pathname, search, req) {
+  const root = "/v1/openproduct/threads";
+  const token = req.token ?? null;
+  const reader = token === CREW_TOKEN || token === READER_TOKEN;
+  if (pathname === `${root}/private`) {
+    // No bearer: the gateway's 404. A signed-in person with none: empty.
+    if (!token) return null;
+    const slug = new URLSearchParams(search ?? "").get("slug");
+    const threads = [];
+    if (slug === CREW_SLUG && reader) threads.push(privateThreadFor(token));
+    // A thread started in a walk: its author's, and — like every private
+    // thread on the product — the crew's.
+    if (slug === CREW_SLUG) {
+      for (const [author, started] of Object.entries(TALK_STATE.started)) {
+        if (author !== token && token !== CREW_TOKEN) continue;
+        threads.unshift(startedThreadFor(token, author, started));
+      }
+    }
+    return { crew: token === CREW_TOKEN && slug === CREW_SLUG, threads };
+  }
+  const one = new RegExp(`^${root}/private/([^/]+)(/posts)?$`).exec(pathname);
+  if (one) {
+    // The started thread, for its author or the crew — nobody else.
+    const startedBy = Object.keys(TALK_STATE.started).find((author) => author === token || token === CREW_TOKEN);
+    const started = token && startedBy ? TALK_STATE.started[startedBy] : undefined;
+    const isStarted = one[1] === STARTED_PRIVATE_THREAD && started !== undefined;
+    if (!(one[1] === SAMPLE_PRIVATE_THREAD && reader) && !isStarted) return null;
+    if (one[2]) {
+      if ((req.method ?? "GET") !== "POST") return undefined;
+      const body = typeof req.body?.body === "string" ? req.body.body.trim() : "";
+      if (body.length === 0) return { __status: 422, error: { code: "validation_failed", message: "Validation failed", details: { fields: { body: ["Must be 1 to 8000 characters"] } } } };
+      if (!isStarted) TALK_STATE.replies.push({ token, body });
+      return { postId: `0b0b0b0b-0000-4000-8000-0000000000c${TALK_STATE.replies.length}` };
+    }
+    if (isStarted) {
+      return { slug: CREW_SLUG, crew: token === CREW_TOKEN, thread: startedThreadFor(token, startedBy, started), posts: [] };
+    }
+    return {
+      slug: CREW_SLUG,
+      crew: token === CREW_TOKEN,
+      thread: privateThreadFor(token),
+      posts: [
+        privatePost("0b0b0b0b-0000-4000-8000-0000000000c8", "Lin Park", false, PRIVATE_MARKERS.body),
+        privatePost("0b0b0b0b-0000-4000-8000-0000000000c9", "Ada Lovelace", true, PRIVATE_MARKERS.reply),
+        ...TALK_STATE.replies.map((reply, i) =>
+          privatePost(`0b0b0b0b-0000-4000-8000-0000000000d${i}`, reply.token === CREW_TOKEN ? "Ada Lovelace" : "Lin Park", reply.token === CREW_TOKEN, reply.body),
+        ),
+      ],
+    };
+  }
+  // Start a thread. A private one is remembered for its author's bearer; a
+  // public one is answered and not stored (the public documents are fixed).
+  if (pathname === root && (req.method ?? "GET") === "POST") {
+    if (!token) return { __status: 401, error: { code: "unauthenticated", message: "Sign in" } };
+    const body = req.body && typeof req.body === "object" ? req.body : {};
+    const title = typeof body.title === "string" ? body.title.trim() : "";
+    if (title.length === 0 || !["question", "issue", "suggestion"].includes(body.kind)) {
+      return { __status: 422, error: { code: "validation_failed", message: "Validation failed", details: { fields: { title: ["Must be 1 to 160 characters"] } } } };
+    }
+    if (body.visibility === "private") {
+      TALK_STATE.started[token] = { title, kind: body.kind, resolvedAt: null };
+      return { threadId: STARTED_PRIVATE_THREAD, visibility: "private" };
+    }
+    return { threadId: SAMPLE_ISSUE_THREAD, visibility: "public" };
+  }
+  // The crew marks an issue resolved: the crew's bearer only, on an issue.
+  const resolved = new RegExp(`^${root}/([^/]+)/resolved$`).exec(pathname);
+  if (resolved) {
+    if (token !== CREW_TOKEN) return null;
+    const resolvedAt = (req.method ?? "GET") === "DELETE" ? null : NOW;
+    if (resolved[1] === SAMPLE_OPEN_ISSUE_THREAD) {
+      if (resolvedAt) TALK_STATE.resolved[SAMPLE_OPEN_ISSUE_THREAD] = resolvedAt;
+      else delete TALK_STATE.resolved[SAMPLE_OPEN_ISSUE_THREAD];
+      return { resolvedAt };
+    }
+    // The private issue a walk started: the crew resolves that too.
+    const started = Object.values(TALK_STATE.started)[0];
+    if (resolved[1] === STARTED_PRIVATE_THREAD && started?.kind === "issue") {
+      started.resolvedAt = resolvedAt;
+      return { resolvedAt };
+    }
+    return null;
+  }
+  return undefined;
+}
+
+function startedThreadFor(token, author, started) {
+  return {
+    ...privateThreadFor(token),
+    id: STARTED_PRIVATE_THREAD,
+    title: started.title,
+    kind: started.kind,
+    resolvedAt: started.resolvedAt,
+    postCount: 0,
+    mine: author === token,
+    awaitingCrew: true,
+    authorName: author === CREW_TOKEN ? "Ada Lovelace" : author === READER_TOKEN ? "Lin Park" : "Sam Okafor",
+  };
+}
+
+/** Forget what a walk started and said, so the lanes can run in any order. */
+export function resetTalk() {
+  TALK_STATE.started = {};
+  TALK_STATE.replies = [];
+  TALK_STATE.resolved = {};
+}
 
 /**
  * DQ0b — the listing's one comment thread, and the words in it.
@@ -459,6 +693,8 @@ const LAUNCH_THREAD = {
   createdAt: EARLIER,
   lastPostAt: EARLIER,
   postCount: 2,
+  kind: null,
+  resolvedAt: null,
 };
 
 const POSTS = [
@@ -1194,6 +1430,9 @@ const NEEDS_YOU = {
     },
   ],
   drafts: [DRAFT_POST],
+  // OPR-4 — a private thread the crew has not had the last word in: who
+  // started it and when. No title: the key set has nowhere to put one.
+  threads: [{ id: SAMPLE_PRIVATE_THREAD, authorHandle: null, authorName: "Lin Park", createdAt: EARLIER }],
 };
 
 /** `GET /v1/openproduct/me/following`. */
@@ -1570,6 +1809,16 @@ MOVED.push({
   to: `/studio/${STUDIO_ORG}/${STUDIO_PROFILE}/settings`,
   status: 307,
 });
+// OPR-4 — a listing's discussions address forwards too: to Talk when the
+// listing is published, and (signed out, as `MOVED` asks) to the Discussions
+// card on its settings page.
+MOVED.push({
+  from: `/studio/${STUDIO_ORG}/${STUDIO_PROFILE}/discussions`,
+  // (The lane compares the path and the query; the `#discussions` the
+  // forward carries is the browser's to keep.)
+  to: `/studio/${STUDIO_ORG}/${STUDIO_PROFILE}/settings`,
+  status: 307,
+});
 /** The subject the signed-in lanes walk as. Not an identity anybody minted —
  *  a fixture value the fixture gateway answers for. */
 export const WALK_SUBJECT = "sub_000000000000000000000001";
@@ -1580,12 +1829,12 @@ export const WALK_SUBJECT = "sub_000000000000000000000001";
  * fixture gateway answers the bearer inside it. One helper, so the studio walk
  * and OV4's authenticated walk sign in the same way.
  */
-export function sessionCookie(base) {
+export function sessionCookie(base, who = { subjectId: WALK_SUBJECT, accessToken: "tok_walk", displayName: "Ada Lovelace" }) {
   const value = Buffer.from(
     JSON.stringify({
-      subjectId: WALK_SUBJECT,
-      accessToken: "tok_walk",
-      displayName: "Ada Lovelace",
+      subjectId: who.subjectId,
+      accessToken: who.accessToken,
+      displayName: who.displayName,
       expiresAt: Date.now() + 60 * 60 * 1000,
       kind: "openproduct",
     }),
@@ -1643,10 +1892,8 @@ export const AUTHED_ROUTES = [
   // address forwards (a route handler): a draft here, a published listing
   // to its product page; `MOVED` holds the signed-out answer.
   { path: `/studio/${STUDIO_ORG}/${STUDIO_PROFILE}/settings`, name: "studio · listing settings", expect: "Listing steps" },
-  // 3d54dc12 folded the page's "Something worse than off-topic?" panel into
-  // the editor's Discussions card, so the card's own heading is what proves
-  // the surface drew (a failure panel has none).
-  { path: `/studio/${STUDIO_ORG}/${STUDIO_PROFILE}/discussions`, name: "studio · discussions", expect: 'id="discussions-heading"' },
+  // (OPR-4 — the listing's discussions page forwards to Talk, and lives in
+  // `MOVED`; its Discussions card is drawn on the settings page above.)
   { path: `/studio/${STUDIO_ORG}/${STUDIO_PROFILE}/details`, name: "studio · details", expect: "Listing steps" },
   { path: `/studio/${STUDIO_ORG}/${STUDIO_PROFILE}/media`, name: "studio · media", expect: "Listing steps" },
   { path: `/studio/${STUDIO_ORG}/${STUDIO_PROFILE}/topics`, name: "studio · topics", expect: "Listing steps" },
@@ -1692,12 +1939,15 @@ export const MAINTAINER_PROFILE = {
 export const STUDIO_MEDIA = [];
 
 /** The overlay's OPR-3 keys, bounded by the request's own parameters. */
-function overlayExtras(search) {
+function overlayExtras(search, token) {
   const query = new URLSearchParams(search ?? "");
   const asked = (name) => (query.get(name) ?? "").split(",").filter((v) => v.length > 0);
+  // OPR-4 — the two other walkers (`tok_reader`, `tok_third`) are signed in
+  // and on NO crew: that is the whole of what they are for.
+  const onCrew = token !== READER_TOKEN && token !== THIRD_TOKEN;
   return {
     reactions: asked("productPosts").includes(SAMPLE_REACTED_POST) ? { [SAMPLE_REACTED_POST]: "curious" } : {},
-    crew: asked("ids").includes(CREW_SLUG) ? [{ slug: CREW_SLUG, org: CREW_ORG, profile: CREW_PROFILE }] : [],
+    crew: onCrew && asked("ids").includes(CREW_SLUG) ? [{ slug: CREW_SLUG, org: CREW_ORG, profile: CREW_PROFILE }] : [],
     requestedOpenings: asked("openings").filter((id) => id === SAMPLE_REQUESTED_OPENING),
   };
 }
@@ -1925,8 +2175,18 @@ function answer(pathname, search, req = { method: "GET", body: undefined }) {
     return { products: CARDS.slice(0, 3) };
   }
   if (pathname === "/v1/openproduct/me/notifications") {
+    // OPR-4 — the private thread's rows, each for the reader it is for and
+    // nobody else: the author hears that the crew replied, the crew hears
+    // that a thread started. No row holds a title or a word of the thread.
+    const privateRows =
+      req.token === READER_TOKEN
+        ? [{ id: "ntf_000000000000000000000011", kind: "thread.private.answered", actor: SAMPLE_HANDLE, targetKind: "thread", targetRef: `${CREW_SLUG}/${SAMPLE_PRIVATE_THREAD}`, figure: null, createdAt: EARLIER, unread: true }]
+        : req.token === CREW_TOKEN
+          ? [{ id: "ntf_000000000000000000000012", kind: "thread.private", actor: null, targetKind: "thread", targetRef: `${CREW_SLUG}/${SAMPLE_PRIVATE_THREAD}`, figure: null, createdAt: EARLIER, unread: true }]
+          : [];
     return {
       items: [
+        ...privateRows,
         { id: "ntf_000000000000000000000001", kind: "post.reply", actor: "grace", targetKind: "post", targetRef: SAMPLE_SLUG, figure: null, createdAt: EARLIER, unread: true },
         { id: "ntf_000000000000000000000002", kind: "rank.first", actor: null, targetKind: "listing", targetRef: SAMPLE_SLUG, figure: 1, createdAt: EARLIER, unread: false },
       ],
@@ -1965,7 +2225,7 @@ function answer(pathname, search, req = { method: "GET", body: undefined }) {
         // the page asked: my reaction on the idea post (`productPosts=`),
         // the product I am on the crew of (`ids=`), the seat I asked for
         // (`openings=`). A page that asked about none of them gets none.
-        ...overlayExtras(search),
+        ...overlayExtras(search, req.token),
       },
     };
   }
@@ -1983,7 +2243,15 @@ function answer(pathname, search, req = { method: "GET", body: undefined }) {
   // OPR-3 — the crew routes of the product the walker is on the crew of.
   const crewRoot = `/v1/organizations/${CREW_ORG}/openproduct/profiles/${CREW_PROFILE}`;
   if (pathname === crewRoot || pathname.startsWith(`${crewRoot}/`)) {
+    // OPR-4 — the crew's door answers 404 to a walker who is not the crew.
+    if (req.token === READER_TOKEN || req.token === THIRD_TOKEN) return null;
     return crewAnswer(pathname.slice(crewRoot.length), req);
+  }
+  // OPR-4 — the signed-in Talk routes: private threads by the bearer, a new
+  // thread, and the crew's resolve.
+  if (pathname === "/v1/openproduct/threads" || pathname.startsWith("/v1/openproduct/threads/")) {
+    const talk = talkAnswer(pathname, search, req);
+    if (talk !== undefined) return talk;
   }
   // SR0 — the search page's one read. Three sections, and the fixture answers
   // all three so the lane walks a page with content in every one rather than
@@ -2078,7 +2346,12 @@ function answer(pathname, search, req = { method: "GET", body: undefined }) {
     }
     if (sub === "threads") {
       const tag = new URLSearchParams(search).get("tag");
-      const threads = tag && tag !== THREAD.tag ? [] : [THREAD];
+      // OPR-4 — the idea product also has an issue its crew resolved. PUBLIC
+      // threads only: a private thread is in no answer on this branch.
+      // …and the crew product one that is still open, for its crew to resolve.
+      const which = decodeURIComponent(slug);
+      const mine = which === SAMPLE_IDEA_SLUG ? [THREAD, ISSUE_THREAD] : which === CREW_SLUG ? [THREAD, openIssueThread()] : [THREAD];
+      const threads = tag && tag !== THREAD.tag ? [] : mine;
       // DQ0b — the product page's own comment section travels with its
       // discussions. A FILTERED read carries none, because `?tag=question` is
       // a request for one kind of discussion and the comment box is not one
@@ -2122,7 +2395,15 @@ function answer(pathname, search, req = { method: "GET", body: undefined }) {
     const threads = tag && tag !== THREAD.tag ? [] : [{ ...THREAD, slug: SAMPLE_SLUG }];
     return { order, tag, threads, formula: order === "latest" ? "threads.latest" : "threads.most-replied" };
   }
-  if (pathname === `${P}/threads/${SAMPLE_THREAD}`) return { thread: THREAD, posts: POSTS };
+  if (pathname === `${P}/threads/${SAMPLE_THREAD}`) return { thread: THREAD, posts: POSTS, slug: SAMPLE_SLUG };
+  // OPR-4 — the resolved issue's own page. (The PRIVATE thread's id falls
+  // through to the `null` below: on the public branch it does not exist.)
+  if (pathname === `${P}/threads/${SAMPLE_ISSUE_THREAD}`) {
+    return { thread: ISSUE_THREAD, posts: [POSTS[0]], slug: SAMPLE_IDEA_SLUG };
+  }
+  if (pathname === `${P}/threads/${SAMPLE_OPEN_ISSUE_THREAD}`) {
+    return { thread: openIssueThread(), posts: [], slug: CREW_SLUG };
+  }
   // A THREAD ID THE FIXTURE DOES NOT HOLD, answered the way the maker tab
   // above answers an unknown handle: `null`, which is what the real API says
   // and what the page turns into a 404. Added with `ABSENT` — until a probe
@@ -2306,6 +2587,9 @@ function mediaBytesFor(pathname) {
 export async function startGateway(port = 0) {
   const requests = [];
   const unmatched = [];
+  // OPR-4 — every ask for a private thread, with the bearer it carried. The
+  // leak lane reads this: a public page's render must never appear here.
+  const privateAsks = [];
   // openproduct-studio OSD8 — a round trip in front of every read, on request.
   // The fixture answers in microseconds and production across an ocean; the
   // studio's timing lane sets this (POST /__fixture/latency?ms=45) for its run
@@ -2366,7 +2650,13 @@ export async function startGateway(port = 0) {
           parsed = undefined;
         }
       }
-      respond(answer(url.pathname, url.search, { method: req.method ?? "GET", body: parsed }));
+      // OPR-4 — and the BEARER, for the one family whose answer depends on
+      // who is asking: private threads. Every other answer ignores it.
+      const bearer = /^Bearer (.+)$/.exec(req.headers.authorization ?? "");
+      if (url.pathname.startsWith("/v1/openproduct/threads/private")) {
+        privateAsks.push({ path: url.pathname + url.search, token: bearer ? bearer[1] : null });
+      }
+      respond(answer(url.pathname, url.search, { method: req.method ?? "GET", body: parsed, token: bearer ? bearer[1] : null }));
     });
 
     function respond(data) {
@@ -2401,6 +2691,7 @@ export async function startGateway(port = 0) {
     url: `http://127.0.0.1:${actual}`,
     requests,
     unmatched,
+    privateAsks,
     close: () => new Promise((resolve) => server.close(resolve)),
   };
 }

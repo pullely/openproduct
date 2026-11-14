@@ -1233,6 +1233,33 @@ export interface ThreadRecord {
   postCount: number;
   profileId: string | null;
   answerPostId: string | null;
+  /** OPR-4 — `private` only ever comes back from the signed-in reads
+   *  (`listPrivateThreads`, `getPrivateThread`); every other read filters
+   *  private threads out in SQL, so there it is always `public`. */
+  visibility: ThreadVisibilityName;
+  /** OPR-4 — what a thread started from Talk is; null for older threads and
+   *  the system's own (`launch`, `post`). */
+  kind: ThreadKindName | null;
+  /** OPR-4 — when the crew marked an issue resolved. */
+  resolvedAt: string | null;
+  /** OPR-4 — the product's slug, on the reads that join it (`getThread`,
+   *  the forum, the signed-in reads); null on the others. */
+  slug?: string | null;
+}
+
+/** OPR-4 — the schema's CHECKs spell the same values (2280). */
+export type ThreadVisibilityName = "public" | "private";
+export type ThreadKindName = "question" | "issue" | "suggestion";
+
+/** OPR-4 — a private thread as its reader's list holds it. */
+export interface PrivateThreadRecord extends ThreadRecord {
+  /** The last word is not the crew's (or nobody has replied). */
+  awaitingCrew: boolean;
+}
+
+/** OPR-4 — one private thread, with the product's slug for its address. */
+export interface PrivateThreadDetailRecord extends ThreadRecord {
+  slug: string | null;
 }
 
 /** PP0 — the six tags a comment may carry; the schema's CHECK spells the
@@ -1271,6 +1298,10 @@ export interface CreateThreadInput {
   title: string;
   authorSubjectId: string;
   at: string;
+  /** OPR-4 — omitted for a thread with no kind. */
+  kind?: ThreadKindName | null;
+  /** OPR-4 — omitted means public. Written once; never updated. */
+  visibility?: ThreadVisibilityName;
 }
 
 /** DQ0b — what making a launch thread needs. No tag (it is always `launch`)
@@ -2015,8 +2046,22 @@ export interface OpenproductRepository {
     order: "latest" | "replied";
     limit: number;
   }): Promise<ForumThreadRecord[]>;
+  /** One PUBLIC thread. A private thread is absent from this read. */
   getThread(id: string): Promise<ThreadRecord | null>;
+  /** A PUBLIC thread's posts. A private thread's are absent from this read. */
   listPosts(threadId: string, limit?: number): Promise<PostRecord[]>;
+  /**
+   * OPR-4 (design §7) — the signed-in path to private threads. Each of the
+   * three checks, in its own statement, that `readerSubjectId` is the
+   * thread's author or on the product's crew now; anyone else gets nothing.
+   * Never called from a public route.
+   */
+  listPrivateThreads(profileId: string, readerSubjectId: string, limit?: number): Promise<PrivateThreadRecord[]>;
+  getPrivateThread(id: string, readerSubjectId: string): Promise<PrivateThreadDetailRecord | null>;
+  listPrivatePosts(threadId: string, readerSubjectId: string, limit?: number): Promise<PostRecord[]>;
+  /** OPR-4 — set or clear an issue's resolved moment. False when the thread
+   *  is not an issue (or is removed). The caller authorises. */
+  setThreadResolved(id: string, resolvedAt: string | null): Promise<boolean>;
   createThread(input: CreateThreadInput): Promise<string | null>;
 
   /**
@@ -2059,8 +2104,12 @@ export interface OpenproductRepository {
   getSlugForThread(threadId: string): Promise<string | null>;
 
   /** NF0 — who wrote a VISIBLE post, and which thread it is in. Null for a
-   *  removed one: there is nothing there to be told about. */
-  getPostAuthor(postId: string): Promise<{ authorSubjectId: string; threadId: string } | null>;
+   *  removed one: there is nothing there to be told about. OPR-4: also
+   *  whether that thread is public or private, so a notification about a
+   *  post in a private thread can be withheld. */
+  getPostAuthor(
+    postId: string,
+  ): Promise<{ authorSubjectId: string; threadId: string; threadVisibility: "public" | "private" } | null>;
 
   /**
    * NF0 — who follows a TOPIC. There is deliberately no equivalent for a
