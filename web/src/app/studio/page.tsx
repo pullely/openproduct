@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 
 import { readSession } from "../auth/session-server";
 import { consoleOrigin } from "../../lib/platform";
-import { BTN_OUTLINE } from "../ui/design";
+import { BTN_OUTLINE, TILE } from "../ui/design";
 import { FailurePanel } from "../ui/failure";
 import { ProductTile } from "../ui/product-tile";
 import { BTN_GHOST, GLYPH_PENCIL, Glyph, StatusChip, StudioFrame, StudioPanel } from "./frame";
@@ -99,11 +99,11 @@ export default async function StudioPage() {
         <StudioPanel title="No listings yet.">
           <p className="m-0">
             A listing is bound to one of your openproduct workspaces.{" "}
-            <a className="underline underline-offset-4" href={pickerUrl}>
+            <a className="text-link underline underline-offset-4" href={pickerUrl}>
               Link a workspace you already have
             </a>
             , or{" "}
-            <AppLink className="underline underline-offset-4" href="/submit">
+            <AppLink className="text-link underline underline-offset-4" href="/submit">
               open a build
             </AppLink>{" "}
             to start a new one. It appears here as a draft to fill in and publish.
@@ -124,7 +124,7 @@ export default async function StudioPage() {
               return (
                 <li
                   key={listing.id}
-                  className="flex flex-wrap items-center gap-x-[18px] gap-y-3 rounded-[20px] border border-border bg-card px-7 py-5 max-sm:px-4 max-sm:py-4"
+                  className={`flex flex-wrap items-center gap-x-[18px] gap-y-3 px-6 py-5 max-sm:px-4 max-sm:py-4 ${TILE}`}
                 >
                   <AppLink prefetch="auto" href={href} tabIndex={-1} aria-hidden="true" className="shrink-0">
                     <ProductTile slug={listing.slug} thumbnail={listing.thumbnail} size={72} phoneSize={52} />
@@ -134,7 +134,7 @@ export default async function StudioPage() {
                       <AppLink
                         prefetch="auto"
                         href={href}
-                        className="text-[19px] font-semibold leading-[1.25] tracking-[-0.015em] text-foreground no-underline hover:text-copy"
+                        className="text-card-title font-semibold tracking-[-0.01em] text-foreground no-underline hover:text-copy"
                       >
                         {listing.slug}
                       </AppLink>
@@ -167,13 +167,11 @@ export default async function StudioPage() {
             <a href={pickerUrl} className={`${BTN_OUTLINE} no-underline`}>
               {LINK_WORKSPACE_LABEL}
             </a>
-            <p className="m-0 text-[13px] leading-[1.55] text-muted-foreground">
-              Pick one of your openproduct workspaces, or{" "}
-              <AppLink className="underline underline-offset-4 hover:text-foreground" href="/submit">
-                open a build
-              </AppLink>{" "}
-              to start a new one.
-            </p>
+            {/* OPR1 — the second door is a button, not a sentence under the
+                first: the owner's rule is no helper text beside a control. */}
+            <AppLink className={`${BTN_GHOST} no-underline`} href="/submit">
+              Open a build
+            </AppLink>
           </div>
         </>
       )}

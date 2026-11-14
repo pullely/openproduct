@@ -5,7 +5,7 @@ import { consoleOrigin } from "@/lib/platform";
 import { readSession } from "../../auth/session-server";
 import { fetchListing } from "../../public-api";
 import { AppLink } from "../../ui/link";
-import { BTN_OUTLINE, BTN_PRIMARY, CARD, H2, PAGE } from "../../ui/design";
+import { BTN_OUTLINE, BTN_PRIMARY, PAGE, PAGE_TITLE, PANEL } from "../../ui/design";
 import {
   WORKSPACE_VIEW_CONSENT,
   WORKSPACE_VIEW_LABEL,
@@ -47,11 +47,11 @@ export default async function WorkspaceConsentPage(props: { params: Promise<{ sl
 
   return (
     <main className={PAGE}>
-      <section className={CARD} aria-labelledby="workspace-view-heading">
-        <h1 id="workspace-view-heading" className={H2}>
+      <section className={`${PANEL} max-w-[720px]`} aria-labelledby="workspace-view-heading">
+        <h1 id="workspace-view-heading" className={PAGE_TITLE}>
           {WORKSPACE_VIEW_LABEL}
         </h1>
-        <p className="m-0 mt-2 max-w-[62ch] text-[14.5px] leading-[1.55] text-copy">
+        <p className="m-0 mt-3 max-w-[62ch] text-[15px] leading-[1.55] text-copy">
           <strong>{profile.slug}</strong> is built in the open. {WORKSPACE_VIEW_CONSENT}
         </p>
         <div className="mt-5 flex flex-wrap items-center gap-3">

@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 
 import { allFormulas, formulaAnchor } from "@openproduct/contracts";
 
-import { CRUMBS, H2, PAGE_NARROW, PAGE_TITLE } from "../../ui/design";
+import { CRUMBS, EYEBROW, H2, LINK_QUIET, PAGE_NARROW, PAGE_TITLE } from "../../ui/design";
 
 import { AppLink } from "../../ui/link";
 
@@ -147,7 +147,7 @@ export default function FormulasPage() {
   return (
     <main className={PAGE_NARROW}>
       <nav aria-label="Breadcrumb" className={CRUMBS}>
-        <AppLink href="/docs" className="tap underline underline-offset-[3px] hover:text-foreground">
+        <AppLink href="/docs" className={`tap ${LINK_QUIET}`}>
           Docs
         </AppLink>
         <span aria-hidden="true">/</span>
@@ -178,7 +178,7 @@ export default function FormulasPage() {
             <p className="m-0 mt-2.5 max-w-[68ch] text-[15px] leading-[1.7] text-muted-foreground">
               {group.blurb}
             </p>
-            <div className="mt-4 border-t border-border">
+            <div className="mt-4 border-t border-line">
               {rows.map((formula) => (
                 <article
                   key={formula.id}
@@ -192,7 +192,7 @@ export default function FormulasPage() {
                     >
                       {formula.id}
                     </a>
-                    <span className="font-mono text-[12px] uppercase tracking-[0.06em] text-muted-foreground">
+                    <span className={EYEBROW}>
                       {formula.computedBy}
                     </span>
                   </h3>

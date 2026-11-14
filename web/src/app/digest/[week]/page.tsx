@@ -18,7 +18,18 @@ import {
 } from "@openproduct/contracts";
 
 import { fetchDigest, publicApexOrigin } from "../../public-api";
-import { CARD, CARD_HEAD, CRUMBS, H2, HEAD_META, PAGE_TITLE, PANEL, ROW } from "../../ui/design";
+import {
+  CARD,
+  CARD_HEAD,
+  CRUMBS,
+  EYEBROW,
+  H2,
+  HEAD_META,
+  LINK_QUIET,
+  PAGE_TITLE,
+  PANEL,
+  ROW,
+} from "../../ui/design";
 import { listCardMeta } from "../../ui/og";
 import { ProductMark } from "../../ui/bits";
 
@@ -80,7 +91,8 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 }
 
 /** The week's column: 820px, `28px 28px 72px`; 16px gutters on a phone. */
-const WEEK_PAGE = "mx-auto box-border w-full max-w-[820px] px-7 pb-[72px] pt-7 max-sm:px-4";
+const WEEK_PAGE =
+  "mx-auto box-border w-full max-w-[820px] px-7 pb-[96px] pt-[64px] max-sm:px-4 max-sm:pb-[72px] max-sm:pt-10";
 
 /** A row that is a link: the design's row, with the underline off. */
 const ROW_LINK = `${ROW} no-underline`;
@@ -103,7 +115,7 @@ export default async function DigestPage({ params }: PageProps) {
   return (
     <main className={WEEK_PAGE}>
       <nav aria-label="Breadcrumb" className={CRUMBS}>
-        <AppLink href="/digest" className="underline underline-offset-[3px] hover:text-foreground">
+        <AppLink href="/digest" className={`tap ${LINK_QUIET}`}>
           Digest
         </AppLink>
         <span aria-hidden="true">/</span>
@@ -114,7 +126,7 @@ export default async function DigestPage({ params }: PageProps) {
           which looks like a bug and is the standard behaving correctly — so
           the page says which days it means rather than leaving somebody to
           work it out. */}
-      <span className="mt-[18px] block font-mono text-[12px] uppercase tracking-[0.08em] text-muted-foreground">
+      <span className={`mt-[18px] block ${EYEBROW}`}>
         {parsed.week.id}
       </span>
       <h1 className={`${PAGE_TITLE} mt-1.5`}>
@@ -151,7 +163,7 @@ export default async function DigestPage({ params }: PageProps) {
                       </span>
                     ) : null}
                   </span>
-                  <span className="shrink-0 font-mono text-[12.5px] text-muted-foreground">
+                  <span className="shrink-0 font-mono text-[13px] text-muted-foreground">
                     {dayOf(launch.launchedAt)}
                   </span>
                 </AppLink>
@@ -187,7 +199,7 @@ export default async function DigestPage({ params }: PageProps) {
               <li key={`${change.slug}-${change.field}`}>
                 <AppLink href={`/${change.slug}#changed`} className={`${ROW_LINK} flex-wrap items-baseline gap-x-3 gap-y-1`}>
                   <span className="text-[16px] font-semibold text-foreground">{change.slug}</span>
-                  <span className="text-[14.5px] text-muted-foreground">{change.label}</span>
+                  <span className="text-[15px] text-muted-foreground">{change.label}</span>
                   <span className="min-w-0 flex-1 truncate font-mono text-[13px] text-muted-foreground">
                     {change.from} → {change.to}
                   </span>
@@ -195,7 +207,7 @@ export default async function DigestPage({ params }: PageProps) {
                       a tagline is somebody's act. A list that framed both the
                       same way would say a product's maintainers changed their
                       licence here, which nobody did. */}
-                  <span className="shrink-0 font-mono text-[11.5px] uppercase tracking-[0.06em] text-muted-foreground">
+                  <span className={`shrink-0 ${EYEBROW}`}>
                     {change.provenance.class === "observed" ? "observed" : "by its maintainers"}
                   </span>
                 </AppLink>
@@ -230,7 +242,7 @@ export default async function DigestPage({ params }: PageProps) {
                 <AppLink href={`/${entry.slug}`} className={`${ROW_LINK} items-baseline`}>
                   <span className="text-[16px] font-semibold text-foreground">{entry.slug}</span>
                   {entry.tagline ? (
-                    <span className="min-w-0 flex-1 truncate text-[14.5px] text-muted-foreground">
+                    <span className="min-w-0 flex-1 truncate text-[15px] text-muted-foreground">
                       {entry.tagline}
                     </span>
                   ) : (
@@ -263,7 +275,7 @@ export default async function DigestPage({ params }: PageProps) {
         </p>
       </section>
 
-      <nav className="mt-8 flex flex-wrap items-center justify-between gap-3 border-t border-border pt-4 text-[14px]">
+      <nav className="mt-8 flex flex-wrap items-center justify-between gap-3 border-t border-line pt-4 text-[14px]">
         <AppLink href={`/digest/${previous.id}`} className="tap text-muted-foreground no-underline hover:text-foreground">
           ← {previous.id}
         </AppLink>
@@ -298,9 +310,9 @@ export default async function DigestPage({ params }: PageProps) {
 function Note({ note }: { note: NonNullable<Digest["note"]> }) {
   return (
     <figure className={`${PANEL} m-0 mt-5 max-w-[70ch]`}>
-      <blockquote className="m-0 text-[17px] leading-[1.6] text-copy">{note.body}</blockquote>
-      <figcaption className="mt-2.5 text-[13.5px] text-muted-foreground">
-        <AppLink href={`/@${note.byHandle}`} className="text-foreground underline underline-offset-[3px]">
+      <blockquote className="m-0 font-serif text-[17px] italic leading-[1.6] text-copy">{note.body}</blockquote>
+      <figcaption className="mt-2.5 text-[13px] text-muted-foreground">
+        <AppLink href={`/@${note.byHandle}`} className="text-link underline underline-offset-[3px]">
           @{note.byHandle}
         </AppLink>
       </figcaption>

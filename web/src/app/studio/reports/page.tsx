@@ -11,7 +11,7 @@ import {
 import { readSession } from "../../auth/session-server";
 import { BTN_OUTLINE, FIELD, LABEL } from "../../ui/design";
 import { FailurePanel } from "../../ui/failure";
-import { StudioFrame, StudioPanel, StudioSection } from "../frame";
+import { STUDIO_RECORD, StudioFrame, StudioPanel, StudioSection } from "../frame";
 import { noticeFrom, REPORT_VOCABULARY } from "../notices";
 import { fetchFlagQueue, fetchReportQueue } from "../studio-api";
 
@@ -141,23 +141,23 @@ export default async function ReportQueuePage(props: PageProps) {
 function FlagRow({ flag, action }: { flag: PublicFlag; action: string }) {
   const copy = FLAG_COPY[flag.kind as FlagKind];
   return (
-    <div className="mb-3 max-w-[74ch] rounded-[12px] border border-border bg-card px-4 py-3.5 last:mb-0">
+    <div className={STUDIO_RECORD}>
       <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
-        <span className="text-[15.5px] font-semibold text-foreground">{copy.title}</span>
-        <span className="font-mono text-[12.5px] text-muted-foreground">
+        <span className="text-[15px] font-semibold text-foreground">{copy.title}</span>
+        <span className="font-mono text-[13px] text-muted-foreground">
           {flag.subjectKind} · {flag.subjectRef}
         </span>
       </div>
 
       {/* The detector's own words, quoting the text or reporting the shape.
           Rendered as text by React, like every other untrusted string here. */}
-      <p className="m-0 mt-2 text-[13.5px] leading-[1.55] text-foreground">{flag.evidence}</p>
+      <p className="m-0 mt-2 text-[13px] leading-[1.55] text-foreground">{flag.evidence}</p>
 
-      <p className="m-0 mt-2 text-[12.5px] leading-[1.5] text-muted-foreground">
+      <p className="m-0 mt-2 text-[13px] leading-[1.5] text-muted-foreground">
         {copy.says}
       </p>
 
-      <p className="m-0 mt-2 text-[12.5px] text-muted-foreground">
+      <p className="m-0 mt-2 text-[13px] text-muted-foreground">
         {new Date(flag.raisedAt).toLocaleDateString("en-GB", {
           day: "numeric",
           month: "short",
@@ -201,12 +201,12 @@ const CONSEQUENCE_COPY: Record<string, string> = {
  */
 function ReportRow({ report, action }: { report: QueuedReport; action: string }) {
   return (
-    <div className="mb-3 max-w-[74ch] rounded-[12px] border border-border bg-card px-4 py-3.5 last:mb-0">
+    <div className={STUDIO_RECORD}>
       <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
-        <span className="text-[15.5px] font-semibold text-foreground">
+        <span className="text-[15px] font-semibold text-foreground">
           {REPORT_REASON_LABELS[report.reason]}
         </span>
-        <span className="font-mono text-[12.5px] text-muted-foreground">
+        <span className="font-mono text-[13px] text-muted-foreground">
           {report.subjectKind} · {report.subjectRef}
         </span>
       </div>
@@ -215,12 +215,12 @@ function ReportRow({ report, action }: { report: QueuedReport; action: string })
         // The reporter's own words, as written. Rendered as text by React,
         // never as markup: this is untrusted input from the open internet and
         // the one place on the estate where somebody types about somebody else.
-        <p className="m-0 mt-2 whitespace-pre-wrap text-[13.5px] leading-[1.55] text-foreground">
+        <p className="m-0 mt-2 whitespace-pre-wrap text-[13px] leading-[1.55] text-foreground">
           {report.detail}
         </p>
       ) : null}
 
-      <p className="m-0 mt-2 text-[12.5px] text-muted-foreground">
+      <p className="m-0 mt-2 text-[13px] text-muted-foreground">
         {new Date(report.createdAt).toLocaleDateString("en-GB", {
           day: "numeric",
           month: "short",
@@ -273,5 +273,5 @@ function ReportRow({ report, action }: { report: QueuedReport; action: string })
 // button by its consequence. Not the endorsement gold — that token means one
 // thing and this is not it.
 const DANGER =
-  "inline-flex h-[36px] shrink-0 items-center justify-center whitespace-nowrap rounded-full border border-destructive/40 bg-destructive/5 px-3.5 text-[14px] font-medium text-destructive";
-const QUIET = "text-[13.5px] text-muted-foreground underline underline-offset-4";
+  "inline-flex h-[40px] shrink-0 items-center justify-center whitespace-nowrap rounded-full border border-destructive/40 bg-destructive/5 px-3.5 text-[14px] font-medium text-destructive";
+const QUIET = "text-[13px] text-muted-foreground underline underline-offset-4";

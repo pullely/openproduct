@@ -2,177 +2,160 @@
 
 import { usePathname } from "next/navigation";
 
+import { SEARCH_PATH } from "@openproduct/contracts";
+
 import { AccountChip } from "./account-chip";
 import { Logomark } from "./logomark";
 import { NotificationBell } from "./notification-bell";
-import { CommandPalette } from "./palette";
+import { HeaderSearch } from "./palette";
+import { SearchGlyph } from "./palette-glyph";
 import { sectionFor } from "./section-for";
-import { SECTIONS } from "./shell";
+import { SECTIONS, SIGN_IN_PATH } from "./shell";
 
-import { PlusIcon } from "../ui/icons";
 import { AppLink } from "../ui/link";
 
 /**
- * The top bar (openproduct-calm CL1, CL-R1; first drawn at openproduct-launch
- * OL1).
+ * The header (openproduct-redesign OPR1; boards `Products`, `Feed`,
+ * `PhoneFeed`).
  *
- * IT SPANS THE WINDOW. The bar used to sit inside the same 1180px column as
- * the page, which tucked the wordmark in from the corner and made the bar
- * read as part of the content. CL1 takes it out of the column: the mark
- * (32px) and the wordmark (Newsreader 28px, regular, -0.03em) sit in the
- * left corner at the page gutter, the sections follow as WORDS with a 2px
- * underline under the current one (no pill, no glyph: the glyphs live in the
- * phone's bottom bar, where there are no words), and the search field, the
- * bell, *Open a build* and the account chip sit at the right, all round.
+ * ONE STICKY FROSTED BAR, ON EVERY PAGE. White at 62% over a blur, with no
+ * border and no shadow (design.md §2 rule 11: flat), so the page's dot grid
+ * shows through it as it scrolls under. Its content stands in the page's own
+ * column — 1180px, 24px gutters — so the mark lines up with the page's edge.
  *
- * IT SCROLLS AWAY FROM `sm` UP. A list's sort tabs are the one strip that
- * stays in reach (CL-R6); a sticky bar on top of them was 132px of chrome
- * before the first build. On a phone the bar stays FR1's sticky 56px row,
- * because there the bottom bar and this row are the whole navigation.
+ * FROM `sm` UP, left to right: the mark and the word (home), the three
+ * sections as 36px pills with the current one in ink, then — pushed to the
+ * right — the search box that opens in place (`palette.tsx`), the Activity
+ * bell and the profile control, each a 40px disc.
  *
- * WHAT DID NOT CHANGE. Still a client component, and still not for
- * personalisation — for `usePathname`, which resolves during the server
- * render too, so the lit section is correct in the cached HTML instead of
- * appearing on hydration. The path is not personal, so the output is still
- * identical for every visitor (invariant I6); the islands that *are*
- * personal — `AccountChip`, `NotificationBell` — render their anonymous
- * state on the server exactly as before.
+ * ON A PHONE the sections are the bottom tab bar (`section-bar.tsx`) and
+ * Activity is its fourth tab, so this row is three things: the mark, a
+ * search field that is a LINK to `/search` (44px; a field that opens a card
+ * under itself has nowhere to put it at 390px), and the profile control
+ * (44px).
  *
- * THE PLANNED SECTIONS ARE RENDERED, NOT OMITTED — the convention this shell
- * has kept since XP0. A destination that does not exist yet renders muted and
- * inert with an accessible description naming the milestone that will fill
- * it.
+ * ONE ROW, AND IT DOES NOT WRAP (FR1's rule, kept). The board's header
+ * wraps; a bar that may wrap gets taller every time something inside it
+ * does, and at tablet widths everything inside it does. So nothing wraps
+ * and something gives way instead: the search box shrinks from its 268px,
+ * and below `lg` the word steps aside and the mark alone goes home.
+ *
+ * STILL A CLIENT COMPONENT, AND STILL NOT FOR PERSONALISATION — for
+ * `usePathname`, which resolves during the server render too, so the lit
+ * section is correct in the cached HTML instead of appearing on hydration.
+ * The path is not personal, so the output is identical for every visitor
+ * (invariant I6); the islands that ARE personal — `AccountChip`,
+ * `NotificationBell` — render their anonymous state on the server.
+ *
+ * AT MOST ONE `aria-current` IN THE BAR: `sectionFor` names one destination
+ * or none, and the pills and the bell both ask it.
+ *
+ * TWO PAGES TAKE LESS OF IT, and both are the boards' own:
+ *
+ *   `/signin` (boards `SignIn`, `PhoneSignIn`) — the mark and the word, and
+ *   nothing else. The page IS the way in, so a profile control that offers
+ *   to sign in, a bell with nothing behind it and a search box are three
+ *   ways to leave the one thing the visitor came to do. The word stays at
+ *   every width here: with nothing beside it, it has the room.
+ *
+ *   `/search` on a phone (board `PhoneSearch`) — no search link. The page's
+ *   own field is the search, directly under this bar; a second pill above
+ *   it that links to the page it is on is the same control twice.
+ *
+ * Both are read from the path, which is the same for every visitor (I6).
  */
 export function TopPanel() {
   const pathname = usePathname() ?? "/";
   const activeSection = sectionFor(pathname);
+  const path = pathname.split("?")[0] ?? "/";
+  const door = path === SIGN_IN_PATH;
+  const onSearch = path === SEARCH_PATH;
 
   return (
-    // FR1 — on a phone the height is on the HEADER with `box-border`, so the
-    // hairline is inside the 56px rather than a fifty-seventh pixel on top of
-    // it; there the bar is sticky glass, as it always was. From `sm` up it is
-    // the page's own ground and scrolls with the page (CL1).
-    <header className="relative z-40 border-b border-line bg-background max-sm:sticky max-sm:top-0 max-sm:box-border max-sm:h-[56px] max-sm:border-border max-sm:bg-card/[0.92] max-sm:backdrop-blur-[10px]">
-      {/* EIGHTY PIXELS, ONE ROW, AND IT DOES NOT MOVE (FR1's rule, CL1's
-          height). Nothing inside may wrap: anything that changes width — the
-          account control resolving from `Sign in` to an avatar, the bell
-          gaining a badge — lands in the search field's slack, never in a
-          second row. Below `sm` the sections leave for `section-bar.tsx` and
-          the row is the 56px header's full height. FULL WIDTH (CL-R1): the
-          gutter is the page's, so the mark lines up with the page's edge
-          rather than a column's. */}
-      <div className="mx-auto box-border flex h-[80px] w-full flex-nowrap items-center gap-x-10 px-[44px] max-xl:gap-x-7 max-lg:px-7 max-sm:h-full max-sm:gap-x-2 max-sm:px-4">
+    <header className="sticky top-0 z-40 w-full bg-panel/[0.62] backdrop-blur-[16px] backdrop-saturate-[1.6]">
+      <div className="mx-auto box-border flex h-[60px] w-full max-w-[1180px] flex-nowrap items-center gap-x-6 px-6 max-lg:gap-x-4 max-sm:h-[68px] max-sm:gap-x-[10px] max-sm:px-[14px]">
         <AppLink
           href="/"
-          // QE0 — OFF. OPP13 prefetched the wordmark's destination on sight;
-          // the home is the heaviest document on the estate, and a visitor on
-          // any other page paid for it whether or not they went there. The
-          // hover warm in `AppLink` fetches it the moment intent shows.
+          // QE0 — OFF. The home is the heaviest document on the estate, and a
+          // visitor on any other page paid for it whether or not they went
+          // there. The hover warm in `AppLink` fetches it the moment intent
+          // shows.
           prefetch={false}
           aria-label="openproduct — home"
-          // Height only, below `sm`: the mark's drawn size is unchanged, the
-          // hit area grows to meet the 44px tap minimum (OL9's walk).
-          className="flex shrink-0 items-center gap-3 rounded-[8px] max-sm:min-h-[44px] max-sm:min-w-[44px] max-sm:justify-center focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+          // The mark's drawn size is the board's (24px; 26px on a phone); the
+          // hit area is what grows, to 40px here and 44px on a phone.
+          className="flex min-h-[40px] shrink-0 items-center gap-[10px] rounded-[8px] text-foreground no-underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring max-lg:min-w-[40px] max-lg:justify-center max-sm:min-h-[44px] max-sm:min-w-[44px]"
         >
-          <Logomark size={32} stroke={2.2} />
-          {/* THE WORDMARK STEPS ASIDE BELOW `sm` (FR1). 148px of a 343px row
-              is the difference between a search field a person can read their
-              query in and a button they have to guess at; the mark still goes
-              home, and the row above carries the whole brand as its name.
-              REGULAR WEIGHT: the face ships at 400 only, and a 500 here was
-              the browser's synthetic bold. */}
-          <span className="font-serif text-[28px] font-normal leading-none tracking-[-0.03em] text-foreground max-sm:hidden">
+          <Logomark size={24} className="max-sm:h-[26px] max-sm:w-[26px]" />
+          {/* THE WORD STEPS ASIDE BELOW `lg`. At 768px the word, three pills,
+              a 268px search box and two discs do not fit in one row; the
+              mark still goes home and the link still says the brand in its
+              name. Hanken Grotesk at 18px/600, the board's wordmark. */}
+          <span className={`text-[18px] font-semibold leading-none tracking-[-0.02em] ${door ? "" : "max-lg:hidden"}`}>
             openproduct
           </span>
         </AppLink>
 
-        {/* THE SECTIONS, AS WORDS (CL-R1). The nav stretches to the bar's full
-            height so the current section's 2px underline sits on the bar's
-            own hairline. Between `sm` and `xl` it may scroll sideways
-            (`min-w-0` lets it shrink into the space it has rather than
-            pushing the bar); below `sm` the sections are the bottom bar
-            instead (FR1), so every one of them is still reachable on a phone
-            (XP4). */}
-        <nav
-          aria-label="Sections"
-          className="flex shrink-0 items-stretch gap-7 self-stretch max-xl:min-w-0 max-xl:shrink max-xl:gap-5 max-xl:overflow-x-auto max-xl:[scrollbar-width:none] max-sm:hidden"
-        >
-          {SECTIONS.map((section) =>
-            section.status === "live" && section.href ? (
-              <AppLink
-                key={section.id}
-                href={section.href}
-                // QE0 — OFF, with the section bar's. OPP13 fetched five
-                // documents on every page load for the click that usually
-                // never comes; the wire lane counted them (desktop home: 30
-                // requests, the listing 34, both at or over WC2-8's 30). The
-                // hover warm in `AppLink` keeps the switch instant for the
-                // person who reaches for it. `prefetch={false}` rather than
-                // omitted, so the decision is visible where OPP13's was.
-                prefetch={false}
-                aria-current={section.id === activeSection ? "page" : undefined}
-                className={`-mb-px flex shrink-0 items-center border-b-2 text-[15px] font-medium transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring ${
-                  section.id === activeSection
-                    ? "border-foreground text-foreground"
-                    : "border-transparent text-muted-foreground hover:text-foreground"
-                }`}
-              >
-                {section.label}
-              </AppLink>
-            ) : (
-              <span
-                key={section.id}
-                aria-disabled="true"
-                title={
-                  section.arrivesWith
-                    ? `Arrives with ${section.arrivesWith.cluster} — ${section.arrivesWith.holds}`
-                    : undefined
-                }
-                className="relative -mb-px flex shrink-0 cursor-default items-center border-b-2 border-transparent text-[15px] font-medium text-faint"
-              >
-                {section.label}
-                <span className="sr-only">
-                  {section.arrivesWith
-                    ? ` — not yet available; arrives with ${section.arrivesWith.cluster}, and will hold ${section.arrivesWith.holds}`
-                    : " — not yet available"}
-                </span>
-              </span>
-            ),
-          )}
-        </nav>
+        {door ? null : (
+          <>
+            {/* THE SECTIONS, AS PILLS. 36px tall, 2px apart; the current one is
+                an ink pill with the light ink on it. Below `sm` they are the
+                bottom tab bar instead, so every one is still reachable on a
+                phone (XP4). Both navs are labelled "Main", which is correct
+                because only one is ever displayed. */}
+            <nav aria-label="Main" className="flex shrink-0 items-center gap-[2px] max-sm:hidden">
+              {SECTIONS.map((section) => {
+                const current = section.id === activeSection;
+                return (
+                  <AppLink
+                    key={section.id}
+                    href={section.href}
+                    // QE0 — OFF, with the tab bar's: a prefetch per section on
+                    // every page load, for the click that usually never comes.
+                    // The hover warm in `AppLink` keeps the switch instant for
+                    // the person who reaches for it.
+                    prefetch={false}
+                    aria-current={current ? "page" : undefined}
+                    className={`flex h-[36px] shrink-0 items-center whitespace-nowrap rounded-full px-[14px] text-[15px] no-underline transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring ${
+                      current
+                        ? "bg-foreground font-semibold text-background"
+                        : "font-medium text-copy hover:bg-foreground/[0.05]"
+                    }`}
+                  >
+                    {section.label}
+                  </AppLink>
+                );
+              })}
+            </nav>
 
-        {/* DS3 — the palette. It answers from the DS0 INDEX, never from a scan
-            of whatever the current page happens to have rendered. Its own
-            island, so the bar around it stays server-rendered. It takes the
-            row's slack from `sm` up (`sm:ml-auto` in `palette.tsx`), which is
-            what puts the sections beside the wordmark and the controls at the
-            right edge. */}
-        <CommandPalette />
+            {/* The right-hand group takes the row's slack and packs to the right,
+                so the search box, the bell and the profile control sit at the
+                column's edge. `min-w-0` lets the search box shrink inside it. */}
+            <div className="flex min-w-0 flex-1 items-center justify-end gap-[10px]">
+              {/* The search that opens in place — its own island, so the bar
+                  around it stays one static render. Not displayed on a phone. */}
+              <HeaderSearch />
 
-        <div className="flex shrink-0 items-center gap-2 max-sm:ml-auto max-sm:gap-1.5">
-          <NotificationBell />
-          {/* The two buttons are NOT the same button: this one is an outlined
-              pill on the page, and the black one is `Sign in` inside
-              AccountChip. Opening a build is the thing a signed-in reader does
-              occasionally; signing in is the thing the page is asking a
-              stranger to do. */}
-          <AppLink
-            href="/submit"
-            aria-label="Open a build"
-            className="inline-flex h-[44px] shrink-0 items-center justify-center gap-2 whitespace-nowrap rounded-full border border-border px-5 text-[15px] font-medium text-foreground transition-colors hover:border-faint focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring max-lg:px-4 max-sm:w-[44px] max-sm:px-0"
-          >
-            {/* OPEN A BUILD (OB1, D4), and the plus is the same glyph at every
-                width: beside the words at `lg` and up, beside the short word
-                below it, alone on a phone. The long label is worth about 70px,
-                and below `lg` that is the difference between a nav that fits
-                and a nav that scrolls. `aria-label` carries the whole act, so
-                nothing is lost to anyone reading it another way. */}
-            <PlusIcon />
-            <span className="max-lg:hidden" aria-hidden="true">Open a build</span>
-            <span className="max-sm:hidden lg:hidden" aria-hidden="true">Build</span>
-          </AppLink>
-          <AccountChip />
-        </div>
+              {/* THE PHONE'S SEARCH IS A LINK. The same pill, 44px tall, going
+                  to the search page, where the field and its results have the
+                  whole screen — and so not drawn ON that page, whose own field
+                  sits directly under this bar. */}
+              {onSearch ? null : (
+                <AppLink
+                  href={SEARCH_PATH}
+                  aria-label="Search"
+                  className="box-border flex min-h-[44px] min-w-0 flex-1 items-center gap-2 rounded-full bg-card px-3 text-[16px] text-muted-foreground no-underline ring-1 ring-inset ring-foreground/[0.07] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring sm:hidden"
+                >
+                  <SearchGlyph />
+                  Search
+                </AppLink>
+              )}
+
+              <NotificationBell current={activeSection === "activity"} />
+              <AccountChip />
+            </div>
+          </>
+        )}
       </div>
     </header>
   );

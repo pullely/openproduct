@@ -902,8 +902,9 @@ const TRANSPARENCY = {
  *  and the proof that it landed cannot drift apart. */
 export const ROUTES = [
   // The archetypes come first: they are what XP4's budgets name. `/` is the
-  // launches, and the ONLY list — the faceted directory that used to answer
-  // at `/products` is in `MOVED` below, a redirect here.
+  // list of builds. `/products` was a redirect here until
+  // openproduct-redesign OPR1 made Products a section with its own address;
+  // it is a route below.
   { path: "/", name: "feed (launch board)", archetype: true, expect: SAMPLE_SLUG },
   { path: `/${SAMPLE_SLUG}`, name: "listing (tabbed detail)", archetype: true, expect: "Frontend contributor" },
   { path: "/people", name: "contributors (card grid)", archetype: true, expect: "Ada Lovelace" },
@@ -930,12 +931,24 @@ export const ROUTES = [
   // failure panel names a product.
   { path: `/stack/${SAMPLE_STACK}`, name: "one stack", expect: CARDS[0].slug },
   { path: `/topics/${SAMPLE_TOPIC}`, name: "one topic", expect: topicCard(SAMPLE_TOPIC).label },
-  // OB7 (#1875) — the leaderboard folded into the front page's orders: the
-  // ranges are `MOVED` below, and the orders other than the default (`/`)
-  // are pages of their own. `CARDS[0]` is on all three: it has open roles.
-  { path: "/builds/upvoted", name: "builds · upvoted", expect: CARDS[0].slug },
-  { path: "/builds/newest", name: "builds · newest", expect: CARDS[0].slug },
-  { path: "/builds/roles", name: "builds · roles", expect: CARDS[0].slug },
+  // OPR1 — the list's other orders are the Products page's sorts, each a
+  // page at `/products/by/<order>`; their old addresses under `/builds/` are
+  // `MOVED` below (as the leaderboard's ranges are, since OB7). `CARDS[0]` is
+  // on all of them.
+  //
+  // CACHEABLE, as `/builds/{order}` was. For a few hours on the OPR1 branch
+  // the sort was `?sort=`, the page read `searchParams`, and these rows (and
+  // `/products`) were marked `cacheable: false` — the lane holding the fact
+  // that the Products page went out `no-store`. The sort is a path now, so
+  // each is one static, revalidated document again and the lane holds THAT:
+  // a `no-store` on any of them fails here.
+  { path: "/products/by/upvoted", name: "products · upvoted", expect: CARDS[0].slug },
+  { path: "/products/by/newest", name: "products · newest", expect: CARDS[0].slug },
+  // OPR1 — the header's other two sections. Help wanted is the page of open
+  // seats (`/builds/roles` is in `MOVED` below): `CARDS[0]` has open roles,
+  // so its name is on a ticket. Products is the board's list of cards.
+  { path: "/help-wanted", name: "help wanted", expect: CARDS[0].slug },
+  { path: "/products", name: "products", expect: SAMPLE_SLUG },
   // QE2 — every public address is walked. These had none of the three lanes
   // over them: HB2's year, PP3's pricing pages, FO1's forum and its two
   // variants, FO2's listing forum. A public route the axe pass does not
@@ -1002,14 +1015,34 @@ export const ROUTES = [
  */
 export const MOVED = [
   { from: "/create", to: "/submit", status: 308 },
-  // THERE ARE NOT TWO PAGES. The faceted directory and the board index were
-  // two more addresses for the launches; both are `redirects()` entries to
-  // `/` now, issued at the edge for the reason `/create` is.
-  { from: "/products", to: "/", status: 308 },
+  // The board index was one more address for the launches; it is a
+  // `redirects()` entry to `/`, issued at the edge for the reason `/create`
+  // is. (`/products` was the other; it is a page again since OPR1.)
   { from: "/launches", to: "/", status: 308 },
-  // OB7 (#1875) — the leaderboard and every range of it are Upvoted now.
-  { from: "/leaderboard", to: "/builds/upvoted", status: 308 },
-  { from: "/leaderboard/month", to: "/builds/upvoted", status: 308 },
+  // OB7 (#1875) — the leaderboard and every range of it are Upvoted now;
+  // OPR1 — and Upvoted is a sort of the Products page, reached in ONE hop.
+  { from: "/leaderboard", to: "/products/by/upvoted", status: 308 },
+  { from: "/leaderboard/month", to: "/products/by/upvoted", status: 308 },
+  // openproduct-redesign OPR1 — the list's orders: Roles is the Help wanted
+  // section, the other two are sorts of the Products page. All three are
+  // `redirects()` entries; no route is left under `/builds/`.
+  { from: "/builds/roles", to: "/help-wanted", status: 308 },
+  { from: "/builds/upvoted", to: "/products/by/upvoted", status: 308 },
+  { from: "/builds/newest", to: "/products/by/newest", status: 308 },
+  // OPR1 — the sort was `?sort=` for a few hours (and design.md was written
+  // with that form); the query form arrives at the path, from the edge.
+  //
+  // THE QUERY RIDES ALONG, and that is Next, not a choice: a `redirects()`
+  // entry carries the request's query string onto its destination and offers
+  // no way to drop it. It is harmless — the page at the path is static and
+  // reads no query, and its canonical is the bare path — and it is pinned
+  // here as it is, so the day Next stops doing it this row says so.
+  { from: "/products?sort=upvoted", to: "/products/by/upvoted?sort=upvoted", status: 308 },
+  { from: "/products?sort=newest", to: "/products/by/newest?sort=newest", status: 308 },
+  { from: "/me/notifications", to: "/activity", status: 308 },
+  // …and the two lists under `/me` that became sections of it.
+  { from: "/me/saved", to: "/me?section=saved", status: 308 },
+  { from: "/me/applications", to: "/me?section=seats", status: 308 },
 ];
 
 /**
@@ -1047,6 +1080,10 @@ export const ABSENT = [
   { path: "/digest/1999-w01", why: "a week the product did not exist" },
   { path: "/products/zzz-not-a-route", why: "OS1 — a cursor the directory did not issue: refused, and refused is 404" },
   { path: "/zzz-no-such-route/zzz", why: "THE CONTROL — no route at all, so Next's own router answers" },
+  { path: "/builds/zzz-not-an-order", why: "OPR1 — a segment under /builds/ that was never an order: the site's own 404, not a handler's plain text" },
+  { path: "/products/by/zzz-not-an-order", why: "OPR1 — an order the Products page never published: no page, rather than the default list under a second address" },
+  { path: "/products/by/most-active", why: "OPR1 — the default order lives at /products and nowhere else" },
+  { path: "/products/by", why: "OPR1 — the stem of the sorted pages is not a cursor: refused by name" },
 ];
 
 /** The reads, keyed by the path the web app asks for. */
@@ -1097,10 +1134,18 @@ export function sessionCookie(base) {
  * run over a failure panel.
  */
 export const AUTHED_ROUTES = [
-  { path: "/me", name: "me · profile", expect: "Download your data" },
-  { path: "/me/saved", name: "me · saved", expect: "Saved products" },
-  { path: "/me/applications", name: "me · applications", expect: "Your applications" },
-  { path: "/me/notifications", name: "me · notifications", expect: "Mark all as read" },
+  // OPR1 — `/me` is the profile and its switcher (board `Me`); the form it
+  // used to be is `/me/settings`. `expect` is the section the page drew — an
+  // attribute the "temporarily unavailable" state does not have.
+  { path: "/me", name: "me · profile", expect: 'data-me-section="products"' },
+  // The saved list and the applications are SECTIONS of `/me` now, each at
+  // an address of its own. (Their old addresses, `/me/saved` and
+  // `/me/applications`, are redirects and live in `MOVED` above.)
+  { path: "/me?section=saved", name: "me · saved", expect: 'data-me-section="saved"' },
+  { path: "/me?section=seats", name: "me · seats", expect: 'data-me-section="seats"' },
+  { path: "/me/settings", name: "me · settings", expect: "Download your data" },
+  // OPR1 — the inbox's address is `/activity` (the old one is in `MOVED`).
+  { path: "/activity", name: "activity", expect: "Mark all read" },
   { path: "/studio", name: "studio · listings", expect: "Your listings" },
   { path: "/studio/collections", name: "studio · collections", expect: "Collections" },
   { path: "/studio/reports", name: "studio · reports", expect: "Reports" },

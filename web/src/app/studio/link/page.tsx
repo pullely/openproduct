@@ -19,7 +19,7 @@
 
 import * as React from "react";
 
-import { BTN_PRIMARY, FIELD, LABEL, PAGE_TITLE } from "../../ui/design";
+import { BTN_PRIMARY, FIELD, LABEL, NOTICE_ERROR, PAGE_TITLE } from "../../ui/design";
 import { consoleOrigin } from "../../../lib/platform";
 import { readGrantPayload } from "../studio-api";
 import { LINK_WORKSPACE_LABEL, consoleWorkspacePickerUrl } from "../workspace-picker";
@@ -122,30 +122,26 @@ export default function StudioLinkPage() {
       <h1 className={PAGE_TITLE}>Link a project</h1>
 
       {error ? (
-        <p className="m-0 mt-4 max-w-[65ch] rounded-[8px] border border-warning-soft-border bg-warning-soft px-3 py-2 text-[13px] font-medium text-warning-strong">
+        <p role="alert" className={`m-0 mt-4 max-w-[65ch] font-medium ${NOTICE_ERROR}`}>
           {error}
           {reference ? <span className="mt-1 block text-[12px] font-normal opacity-80">{reference}</span> : null}
         </p>
       ) : null}
 
       {!handoff || !payload ? (
-        <div className="mt-6 max-w-[65ch] text-[13.5px] leading-[1.6] text-muted-foreground">
+        <div className="mt-6 max-w-[65ch] text-[13px] leading-[1.6] text-muted-foreground">
           <p className="m-0">
             There is no workspace link here.{" "}
-            <a className="underline underline-offset-4" href={consoleWorkspacePickerUrl(consoleOrigin())}>
+            <a className="text-link underline underline-offset-4" href={consoleWorkspacePickerUrl(consoleOrigin())}>
               {LINK_WORKSPACE_LABEL}
             </a>{" "}
             to start one.
           </p>
         </div>
       ) : signedIn === null ? (
-        <p className="m-0 mt-6 text-[13.5px] text-muted-foreground">Checking your session…</p>
+        <p className="m-0 mt-6 text-[13px] text-muted-foreground">Checking your session…</p>
       ) : (
         <>
-          <p className="m-0 mt-2 max-w-[65ch] text-[13.5px] leading-[1.6] text-muted-foreground">
-            Give the listing its public address.
-          </p>
-
           <form method="post" action="/studio/link/submit" className="mt-8 grid max-w-[65ch] gap-5">
             <input type="hidden" name="grant" value={handoff.grant} />
             <input type="hidden" name="tagline" value={handoff.tagline} />
@@ -155,7 +151,7 @@ export default function StudioLinkPage() {
                 Public address
               </label>
               <div className="flex items-center gap-2">
-                <span className="shrink-0 text-[13.5px] text-muted-foreground">openproduct.live/</span>
+                <span className="shrink-0 text-[13px] text-muted-foreground">openproduct.live/</span>
                 <input
                   id="slug"
                   name="slug"
@@ -169,7 +165,7 @@ export default function StudioLinkPage() {
                   className={FIELD}
                 />
               </div>
-              <p className="m-0 mt-1.5 text-[12.5px] leading-[1.5] text-muted-foreground">
+              <p className="m-0 mt-1.5 text-[13px] leading-[1.5] text-muted-foreground">
                 Lowercase letters, digits and hyphens.
               </p>
             </div>

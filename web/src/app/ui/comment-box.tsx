@@ -10,7 +10,7 @@ import { AppLink } from "./link";
  *
  *   box    58×58, radius 12, 1px --border on --card, hover --faint
  *   icon   15px outline bubble in --muted
- *   count  Geist Mono 14px/500, tabular
+ *   count  IBM Plex Mono 14px/500, tabular
  *
  * THE COUNT LEFT THE META LINE to get here. It used to ride between the
  * topics and the stack as `12 comments`; in the row layout it is a
@@ -20,7 +20,7 @@ import { AppLink } from "./link";
  * counted and found empty — that is a fact, and an invitation to be the first
  * — where a dash would say the number was never measured. Nothing here has to
  * decide between them: a card that carries no count does not render this box
- * at all (`feed/build-tile.tsx`), so there is no absent count to spell.
+ * at all (`feed/product-card.tsx`), so there is no absent count to spell.
  *
  * A LINK, NOT A BUTTON, and therefore a SERVER COMPONENT: it takes nobody's
  * vote, reads nothing personal, and is byte-identical in every visitor's HTML

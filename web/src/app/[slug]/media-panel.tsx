@@ -19,12 +19,14 @@ import type { MediaFact } from "@openproduct/contracts";
  *
  * ─── THE HERO, THE GALLERY, THE CAPTURE — THREE FRAMES, NOT ONE ──────────
  *
- * The hero and the gallery are the maker's: a hairline frame, no caption, no
- * date, because an authored image has no moment (MD0). The screenshot is
- * OURS: a dashed frame — PV0's observed frame, the same shape the observed
- * row wears — and a caption that says what it is and when it was taken. A
- * sighted reader sees the dashes; a screen-reader user hears the alt, which
- * says the same thing (`screenshotAlt`). WC-3 in the medium that carries no
+ * The hero and the gallery are the maker's: a bare rounded picture, no
+ * caption, no date, because an authored image has no moment (MD0). The
+ * screenshot is OURS: it stands inside a sunken well with a caption under it
+ * that says what it is and when it was taken. (It was a dashed frame until
+ * openproduct-redesign OPR1; the redesign is flat and draws no borders, so
+ * the well and the caption carry the difference.) A sighted reader sees the
+ * well and reads the caption; a screen-reader user hears the alt, which says
+ * the same thing (`screenshotAlt`). WC-3 in the medium that carries no
  * label of its own.
  *
  * ─── OPERABLE BY KEYBOARD ALONE, WITH NO SCRIPT ─────────────────────────
@@ -62,7 +64,7 @@ export function MediaPanel({
   return (
     <div className="mt-3 min-w-0 max-w-full" data-media-panel="">
       {plan.hero ? (
-        <figure className="m-0 overflow-hidden rounded-[8px] border border-border bg-muted">
+        <figure className="m-0 overflow-hidden rounded-[14px] bg-sunken">
           <Img source={imageSourceOf(plan.hero.value, apiBase, HERO_SIZES)} eager />
         </figure>
       ) : null}
@@ -78,7 +80,7 @@ export function MediaPanel({
               <li key={item.value.id} className="shrink-0 snap-start">
                 <a
                   href={source.src}
-                  className="block overflow-hidden rounded-[8px] border border-border bg-muted focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+                  className="block overflow-hidden rounded-[14px] bg-sunken focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
                 >
                   <Img source={source} thumbnail />
                 </a>
@@ -89,11 +91,11 @@ export function MediaPanel({
       ) : null}
 
       {plan.screenshot ? (
-        <figure className="m-0 mt-3 rounded-[8px] border border-dashed border-border-strong bg-muted p-2">
-          <div className="overflow-hidden rounded-[6px]">
+        <figure className="m-0 mt-3 rounded-[14px] bg-sunken p-2">
+          <div className="overflow-hidden rounded-[10px]">
             <Img source={imageSourceOf(plan.screenshot.value, apiBase, SCREENSHOT_SIZES)} />
           </div>
-          <figcaption className="mt-2 text-[12.5px] leading-[1.5] text-muted-foreground">
+          <figcaption className="mt-2 text-[13px] leading-[1.5] text-muted-foreground">
             {SCREENSHOT_CAPTION_LEAD}{" "}
             <time dateTime={screenshotCaption(plan.screenshot.provenance.observedAt).iso}>
               {screenshotCaption(plan.screenshot.provenance.observedAt).day}

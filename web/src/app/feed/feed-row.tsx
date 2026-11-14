@@ -21,10 +21,10 @@ import { RowShell } from "./row-shell";
  *            4px above, hover --hover
  *   rank     INLINE, immediately before the name — `1.` `2.` `3.` at the
  *            name's own size and weight, in --muted
- *   tile     52×52, radius 14px, Geist Mono 16px/500
+ *   tile     52×52, radius 14px, IBM Plex Mono 16px/500
  *   name     16px/600, letter-spacing -0.005em, hover --accent-ink
  *   badge    20px tall, radius 6px, --accent-soft on --accent-ink, 11.5px
- *   licence  Geist Mono 11.5px uppercase, letter-spacing 0.04em, --faint
+ *   licence  IBM Plex Mono 11.5px uppercase, letter-spacing 0.04em, --faint
  *   wanted   20px tall, radius 999px, --success-soft on --success, 11.5px
  *   tagline  15px / 1.45, --copy, margin-top 2px
  *   tags     a 13px outline tag glyph in --faint, then the topics in 13px

@@ -71,36 +71,72 @@ const RUNS = Number(process.env.XP4_RUNS ?? 3);
  * fourth face, or one shipped unsubsetted, would pass every check this program
  * has.
  *
- * MEASURED, THEN SET. Every route in this lane fetches the SAME three files
- * totalling 74,900 bytes — the latin subsets of Geist, Newsreader and Geist
- * Mono. Identical everywhere, because the design system is loaded by the
- * layout and no page adds to it. That is why one number covers the estate
- * instead of a column per route: a route that pulled a fourth face would be a
- * route that did something no page here is supposed to do, and it fails on the
- * same line as the rest.
+ * MEASURED, THEN SET. Every route in this lane fetches the SAME files, because
+ * the design system is loaded by the layout and no page adds to it. That is
+ * why one number covers the estate instead of a column per route: a route
+ * that pulled another face would be a route that did something no page here
+ * is supposed to do, and it fails on the same line as the rest.
+ *
+ * ─── 3 FILES / 82,000 → 5 FILES / 105,800, RECORDED 2026-11-14 (OPR1) ──────
+ *
+ * The redesign (openproduct-redesign OPR1, design.md §3) replaced Geist,
+ * Newsreader and Geist Mono with three design families, five Latin-subset
+ * files. Measured, as the bytes of the files `next/font/local` serves
+ * (`web/src/fonts`):
+ *
+ *   before   geist 29,288 · newsreader-400 22,504 · geist-mono 23,108    74,900
+ *   after    hanken-grotesk (variable 400–600)           34,664
+ *            lora-400 21,188 · lora-400-italic 22,740    43,928
+ *            ibm-plex-mono-400 10,016 · -500 10,056      20,072          98,664
+ *
+ * Five files rather than three because two of the families have no variable
+ * build to fold a second cut into: Lora's italic (idea quotes) is a separate
+ * file from its upright (page titles), and IBM Plex Mono's 500 (the small
+ * uppercase labels) is a separate file from its 400. Each of the five is
+ * named by a use in the design; there is no fourth family and no third weight
+ * of any of them.
+ *
+ * ─── 5 FILES / 105,800 → 4 FILES / 82,000, MEASURED 2026-11-14 (OPR1) ──────
+ *
+ * The figure above was set by arithmetic, before this lane had run on the
+ * redesign: the layout declared all five files in three `next/font` calls,
+ * and `next/font` preloads every file a call names, so every route fetched
+ * all five whether or not it set a word in Lora's italic. None of the walked
+ * routes does. The italic is declared on its own now, with `preload: false`
+ * (`web/src/app/layout.tsx`), so the browser takes it only on a page that
+ * draws a quote in it. Measured by this lane, on every route it walks:
+ *
+ *   as first built   5 files   98,664 B   (arithmetic; never measured)
+ *   now              4 files   75,924 B   hanken 34,664 · lora-400 21,188 ·
+ *                                         plex-mono-400 10,016 · -500 10,056
+ *
+ * So the budget is what a page FETCHES, as it always was: four files, and
+ * 82,000 bytes — the number this budget held before the redesign, which is
+ * 75,924 plus 6,076 (8%). A fifth file on a walked route is now a failure,
+ * which is exactly the regression to catch: the italic preloaded again.
  *
  * TWO NUMBERS, AND THE COUNT IS THE SHARPER ONE.
  *
- *   `files` catches a FOURTH FACE the moment it appears, whatever it weighs —
+ *   `files` catches a FIFTH FILE the moment it appears, whatever it weighs —
  *   including a weight added as a separate file, which is the easy accident:
- *   asking `next/font` for `weight: ["400", "700"]` is one character of diff
- *   and a whole extra download.
+ *   one more entry in a `src` array is one line of diff and a whole extra
+ *   download.
  *
- *   `bytes` catches an UNSUBSETTED one, which keeps the count at three and
- *   quadruples the payload. A full Geist is several times its latin subset.
+ *   `bytes` catches an UNSUBSETTED one, which keeps the count at four and
+ *   multiplies the payload. A full Hanken Grotesk is several times its latin
+ *   subset.
  *
- * Headroom is deliberately thin — 7,100 bytes, under 10% — because the
- * measurement is deterministic. The same three files are fetched on every
+ * Headroom is deliberately thin — 6,076 bytes, 8% — because the
+ * measurement is deterministic. The same four files are fetched on every
  * route on every run; there is no busy-runner variance to absorb here, and a
- * loose budget on a stable number is a budget that admits a face.
+ * loose budget on a stable number is a budget that admits a face. (The old
+ * budget held the same ~7,100 bytes over its 74,900.)
  *
- * COUNTED AS FETCHED, NOT AS BUILT. `next/font` emits one file per
- * unicode-range and the browser takes only what it needs, so the build
- * directory holds fourteen files and 188KB while a visitor pays for three and
- * 75KB. Budgeting the directory would guard a number nobody experiences, and
- * would go red the day a subset was added for a language nobody here reads.
+ * COUNTED AS FETCHED, NOT AS BUILT. `next/font` may emit more files than a
+ * visitor takes; budgeting the build directory would guard a number nobody
+ * experiences.
  */
-const FONTS = { bytes: 82_000, files: 3 };
+const FONTS = { bytes: 82_000, files: 4 };
 
 /**
  * OPP11 — THE JS BUDGETS CAME DOWN BY 1,107 BYTES, ON EVERY ROUTE.
@@ -822,7 +858,9 @@ export async function runBudgets(base, gateway) {
     // The page's own heading is how its body is told from another's. CL5
     // (#1889) said "build" where it said "product", and this lane — which no
     // website change selected yet — kept the old words (sourceplane/orun-cloud#1882).
-    const NOT_FOUND_HEADING = "No build lives at this address";
+    // openproduct-redesign OPR1: the site says "product" again, and the 404
+    // with it — one title and one way back.
+    const NOT_FOUND_HEADING = "No product lives at this address";
     for (const absent of ABSENT) {
       const res = await context.request.get(base + absent.path, { maxRedirects: 0 });
       const body = res.status() === 404 ? await res.text() : "";
@@ -1058,7 +1096,7 @@ export async function runBudgets(base, gateway) {
       check(
         `${path}: font files ≤ ${FONTS.files}`,
         m.fontCount <= FONTS.files,
-        `${m.fontCount} file(s): ${m.fontFiles.join(", ")} — a fourth face, or a second weight of an existing one`,
+        `${m.fontCount} file(s): ${m.fontFiles.join(", ")} — one file more: a fourth face, another weight, or the italic preloaded again`,
       );
       check(
         `${path}: font bytes ≤ ${kb(FONTS.bytes)}`,

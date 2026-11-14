@@ -26,7 +26,7 @@ The epic, its milestones and its tasks live in Orunbase, in workspace
 
 | Field | Value |
 |-------|-------|
-| Status | Proposed: OPR0 (this spec) in review |
+| Status | In progress: OPR0 and OPR1 shipped; OPR2 (products post for themselves) is next |
 | Cluster | **OPR** (OPR0–OPR4) |
 | Owner(s) | `web` (every surface) · `packages/contracts` (wire types) · `packages/db` (schema and repository) · `core` (rules) · `gateway` (routes) · `tests/web`, `tests/web-perf` (the guards that pin the surface) |
 | Builds on | openproduct-standalone (OPN): the standalone repository, its Supabase data plane and its deploy path. This epic changes no infrastructure. |

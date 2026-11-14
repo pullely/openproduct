@@ -85,7 +85,7 @@ export default async function ListingDetailsPage(props: {
                   Check repository
                 </button>
               </form>
-              <span className="text-[12.5px] leading-[1.5] text-muted-foreground">
+              <span className="text-[13px] leading-[1.5] text-muted-foreground">
                 {profile.repoVisibility === "private"
                   ? "The last check read the repository as private. Make it public on GitHub, or clear the link."
                   : "Fills a gap. Never overwrites what you wrote."}
@@ -112,15 +112,15 @@ export default async function ListingDetailsPage(props: {
                   <label htmlFor="slug" className={LABEL}>
                     Public address
                   </label>
-                  <span className="flex h-[38px] items-center overflow-hidden rounded-[8px] border border-border bg-background focus-within:border-endorse focus-within:ring-[3px] focus-within:ring-endorse-soft">
-                    <span className="pl-3 font-mono text-[12.5px] text-muted-foreground">openproduct.live/</span>
+                  <span className="flex h-[44px] items-center overflow-hidden rounded-[14px] border border-border bg-card focus-within:border-endorse focus-within:ring-[3px] focus-within:ring-endorse-soft">
+                    <span className="pl-3 font-mono text-[13px] text-muted-foreground">openproduct.live/</span>
                     <input
                       id="slug"
                       name="slug"
                       type="text"
                       maxLength={64}
                       defaultValue={profile.slug}
-                      className="h-full min-w-0 flex-1 border-0 bg-transparent pl-0.5 pr-3 text-[14.5px] text-foreground outline-none"
+                      className="h-full min-w-0 flex-1 border-0 bg-transparent pl-0.5 pr-3 text-nozoom text-foreground outline-none"
                     />
                   </span>
                 </div>
@@ -198,9 +198,9 @@ export default async function ListingDetailsPage(props: {
                   defaultValue={profile.installLine ?? ""}
                   placeholder="npx create-your-thing"
                   aria-describedby="install-note"
-                  className={`${FIELD} font-mono text-[13.5px]`}
+                  className={`${FIELD} font-mono text-[13px]`}
                 />
-                <p id="install-note" className="m-0 mt-1.5 text-[12.5px] leading-[1.5] text-muted-foreground">
+                <p id="install-note" className="m-0 mt-1.5 text-[13px] leading-[1.5] text-muted-foreground">
                   One command. No pipes, chained commands or redirection.
                 </p>
               </div>

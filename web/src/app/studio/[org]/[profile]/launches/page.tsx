@@ -1,6 +1,6 @@
 import { LAUNCH_REFUSALS, cooldownNote } from "@openproduct/contracts";
 
-import { BTN_OUTLINE, BTN_PRIMARY, FIELD, LABEL } from "../../../../ui/design";
+import { BTN_OUTLINE, BTN_PRIMARY, FIELD, LABEL, NOTICE } from "../../../../ui/design";
 import { FailurePanel } from "../../../../ui/failure";
 import { StudioSection } from "../../../frame";
 import { StudioLive } from "../../../live-save";
@@ -91,7 +91,7 @@ export default async function LaunchesPage(props: PageProps) {
                   rather than after somebody fills it in. A draft has nothing
                   to announce, and the remedy is a different panel. */}
               {!eligibility.isPublished ? (
-                <p className="m-0 mt-2 rounded-[8px] bg-muted px-3 py-2 text-[13px] leading-[1.55] text-muted-foreground">
+                <p className={`m-0 mt-2 ${NOTICE}`}>
                   {LAUNCH_REFUSALS["not-published"].says}
                 </p>
               ) : null}
@@ -128,7 +128,7 @@ export default async function LaunchesPage(props: PageProps) {
                     </button>
                     <CancelLink href={hrefs.overview} />
                   </form>
-                  <p className="m-0 mt-1.5 max-w-[70ch] text-[12.5px] leading-[1.5] text-muted-foreground">
+                  <p className="m-0 mt-1.5 max-w-[70ch] text-[13px] leading-[1.5] text-muted-foreground">
                     {cooldownNote(policy)}
                     {eligibility.consumedVersions.length > 0 ? (
                       <> Already launched: {eligibility.consumedVersions.join(", ")}.</>
@@ -193,7 +193,7 @@ function MomentField({ label, defaultValue, compact = false }: { label: string; 
         name="scheduledFor"
         required
         {...(defaultValue ? { defaultValue } : {})}
-        className={compact ? `${INPUT} h-[30px] text-[13px]` : INPUT}
+        className={INPUT}
       />
     </label>
   );

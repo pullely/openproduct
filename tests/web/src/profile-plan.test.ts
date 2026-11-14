@@ -67,8 +67,10 @@ describe("the authored fields are always sent in full", () => {
 describe("where each outcome lands", () => {
   it("ok carries on; a dead token goes to sign-in; an outage says 'not saved'", () => {
     expect(redirectFor({ kind: "ok", data: {} })).toBeNull();
-    expect(redirectFor({ kind: "unauthorized" })).toBe("/signin?return_to=%2Fme");
-    expect(redirectFor({ kind: "unavailable" })).toBe("/me?error=save_failed");
+    // The form is on `/me/settings` since openproduct-redesign OPR1, so
+    // that is where every outcome lands — never the profile it left.
+    expect(redirectFor({ kind: "unauthorized" })).toBe("/signin?return_to=%2Fme%2Fsettings");
+    expect(redirectFor({ kind: "unavailable" })).toBe("/me/settings?error=save_failed");
   });
 
   it("a refusal goes back to the form WITH the field's reason", () => {
@@ -78,6 +80,7 @@ describe("where each outcome lands", () => {
       message: "Validation failed",
       fields: { handle: ["That handle is taken."] },
     });
+    expect(url?.startsWith("/me/settings?")).toBe(true);
     const params = new URL(`https://openproduct.live${url}`).searchParams;
     expect(params.get("error")).toBe("refused");
     expect(params.get("field")).toBe("handle");

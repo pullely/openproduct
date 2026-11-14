@@ -1,120 +1,98 @@
-// One of the visitor's own pages, arriving (openproduct-commons XP3,
-// openproduct-performance OPP9).
+// The visitor's own profile, arriving (openproduct-commons XP3,
+// openproduct-performance OPP9; redrawn for the boards `Me` and `PhoneMe` by
+// openproduct-redesign OPR1).
 //
-// ─── WHAT WAS WRONG WITH THE FIRST ONE ────────────────────────────────────
+// ─── THE RULE THIS FILE KEEPS ─────────────────────────────────────────────
 //
-// It drew the right idea in the wrong box. The frame here was
-// `max-w-[1000px] px-5 pb-16 pt-8`, and every page it stands in for uses the
-// `/me` column (`ME_MAIN`, 768px with `48px 24px 72px` of padding) — so the
-// content did not merely replace the skeleton, it moved sideways and up when
-// it landed. And under the title it drew three DIRECTORY ROWS, which is what
-// `/me/saved` shows and not what `/me` shows at all: `/me` is a form.
+// A skeleton in a different box is a skeleton that guarantees a shift. The
+// first one here drew the right idea in the wrong frame and measured
+// **CLS 0.101** signed in; the fix was the SAME frame as the page, and only
+// what is certain inside it.
 //
-// The probe measured the result at **CLS 0.101** signed in, over the
-// web-vitals "good" ceiling, against 0.000 for every anonymous page — and
-// nothing could see it, because XP4 budgets the ANONYMOUS render's layout and
-// separately asserts the two renders are byte-identical. Both were true.
-//
-// ─── SO THIS DRAWS ONLY WHAT IS CERTAIN, AND STOPS ────────────────────────
-//
-// XP3's own rule, applied properly: "drawing three where there will be twenty
-// is a smaller lie than drawing twenty where there will be three", and the
-// honest stopping point is where the route becomes data-dependent.
-//
-// On every `/me/*` page three things are certain and identical: the frame, the
-// five-chip nav, and a 26px title. Those
-// are drawn at their real sizes. What sits below them is a form on one page,
-// product rows on another and application rows on a third — so nothing is
-// drawn there, and the content arrives into space rather than on top of a
-// guess.
+// On `/me` three things are certain whoever is looking: the frame, the
+// profile card, and the switcher with its three sections. Those are drawn at
+// their real sizes. What sits beside the switcher is a list — nothing, or
+// three rows, or forty — so three rows are drawn, on XP3's rule: "drawing
+// three where there will be twenty is a smaller lie than drawing twenty
+// where there will be three".
 //
 // ─── AND IT RESERVES A HEIGHT, WHICH IS THE HALF THAT ACTUALLY MOVED CLS ──
 //
-// The first attempt at this fixed the frame and changed nothing: still 0.101.
-// Measuring the shift entries instead of theorising found the real source in
-// one line —
+// Measuring the shift entries found the real source in one line —
 //
 //     0.0978  FOOTER  y×h 609x111 -> 0x0
 //
 // — the SITE FOOTER, not anything on this page. A skeleton much shorter than
 // the content it stands in for puts the footer near the top of the viewport,
-// and when the real content streams in the whole page grows and the footer
-// travels six hundred pixels. Every element drawn above it was already in the
-// right place; the page was simply too short.
+// and when the real content streams in the footer travels. The old page was
+// a form, whose height was known by construction; this one is a list, whose
+// height is not — so the frame holds a `min-h` of most of a viewport, the
+// way the inbox's skeleton always has.
 //
-// The height had to come from somewhere honest, and on THIS page it does:
-// `/me` is a FORM, and a form is a fixed set of fields. Four text inputs, a
-// textarea, two checkbox rows, a submit and two short sections below it — the same
-// shape for a visitor with a full profile and one with an empty one, because
-// an empty field still occupies its box. So the skeleton draws that shape, and
-// reserves the right height BY CONSTRUCTION rather than by a magic number that
-// drifts the first time a field is added.
-//
-// That is why this file is `/me`'s alone now. `/me/saved` and
-// `/me/applications` are LISTS whose height is data-dependent, so they have
-// their own, shorter skeletons — a form's certainty is not theirs to borrow.
+// (`/me/saved` and `/me/applications`, the old addresses, redirect to a
+// section of this page from the edge and draw nothing.) `/me/settings` is a
+// form, and has its own.
 
+import { BOARD_PAGE } from "../ui/design";
 import { LoadingAnnouncement, Shimmer, ShimmerLine } from "../ui/skeleton";
-import { ME_CARD, ME_MAIN, ME_NAV_WIDTHS } from "./nav";
-
-/** The form's controls, at the heights they render: display name, handle,
- *  the bio textarea, then the two link fields. */
-const FIELDS = [38, 38, 118, 38, 38];
+import { ME_LIST, ME_SECTIONS } from "./nav";
 
 export default function MeLoading() {
   return (
-    // The SAME frame as `me/page.tsx`, `me/saved` and `me/applications`. A
-    // skeleton in a different box is a skeleton that guarantees a shift.
-    <main className={ME_MAIN}>
-      <LoadingAnnouncement what="your page" />
-      {/* `MeNav`'s own geometry: five 32px chips, 4px apart. */}
-      <div className="flex flex-wrap items-center gap-1">
-        {ME_NAV_WIDTHS.map((width, i) => (
-          <Shimmer key={i} className="h-[32px] rounded-[8px]" style={{ width }} />
-        ))}
-      </div>
-      {/* The 26px title (a 31px line). */}
-      <Shimmer className="mt-7 h-[31px] w-[190px]" />
+    // The SAME frame as `me/page.tsx`.
+    <main className={`${BOARD_PAGE} min-h-[78vh]`}>
+      <LoadingAnnouncement what="your profile" />
 
-      {/* The identity card: a 56px disc beside two lines. */}
-      <div className={`${ME_CARD} mt-6 flex items-center gap-4`}>
-        <Shimmer className="h-[56px] w-[56px] shrink-0 rounded-full" />
-        <div className="min-w-0 flex-1">
-          <ShimmerLine width="w-[38%]" className="h-[17px]" />
-          <ShimmerLine width="w-[52%]" className="mt-2 h-[12.5px]" />
+      {/* The profile card: the band, the 92px disc over its edge, the name
+          and the two controls. On a phone, no band: a 52px disc beside the
+          name, and the controls under them. */}
+      <div className="overflow-hidden rounded-[16px] bg-card max-sm:p-3.5">
+        <div className="h-[120px] bg-sunken max-sm:hidden" />
+        <div className="flex flex-wrap items-end justify-between gap-4 px-[30px] pb-6 max-sm:flex-col max-sm:items-stretch max-sm:gap-2.5 max-sm:p-0">
+          <div className="-mt-[46px] flex flex-col gap-2 max-sm:mt-0 max-sm:flex-row max-sm:items-center max-sm:gap-3">
+            <Shimmer className="h-[92px] w-[92px] shrink-0 rounded-full ring-[5px] ring-card max-sm:h-[52px] max-sm:w-[52px] max-sm:ring-0" />
+            <Shimmer className="h-[44px] w-[260px] max-sm:h-[31px] max-sm:w-[180px]" />
+          </div>
+          <div className="flex items-center gap-3.5 max-sm:grid max-sm:grid-cols-1">
+            <Shimmer className="h-[40px] w-[148px] rounded-full max-sm:h-[44px] max-sm:w-full" />
+          </div>
         </div>
       </div>
 
-      {/* The form. A 13px label over its control, the 20px gap the card uses
-          between fields, and the textarea at the rows it actually renders. */}
-      <div className={`${ME_CARD} mt-4 grid gap-5`}>
-        {FIELDS.map((height, i) => (
-          <div key={i}>
-            <Shimmer className="h-[13px] w-[128px]" />
-            <Shimmer className="mt-1.5 w-full rounded-[8px]" style={{ height }} />
-          </div>
-        ))}
-        {/* The two checkbox rows — a 16px box beside two lines of copy. */}
-        {[0, 1].map((i) => (
-          <div key={i} className="flex items-start gap-2.5">
-            <Shimmer className="h-[16px] w-[16px] shrink-0 rounded-[4px]" />
-            <div className="min-w-0 flex-1">
-              <ShimmerLine width="w-[46%]" className="h-[13.5px]" />
-              <ShimmerLine width="w-[78%]" className="mt-1.5 h-[13.5px]" />
+      <div className="flex items-start gap-7 max-md:flex-col max-md:items-stretch max-md:gap-2.5">
+        {/* The switcher: a card of three 40px rows under its label; three
+            44px pills on a phone. */}
+        <div className="flex w-[260px] shrink-0 flex-col gap-0.5 rounded-[16px] bg-card p-2.5 max-md:w-auto max-md:flex-row max-md:gap-1.5 max-md:bg-transparent max-md:p-0">
+          <Shimmer className="mb-2 ml-2.5 mt-1.5 h-[14px] w-[32px] max-md:hidden" />
+          {ME_SECTIONS.map((section) => (
+            <div key={section.key} className="flex min-h-[40px] items-center gap-3 px-2.5 max-md:hidden">
+              <Shimmer className="h-8 w-8 shrink-0 rounded-[10px]" />
+              <ShimmerLine width="w-[96px]" className="h-[15px]" />
             </div>
-          </div>
-        ))}
-        <Shimmer className="h-[36px] w-[132px] rounded-[8px]" />
-      </div>
-
-      {/* The two cards under the form, each a heading and a line: the digest
-          control and the account row. */}
-      {[0, 1].map((i) => (
-        <div key={i} className={`${ME_CARD} mt-4`}>
-          <Shimmer className="h-[16px] w-[140px]" />
-          <ShimmerLine width="w-[72%]" className="mt-3 h-[13.5px]" />
+          ))}
+          {ME_SECTIONS.map((section) => (
+            <Shimmer key={section.key} className="h-[44px] w-[112px] shrink-0 rounded-full md:hidden" />
+          ))}
         </div>
-      ))}
+
+        {/* The section: its 20px heading on a desktop, then three rows of
+            the flat card — a 52px tile, a name over its line, a 40px pill. */}
+        <div className="flex min-w-0 max-w-[760px] flex-1 flex-col gap-3.5 max-md:max-w-none max-sm:gap-2.5">
+          <Shimmer className="mb-0.5 h-[25px] w-[150px] max-md:hidden" />
+          <div className={ME_LIST}>
+            {[0, 1, 2].map((i) => (
+              <div key={i} className="flex items-center gap-3.5 rounded-[16px] bg-card p-[18px] max-sm:gap-3 max-sm:p-3.5">
+                <Shimmer className="h-[52px] w-[52px] shrink-0 rounded-[14px]" />
+                <div className="min-w-0 flex-1">
+                  <ShimmerLine width="w-[32%]" className="h-[16px]" />
+                  <ShimmerLine width="w-[58%]" className="mt-2 h-[13px]" />
+                </div>
+                <Shimmer className="h-[40px] w-[92px] shrink-0 rounded-full max-sm:h-[44px]" />
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
     </main>
   );
 }

@@ -28,39 +28,53 @@ const markupOf = (file: string) =>
 
 describe("the outline is the page's own headings, in the page's own order", () => {
   it("lists six sections at most — the optional ones only when the page renders them", () => {
-    expect(listingSections({ changes: true, launches: true, makers: true }).map((s) => s.id)).toEqual([
+    // openproduct-redesign OPR1 — the people are the board's Crew card, in
+    // the side column: after the discussion in either reading order, and
+    // before Alternatives, which the side column draws under it.
+    expect(listingSections({ changes: true, launches: true, crew: true }).map((s) => s.id)).toEqual([
       "about",
       "changed",
       "launches",
-      "makers",
       "discussion",
+      "crew",
       "alternatives",
     ]);
-    expect(listingSections({ changes: false, launches: false, makers: true }).map((s) => s.id)).toEqual([
+    expect(listingSections({ changes: false, launches: false, crew: true }).map((s) => s.id)).toEqual([
       "about",
-      "makers",
       "discussion",
+      "crew",
       "alternatives",
     ]);
-    // openproduct-calm-pages CP2 (CP-R3) — with nobody listed, Makers folds
-    // into the page's *Not yet* line and leaves the outline.
-    expect(listingSections({ changes: false, launches: false, makers: false }).map((s) => s.id)).toEqual([
+    // openproduct-calm-pages CP2 (CP-R3) — with nobody listed and no seat
+    // open, Crew folds into the page's *Not yet* line and leaves the outline.
+    expect(listingSections({ changes: false, launches: false, crew: false }).map((s) => s.id)).toEqual([
       "about",
       "discussion",
       "alternatives",
     ]);
     // PP5 — a listing that has launched but has no baseline yet.
-    expect(listingSections({ changes: false, launches: true, makers: true }).map((s) => s.id)).toEqual([
+    expect(listingSections({ changes: false, launches: true, crew: true }).map((s) => s.id)).toEqual([
       "about",
       "launches",
-      "makers",
       "discussion",
+      "crew",
       "alternatives",
     ]);
   });
 
+  it("orders the outline as the page draws it: the reading column, then the side column", () => {
+    const page = markupOf("[slug]/page.tsx");
+    const ids = listingSections({ changes: false, launches: true, crew: true }).map((s) => s.id);
+    const at = ids.map((id) => page.search(new RegExp(`\\bid="${id}"`)));
+    expect(at.every((index) => index > -1)).toBe(true);
+    expect([...at].sort((x, y) => x - y)).toEqual(at);
+    expect(listingSections({ changes: false, launches: false, crew: true }).find((s) => s.id === "crew")?.label).toBe(
+      "Crew",
+    );
+  });
+
   it("labels the Changes entry with the contract's own heading, so the nav and the section say one word", () => {
-    const changed = listingSections({ changes: true, launches: false, makers: true }).find((s) => s.id === "changed");
+    const changed = listingSections({ changes: true, launches: false, crew: true }).find((s) => s.id === "changed");
     expect(changed?.label).toBe(DIFF_HEADING);
   });
 
@@ -71,7 +85,7 @@ describe("the outline is the page's own headings, in the page's own order", () =
     // place `j` visits that the nav does not name.
     const page = markupOf("[slug]/page.tsx");
     const changes = markupOf("[slug]/changes.tsx");
-    for (const { id } of listingSections({ changes: true, launches: true, makers: true })) {
+    for (const { id } of listingSections({ changes: true, launches: true, crew: true })) {
       const source = id === "changed" ? changes : page;
       const open = new RegExp(`<section[^>]*\\bid="${id}"[^>]*>`, "s");
       expect(source).toMatch(open);
@@ -85,7 +99,7 @@ describe("the outline is the page's own headings, in the page's own order", () =
     }
     const spreads = page.match(/\[SECTION_ATTRIBUTE\]: true/g) ?? [];
     expect(spreads.length + (changes.match(/\[SECTION_ATTRIBUTE\]: true/g) ?? []).length).toBe(
-      listingSections({ changes: true, launches: true, makers: true }).length,
+      listingSections({ changes: true, launches: true, crew: true }).length,
     );
   });
 
@@ -94,10 +108,10 @@ describe("the outline is the page's own headings, in the page's own order", () =
     expect(page).toMatch(/<nav\s+aria-label=\{SECTION_NAV_LABEL\}/);
     expect(page).toMatch(/sections\.map\(\(section\) =>/);
     expect(page).toMatch(/href=\{`#\$\{section\.id\}`\}/);
-    // CP-R3 — *What changed* and *Makers* are in the outline only when their
-    // panel has something in it.
+    // CP-R3 — *What changed* and *Crew* are in the outline only when their
+    // card has something in it.
     expect(page).toMatch(
-      /listingSections\(\{\s*changes: profile\.changes !== null && profile\.changes\.length > 0,\s*launches: profile\.launches\.length > 0,\s*makers: profile\.maintainers\.length > 0,\s*\}\)/,
+      /listingSections\(\{\s*changes: profile\.changes !== null && profile\.changes\.length > 0,\s*launches: profile\.launches\.length > 0,\s*crew: profile\.maintainers\.length > 0 \|\| openRoles\.length > 0,\s*\}\)/,
     );
     // A select that navigates on change is a change of context on input
     // (WCAG 3.2.2); the outline is links.

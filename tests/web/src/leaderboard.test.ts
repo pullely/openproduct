@@ -7,7 +7,7 @@
 //
 // What is pinned here:
 //
-//   - every leaderboard address redirects to `/builds/upvoted` FROM THE
+//   - every leaderboard address redirects to `/products/by/upvoted` FROM THE
 //     EDGE, never from a route module (SB0: a module whose body is one
 //     redirect prerenders as a 200 with an empty body)
 //   - no leaderboard route module is left to render
@@ -18,7 +18,7 @@ import { existsSync, readFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { buildOrderPath } from "@openproduct/contracts";
+import { productsPath } from "@openproduct-web/app/feed/products";
 import { SECTIONS } from "@openproduct-web/app/shell/shell";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -30,11 +30,15 @@ const markupOf = (file: string) =>
     .replace(/^\s*\/\/.*$/gm, "");
 
 describe("the leaderboard is the Upvoted order now", () => {
-  it("redirects every address it had to /builds/upvoted, from the edge", () => {
+  it("redirects every address it had to the Upvoted sort, from the edge, in one hop", () => {
+    // It was `/builds/upvoted` until openproduct-redesign OPR1 made the
+    // order a sort of the Products page; that address redirects too, and a
+    // redirect to a redirect is two round trips for one answer.
     const config = readFileSync(resolve(APP_DIR, "../../next.config.mjs"), "utf-8");
-    expect(buildOrderPath("upvoted")).toBe("/builds/upvoted");
-    expect(config).toContain('{ source: "/leaderboard", destination: "/builds/upvoted", permanent: true }');
-    expect(config).toContain('{ source: "/leaderboard/:range", destination: "/builds/upvoted", permanent: true }');
+    expect(productsPath("upvoted")).toBe("/products/by/upvoted");
+    expect(config).toContain('{ source: "/leaderboard", destination: "/products/by/upvoted", permanent: true }');
+    expect(config).toContain('{ source: "/leaderboard/:range", destination: "/products/by/upvoted", permanent: true }');
+    expect(config).not.toContain('destination: "/builds/upvoted"');
   });
 
   it("leaves no route module behind to render", () => {
@@ -48,10 +52,16 @@ describe("the leaderboard is the Upvoted order now", () => {
     expect(read("shell/section-for.ts")).toContain('"leaderboard",');
   });
 
-  it("the sitemap names the orders, and none of the leaderboard's ranges", () => {
+  it("the sitemap names where the lists live, and none of the addresses that redirect", () => {
     const sitemap = markupOf("sitemap.xml/route.ts");
     expect(sitemap).not.toMatch(/path: "leaderboard/);
-    expect(sitemap).toContain("BUILD_ORDER_SEGMENTS.map((order) => ({ path: `builds/${order}`, lastmod: null }))");
+    // OPR1 — every order under `/builds/` redirects now (the sorts to the
+    // Products page, Roles to Help wanted), so none of them is listed; the
+    // two pages they arrive at are.
+    expect(sitemap).not.toMatch(/builds\//);
+    expect(sitemap).not.toContain("BUILD_ORDER_SEGMENTS");
+    expect(sitemap).toContain('{ path: "products", lastmod: null }');
+    expect(sitemap).toContain('{ path: "help-wanted", lastmod: null }');
   });
 });
 

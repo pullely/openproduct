@@ -15,7 +15,7 @@ export default function PeopleLoading() {
       <Shimmer className="h-[32px] w-[300px]" />
       <ShimmerLine width="w-[240px]" className="mt-5 h-[16px]" />
       <div className="mt-4 flex items-center gap-2">
-        <Shimmer className="h-[38px] flex-1 rounded-[8px]" />
+        <Shimmer className="h-[44px] flex-1 rounded-full" />
         <Shimmer className="h-[32px] w-[104px] rounded-full" />
         <Shimmer className="h-[32px] w-[190px] rounded-full" />
       </div>

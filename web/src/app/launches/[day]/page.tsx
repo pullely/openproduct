@@ -104,14 +104,14 @@ export default async function BoardDayPage({ params }: { params: Promise<{ day: 
   const later = nextDay(parsed.day, now);
 
   return (
-    <main className="mx-auto box-border w-full max-w-[1000px] px-8 pb-16 pt-8 max-sm:px-4">
+    <main className="mx-auto box-border w-full max-w-[1000px] px-[44px] pb-[104px] pt-[80px] max-lg:px-7 max-sm:px-4 max-sm:pb-[72px] max-sm:pt-12">
       {/* RE1 — the same trail the `<nav>` below draws for a reader, in the
           form a search result will use. The two are built from the same two
           rungs so they cannot say different things. */}
       <JsonLd
         data={breadcrumbJsonLd(
           [
-            { name: "Products", path: "/" },
+            { name: "Products", path: "/products" },
             { name: dayLabel(parsed.day), path: `/launches/${parsed.day.id}` },
           ],
           publicApexOrigin(),
@@ -130,8 +130,8 @@ export default async function BoardDayPage({ params }: { params: Promise<{ day: 
         )}
       />
       <nav className={CRUMBS} aria-label="Breadcrumb">
-        <AppLink href="/" className={`tap ${LINK_QUIET}`}>
-          Launches
+        <AppLink href="/products" className={`tap ${LINK_QUIET}`}>
+          Products
         </AppLink>
         <span aria-hidden="true">/</span>
         <span className="text-foreground">{parsed.day.id}</span>
@@ -152,14 +152,14 @@ export default async function BoardDayPage({ params }: { params: Promise<{ day: 
           link. The daily board IS this page — the leaderboard's switch sends
           "Today" here rather than to a second address — so the strip is how
           a reader walks the month without the arrows below. */}
-      <nav aria-label="Days this month" className="mt-8 border-t border-border pt-4">
+      <nav aria-label="Days this month" className="mt-8 border-t border-line pt-4">
         <ol className="m-0 flex list-none flex-wrap gap-1 p-0">
           {monthStrip(parsed.day, now).map((d) =>
             d.id === parsed.day.id ? (
               <li key={d.id}>
                 <span
                   aria-current="page"
-                  className="grid h-[32px] min-w-[32px] max-sm:h-[44px] max-sm:min-w-[44px] place-items-center rounded-[8px] bg-foreground px-1.5 font-mono text-[12.5px] text-background"
+                  className="grid h-[32px] min-w-[32px] max-sm:h-[44px] max-sm:min-w-[44px] place-items-center rounded-full bg-primary px-1.5 font-mono text-[13px] text-primary-foreground"
                 >
                   {d.day}
                 </span>
@@ -169,7 +169,7 @@ export default async function BoardDayPage({ params }: { params: Promise<{ day: 
                 <AppLink
                   href={`/launches/${d.id}`}
                   title={dayLabel(d)}
-                  className="tap grid h-[32px] min-w-[32px] max-sm:h-[44px] max-sm:min-w-[44px] place-items-center rounded-[8px] px-1.5 font-mono text-[12.5px] text-muted-foreground hover:bg-accent hover:text-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+                  className="tap grid h-[32px] min-w-[32px] max-sm:h-[44px] max-sm:min-w-[44px] place-items-center rounded-full px-1.5 font-mono text-[13px] text-muted-foreground hover:bg-accent hover:text-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
                 >
                   {d.day}
                 </AppLink>
@@ -181,12 +181,12 @@ export default async function BoardDayPage({ params }: { params: Promise<{ day: 
 
       {/* Both directions, and `later` is null on today — a board must not link
           forward into a day nobody has launched in yet. */}
-      <nav className="mt-10 flex flex-wrap items-center justify-between gap-3 border-t border-border pt-5 text-[14px]">
-        <AppLink href={`/launches/${earlier.id}`} className="tap text-foreground underline underline-offset-[3px]">
+      <nav className="mt-10 flex flex-wrap items-center justify-between gap-3 border-t border-line pt-5 text-[14px]">
+        <AppLink href={`/launches/${earlier.id}`} className="tap text-link underline underline-offset-[3px]">
           ← {dayLabel(earlier)}
         </AppLink>
         {later ? (
-          <AppLink href={`/launches/${later.id}`} className="tap text-foreground underline underline-offset-[3px]">
+          <AppLink href={`/launches/${later.id}`} className="tap text-link underline underline-offset-[3px]">
             {dayLabel(later)} →
           </AppLink>
         ) : (

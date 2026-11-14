@@ -41,12 +41,12 @@ export function InstallLine({ command }: { command: string }) {
 
   return (
     <div className="mt-2">
-      <div className="flex items-center justify-between gap-3 rounded-[8px] border border-border bg-surface-2 py-1 pl-3 pr-1">
+      <div className="flex items-center justify-between gap-3 rounded-[14px] bg-well py-1 pl-3 pr-1">
         <code
           role="region"
           aria-label="The install command"
           tabIndex={0}
-          className="min-w-0 flex-1 select-all overflow-x-auto whitespace-pre py-1 font-mono text-[13.5px] leading-[1.6] text-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+          className="min-w-0 flex-1 select-all overflow-x-auto whitespace-pre py-1 font-mono text-[13px] leading-[1.6] text-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
         >
           {command}
         </code>
@@ -65,7 +65,7 @@ export function InstallLine({ command }: { command: string }) {
             })();
           }}
           aria-live="polite"
-          className="tap inline-flex h-[30px] shrink-0 items-center gap-1.5 rounded-[6px] border-0 bg-transparent px-2.5 text-[13px] font-medium text-muted-foreground transition-colors hover:bg-card hover:text-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+          className="tap inline-flex h-[30px] shrink-0 items-center gap-1.5 rounded-full border-0 bg-transparent px-2.5 text-[13px] font-medium text-muted-foreground transition-colors hover:bg-card hover:text-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
         >
           <CopyGlyph />
           {copied ? INSTALL_COPIED_LABEL : INSTALL_COPY_LABEL}

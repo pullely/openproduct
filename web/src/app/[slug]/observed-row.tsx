@@ -66,7 +66,7 @@ export function ObservedRow({
         {/* VC6's one convention: relative under a week with the absolute in
             `title`, absolute beyond. The moment is not decoration — it is
             what makes the four values observations rather than assertions. */}
-        <span className="whitespace-nowrap text-[12.5px] text-muted-foreground" title={absoluteOf(observedAt)}>
+        <span className="whitespace-nowrap text-[13px] text-muted-foreground" title={absoluteOf(observedAt)}>
           Read {agoOf(observedAt, now)}
         </span>
       </div>
@@ -74,7 +74,7 @@ export function ObservedRow({
         // WITHDRAWN, NOT REMOVED. A signal that vanished at the horizon would
         // be indistinguishable from one never observed, and the reader would
         // have no way to know the sweep had stopped.
-        <p className="m-0 mb-2 mt-1 max-w-[70ch] rounded-[8px] bg-warning-soft px-2.5 py-1.5 text-[12.5px] leading-[1.5] text-warning-strong">
+        <p className="m-0 mb-2 mt-1 max-w-[70ch] rounded-[14px] bg-warning-soft px-2.5 py-1.5 text-[13px] leading-[1.5] text-warning-strong">
           {SIGNAL_WITHDRAWN_NOTE}
         </p>
       ) : null}
@@ -84,7 +84,7 @@ export function ObservedRow({
             key={signal.id}
             className="flex items-baseline justify-between gap-3 border-t border-line py-[9px]"
           >
-            <dt className="text-[13.5px] text-muted-foreground">
+            <dt className="text-[13px] text-muted-foreground">
               {/* OPC-4 — a derived value owes a sentence a reader can reach,
                   and the label IS the link rather than a `?` beside it: there
                   are four of these and four question marks would be furniture. */}
@@ -97,7 +97,7 @@ export function ObservedRow({
               </AppLink>
             </dt>
             <dd
-              className={`m-0 text-right text-[13.5px] tabular-nums ${
+              className={`m-0 text-right text-[13px] tabular-nums ${
                 withdrawn ? "text-faint line-through" : "text-foreground"
               }`}
             >

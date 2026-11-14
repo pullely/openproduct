@@ -74,6 +74,34 @@ import { CARDS, SAMPLE_SLUG } from "./fixture.mjs";
  * app's own chunks got slightly smaller. The budget is the old value plus the
  * largest rise, rounded up to the KB: every archetype keeps its margin, the
  * listing's 10 KB included. Requests and third-party hosts did not move.
+ *
+ * ─── 276 KB HELD THROUGH THE REDESIGN, MEASURED 2026-11-14 (OPR1) ─────────
+ *
+ * The redesign (openproduct-redesign OPR1) replaced Geist, Newsreader and
+ * Geist Mono with Hanken Grotesk, Lora and IBM Plex Mono. Its first commit
+ * moved this budget to 300 KB BY ARITHMETIC, before the lane had run: five
+ * font files where there were three, +23,764 bytes on every page. Measured,
+ * that amendment was not needed and it was taken back out:
+ *
+ *   - Lora's italic is not preloaded any more (`web/src/app/layout.tsx`): no
+ *     walked page draws it, so a page fetches four files, 75,924 bytes,
+ *     where it fetched three, 74,900 — a rise of 1,024, not 23,764;
+ *   - the rest of the rise is the redesign's own markup and script.
+ *
+ *                             next 16 (above)   OPR1, measured   rise
+ *   / (home)                  258,141           261,811          +3,670
+ *   /product-00               272,320           276,145          +3,825
+ *   /products?sort=upvoted    259,287           262,461          +3,174
+ *     (was /builds/upvoted; it is /products/by/upvoted now)
+ *
+ * Every archetype is under 276 KB (282,624 B): the listing, the heaviest,
+ * keeps 6,479 bytes. So the number WC2-8 holds did not move, and there is no
+ * amendment for the redesign in the decision file.
+ *
+ * REQUESTS, MEASURED: 26 on the home and on Products at both widths; 30 on
+ * the listing at desktop and 29 on a phone. The listing is AT the limit of
+ * 30 — the fourth font file is the request that put it there — so the next
+ * request that page adds is a recorded decision, not a rounding.
  */
 export const WIRE = { bytes: 276 * 1024, requests: 30, thirdPartyHosts: 0 };
 
@@ -87,8 +115,9 @@ const VIEWPORTS = [
 const ROUTES = [
   { path: "/", name: "home", expect: SAMPLE_SLUG },
   { path: `/${SAMPLE_SLUG}`, name: "listing", expect: "Frontend contributor" },
-  // OB7 (#1875) — the leaderboard is the Upvoted order now.
-  { path: "/builds/upvoted", name: "upvoted", expect: CARDS[0].slug },
+  // OB7 (#1875) — the leaderboard is the Upvoted order; OPR1 — and that
+  // order is the Products page's, at `/products/by/upvoted`.
+  { path: "/products/by/upvoted", name: "upvoted", expect: CARDS[0].slug },
 ];
 
 /** How long after `load` the lane keeps counting. The budget lane's value. */

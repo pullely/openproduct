@@ -38,19 +38,19 @@ export function ProvenanceRow({ value }: { value: ImportedValue }) {
       <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
         <span className="text-[13px] font-medium text-foreground">{IMPORTED_FIELD_LABEL[value.field]}</span>
         <span
-          className="inline-flex items-center rounded-full border border-border px-2 py-[1px] text-[11.5px] text-muted-foreground"
+          className="inline-flex items-center rounded-full border border-border px-2 py-[1px] text-[11px] text-muted-foreground"
           title={PROVENANCE_NOTE[value.provenance]}
         >
           {observedOnly ? "observed only" : PROVENANCE_LABEL[value.provenance]}
         </span>
       </div>
-      <p className="m-0 mt-[3px] text-[13.5px] leading-[1.5] text-foreground [overflow-wrap:anywhere]">
+      <p className="m-0 mt-[3px] text-[13px] leading-[1.5] text-foreground [overflow-wrap:anywhere]">
         {/* Not yet observed and not yet typed. A dash, never an empty line
             and never a zero — the two are different claims (OPC-C). */}
         {value.value ?? <span className="text-faint">—</span>}
       </p>
       {overridden ? (
-        <p className="m-0 mt-[2px] text-[12.5px] leading-[1.5] text-muted-foreground">
+        <p className="m-0 mt-[2px] text-[13px] leading-[1.5] text-muted-foreground">
           The repository says <span className="text-foreground">{value.observed}</span>.
         </p>
       ) : null}
@@ -84,7 +84,7 @@ export function ImportPanel({
     <section aria-labelledby="from-repository" className={RAIL_PANEL}>
       <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
         <h2 id="from-repository" className={H2}>From the repository</h2>
-        <span className="text-[12.5px] text-muted-foreground">
+        <span className="text-[13px] text-muted-foreground">
           {checkedAt === null
             ? "Not checked yet"
             : observed

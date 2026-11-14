@@ -11,7 +11,7 @@ import {
   type MakerUpvote,
 } from "@openproduct/contracts";
 
-import { CARD } from "../../ui/design";
+import { BOARD_CARD, EMPTY_NOTE } from "../../ui/design";
 import { ProductTile } from "../../ui/product-tile";
 import { ordinal } from "../../ui/ordinal";
 import { VoteBox } from "../../ui/vote-box";
@@ -60,7 +60,7 @@ export function MakerRows({
 }) {
   if (rows.length === 0) {
     return (
-      <p className="m-0 mt-5 max-w-[860px] rounded-[12px] border border-dashed border-border px-5 py-10 text-center text-[15px] text-muted-foreground">
+      <p className={EMPTY_NOTE}>
         {/* Each tab names what is absent and what would fill it. "Nothing"
             three times over would leave a reader unable to tell an empty
             record from a broken page (the OD5 finding, at the level of a
@@ -79,7 +79,7 @@ export function MakerRows({
   const note = tab === "history" ? null : makerTruncationNote(total, rows.length);
 
   return (
-    <section aria-label={GROUP_LABELS[tab]} className="mb-7 mt-5 max-w-[860px]">
+    <section aria-label={GROUP_LABELS[tab]}>
       {/* The design draws no heading over the card: the tab above it is the
           heading, and its number is the TAB'S number — the document's count,
           never `rows.length`, so the strip and the list cannot disagree. A
@@ -87,7 +87,7 @@ export function MakerRows({
       <h2 className="sr-only">
         {GROUP_LABELS[tab]} <span className="tabular-nums">{total}</span>
       </h2>
-      <ul className={`m-0 list-none p-0 ${CARD}`}>
+      <ul className="m-0 grid list-none gap-[18px] p-0 max-sm:gap-2.5">
         {rows.map((row) => (
           <Row key={keyOf(row)} tab={tab} row={row} now={now} returnTo={returnTo} />
         ))}
@@ -95,7 +95,7 @@ export function MakerRows({
       {/* THE COUNTER AND THE LIST DISAGREE ABOVE THE LIMIT, and the page says
           so rather than letting a reader count the rows and conclude the
           number in the tab is wrong. */}
-      {note ? <p className="m-0 mt-4 text-[13.5px] text-muted-foreground">{note}</p> : null}
+      {note ? <p className="m-0 mt-4 px-2 text-[13px] text-muted-foreground">{note}</p> : null}
     </section>
   );
 }
@@ -128,15 +128,17 @@ function Row({
     // the `<li>`, so the whole row is what a finger presses.
     <li
       data-keyrow
-      className="relative flex list-none items-center gap-4 border-t border-line px-5 py-4 transition-colors first:border-t-0 hover:bg-accent max-sm:gap-3 max-sm:px-4"
+      // ONE FLAT CARD PER ACT (board `Person`): what they did is a card of its
+      // own, as a post is, not a row ruled off from the next.
+      className={`relative flex list-none items-center gap-4 transition-colors hover:bg-accent max-sm:gap-3 ${BOARD_CARD}`}
     >
       <AppLink
         href={href}
         tabIndex={-1}
         aria-hidden="true"
-        className="shrink-0 rounded-[12px] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+        className="shrink-0 rounded-[13px] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
       >
-        <ProductTile slug={slug} thumbnail={row.thumbnail} size={52} />
+        <ProductTile slug={slug} thumbnail={row.thumbnail} size={44} />
       </AppLink>
 
       <div className="min-w-0 flex-1">
@@ -148,13 +150,13 @@ function Row({
                 and a day the sweep has not counted yet renders nothing here
                 rather than a zero (OPC-C). */}
             {launch && launch.rank !== null ? (
-              <span className="shrink-0 text-[16px] font-semibold leading-tight tabular-nums text-muted-foreground">
+              <span className="shrink-0 text-card-title font-semibold leading-tight tabular-nums text-muted-foreground">
                 {launch.rank}.
               </span>
             ) : null}
             <AppLink
               href={href}
-              className="text-[16px] font-semibold leading-tight tracking-[-0.005em] text-foreground after:absolute after:inset-0 after:content-[''] hover:text-copy focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+              className="text-card-title font-semibold leading-tight tracking-[-0.015em] text-foreground after:absolute after:inset-0 after:content-[''] hover:text-copy focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
             >
               {slug}
             </AppLink>
@@ -163,11 +165,11 @@ function Row({
         {/* Not a link: it went where the title goes, and the title now
             covers the row (FR2). */}
         {row.tagline ? (
-          <p className="m-0 mt-[2px] text-[15px] leading-[1.45] text-copy">{row.tagline}</p>
+          <p className="m-0 mt-1 text-[15px] leading-[1.5] text-copy">{row.tagline}</p>
         ) : null}
         {/* `relative z-10` — the history line carries its own links, and they
             must sit above the title's stretch. */}
-        <div className="relative z-10 mt-[7px] flex flex-wrap items-center gap-1.5 text-[13px] text-muted-foreground">
+        <div className="relative z-10 mt-1.5 flex flex-wrap items-center gap-1.5 text-[13px] text-muted-foreground">
           {tab === "launched" ? <LaunchMeta row={row as MakerLaunch} /> : null}
           {tab === "upvoted" ? <UpvoteMeta row={row as MakerUpvote} now={now} /> : null}
           {tab === "comments" ? <CommentMeta row={row as MakerComment} /> : null}
@@ -223,7 +225,7 @@ function HistoryMeta({ row, now }: { row: MakerHistoryEntry; now: number }) {
 function LaunchMeta({ row }: { row: MakerLaunch }) {
   return (
     <>
-      <span className="font-mono text-[12px]">{row.day}</span>
+      <span className="font-mono text-[13px]">{row.day}</span>
       <span className="text-faint">·</span>
       {/* A DAY THE SWEEP HAS NOT COUNTED YET HAS NO POSITION, and the row says
           nothing rather than printing `#1`. An ordinal nobody computed is the

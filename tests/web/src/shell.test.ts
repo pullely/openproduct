@@ -9,19 +9,25 @@
 //   XP-1 one accent colour, one meaning
 //   XP-5 a person's name is a link or plain text, never a dead link
 //
-// The fourth is XP1's rule brought forward: a control that is not yet live
-// says why rather than looking broken.
+// openproduct-redesign OPR1 rebuilt the chrome to the boards, and these
+// guards were rewritten to hold the new one: three sections at three
+// addresses, the phone's four tabs, a footer that holds every section that
+// left the bar, the search box in its own island, and the 40px controls.
 
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 import {
   ACCOUNT_MENU_ITEMS,
+  SIGN_IN_PATH,
+  ACTIVITY_PATH,
   COUNT_PLACEHOLDER,
+  FOOTER_LINKS,
+  PHONE_TABS,
+  SEARCH_PLACEHOLDER,
   SECTIONS,
   initialsOf,
-  liveSections,
   resolveCrumb,
   signInHref,
 } from "@openproduct-web/app/shell/shell";
@@ -30,81 +36,178 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const APP_DIR = resolve(__dirname, "../../../web/src/app");
 const STYLES = resolve(__dirname, "../../../web/src/styles/globals.css");
 
+/** Does this app serve a page (or a route handler) at this path? */
+function served(path: string): boolean {
+  const dir = path === "/" ? APP_DIR : resolve(APP_DIR, path.slice(1));
+  return ["page.tsx", "route.ts", "(index)/page.tsx"].some((file) => existsSync(resolve(dir, file)));
+}
+
 describe("the section nav", () => {
-  it("renders the launch design's destinations, and says which are live", () => {
-    // THE DESIGN'S FOUR, AND PEOPLE. Products left with the directory (`/` IS
-    // the launches; `/products` redirects there). People came BACK: `/people`
-    // is a live page and half of what this commons is for — the products are
-    // here to be joined, and the people are who you would be joining — and a
-    // live destination with no way to reach it from the shell is the
-    // regression XP4's keyboard walk exists to catch. Reasons in shell.ts.
-    // OB1 (openproduct-open-builds D5) — BUILDS, NOT LAUNCHES. The id stays
-    // `launches` because `sectionFor` and the archive key on it. Collections
-    // and Leaderboard left the bar (the footer and the Upvoted order hold
-    // them); Open roles joined it, planned at OB1 and live since OB4 at the
-    // front page's Roles order.
-    expect(SECTIONS.map((s) => s.label)).toEqual(["Builds", "Open roles", "Topics", "People"]);
-    expect(liveSections().map((s) => s.id)).toEqual(["launches", "roles", "topics", "people"]);
-    expect(SECTIONS.length).toBe(4);
-    expect(SECTIONS.find((s) => s.id === "roles")?.href).toBe("/builds/roles");
-    // NONE IS PLANNED NOW — the machinery stays for the next one.
-    expect(SECTIONS.filter((s) => s.status === "planned").map((s) => s.id)).toEqual([]);
-    // Every section wears one glyph, and no two share one (D6).
-    const icons = SECTIONS.map((s) => s.icon);
+  it("is the redesign's three destinations, at their three addresses", () => {
+    // design.md §2 rule 4, locked by the owner: the navigation is Feed,
+    // Products, Help wanted. The bar this replaced read Builds, Open roles,
+    // Topics, People; Topics and People are in the footer now (below).
+    expect(SECTIONS.map((s) => [s.label, s.href])).toEqual([
+      ["Feed", "/"],
+      ["Products", "/products"],
+      ["Help wanted", "/help-wanted"],
+    ]);
+    // No People directory in the navigation — the owner's rule.
+    expect(SECTIONS.some((s) => s.href.startsWith("/people") || s.href.startsWith("/topics"))).toBe(false);
+    // Every destination wears one glyph, and no two share one.
+    const icons = PHONE_TABS.map((t) => t.icon);
     expect(new Set(icons).size).toBe(icons.length);
   });
 
-  it("every planned section names the sub-epic that delivers it and what it holds", () => {
-    // The rule that keeps "not yet" from decaying into "broken": a planned
-    // destination must be able to explain itself, so it cannot be added
-    // without someone deciding what it is for.
-    for (const section of SECTIONS) {
-      if (section.status === "live") {
-        expect(section.href).toBeTruthy();
-        continue;
-      }
-      expect(section.href).toBeNull();
-      // Two letters and a number: OL1's planned entries name the MILESTONE
-      // that delivers them (TP0, UV2) rather than the cluster, because a
-      // cluster is a plan and a milestone is a branch somebody can look up.
-      expect(section.arrivesWith?.cluster).toMatch(/^[A-Z]{2}\d[a-z]?$/);
-      expect((section.arrivesWith?.holds ?? "").length).toBeGreaterThan(12);
+  it("has no dead link: every destination in the chrome is a page this app serves", () => {
+    // The rule that used to be "a planned section explains itself". Nothing
+    // is planned now, so the rule is the plain one: a link in the chrome
+    // resolves. This is what made `/products`, `/help-wanted` and
+    // `/activity` pages in the same change that put them in the bar.
+    for (const href of [...SECTIONS.map((s) => s.href), ...PHONE_TABS.map((t) => t.href), ACTIVITY_PATH]) {
+      expect([href, served(href)]).toEqual([href, true]);
     }
   });
 
-  it("the search affordance is LIVE at DS3, and lives in its own island", () => {
-    const panel = readFileSync(resolve(APP_DIR, "shell/top-panel.tsx"), "utf-8");
-    // The palette is a separate client component, so the panel itself stays
-    // what it was — the crumb and the nav are not personal and must not be
-    // dragged into a component that fetches.
-    expect(panel).toContain("<CommandPalette />");
-    expect(panel).not.toMatch(/<input/);
-    // And the "not yet" is gone rather than left lying around: an unused
-    // pending label is how a surface ends up claiming something is coming
-    // that already came.
-    expect(panel).not.toContain("SEARCH_PENDING_LABEL");
+  it("gives a phone four tabs: the three sections and Activity, Help wanted as 'Seats'", () => {
+    expect(PHONE_TABS.map((t) => [t.label, t.href])).toEqual([
+      ["Feed", "/"],
+      ["Products", "/products"],
+      ["Seats", "/help-wanted"],
+      ["Activity", "/activity"],
+    ]);
+    // Derived from the sections rather than written twice: same ids, same
+    // addresses, in the same order.
+    expect(PHONE_TABS.slice(0, SECTIONS.length).map((t) => [t.id, t.href])).toEqual(
+      SECTIONS.map((s) => [s.id, s.href]),
+    );
   });
 
-  it("the panel's own rhythm is in absolute pixels, not rems", () => {
-    // `globals.css` typesets html at 14px, so every rem-based Tailwind size
-    // renders at 87.5% — an `h-14` panel is 49px, not the 56px the design
+  it("the search is LIVE, and lives in its own island", () => {
+    const panel = readFileSync(resolve(APP_DIR, "shell/top-panel.tsx"), "utf-8");
+    // The search box is a separate client component, so the header itself
+    // stays what it was — the nav is not personal and must not be dragged
+    // into a component that fetches.
+    expect(panel).toContain("<HeaderSearch />");
+    expect(panel).not.toMatch(/<input/);
+    // ONE search: the palette's export is gone rather than kept beside the
+    // box as a second way to do the same thing.
+    expect(panel).not.toContain("CommandPalette");
+    expect(readFileSync(resolve(APP_DIR, "shell/palette.tsx"), "utf-8")).not.toContain("CommandPalette");
+    // The placeholder names the two classes the card answers.
+    expect(SEARCH_PLACEHOLDER).toBe("Search products and people");
+  });
+
+  it("the header's own rhythm is in absolute pixels, not rems", () => {
+    // `globals.css` typesets html below 16px, so every rem-based Tailwind
+    // size renders small — an `h-10` control is not the 40px the board
     // draws. The MX1 lesson, applied to the shell.
     const panel = readFileSync(resolve(APP_DIR, "shell/top-panel.tsx"), "utf-8");
-    // 60px at OL1, 80px since openproduct-calm CL1 (the bar spans the window
-    // and the room is part of the calm) — and a FIXED height since FR1, not a
-    // minimum. The original
-    // reasoning was that the nav wraps to a second row on a narrow viewport
-    // and a fixed height would clip it; the audit measured what that actually
-    // produced, which is three rows and 147px at 375px (P0·05). The nav does
-    // not wrap any more because it is not in the bar at that width, so the
-    // height can be the number the design draws instead of a floor under it.
-    expect(panel).toContain("h-[80px]");
-    expect(panel).not.toContain("min-h-[80px]");
-    expect(panel).not.toMatch(/className="[^"]*\bh-14\b/);
-    expect(panel).not.toMatch(/className="[^"]*\bmin-h-\[3\.75rem\]/);
+    // A FIXED height since FR1, not a minimum: a bar with a floor under it
+    // grows whenever something inside it does. 60px is the board's 40px
+    // controls in its 10px of padding.
+    expect(panel).toContain("h-[60px]");
+    expect(panel).not.toContain("min-h-[60px]");
+    // The pills are the board's 36px.
+    expect(panel).toContain("h-[36px]");
+    expect(panel).not.toMatch(/className="[^"]*\bh-(?:9|10|14)\b/);
     const chip = readFileSync(resolve(APP_DIR, "shell/account-chip.tsx"), "utf-8");
-    expect(chip).toContain("h-[32px]");
-    expect(chip).not.toMatch(/className="[^"]*\bh-8\b/);
+    expect(chip).toContain("h-[40px] w-[40px]");
+    expect(chip).not.toMatch(/className="[^"]*\bh-(?:8|10)\b/);
+  });
+
+  it("is a sticky frosted bar in the page's column, flat: no border, no shadow", () => {
+    const panel = markupOf("shell/top-panel.tsx");
+    const header = panel.match(/<header className="([^"]*)"/)?.[1] ?? "";
+    expect(header).toContain("sticky top-0");
+    expect(header).toContain("bg-panel/[0.62]");
+    expect(header).toMatch(/backdrop-blur-\[16px\]/);
+    expect(header).toMatch(/backdrop-saturate-/);
+    // design.md §2 rule 11.
+    expect(header).not.toMatch(/\bborder(?:-|\b)|\bshadow/);
+    // The page's own column: 1180px, 24px gutters.
+    expect(panel).toMatch(/max-w-\[1180px\][^"]*\bpx-6\b/);
+  });
+
+  it("lights at most one destination: one `aria-current`, from one function", () => {
+    const panel = markupOf("shell/top-panel.tsx");
+    // The pills and the bell both ask `sectionFor`, which names one
+    // destination or none — so two of them cannot be current at once.
+    expect(panel).toContain("const activeSection = sectionFor(pathname)");
+    expect(panel).toContain('aria-current={current ? "page" : undefined}');
+    expect(panel).toContain('<NotificationBell current={activeSection === "activity"} />');
+    expect((panel.match(/aria-current=/g) ?? []).length).toBe(1);
+    // The current pill is ink with the light ink on it.
+    expect(panel).toMatch(/current\s*\?\s*"bg-foreground font-semibold text-background"/);
+  });
+});
+
+describe("two pages take less of the header (boards `SignIn`, `PhoneSearch`)", () => {
+  const panel = markupOf("shell/top-panel.tsx");
+
+  it("on the sign-in door it is the mark and the word, and nothing else", () => {
+    // The page IS the way in: a profile control offering to sign in, a bell
+    // and a search box are three ways to leave it. Read from the path, so
+    // the render is the same for every visitor (I6).
+    expect(SIGN_IN_PATH).toBe("/signin");
+    expect(panel).toContain("const door = path === SIGN_IN_PATH;");
+    expect(panel).toMatch(/\{door \? null : \(\s*<>\s*(?:\{\}\s*)?<nav aria-label="Main"/);
+    // Everything else in the bar is inside that one branch.
+    const rest = panel.slice(panel.indexOf("{door ? null : ("));
+    for (const part of ["<HeaderSearch />", "<NotificationBell", "<AccountChip />", "SECTIONS.map"]) {
+      expect([part, rest.includes(part)]).toEqual([part, true]);
+      expect([part, panel.slice(0, panel.indexOf("{door ? null : (")).includes(part)]).toEqual([part, false]);
+    }
+    // The word keeps its place at every width there: nothing is beside it.
+    expect(panel).toContain('${door ? "" : "max-lg:hidden"}');
+  });
+
+  it("on the search page a phone's bar does not repeat the search", () => {
+    // The page's own field is directly under the bar; a pill above it that
+    // links to the page it is on is the same control twice.
+    expect(panel).toContain("const onSearch = path === SEARCH_PATH;");
+    expect(panel).toMatch(/\{onSearch \? null : \(\s*<AppLink\s+href=\{SEARCH_PATH\}\s+aria-label="Search"/);
+    // Still exactly one such link in the source, and still phone-only.
+    expect((panel.match(/href=\{SEARCH_PATH\}/g) ?? []).length).toBe(1);
+  });
+});
+
+describe("the footer holds what left the bar", () => {
+  it("links every section that has no board, and each one is a route that exists", () => {
+    const hrefs = FOOTER_LINKS.map((l) => l.href);
+    // Topics and People were in the header until OPR1; the rest were here
+    // or reachable only through the bar. Nothing was removed from the site.
+    for (const href of [
+      "/topics",
+      "/people",
+      "/stack",
+      "/pricing",
+      "/collections",
+      "/threads",
+      "/digest",
+      "/docs",
+      "/transparency",
+      "/submit",
+    ]) {
+      expect(hrefs).toContain(href);
+    }
+    for (const link of FOOTER_LINKS) {
+      const path = link.plain ? link.href.replace(/\/[^/]+$/, "") : link.href;
+      expect([link.href, link.plain ? existsSync(resolve(APP_DIR, link.href.slice(1))) || served(path) : served(path)]).toEqual([
+        link.href,
+        true,
+      ]);
+    }
+    // No duplicates, and no link back into the bar's own three.
+    expect(new Set(hrefs).size).toBe(hrefs.length);
+    expect(hrefs.filter((href) => SECTIONS.some((s) => s.href === href))).toEqual([]);
+  });
+
+  it("renders the list rather than a second copy of it, and keeps the theme control", () => {
+    const footer = markupOf("shell/site-footer.tsx");
+    expect(footer).toContain("FOOTER_LINKS.map");
+    expect(footer).toContain("<ThemeToggle />");
+    for (const link of FOOTER_LINKS) expect(footer).not.toContain(`"${link.href}"`);
   });
 });
 
@@ -144,19 +247,36 @@ describe("the account menu", () => {
     // public page CG1 gave it an address for.
     expect(ACCOUNT_MENU_ITEMS.map((i) => i.href)).toEqual([
       "/studio",
-      "/me/saved",
-      "/me/applications",
+      // OPR1 — the saved list and the requests are sections of `/me`; the
+      // menu names the section, not the old page that redirects to it.
+      "/me?section=saved",
+      "/me?section=seats",
       // NF0 — the inbox, in the same menu because it is the same question
-      // (what is mine on this surface) and one badge in one place beats a
-      // second affordance in the panel competing with it.
-      "/me/notifications",
-      "/me#digest",
+      // (what is mine on this surface). Its address is `/activity` since
+      // OPR1, the same one the header's bell goes to.
+      "/activity",
+      // The digest switch is in the settings page's Notifications card.
+      "/me/settings#notifications",
     ]);
     // A subscription is not a number: the digest row carries no count.
     expect(ACCOUNT_MENU_ITEMS.find((i) => i.id === "digest")?.countKey).toBeUndefined();
     // The inbox's IS one, and it is the only count here that means "waiting
     // for you" rather than "held by you".
     expect(ACCOUNT_MENU_ITEMS.find((i) => i.id === "notifications")?.countKey).toBe("unread");
+  });
+
+  it("every anchor and section the menu names is one the page it goes to has", () => {
+    // A link to `#notifications` on a page with no such id lands at the top
+    // and says nothing; a link to a section the page does not know lands on
+    // the first one. Both are silent, so both are checked here.
+    const settings = readFileSync(resolve(APP_DIR, "me/settings/page.tsx"), "utf-8");
+    expect(settings).toContain('<section id="notifications"');
+    expect(settings).toContain('aria-label="Weekly digest"');
+    const sections = readFileSync(resolve(APP_DIR, "me/section.ts"), "utf-8");
+    expect(sections).toContain('export const ME_SECTION_KEYS = ["products", "saved", "seats"] as const;');
+    // With no handle yet, the public-page row goes to where one is claimed.
+    const chip = readFileSync(resolve(APP_DIR, "shell/account-chip.tsx"), "utf-8");
+    expect(chip).toContain('href={handle ? `/@${handle}` : "/me/settings"}');
   });
 
   it("the chip's own Profile section links the form and the public page", () => {
@@ -179,32 +299,40 @@ describe("the account menu", () => {
   });
 
   it("nothing between the chip and the header clips the menu it drops", () => {
-    // The menu is absolutely positioned 44px below a 56px bar. An ancestor
-    // with `overflow: hidden` (or `auto`, or `scroll`) clips a positioned
-    // descendant in both axes, and the row that holds the chip had exactly
-    // that — so the menu opened and rendered into nothing. Sideways
-    // containment for the nav is `overflow-x-clip`, which leaves the other
-    // axis visible; this pins that the row never goes back.
+    // The menu is absolutely positioned below the bar, and the search card
+    // drops out of the same row. An ancestor with `overflow: hidden` (or
+    // `auto`, or `scroll`) clips a positioned descendant in both axes, and
+    // the row that holds the chip once had exactly that — so the menu opened
+    // and rendered into nothing.
     const panel = readFileSync(resolve(APP_DIR, "shell/top-panel.tsx"), "utf-8");
     // Only what is APPLIED: the class attributes, not the comments that
     // explain them.
-    const classes = Array.from(panel.matchAll(/className="([^"]*)"/g), (m) => m[1]!).join(" ");
-    // Nothing in the bar may clip in BOTH axes, on any element — that is the
-    // shape of the original bug, and it does not depend on which element has
-    // it.
-    expect(classes).not.toMatch(/\boverflow-hidden\b/);
-    expect(classes).not.toMatch(/\boverflow-(?:auto|scroll|clip)\b/);
-    expect(classes).not.toMatch(/\boverflow-y-(?:hidden|auto|scroll|clip)\b/);
-    // OL1 removed the intermediate row the chip used to sit inside, so the
-    // only scroller left is the nav — and the chip is NOT in it. Sideways
-    // containment on the nav is fine precisely because the menu does not drop
-    // out of the nav; assert the structure that makes it fine, so a later
-    // edit that moves the chip back inside the scroller fails here rather
-    // than in a browser.
-    expect(classes).toContain("overflow-x-auto");
+    const classes = Array.from(panel.matchAll(/className=(?:"([^"]*)"|\{`([^`]*)`\})/g), (m) => m[1] ?? m[2]!).join(" ");
+    // Nothing in the bar may clip, on any element and in either axis. The
+    // old bar had one sideways scroller (its nav); the new one has none,
+    // because three pills fit at every width the header is shown.
+    expect(classes).not.toMatch(/\boverflow-/);
     const nav = panel.slice(panel.indexOf("<nav"), panel.indexOf("</nav>"));
     expect(nav).not.toContain("<AccountChip");
     expect(panel.indexOf("<AccountChip")).toBeGreaterThan(panel.indexOf("</nav>"));
+  });
+
+  it("keeps every item it had, and carries the theme control", () => {
+    const chip = readFileSync(resolve(APP_DIR, "shell/account-chip.tsx"), "utf-8");
+    // The restyle removed nothing: identity, Profile, You, the platform and
+    // the way out are all still there.
+    for (const piece of [
+      'label="Profile"',
+      'label="You"',
+      "Your profile",
+      "Public page",
+      "ACCOUNT_MENU_ITEMS.map",
+      "Your workspace on Orunbase",
+      'href="/auth/signout"',
+      "<ThemeToggle />",
+    ]) {
+      expect(chip).toContain(piece);
+    }
   });
 
   it("names exactly one external destination, and it is the platform", () => {
@@ -284,7 +412,7 @@ describe("XP-1 — one accent colour, one meaning", () => {
     // missing from", which was true when the site had one ramp and is the
     // wrong claim now. What it was really guarding — that a token cannot be
     // defined in one theme and missing from the other — is guarded properly
-    // in `dark-ramp.test.ts`, over all 82 of them rather than over `--panel`.
+    // in `dark-ramp.test.ts`, over all 103 of them rather than over `--panel`.
     //
     // What survives here is the SHAPE: dark is a second set of values on the
     // same tokens (WC-8), so there is still no theme class and no component
@@ -294,7 +422,8 @@ describe("XP-1 — one accent colour, one meaning", () => {
     expect(css).toContain("@media (prefers-color-scheme: dark)");
 
     // One base definition (`:root`) plus one per non-default hue — that is the
-    // light value. Ocean is the default and lives in `:root`, so three hue
+    // light value. Amber is the default (openproduct-redesign OPR1; it was
+    // ocean) and lives in `:root`, so three hue
     // blocks and four definitions in all. FR0's dark counterparts are
     // `--dk-endorse*`, which this pattern deliberately does not match: the
     // point of the count is that the LIGHT value is defined once per hue.
@@ -342,22 +471,33 @@ describe("XP-1 — one accent colour, one meaning", () => {
   it("the shell spends the accent where the design does, and nowhere else", () => {
     // MATCHES THE TOKEN'S USE, NOT THE WORD: the utilities that paint with
     // the accent, and the raw custom property behind them. The chrome wears
-    // the accent in exactly two places — the logomark's dot and the bell's
-    // unread badge — and the bar itself never reaches for it. The signed-in
-    // avatar wore the accent's soft wash until openproduct-calm CL1 (CL-R8):
-    // a disc in the upvote's colour beside every upvote box on the page said
-    // two things with one colour, so it is a neutral disc now.
+    // the accent in exactly two places — the logomark's ring and the unread
+    // dot (one component, worn by the bell and by the phone's Activity tab)
+    // — and the bar itself never reaches for it. The signed-in avatar wore
+    // the accent's soft wash until openproduct-calm CL1 (CL-R8): a disc in
+    // the upvote's colour beside every upvote box on the page said two
+    // things with one colour, so it is a neutral disc.
     const SPENDS_GOLD =
       /(?:\b(?:bg|text|border|fill|stroke|ring|outline|from|via|to|shadow|accent|caret|decoration)-endorse\b)|--endorse/g;
     expect((markupOf("shell/top-panel.tsx").match(SPENDS_GOLD) ?? []).length).toBe(0);
     expect((markupOf("shell/logomark.tsx").match(SPENDS_GOLD) ?? []).length).toBe(1);
-    // The avatar: a neutral disc, in the signed-in branch (CL1).
+    expect((markupOf("shell/section-bar.tsx").match(SPENDS_GOLD) ?? []).length).toBe(0);
+    // The avatar: a neutral white disc, in the signed-in branch.
     const chip = markupOf("shell/account-chip.tsx");
-    expect(chip).toContain("rounded-full bg-secondary font-mono text-[13px] font-medium text-foreground");
-    expect(chip).not.toContain("border-endorse-line bg-endorse-soft font-mono");
-    // The badge: the accent's fill, and only when there is something unread.
+    expect(chip).toContain("rounded-full bg-card font-mono text-[13px] font-medium text-foreground");
+    expect((chip.match(SPENDS_GOLD) ?? []).length).toBe(0);
+    // The dot: the accent's fill, once, and only when something is unread —
+    // on the bell and on the phone's tab alike.
     const bell = markupOf("shell/notification-bell.tsx");
-    expect(bell).toMatch(/unread > 0 \? \([\s\S]*?bg-endorse\b/);
+    expect((bell.match(SPENDS_GOLD) ?? []).length).toBe(1);
+    expect(bell).toMatch(/unread > 0 \? <UnreadDot/);
+    expect(markupOf("shell/section-bar.tsx")).toMatch(/marked \? <UnreadDot/);
+    // The search box and its card spend none of it: the door out is a
+    // link, and a link wears the link token (`amber-ink`), not the
+    // endorsement's.
+    expect((markupOf("shell/palette.tsx").match(SPENDS_GOLD) ?? []).length).toBe(0);
+    expect((markupOf("shell/palette-panel.tsx").match(SPENDS_GOLD) ?? []).length).toBe(0);
+    expect(markupOf("shell/palette-panel.tsx")).toContain("text-amber-ink");
   });
 
   it("a save is not an endorsement, and does not borrow its colour (OPC-3)", () => {
@@ -371,8 +511,11 @@ describe("XP-1 — one accent colour, one meaning", () => {
     // the same meaning the feed row spends it on. The vote box beside it is
     // a shared component and is held to its own rule below.
     const product = markupOf("[slug]/page.tsx");
-    expect(product.match(SPENDS_GOLD)?.length).toBe(3);
-    expect(product).toMatch(/border-endorse-line bg-endorse-soft[^"]*text-endorse-ink/);
+    // OPR1 — the pill is flat (a fill and its ink, no border), so it spends
+    // the gold twice where it spent it three times.
+    expect(product.match(SPENDS_GOLD)?.length).toBe(2);
+    expect(product).toMatch(/bg-endorse-soft[^"`]*text-endorse-ink/);
+    expect(product).not.toContain("border-endorse-line");
   });
 
   it("EN1 — the vote box is the one place the accent is SPENT, and it says why", () => {
@@ -401,6 +544,11 @@ describe("I6 — the shell does not personalise on the server", () => {
     for (const file of [
       "shell/shell.ts",
       "shell/top-panel.tsx",
+      "shell/section-bar.tsx",
+      "shell/site-footer.tsx",
+      "shell/notification-bell.tsx",
+      "shell/palette.tsx",
+      "shell/palette-panel.tsx",
       "shell/account-chip.tsx",
       "shell/logomark.tsx",
       "layout.tsx",
@@ -410,12 +558,40 @@ describe("I6 — the shell does not personalise on the server", () => {
     }
   });
 
-  it("the only personal island is the account chip, and it is a client component", () => {
-    const chip = readFileSync(resolve(APP_DIR, "shell/account-chip.tsx"), "utf-8");
-    expect(chip.startsWith('"use client";')).toBe(true);
+  it("the personal islands are client components, and the header itself fetches nothing", () => {
+    for (const file of ["shell/account-chip.tsx", "shell/notification-bell.tsx", "shell/section-bar.tsx"]) {
+      expect(readFileSync(resolve(APP_DIR, file), "utf-8").startsWith('"use client";')).toBe(true);
+    }
     const panel = readFileSync(resolve(APP_DIR, "shell/top-panel.tsx"), "utf-8");
     // The panel is a client component for `usePathname` (which resolves during
     // the server render), NOT for personalisation — it must not fetch.
     expect(panel).not.toMatch(/fetch\(/);
+  });
+
+  it("nothing personal is in the server-rendered chrome", () => {
+    // What a signed-in visitor sees that a stranger does not — a name,
+    // initials, a handle, counts, the unread dot — is state the islands
+    // hold, and every piece of it starts EMPTY, so the server render (and
+    // the first client render) is the anonymous one for everybody.
+    const chip = markupOf("shell/account-chip.tsx");
+    // The name starts null and is set only inside the effect that reads
+    // `/auth/session`; an effect does not run on the server.
+    expect(chip).toMatch(/useState<string \| null>\(null\)/);
+    expect(chip).toMatch(/React\.useEffect\(\(\) => \{[\s\S]*?fetch\("\/auth\/session"/);
+    // The menu, which holds everything personal, is not rendered until it is
+    // opened — and it starts closed.
+    expect(chip).toMatch(/const \[open, setOpen\] = React\.useState\(false\)/);
+    expect(chip).toMatch(/\{open \? \(\s*<div\s+role="menu"/);
+    // Both branches are in the document for everyone; CSS shows one.
+    expect(chip).toContain('data-auth-branch="anonymous"');
+    expect(chip).toContain('data-auth-branch="signed-in"');
+    // The unread dot is drawn only above zero, and the count is zero until
+    // the signed-in overlay answers, after paint.
+    const bell = markupOf("shell/notification-bell.tsx");
+    expect(bell).toContain("unreadCount(useOverlay(");
+    expect(bell).toMatch(/unread > 0 \? <UnreadDot/);
+    // The search card is not rendered until somebody types.
+    expect(markupOf("shell/palette.tsx")).toMatch(/\{open \? \(\s*<PalettePanel/);
+    expect(markupOf("shell/palette.tsx")).toMatch(/useState\(""\)/);
   });
 });

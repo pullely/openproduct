@@ -16,7 +16,8 @@ import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { topicPath } from "@openproduct/contracts";
-import { SECTIONS } from "@openproduct-web/app/shell/shell";
+import { sectionFor } from "@openproduct-web/app/shell/section-for";
+import { FOOTER_LINKS, SECTIONS } from "@openproduct-web/app/shell/shell";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const APP_DIR = resolve(__dirname, "../../../web/src/app");
@@ -30,20 +31,25 @@ const markupOf = (file: string) =>
     .replace(/^\s*\/\/.*$/gm, "");
 
 describe("the addresses", () => {
-  it("the nav's last planned pill is live", () => {
-    const pill = SECTIONS.find((s) => s.id === "topics");
-    expect(pill?.status).toBe("live");
-    expect(pill?.href).toBe("/topics");
+  it("the topic index is reachable from every page: it is in the footer", () => {
+    // It was a pill in the header (planned, then live at TP0). The redesign's
+    // header is Feed, Products and Help wanted (design.md §2 rule 4), so the
+    // section moved to the footer with every other one that has no board —
+    // still one click from any page that draws the site footer.
+    expect(SECTIONS.some((s) => s.href === "/topics")).toBe(false);
+    expect(FOOTER_LINKS.find((l) => l.label === "Topics")?.href).toBe("/topics");
+    expect(read("shell/site-footer.tsx")).toContain("FOOTER_LINKS.map");
   });
 
-  it("the `planned` machinery stays, and Open roles left it at OB4", () => {
-    // It is the reason a nav could describe the shape of this product for
-    // eleven milestones without lying about what existed. OB1's Open roles
-    // used it until OB4 gave the section an address.
-    const planned = SECTIONS.filter((s) => s.status === "planned");
-    expect(planned.map((s) => s.id)).toEqual([]);
-    expect(SECTIONS.find((s) => s.id === "roles")?.status).toBe("live");
-    expect(read("shell/shell.ts")).toContain('SectionStatus = "live" | "planned"');
+  it("every section in the bar is a link: nothing is planned", () => {
+    // The `planned` status let a nav describe the shape of this product for
+    // eleven milestones without lying about what existed. Open roles left it
+    // at OB4; with OPR1 the bar is three destinations that all resolve, and
+    // the status went with the last section that needed it.
+    for (const section of SECTIONS) expect(section.href.startsWith("/")).toBe(true);
+    expect(read("shell/shell.ts")).not.toContain("SectionStatus");
+    expect(sectionFor("/topics")).toBe("");
+    expect(sectionFor("/topics/dev-tools")).toBe("");
   });
 
   it("a topic addresses by its canonical value, never by its label", () => {
@@ -101,7 +107,7 @@ describe("a topic page is the BOARD filtered, and the only place a topic leads",
     expect(topic).toContain("cardsInTopic(cards, doc.value)");
     expect(topic).toContain("{topicDirectoryMeta(directory.length)}");
     expect(topic).toContain("{TOPIC_DIRECTORY_HEADING}");
-    expect(topic).toContain("<BuildTile key={card.slug} card={card} returnTo={returnTo} />");
+    expect(topic).toContain("<ProductCard key={card.slug} card={card} returnTo={returnTo} />");
     // Absent when the directory could not be read — never a zero.
     expect(topic).toContain("directory !== null && directory.length > 0 ?");
   });

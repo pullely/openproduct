@@ -80,10 +80,12 @@ describe("the one streamed public route has a skeleton", () => {
     const loading = read("src/app/search/loading.tsx");
     expect(loading).toContain("LoadingAnnouncement");
     expect(loading).toContain("export default function SearchLoading");
-    // The same frame as the page — the design's shared `PAGE` column — so
+    // The same frame as the page — board `Search`'s 760px column, named once
+    // in `search/frame.ts` (it was the shared `PAGE` column before OPR1) — so
     // nothing moves when the results land.
-    expect(loading).toContain("className={PAGE}");
-    expect(read("src/app/search/page.tsx")).toContain("className={PAGE}");
+    expect(loading).toContain("<main className={SEARCH_COLUMN}>");
+    expect(read("src/app/search/page.tsx")).toContain("<main className={SEARCH_COLUMN}>");
+    expect(read("src/app/search/frame.ts")).toMatch(/export const SEARCH_COLUMN =\s*"[^"]*max-w-\[760px\]/);
   });
 });
 

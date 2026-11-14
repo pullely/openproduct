@@ -48,7 +48,7 @@ describe("the targets lane is a gate", () => {
     const app = resolve(__dirname, "../../../web/src/app");
     // OB6's Builds tab — the maker page's default — too (sourceplane/orun-cloud#1882).
     // CP3 — the two forum lists draw `ThreadTile`, which carries the row.
-    for (const file of ["threads/thread-tile.tsx", "search/page.tsx", "people/[handle]/page.tsx"]) {
+    for (const file of ["threads/thread-tile.tsx", "search/page.tsx", "people/[handle]/product-rows.tsx"]) {
       expect([file, readFileSync(resolve(app, file), "utf-8").includes("data-keyrow")]).toEqual([file, true]);
     }
     for (const file of ["threads/forum-view.tsx", "[slug]/forum/page.tsx"]) {

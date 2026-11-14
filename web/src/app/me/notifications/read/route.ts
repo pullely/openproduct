@@ -9,11 +9,13 @@ import { SESSION_COOKIE, decodeSession } from "../../../auth/auth";
 import { markInboxRead } from "../../me-api";
 
 export async function POST(request: NextRequest): Promise<NextResponse> {
-  const back = new URL("/me/notifications", request.url);
+  // The inbox's address is `/activity` since openproduct-redesign OPR1; this
+  // act keeps its own address, because a form posts to it.
+  const back = new URL("/activity", request.url);
   const session = decodeSession(request.cookies.get(SESSION_COOKIE)?.value);
   if (!session) {
     return NextResponse.redirect(
-      new URL("/signin?return_to=%2Fme%2Fnotifications", request.url),
+      new URL("/signin?return_to=%2Factivity", request.url),
       303,
     );
   }

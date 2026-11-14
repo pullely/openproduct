@@ -18,12 +18,13 @@ import {
   type FeedEntry,
 } from "@openproduct/contracts";
 
-import { BuildTile } from "../../feed/build-tile";
+import { ProductCard } from "../../feed/product-card";
 import { FeedRow } from "../../feed/feed-row";
 import { AppLink } from "../../ui/link";
 import { fetchPublicDirectory, fetchTopic, publicApexOrigin } from "../../public-api";
 import {
   CARD,
+  EMPTY_NOTE,
   H2,
   HEAD_META,
   PAGE,
@@ -61,7 +62,7 @@ import { cardMeta, topicCopy } from "../../ui/og";
 export const revalidate = 600;
 
 /** The design's way back to the index: 13.5px in `--muted`, `--fg` on hover. */
-const BACK = "inline-flex items-center gap-1.5 text-[13.5px] text-muted-foreground hover:text-foreground";
+const BACK = "inline-flex items-center gap-1.5 text-[13px] text-muted-foreground hover:text-foreground";
 
 /** A section's head, OUTSIDE its card: the heading and its meta on one
  *  baseline, 10px above the card. */
@@ -73,7 +74,7 @@ const SECTION_HEAD = "flex flex-wrap items-baseline gap-x-[10px] gap-y-1 pb-[10p
 const LIST_TILES = "m-0 grid list-none gap-[14px] p-0";
 
 /** The grid's column head: 12.5px/500 in `--muted`, the design's table head. */
-const GRID_TH = "px-5 py-3 text-left text-[12.5px] font-medium text-muted-foreground";
+const GRID_TH = "px-5 py-3 text-left text-[13px] font-medium text-muted-foreground";
 
 /** The note under a list: 12.5px in `--muted`, 8px below. */
 
@@ -197,7 +198,7 @@ export default async function TopicPage({ params }: { params: Promise<{ topic: s
           // different claims, and an empty list makes the second one
           // silently. The note is core's own sentence, in the design's
           // dashed panel.
-          <p className="m-0 rounded-[12px] border border-dashed border-border px-5 py-10 text-center text-[15px] leading-[1.6] text-muted-foreground">
+          <p className={EMPTY_NOTE}>
             {doc.emptyNote}
           </p>
         ) : (
@@ -318,7 +319,7 @@ export default async function TopicPage({ params }: { params: Promise<{ topic: s
                 builds (CL-R3). */}
             <ul className="m-0 grid list-none gap-[14px] p-0">
               {directory.map((card) => (
-                <BuildTile key={card.slug} card={card} returnTo={returnTo} />
+                <ProductCard key={card.slug} card={card} returnTo={returnTo} />
               ))}
             </ul>
           </section>

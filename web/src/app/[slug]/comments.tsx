@@ -93,7 +93,7 @@ export function Comments({
           // A locked thread STAYS READABLE — locking ends a conversation, it
           // does not retract it. The composer goes, because a box that posts
           // nowhere is worse than an absent one.
-          <p className="m-0 mt-4 max-w-[70ch] rounded-[8px] border border-border bg-surface-2 px-3.5 py-3 text-[14px] text-muted-foreground">
+          <p className="m-0 mt-4 max-w-[70ch] rounded-[14px] bg-well px-3.5 py-3 text-[15px] text-muted-foreground">
             Closed to new comments.
           </p>
         ) : (
@@ -133,7 +133,7 @@ export function Comments({
 function Comment({ post, slug }: { post: PublicPost; slug: string }) {
   const name = post.authorName ?? post.authorHandle ?? "Somebody";
   const avatar =
-    "grid h-[36px] w-[36px] shrink-0 place-items-center rounded-full bg-secondary font-mono text-[11.5px] text-copy";
+    "grid h-[36px] w-[36px] shrink-0 place-items-center rounded-full bg-secondary font-mono text-[11px] text-copy";
   return (
     <li className="flex gap-3 border-t border-line pb-1 pt-4">
       {/* The avatar goes where the name goes, when the name goes anywhere.
@@ -151,11 +151,11 @@ function Comment({ post, slug }: { post: PublicPost; slug: string }) {
       <div className="min-w-0 flex-1">
         <div className="flex flex-wrap items-center gap-2 leading-[1.3]">
           {/* XP-5 — a name is a link or plain text, never a dead link. */}
-          <PersonName name={name} handle={post.authorHandle} className="tap-h text-[14px] font-semibold text-foreground" />
+          <PersonName name={name} handle={post.authorHandle} className="tap-h text-[15px] font-semibold text-foreground" />
           {post.authorIsMaintainer ? <MaintainerBadge /> : null}
           {/* PP0 — the tag a titled discussion used to carry, on the comment. */}
           {post.tag ? (
-            <span className="inline-flex h-[18px] items-center rounded-[4px] bg-secondary px-1.5 font-mono text-[11px] text-copy">
+            <span className="inline-flex h-[18px] items-center rounded-full bg-secondary px-1.5 font-mono text-[11px] text-copy">
               {THREAD_TAG_LABELS[post.tag]}
             </span>
           ) : null}
@@ -166,7 +166,7 @@ function Comment({ post, slug }: { post: PublicPost; slug: string }) {
         </div>
         {/* A removed comment keeps its place and says so — the conversation
             around it still follows (TS-3). */}
-        <div className={`mt-1.5 max-w-[70ch] text-[14.5px] leading-[1.6] text-copy ${post.state === "removed" ? "italic text-muted-foreground" : ""}`}>
+        <div className={`mt-1.5 max-w-[70ch] text-[15px] leading-[1.6] text-copy ${post.state === "removed" ? "italic text-muted-foreground" : ""}`}>
           <PostBody nodes={post.body} />
         </div>
         {/* DQ1 — the design's `▲`. NOT on a removed comment: there are no
@@ -214,7 +214,7 @@ function Composer({ slug }: { slug: string }) {
           {THREAD_TAGS.map((tag) => (
             <label
               key={tag}
-              className="tap inline-flex h-[26px] cursor-pointer items-center rounded-[6px] border border-border px-2 text-[12.5px] text-muted-foreground transition-colors hover:text-foreground has-[:checked]:border-border-strong has-[:checked]:bg-secondary has-[:checked]:text-foreground"
+              className="tap inline-flex h-[26px] cursor-pointer items-center rounded-full border border-border px-2 text-[13px] text-muted-foreground transition-colors hover:text-foreground has-[:checked]:border-border-strong has-[:checked]:bg-secondary has-[:checked]:text-foreground"
             >
               <input type="radio" name="tag" value={tag} className="sr-only" />
               {THREAD_TAG_LABELS[tag]}
@@ -224,7 +224,7 @@ function Composer({ slug }: { slug: string }) {
         <div className="mt-2 flex items-center justify-end gap-3">
           <button
             type="submit"
-            className="tap inline-flex h-[32px] shrink-0 items-center rounded-full bg-primary px-4 text-[13.5px] font-medium text-primary-foreground transition-opacity hover:opacity-90"
+            className="tap inline-flex h-[32px] shrink-0 items-center rounded-full bg-primary px-4 text-[13px] font-medium text-primary-foreground transition-opacity hover:opacity-90"
           >
             Post
           </button>
@@ -237,7 +237,7 @@ function Composer({ slug }: { slug: string }) {
 /** The design's composer box: 8px radius on `--border-strong`, `12px 14px`,
  *  and the foreground hairline once anything inside it has focus. */
 const COMPOSER =
-  "mt-4 rounded-[8px] border border-border-strong bg-card px-3.5 py-3 transition-colors focus-within:border-foreground";
+  "mt-4 rounded-[14px] border border-border bg-card px-3.5 py-3 transition-colors focus-within:border-foreground";
 
 function day(iso: string): string {
   const at = Date.parse(iso);

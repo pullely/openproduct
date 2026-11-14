@@ -42,7 +42,8 @@ import {
 } from "@openproduct/contracts";
 
 import { GALLERY_SIZES, imageSourceOf } from "../../../../[slug]/media";
-import { BTN_PRIMARY, BTN_SMALL, FIELD, H2 } from "../../../../ui/design";
+import { BTN_PRIMARY, BTN_SMALL, FIELD, H2, INSET, NOTICE, NOTICE_WARN } from "../../../../ui/design";
+import { STEP_CARD } from "../step-card";
 
 type Queued = {
   key: string;
@@ -308,7 +309,7 @@ export function MediaIsland({
   const ready = queue.filter((q) => q.state === "ready").length;
 
   return (
-    <section id="media" aria-labelledby="media-heading" className="scroll-mt-20 rounded-[12px] border border-border bg-card px-6 pb-5 pt-4 max-sm:px-4">
+    <section id="media" aria-labelledby="media-heading" className={STEP_CARD}>
       <div className="flex min-h-[32px] items-center justify-between gap-3">
         <h2 id="media-heading" className={H2}>
           Media
@@ -321,11 +322,7 @@ export function MediaIsland({
       {notice ? (
         <p
           role="status"
-          className={`m-0 mt-3 rounded-[8px] border px-3.5 py-2.5 text-[14px] ${
-            notice.kind === "refused"
-              ? "border-warning-soft-border bg-warning-soft font-medium text-warning-strong"
-              : "border-border bg-card text-copy"
-          }`}
+          className={`m-0 mt-3 ${notice.kind === "refused" ? `font-medium ${NOTICE_WARN}` : NOTICE}`}
         >
           {notice.message}
         </p>
@@ -364,12 +361,12 @@ export function MediaIsland({
           setOver(false);
           void add(e.dataTransfer.files);
         }}
-        className={`mt-4 flex w-full flex-col items-center justify-center gap-1 rounded-[10px] border border-dashed px-4 py-6 text-center transition-colors ${
-          over ? "border-foreground bg-secondary" : "border-border-strong hover:border-faint"
+        className={`mt-4 flex w-full flex-col items-center justify-center gap-1 px-4 py-6 text-center transition-colors ${INSET} ${
+          over ? "ring-2 ring-ring" : "hover:bg-accent"
         }`}
       >
-        <span className="text-[14.5px] font-medium text-foreground">Drop images here, or choose files</span>
-        <span className="text-[12.5px] leading-[1.5] text-muted-foreground">
+        <span className="text-[15px] font-medium text-foreground">Drop images here, or choose files</span>
+        <span className="text-[13px] leading-[1.5] text-muted-foreground">
           PNG, JPEG or WebP, up to {Math.round(MEDIA_MAX_BYTES / 1024 / 1024)} MB each. A logo is square, at least {LOGO_MIN_SIDE}×
           {LOGO_MIN_SIDE}; a hero or gallery image at least {MEDIA_MIN_WIDTH}×{MEDIA_MIN_HEIGHT}.
         </span>
@@ -396,12 +393,12 @@ export function MediaIsland({
         <div className="mt-4">
           <ul aria-label="Ready to upload" className="m-0 grid list-none gap-3 p-0">
             {queue.map((item) => (
-              <li key={item.key} className="flex gap-3 rounded-[10px] border border-border p-3">
-                <span className="grid h-[72px] w-[96px] shrink-0 place-items-center overflow-hidden rounded-[8px] bg-muted">
+              <li key={item.key} className={`flex gap-3 p-3 ${INSET}`}>
+                <span className="grid h-[72px] w-[96px] shrink-0 place-items-center overflow-hidden rounded-[10px] bg-card">
                   <img src={item.preview} alt="" className="block max-h-full max-w-full object-contain" />
                 </span>
                 <div className="grid min-w-0 flex-1 gap-2">
-                  <div className="flex flex-wrap items-center gap-2 text-[12.5px] text-muted-foreground">
+                  <div className="flex flex-wrap items-center gap-2 text-[13px] text-muted-foreground">
                     <span className="truncate font-medium text-foreground">{item.file.name}</span>
                     <span>
                       {item.width}×{item.height}
@@ -411,7 +408,7 @@ export function MediaIsland({
                       value={item.kind}
                       disabled={item.state === "sending"}
                       onChange={(e) => patch(item.key, { kind: e.target.value as AuthoredMediaKind })}
-                      className="h-[30px] rounded-[6px] border border-border bg-background px-2 text-[13px] text-foreground"
+                      className={`${FIELD.replace(" w-full", "")} w-auto`}
                     >
                       <option value="logo">Logo{logo ? " — replaces the current" : ""}</option>
                       <option value="hero">Hero{hero ? " — replaces the current" : ""}</option>
@@ -426,7 +423,7 @@ export function MediaIsland({
                         setQueue((q) => q.filter((x) => x.key !== item.key));
                       }}
                       disabled={item.state === "sending"}
-                      className="ml-auto text-[12.5px] text-muted-foreground hover:text-foreground"
+                      className="ml-auto text-[13px] text-muted-foreground hover:text-foreground"
                     >
                       Discard
                     </button>
@@ -439,14 +436,14 @@ export function MediaIsland({
                     maxLength={MEDIA_ALT_MAX}
                     disabled={item.state === "sending"}
                     onChange={(e) => patch(item.key, { alt: e.target.value })}
-                    className={`${FIELD} h-[34px] text-[14px]`}
+                    className={FIELD}
                   />
                   {item.state === "sending" ? (
                     <div role="progressbar" aria-valuenow={item.percent} aria-valuemin={0} aria-valuemax={100} aria-label={`Uploading ${item.file.name}`} className="h-[6px] overflow-hidden rounded-full bg-muted">
                       <div className="h-full bg-foreground transition-[width]" style={{ width: `${item.percent}%` }} />
                     </div>
                   ) : item.message ? (
-                    <p role="status" className="m-0 text-[12.5px] font-medium text-warning-strong">
+                    <p role="status" className="m-0 text-[13px] font-medium text-warning-strong">
                       {item.message}
                     </p>
                   ) : null}
@@ -459,7 +456,7 @@ export function MediaIsland({
               {busy ? "Uploading…" : ready > 1 ? `Upload ${ready} images` : "Upload image"}
             </button>
             {queue.some((q) => q.alt.trim().length === 0 && q.state === "ready") ? (
-              <span className="text-[12.5px] text-muted-foreground">Each picture needs a sentence saying what it shows.</span>
+              <span className="text-[13px] text-muted-foreground">Each picture needs a sentence saying what it shows.</span>
             ) : null}
           </div>
         </div>
@@ -498,8 +495,8 @@ function SavedRow({
       <div
         className={
           kind === "logo"
-            ? "grid aspect-square w-[120px] place-items-center overflow-hidden rounded-[14px] border border-border bg-card"
-            : "overflow-hidden rounded-[8px] bg-muted"
+            ? `grid aspect-square w-[120px] place-items-center overflow-hidden ${INSET}`
+            : `overflow-hidden ${INSET}`
         }
       >
         <img
@@ -533,7 +530,7 @@ function SavedRow({
             value={alt}
             maxLength={MEDIA_ALT_MAX}
             onChange={(e) => setAlt(e.target.value)}
-            className={`${FIELD} h-[34px] text-[14px]`}
+            className={FIELD}
             autoFocus
           />
           <div className="flex gap-2">
@@ -547,16 +544,16 @@ function SavedRow({
                 setEditing(false);
                 setError(null);
               }}
-              className="text-[12.5px] text-muted-foreground hover:text-foreground"
+              className="text-[13px] text-muted-foreground hover:text-foreground"
             >
               Cancel
             </button>
           </div>
-          {error ? <p className="m-0 text-[12.5px] font-medium text-warning-strong">{error}</p> : null}
+          {error ? <p className="m-0 text-[13px] font-medium text-warning-strong">{error}</p> : null}
         </form>
       ) : (
         <div className="mt-2 grid gap-1.5">
-          <p className="m-0 min-w-0 text-[12.5px] leading-[1.5] text-muted-foreground">
+          <p className="m-0 min-w-0 text-[13px] leading-[1.5] text-muted-foreground">
             <span className="font-medium text-foreground">{label}</span> · {row.value.alt}
           </p>
           <div className="flex flex-wrap items-center gap-1">

@@ -15,7 +15,7 @@ The boards in `boards/` are the reference for every surface named below.
 sizes and control sizes as the board, at 1440px for a desktop board and
 390px for a phone board, with the page fluid between them.
 
-## OPR0 — the spec
+## OPR0 — the spec ✅
 
 Task **OPR-1**. This doc set, the boards, and the five task contracts.
 
@@ -23,7 +23,7 @@ Task **OPR-1**. This doc set, the boards, and the five task contracts.
 - the five documents, `boards/` and the OPR-1 to OPR-5 contracts are on `main`
 - the epic, its five milestones and its five tasks exist in the workspace, each task with its contract attached
 
-## OPR1 — the new look
+## OPR1 — the new look ✅
 
 Task **OPR-2**. Every page that exists today takes the new design on
 today's data. No schema change, no new API route.

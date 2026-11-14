@@ -2,13 +2,14 @@
 //
 // One glyph, one meaning, and never the only label. The web lane has no DOM,
 // so these hold the SOURCE: every glyph is hidden from assistive technology,
-// draws in `currentColor`, and every section the navs render has exactly one.
+// draws in `currentColor`, and every destination the chrome draws a glyph
+// for has exactly one.
 
 import { readFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { SECTIONS } from "@openproduct-web/app/shell/shell";
+import { PHONE_TABS, SECTIONS } from "@openproduct-web/app/shell/shell";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const APP_DIR = resolve(__dirname, "../../../web/src/app");
@@ -33,24 +34,33 @@ describe("the icon set", () => {
     expect(icons).not.toMatch(/export const \w+\s*[:=]\s*(Record|\{)/);
   });
 
-  it("gives every section one glyph, from one switch both navs share", () => {
+  it("gives every destination one glyph, from one switch", () => {
     const glyph = read("shell/section-glyph.tsx");
+    // The three sections and Activity — every tab the phone's bar draws.
+    for (const tab of PHONE_TABS) {
+      expect(glyph).toContain(`case "${tab.icon}":`);
+    }
     for (const section of SECTIONS) {
       expect(glyph).toContain(`case "${section.icon}":`);
     }
-    // THE PHONE'S BAR CARRIES THE GLYPHS, where a section is a glyph over a
-    // word. The desktop bar is words with an underline since openproduct-calm
-    // CL1 (CL-R1): a glyph beside every word there was the "too much" the
-    // calm render took out.
-    expect(read("shell/section-bar.tsx")).toContain("<SectionGlyph icon={section.icon}");
+    // THE PHONE'S BAR CARRIES THE GLYPHS, where a tab is a glyph over a
+    // word. The header's pills are words (boards `Products`, `Feed`): a
+    // glyph beside every word there is the "too much" the calm render took
+    // out, and the redesign kept out.
+    expect(read("shell/section-bar.tsx")).toContain("<SectionGlyph icon={tab.icon}");
     expect(read("shell/top-panel.tsx")).not.toContain("<SectionGlyph");
     expect(read("shell/top-panel.tsx")).toContain("{section.label}");
   });
 
   it("never leaves a glyph as the only name of a control", () => {
-    // The phone's plus is the one glyph-only control, and it is named.
-    const panel = read("shell/top-panel.tsx");
-    expect(panel).toContain('aria-label="Open a build"');
-    expect(panel).toContain("<PlusIcon />");
+    // The chrome's glyph-only controls, each named: the bell, the sign-in
+    // disc, the phone's search link (which also prints the word), and the
+    // chevron that opens a person's products in the search card.
+    expect(read("shell/notification-bell.tsx")).toMatch(/aria-label=\{unread > 0 \? `Activity — \$\{unread\} unread` : "Activity"\}/);
+    expect(read("shell/account-chip.tsx")).toMatch(/aria-label="Sign in"[\s\S]{0,700}?<ProfileIcon/);
+    expect(read("shell/top-panel.tsx")).toMatch(/aria-label="Search"[\s\S]{0,500}?<SearchGlyph \/>\s*Search/);
+    expect(read("shell/palette-panel.tsx")).toMatch(/aria-label=\{`\$\{opened \? "Hide" : "Show"\} products of \$\{row\.title\}`\}[\s\S]{0,400}?<ChevronIcon/);
+    // And every tab of the phone's bar prints its word under its glyph.
+    expect(read("shell/section-bar.tsx")).toMatch(/<\/span>\s*\{tab\.label\}/);
   });
 });

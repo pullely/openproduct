@@ -19,19 +19,28 @@ import {
   type OverlayCountKey,
 } from "./shell";
 
+import { PersonIcon as ProfileIcon } from "../ui/icons";
 import { AppLink } from "../ui/link";
+import { ThemeToggle } from "../ui/theme-toggle";
 
 /**
- * The panel's account affordance (openproduct-commons XP0) — the shell's home
- * for what `session-chip.tsx` used to do, plus the menu the design draws:
- * an identity block (name and public address), a Profile section (the form,
- * and the public page with its on/off state), a You section (what the
- * visitor holds here, counted), and the way out (the platform, sign out).
+ * The header's profile control (openproduct-commons XP0; the board's round
+ * 40px control since openproduct-redesign OPR1) — the shell's home for what
+ * `session-chip.tsx` used to do, plus the menu: an identity block (name and
+ * public address), a Profile section (the form, and the public page with its
+ * on/off state), a You section (what the visitor holds here, counted), the
+ * theme, and the way out (the platform, sign out).
+ *
+ * ONE ROUND CONTROL, TWO MEANINGS. Signed out it is a white disc with a
+ * person glyph that opens the sign-in card; signed in it is a disc with the
+ * visitor's initials that opens the menu. The board draws one disc and so
+ * does this: the old ink `Sign in` pill left the bar with OPR1. Both are 40px
+ * in the header and 44px on a phone, where every target is.
  *
  * THE PROPERTY THIS ISLAND EXISTS TO PROTECT is the same one the chip it
  * replaces protected, and it is invariant I6: the anonymous pages render
  * byte-identically signed-in and signed-out. So the SERVER render is always
- * the anonymous one — a bare `Sign in` pointing at `/signin` — and every
+ * the anonymous one — an anchor named `Sign in` pointing at `/signin` — and every
  * personalisation happens after hydration, in the visitor's own browser,
  * against the one session read (`/auth/session`, `no-store`). The cached HTML
  * never varies.
@@ -171,14 +180,13 @@ export function AccountChip() {
     identity === null ? COUNT_PLACEHOLDER : identity.profilePublic && handle ? "on" : "off";
 
   return (
-    // ONE CELL, TWO BRANCHES, and the cell is the width of the wider one.
-    // Both branches are always in the document (I6) and CSS shows one — with
-    // `visibility`, so the hidden one keeps its box (globals.css says why at
-    // length). Stacking them in a single grid cell is what turns "keeps its
-    // box" into "the bar does not move": the panel reserves the `Sign in`
-    // pill's width for everybody, and the account disc lands inside that
-    // reservation instead of shrinking the row by 48px on hydration. It is
-    // the same construction the vote box uses for its two labels.
+    // ONE CELL, TWO BRANCHES. Both branches are always in the document (I6)
+    // and CSS shows one — with `visibility`, so the hidden one keeps its box
+    // (globals.css says why at length). Stacking them in a single grid cell
+    // is what turns "keeps its box" into "the bar does not move". Since OPR1
+    // the two are the same 40px disc (44px on a phone), so the cell is one
+    // disc wide whichever is showing; the construction stays because it is
+    // what keeps that true if either ever changes size.
     <div className="grid shrink-0 justify-items-end">
       {/* ─── the anonymous branch, and it is what the server sends ────── */}
       <span data-auth-branch="anonymous" className="[grid-area:1/1]">
@@ -198,11 +206,13 @@ export function AccountChip() {
             event.preventDefault();
             setAuthOpen(true);
           }}
-          // XP4: 44px below `sm`, the same finger-first floor the rest of the
-          // panel's controls take.
-          className="inline-flex h-[44px] shrink-0 items-center rounded-full bg-primary px-5 text-[15px] font-medium text-primary-foreground transition-opacity hover:opacity-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring max-sm:px-3.5 max-sm:text-[14px]"
+          // The glyph is not the name: the control says what it does.
+          aria-label="Sign in"
+          // 40px in the header, 44px below `sm` — the finger-first floor
+          // every target on a phone takes (XP4).
+          className="grid h-[40px] w-[40px] shrink-0 place-items-center rounded-full bg-card text-muted-foreground transition-colors hover:text-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring max-sm:h-[44px] max-sm:w-[44px]"
         >
-          Sign in
+          <ProfileIcon className="h-5 w-5" />
         </a>
         {authOpen ? (
           <AuthModal onClose={() => setAuthOpen(false)} returnTo={returnTo} />
@@ -217,10 +227,10 @@ export function AccountChip() {
         aria-haspopup="menu"
         aria-expanded={open}
         aria-label={`Account — ${displayName ?? "your account"}`}
-        // THE AVATAR: a 40px neutral disc on `--secondary`, the initials in
-        // Geist Mono (CL1). It means "you" and opens the menu; it does not
-        // wear the accent, which is the upvote's (CL-R8).
-        className="grid h-[40px] w-[40px] place-items-center rounded-full bg-secondary font-mono text-[13px] font-medium text-foreground transition-opacity hover:opacity-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring max-sm:h-[44px] max-sm:w-[44px]"
+        // THE AVATAR: a 40px white disc, the initials in IBM Plex Mono. It
+        // means "you" and opens the menu; it does not wear the accent, which
+        // is the upvote's (CL-R8).
+        className="grid h-[40px] w-[40px] place-items-center rounded-full bg-card font-mono text-[13px] font-medium text-foreground transition-opacity hover:opacity-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring max-sm:h-[44px] max-sm:w-[44px]"
       >
         {initials}
       </button>
@@ -229,10 +239,13 @@ export function AccountChip() {
         <div
           role="menu"
           aria-label="Account"
-          className="absolute right-0 top-[48px] z-50 w-[292px] animate-menu-in rounded-[12px] border border-border bg-popover p-1.5 shadow-menu"
+          // A flat card (design.md §2 rule 11): 16px corners and the
+          // one-pixel ring `shadow-menu` draws, which is a hairline and not a
+          // drop shadow — a menu over a white card needs an edge.
+          className="absolute right-0 top-[48px] z-50 w-[292px] animate-menu-in rounded-[16px] bg-popover p-1.5 shadow-menu motion-reduce:animate-none max-sm:top-[52px]"
         >
           {/* Identity: who, and the public address. */}
-          <div className="border-b border-border px-2.5 pb-3 pt-2.5">
+          <div className="border-b border-line px-2.5 pb-3 pt-2.5">
             <div className="flex items-center gap-2.5">
               <span className="grid h-[32px] w-[32px] shrink-0 place-items-center rounded-full bg-secondary text-[13px] font-semibold text-foreground">
                 {initials}
@@ -253,9 +266,9 @@ export function AccountChip() {
             Your profile
           </MenuLink>
           {/* The public page: at the handle when there is one, and otherwise
-              at the profile form where a handle is claimed. The state word is
+              at the settings form where a handle is claimed. The state word is
               the overlay's answer, never a default — `—` until it reads. */}
-          <MenuLink href={handle ? `/@${handle}` : "/me"} icon={<GlobeIcon />} trailing={publicPageState}>
+          <MenuLink href={handle ? `/@${handle}` : "/me/settings"} icon={<GlobeIcon />} trailing={publicPageState}>
             Public page
           </MenuLink>
 
@@ -275,7 +288,16 @@ export function AccountChip() {
             </MenuLink>
           ))}
 
-          <div className="my-1.5 h-px bg-border" />
+          <div className="my-1.5 h-px bg-line" />
+          {/* THE THEME, in the menu as well as the footer (OPR1). It is a
+              preference stored in this browser and read by nobody else, so
+              it is the same control for every visitor and adds nothing
+              personal to the render; the footer keeps its copy because a
+              signed-out visitor has no menu. */}
+          <div className="px-2.5 py-1.5">
+            <ThemeToggle />
+          </div>
+          <div className="my-1.5 h-px bg-line" />
           {workspace ? (
             <MenuLink href={workspace} external plain trailing={<ExternalIcon />}>
               Your workspace on Orunbase
@@ -301,7 +323,7 @@ export function AccountChip() {
 
 function MenuSection({ label }: { label: string }) {
   return (
-    <div className="px-2.5 pb-1 pt-2 font-mono text-[11.5px] uppercase tracking-[0.12em] text-muted-foreground">
+    <div className="px-2.5 pb-1 pt-2 font-mono text-mono-label uppercase text-muted-foreground">
       {label}
     </div>
   );
@@ -336,7 +358,7 @@ function MenuLink({
   children: React.ReactNode;
 }) {
   const className =
-    "flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-[14.5px] text-copy transition-colors hover:bg-muted focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-ring";
+    "flex min-h-[40px] items-center gap-2.5 rounded-[12px] px-2.5 py-2 text-[15px] text-copy transition-colors hover:bg-well max-sm:min-h-[44px] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-ring";
   const body = (
     <>
       {icon}

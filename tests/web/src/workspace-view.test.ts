@@ -67,8 +67,13 @@ describe("the listing renders the door on workspaceRef alone, to the consent pag
     expect(page).not.toContain("consoleWorkspaceViewUrl(");
   });
 
-  it("says what the door is", () => {
-    expect(WORKSPACE_VIEW_LABEL).toBe("View workspace on Orunbase");
+  it("says what the door is, as the value of the board's Workspace row", () => {
+    // openproduct-redesign OPR1 — the door moved from a pill in the header to
+    // the In the open card's `Workspace` row, whose value is these words.
+    expect(WORKSPACE_VIEW_LABEL).toBe("Open on Orunbase");
+    expect(page).toMatch(
+      /<span className="text-muted-foreground">Workspace<\/span>\s*<AppLink\s+href=\{workspaceConsentPath\(profile\.slug\)\}/,
+    );
   });
 });
 

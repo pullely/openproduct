@@ -1,15 +1,14 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import { Children, type ReactNode } from "react";
 
 import { consoleOrigin } from "@/lib/platform";
 
 import {
   observedRow,
   BUILD_DETAILS_HEADING,
-  BUILD_ROLES_HEADING,
   BUILD_STAT_LABEL,
   mostActiveRankOf,
-  rolesOpenLabel,
   CLEAN_VOTE_LABEL,
   CLEAN_VOTE_TITLE,
   INSTALL_HEADING,
@@ -40,7 +39,6 @@ import {
   topicPath,
   type PublicMetric,
   demandLine,
-  primaryAction,
   FOLLOWER_COUNT_TITLE,
   followerLine,
   takingOffersLine,
@@ -61,30 +59,35 @@ import { MediaPanel } from "./media-panel";
 import { BadgeSnippet, type BadgeChoice } from "./badge-snippet";
 import { Changes } from "./changes";
 import { LaunchHealth } from "./launch-health";
-import { SECTION_ATTRIBUTE, SECTION_CARD, SECTION_NAV_LABEL, listingSections } from "./sections";
-import { ProductBar } from "./product-bar";
+import { SECTION_ATTRIBUTE, SECTION_CARD, SECTION_NAV_LABEL, SECTION_PROSE, listingSections } from "./sections";
 import { WORKSPACE_VIEW_LABEL, workspaceConsentPath } from "./workspace-view";
 import { InstallLine } from "./install-line";
 import { ShareControl } from "./share-control";
 import { JsonLd } from "../ui/json-ld";
 import {
-  BTN_OUTLINE,
-  BTN_PRIMARY,
+  BOARD_CARD_TITLE,
+  BOARD_COLUMNS,
+  BOARD_PAGE,
+  BOARD_STACK,
+  BTN_INK,
+  BTN_SEAT,
+  BTN_SOFT,
   CARD,
-  CRUMBS,
-  H2_SECTION,
-  PROSE,
+  COVER_PRODUCT,
+  FOCUS,
   H3,
-  PAGE,
   PAGE_TITLE,
   PANEL,
-  RAIL,
-  TAB,
-  TAB_OFF,
-  TWO_COL,
+  SEAT_RING,
+  SEAT_ROW,
+  SECTION_PILL,
+  SECTION_PILL_OFF,
+  SIDE_CARD,
+  SIDE_ROW,
+  SIDE_TITLE,
+  STACK_PILL,
 } from "../ui/design";
 import { cardMeta, productCopy } from "../ui/og";
-import { ThemeToggle } from "../ui/theme-toggle";
 import { initialsOf } from "../feed/tile";
 import { DASH, NewPill, PersonName } from "../ui/bits";
 import { ProductTile } from "../ui/product-tile";
@@ -103,26 +106,30 @@ import { LiveCount } from "../ui/conversation-live";
 import { conversationKey } from "../ui/live-posts";
 
 import { AppLink } from "../ui/link";
-import { ActiveIcon, ChangesIcon, ClockIcon, RoleIcon, UpvoteIcon } from "../ui/icons";
+import { ActiveIcon, ChangesIcon, ClockIcon, PlusIcon, UpvoteIcon } from "../ui/icons";
 
 /**
- * A public product page (OD5, re-cut to the launch design's product view):
- * a back link, the hero, then one reading column beside an aside of cards.
+ * A public product page (OD5), rebuilt to the redesign's `Product` board —
+ * the VISITOR view, on the data the listing has today (openproduct-redesign
+ * OPR1).
+ *
+ * The header card is the board's: a cover band, the logo overlapping it, the
+ * name as the page's one `h1`, the one-line pitch, a line of facts, and the
+ * actions — Follow (the product), Take a seat, Try it. Under it, two columns
+ * (one on a phone): the reading column holds what the page has — About with
+ * its pictures and install line, what each open seat asks for, what changed,
+ * the launches, the discussion — each a flat card; the side column holds the
+ * board's Crew, Built with and In the open, then what was read from the
+ * repository.
+ *
+ * The board's tabs, its progress mark, its template posts and its maker view
+ * arrive with the data they show (OPR2, OPR3). Nothing stands in for them.
  *
  * The page renders ONLY what the public projection carries. There is nothing
- * to filter here, because nothing private ever arrives — and where the design
- * shows a number this projection does not yet have, the page renders a dash
- * and says which part of the product brings it. Never a zero: a zero is a
- * claim, and an unobserved thing has not made one (OPC-C).
- *
- * EVERY MEASUREMENT BELOW IS THE DESIGN'S OWN, read out of the prototype's
- * inline styles rather than eyeballed, and the shared ones come from
- * `ui/design.ts`. Since openproduct-calm CL3 the hero is the build tile,
- * grown: no banner, the 76px face beside the 44px title, an 18px tagline,
- * and the stat strip's figures as numbers with one label each; one 20px-radius
- * card per section and the 320px rail of panels. Where the app carries a section the design does
- * not draw (launch health, the stack, the titled discussions) it is drawn in
- * the same idiom rather than left in the old one.
+ * to filter here, because nothing private ever arrives — and where a figure
+ * was not observed the page renders a dash and says which part of the product
+ * brings it. Never a zero: a zero is a claim, and an unobserved thing has not
+ * made one (OPC-C).
  */
 export const revalidate = 60;
 
@@ -297,9 +304,19 @@ export default async function OpenproductProfilePage({ params }: PageProps) {
   const sections = listingSections({
     changes: profile.changes !== null && profile.changes.length > 0,
     launches: profile.launches.length > 0,
-    makers: profile.maintainers.length > 0,
+    crew: profile.maintainers.length > 0 || openRoles.length > 0,
   });
   const components = profile.components ?? [];
+  // "Built with" (board `Product`): the stack the listing states, the
+  // components its workspace published and where it is hosted — every one a
+  // pill, said once (a component named like a stack entry is one pill).
+  const builtWith = [
+    ...new Set([
+      ...profile.stack,
+      ...components.map((component) => (component.kind ? `${component.kind} · ${component.name}` : component.name)),
+      ...(profile.hosting ? [labelOf("hosting", profile.hosting) ?? profile.hosting] : []),
+    ]),
+  ];
   // CP-R3 — the sections with nothing in them, in the page's order, each
   // named once on the *Not yet* line. *What changed* folds only when a
   // snapshot was compared and nothing moved; with no earlier snapshot there
@@ -308,7 +325,7 @@ export default async function OpenproductProfilePage({ params }: PageProps) {
     ...(profile.changes !== null && profile.changes.length === 0
       ? [{ id: "changed", label: "a change in the last week" }]
       : []),
-    ...(components.length === 0 ? [{ id: "components", label: "published components" }] : []),
+    ...(builtWith.length === 0 ? [{ id: "components", label: "a stated stack" }] : []),
     ...(profile.maintainers.length === 0 ? [{ id: "makers", label: "listed makers" }] : []),
   ];
   const isNew = profile.publishedAt !== null && Date.now() - Date.parse(profile.publishedAt) < NEW_MS;
@@ -354,10 +371,6 @@ export default async function OpenproductProfilePage({ params }: PageProps) {
   // disagree. Null — a dash — when there is no honest position: below the
   // floor, unobserved, or past the page this read holds.
   const mostActiveRank = catalog ? mostActiveRankOf(catalog, profile.slug) : null;
-
-  // CB3 — decided by the contract, not by a conditional here: the rule is
-  // about what the product offers a reader, and two copies of it would drift.
-  const primary = primaryAction({ openRoleCount: openRoles.length });
 
   // The comment count beside the Discussion heading is of VISIBLE posts,
   // which is what a reader can see. A count including what they cannot
@@ -406,317 +419,206 @@ export default async function OpenproductProfilePage({ params }: PageProps) {
 
   return (
     <>
-      <main className={PAGE}>
+      <main className={BOARD_PAGE}>
         {/* TS3 — a DELISTED listing renders in full and says so. Delisting
             means "not amplified here", not "not shown here", so nothing is
             taken off the page; what is added is the one sentence a reader who
-            followed a link needs, because a page whose presence in the
-            directory has been withdrawn without saying so is quietly
-            misleading about what its own presence means. */}
+            followed a link needs. */}
         {read?.tombstone ? <DelistedNote tombstone={read.tombstone} /> : null}
         {/* DS4 — the structured record, for a crawler that already has this
             page. Built from the same projection rendered below and nothing
             else, so the two cannot disagree.
 
             ONLY WHEN THE PAGE ASKS TO BE INDEXED. A listing TS1 marks
-            `noindex` gets no JSON-LD: the page is live and readable either way,
-            but handing a rich record to a crawler we have just asked not to
-            amplify would be arguing both sides of the same instruction.
+            `noindex` gets no JSON-LD.
 
-            THERE IS NO RATING IN IT AND THERE WILL NOT BE, even after EN2 ships
-            a real total. An endorsement is a person putting their name to a
-            product, not a score, and `aggregateRating` is a format designed to
-            be believed without being read. See `NO_RATING_NOTE`. */}
-        {/* RE1 moved the escaping into `ui/json-ld.tsx`. It was correct here
-            and it is the kind of rule that is correct in the file where
-            somebody thought about it and forgotten in the five that copy the
-            shape — and RE1 added five. */}
+            THERE IS NO RATING IN IT AND THERE WILL NOT BE. An endorsement is a
+            person putting their name to a product, not a score. See
+            `NO_RATING_NOTE`. */}
         {profile.indexable ? <JsonLd data={listingJsonLd(profile, apex, publicApiBase())} /> : null}
-        {/* THE TRAIL, and it is emitted even where the listing is not, which
-            is not an inconsistency. `noindex` says do not amplify THIS page;
-            a breadcrumb is about the pages ABOVE it, which are indexable and
-            whose relationship is true regardless. */}
-        <JsonLd data={breadcrumbJsonLd([{ name: "Open builds", path: "/" }, { name: profile.slug, path: `/${profile.slug}` }], apex)} />
+        {/* THE TRAIL, and it is emitted even where the listing is not:
+            `noindex` says do not amplify THIS page; a breadcrumb is about the
+            pages ABOVE it. */}
+        <JsonLd data={breadcrumbJsonLd([{ name: "Products", path: "/products" }, { name: profile.slug, path: `/${profile.slug}` }], apex)} />
 
-        {/* `‹ All builds` (OB5, D4). A cached page cannot know where a
-            reader came from, so it goes to the one place every build is
-            listed: Open builds at the root. */}
-        <AppLink
-          href="/"
-          className={`tap inline-flex items-center gap-1.5 ${CRUMBS} hover:text-foreground`}
-        >
-          <Glyph d="M9.5 3.5 5 8l4.5 4.5" />
-          All builds
-        </AppLink>
-
-        {/* ── the hero card ────────────────────────────────────────── */}
+        {/* ── the header card (board `Product`, visitor view) ─────────── */}
         {/* FR4 — a listing is ONE row, so `u` upvotes it without the reader
             having tabbed to anything first. `data-keyrow` is the same
-            attribute the feed's rows wear; the layer counts rows and does not
-            care what shape they are. */}
-        {/* NO BANNER (openproduct-calm CL3). The 96px band of the tile's hue
-            was the loudest thing on the page and said nothing the face beside
-            the name does not; the face carries the build's colour alone. */}
-        <section id={HERO_ID} data-keyrow aria-label="Listing" className={`${CARD} mt-6 pt-9 max-sm:pt-6`}>
-          <div className="flex flex-wrap items-center gap-7 px-9 max-sm:gap-4 max-sm:px-5">
-            {/* openproduct-studio OSD3 — the maker's logo when there is one,
-                the monogram otherwise; one component on every surface. */}
-            <ProductTile
-              slug={profile.slug}
-              thumbnail={thumbnail}
-              size={76}
-            />
-            {/* FR1 — `max-sm:min-w-0`. A 260px floor plus a 76px tile plus the
-                page's own gutters needs 372px, and a phone has 375 with 32 of
-                them already spent. The floor is right on a laptop, where it
-                stops the title column collapsing next to a wide action row, and
-                it is what gave the whole document a sideways scroll at 375. */}
-            <div className="min-w-[260px] flex-1 max-sm:min-w-0 max-sm:basis-full">
-              <h1 className={PAGE_TITLE}>{profile.slug}</h1>
+            attribute the feed's rows wear. */}
+        <section id={HERO_ID} data-keyrow aria-label="Listing" className={CARD}>
+          {/* The cover band: decoration, and on the desktop board only — the
+              phone board starts at the logo and the name. */}
+          <div aria-hidden="true" className={COVER_PRODUCT} />
+          <div className="flex flex-wrap items-end justify-between gap-5 px-[30px] pb-6 max-sm:flex-col max-sm:items-stretch max-sm:gap-2.5 max-sm:p-[14px]">
+            <div className="-mt-[44px] flex min-w-0 flex-[1_1_480px] flex-col gap-2.5 max-sm:mt-0 max-sm:flex-none">
+              <div className="flex flex-col gap-2.5 max-sm:flex-row max-sm:items-center max-sm:gap-3">
+                {/* openproduct-studio OSD3 — the maker's logo when there is
+                    one, the monogram otherwise; one component on every
+                    surface. Here at the board's 92px with the card's own
+                    colour ringed round it, where it overlaps the band; the
+                    phone board's 52px beside the name. */}
+                <ProductTile
+                  slug={profile.slug}
+                  thumbnail={thumbnail}
+                  size={76}
+                  phoneSize={52}
+                  className={HERO_TILE}
+                />
+                <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1.5 max-sm:flex-col max-sm:items-start max-sm:gap-0.5">
+                  <h1 className={`${PAGE_TITLE} min-w-0 break-words`}>{profile.slug}</h1>
+                  {/* PP4 — the rank marks, every one derived from a board row
+                      the sweep published and none conferred by a person: `#1
+                      today` by OL2's own rule, `#N on 9 Sept` for a podium
+                      place after its day, `Top of the week` from the weekly
+                      leaderboard. Beside the name, where the board keeps a
+                      product's standing. */}
+                  {marks.length > 0 || isNew ? (
+                    <span className="flex flex-wrap items-center gap-1.5">
+                      {marks.map((mark) => (
+                        <AppLink
+                          key={mark.kind}
+                          href={mark.href}
+                          title={mark.title}
+                          // The pill is 28px; the link round it is the 44px
+                          // target on a phone (`tap`), so the fill is on the
+                          // inner span and the name's row stays one line tall.
+                          className={`tap rounded-full no-underline hover:underline ${FOCUS}`}
+                        >
+                          <span className="inline-flex h-[28px] items-center rounded-full bg-endorse-soft px-2.5 text-[13px] font-medium text-endorse-ink">
+                            {mark.label}
+                          </span>
+                          {/* OPC-4 — the rule behind the mark, at its own
+                              address, for the reader who cannot hover. */}
+                          <span className="sr-only"> — how this is ranked: {formulaHref(mark.formula)}</span>
+                        </AppLink>
+                      ))}
+                      {isNew ? <NewPill /> : null}
+                    </span>
+                  ) : null}
+                </div>
+              </div>
+              {/* The one-line pitch: the maker's own sentence about what the
+                  thing is. */}
               {profile.tagline ? (
-                <p className="m-0 mt-3 max-w-[60ch] text-[18px] leading-[1.55] text-copy [text-wrap:pretty] max-sm:text-[16px]">
+                <p className="m-0 max-w-[640px] text-card-title font-normal leading-[1.5] text-copy [text-wrap:pretty] max-sm:text-[15px]">
                   {profile.tagline}
                 </p>
               ) : null}
-              {/* The meta line: category · licence · Repository ↗ · Website ↗ ·
-                  followers. Each one is what it was on the old hero — the
-                  category is still an ADDRESS (TP0), absent rather than
-                  "Other" when the listing has not answered (CT1); the two
-                  outbound links still carry `noreferrer noopener`. */}
-              <div className="mt-4 flex flex-wrap items-center gap-x-2.5 gap-y-1.5 text-[14px] leading-[1.4] text-muted-foreground">
+              {/* The line of facts: category · licence · hosting · followers ·
+                  open seats. Each is what the data holds and is absent when it
+                  holds nothing — the category is still an ADDRESS (TP0),
+                  absent rather than "Other" when the listing has not answered
+                  (CT1). */}
+              <HeroFacts>
                 {profile.category ? (
-                  <>
-                    <AppLink
-                      href={topicPath(profile.category)}
-                      className="text-muted-foreground hover:text-foreground hover:underline hover:underline-offset-[3px]"
-                    >
-                      {labelOf("category", profile.category) ?? profile.category}
-                    </AppLink>
-                    <Dot />
-                  </>
+                  <AppLink
+                    href={topicPath(profile.category)}
+                    className="tap-h inline-flex text-muted-foreground hover:text-foreground hover:underline hover:underline-offset-[3px]"
+                  >
+                    {labelOf("category", profile.category) ?? profile.category}
+                  </AppLink>
                 ) : null}
-                {profile.licence ? (
-                  <>
-                    <span>{profile.licence}</span>
-                    <Dot />
-                  </>
-                ) : null}
-                {profile.repoUrl ? (
-                  <>
-                    <a
-                      href={profile.repoUrl}
-                      rel="noreferrer noopener"
-                      className="inline-flex items-center gap-1.5 text-muted-foreground hover:text-foreground"
-                    >
-                      <Glyph d="M5.5 4.5 2 8l3.5 3.5M10.5 4.5 14 8l-3.5 3.5" />
-                      Repository
-                    </a>
-                    <Dot />
-                  </>
-                ) : null}
-                {profile.liveUrl ? (
-                  <>
-                    <a
-                      href={profile.liveUrl}
-                      rel="noreferrer noopener"
-                      className="inline-flex items-center gap-1.5 text-muted-foreground hover:text-foreground"
-                    >
-                      <Glyph d="M9.5 2.5h4v4M13.5 2.5 8 8M12.5 9.5V13a.5.5 0 0 1-.5.5H3.5A.5.5 0 0 1 3 13V4a.5.5 0 0 1 .5-.5H7" />
-                      Website
-                    </a>
-                    <Dot />
-                  </>
-                ) : null}
+                {profile.licence ? <span>{profile.licence}</span> : null}
+                {profile.hosting ? <span>{labelOf("hosting", profile.hosting) ?? profile.hosting}</span> : null}
                 {/* PP1 — the count is the document's own and is the follow's
                     only public face — nothing lists followers, here as
-                    anywhere (FL0, WC2-7). */}
-                <span title={FOLLOWER_COUNT_TITLE}>{followerLine(profile.followers)}</span>
+                    anywhere (FL0, WC2-7). Above zero only: a zero is what the
+                    page used to lead with. */}
+                {profile.followers > 0 ? (
+                  <span title={FOLLOWER_COUNT_TITLE}>{followerLine(profile.followers)}</span>
+                ) : null}
+                {/* Teal always means "this is open to you": the seats, and the
+                    way to them. */}
+                {openRoles.length > 0 ? (
+                  <a
+                    href="#crew"
+                    className="tap-h inline-flex font-medium text-seat-ink no-underline hover:underline hover:underline-offset-[3px]"
+                  >
+                    {openSeatsLabel(openRoles.length)}
+                  </a>
+                ) : null}
+              </HeroFacts>
+            </div>
+
+            <div className="flex flex-col items-end gap-2 max-sm:items-stretch">
+              {/* THE BOARD'S THREE ACTIONS. Follow follows the PRODUCT (owner
+                  rule 3); Take a seat goes to the crew card and is there only
+                  when a seat is open; Try it goes to the running product and
+                  is there only when the listing has an address for one. */}
+              <div
+                data-hero-actions
+                // Two to a row on a phone (board `PhoneProduct`); when there
+                // are three, the last takes the whole row rather than half
+                // of one beside a hole.
+                className="flex flex-wrap justify-end gap-2 max-sm:grid max-sm:grid-cols-2 max-sm:[&>*:last-child:nth-child(odd)]:col-span-2"
+              >
+                {/* XP2 — the same static markup for every visitor at the
+                    SERVER render, personalised only after hydration by the
+                    overlay (I6). */}
+                <FollowButton
+                  kind="listing"
+                  value={profile.slug}
+                  followers={profile.followers}
+                  returnTo={`/${profile.slug}`}
+                  size="hero"
+                  tone="outline"
+                  countHidden
+                />
+                {openRoles.length > 0 ? (
+                  <a href="#crew" className={BTN_SOFT}>
+                    Take a seat
+                  </a>
+                ) : null}
+                {profile.liveUrl ? (
+                  <a href={profile.liveUrl} rel="noreferrer noopener" className={BTN_INK}>
+                    Try it
+                    <Glyph d="M4.5 11.5 11.5 4.5M6 4.5h5.5V10" />
+                  </a>
+                ) : null}
+              </div>
+              {/* The smaller acts the page already had, kept in the header
+                  (owner rule 10: small controls live there, none takes a row
+                  of its own on the page).
+
+                  THE ENDORSEMENT LIVES ONLY HERE, not on a directory row
+                  (OPC-3, UV0): the box carries the count, so a reader can see
+                  what pressing it moves. Save is private and counted nowhere.
+
+                  RE3 — SHARE, AND NOT A WIDGET: the browser's own sheet, the
+                  address, and three ordinary links. `null` without a canonical
+                  origin. */}
+              <div className="flex flex-wrap items-center justify-end gap-2 max-sm:justify-start">
+                <VoteBox
+                  slug={profile.slug}
+                  count={endorsements ? endorsements.value : null}
+                  returnTo={`/${profile.slug}`}
+                  shape="hero"
+                />
+                <SaveControl slug={profile.slug} />
+                {share ? (
+                  <ShareControl url={share.url} text={share.text} intents={share.intents} />
+                ) : null}
               </div>
             </div>
           </div>
 
-          {/* FR1 — the action row wraps, and is allowed to shrink. */}
-          <div className="mt-7 flex flex-wrap items-center gap-2 px-9 max-sm:px-5">
-            {/* CB3 — the header's ONE action, and which one depends on
-                whether there is a door. A header whose main button leads to a
-                door that is not there wastes the single action most visitors
-                take; with nothing open, the useful offer is the conversation.
-                A plain fragment, which works with no JavaScript. */}
-            <a
-              href={primary.kind === "offer" ? "#people-wanted" : "#discussion"}
-              className={`tap ${BTN_PRIMARY}`}
-            >
-              {primary.label}
-            </a>
-            {/* XP2 — the same static markup for every visitor at the SERVER
-                render, personalised only after hydration by the overlay.
-
-                TWO CONTROLS, SIDE BY SIDE, AND THAT IS THE POINT (OPC-3). The
-                gold one is public and has the visitor's name on it; the grey
-                one is private and is counted nowhere. The distinction is only
-                real if a person can see both options at the moment they
-                choose, so they are rendered together and neither is a mode of
-                the other.
-
-                THE ENDORSEMENT LIVES ONLY HERE, not on a directory row. A row
-                shows a tagline; this page shows the licence, the code, the
-                activity and the people. The row gets the NUMBER (EN2); the
-                act stays where the reading happened. */}
-            {/* UV0 — the design's box, and the SAME component the feed row
-                draws, in its 36px hero shape. It carries the count: the
-                number and the act are one control, so a reader can see what
-                pressing it moves. */}
-            <VoteBox
-              slug={profile.slug}
-              count={endorsements ? endorsements.value : null}
-              returnTo={`/${profile.slug}`}
-              shape="hero"
-            />
-            {/* PP1 — FOLLOW, the one social object the page lacked (P1·07).
-                The same component the topic and maker pages draw. The count
-                is on the meta line above rather than beside the button, as
-                the design draws it. */}
-            <FollowButton
-              kind="listing"
-              value={profile.slug}
-              followers={profile.followers}
-              returnTo={`/${profile.slug}`}
-              size="hero"
-              countHidden
-            />
-            <SaveControl slug={profile.slug} />
-            {/* RE3 — SHARE, AND NOT A WIDGET. The audit measured zero
-                third-party requests on this site and named it one of only two
-                dimensions the product already wins; every share widget on the
-                internet is a script from somebody else's origin that reports
-                who looked at the page. This is the browser's own sheet, the
-                address, and three ordinary links.
-
-                `null` without a canonical origin, like every absolute URL
-                here: sharing a preview host is sharing the wrong page. */}
-            {share ? (
-              <ShareControl url={share.url} text={share.text} intents={share.intents} />
-            ) : null}
-
-            {/* PP4 — the rank marks, every one derived from a board row the
-                sweep published and none conferred by a person: `#1 today` by
-                OL2's own rule, `#N on 9 Sept` for a podium place after its
-                day, `Top of the week` from the weekly leaderboard. On the
-                right, as the design's pills. */}
-            <div className="ml-auto flex flex-wrap items-center gap-x-3.5 gap-y-1.5 max-sm:ml-0">
-              {marks.map((mark) => (
-                <AppLink
-                  key={mark.kind}
-                  href={mark.href}
-                  title={mark.title}
-                  className="tap inline-flex h-[28px] items-center rounded-full border border-endorse-line bg-endorse-soft px-2.5 text-[13px] font-medium text-endorse-ink no-underline hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
-                >
-                  {mark.label}
-                  {/* OPC-4 — the rule behind the mark, at its own address, for
-                      the reader who cannot hover. */}
-                  <span className="sr-only"> — how this is ranked: {formulaHref(mark.formula)}</span>
-                </AppLink>
-              ))}
-              {isNew ? <NewPill /> : null}
-              {/* The workspace view door (openproduct-reader OPR5, seam S12).
-                  A PLAIN ANCHOR to the consent page on THIS origin, rendered
-                  on `workspaceRef` alone — present only while the maker's
-                  link grant attests a public workspace — so the page stays
-                  the same bytes signed in and out (OPC-1/I6) and no listing
-                  without a door shows one. */}
-              {profile.workspaceRef ? (
-                <AppLink
-                  href={workspaceConsentPath(profile.slug)}
-                  className="tap inline-flex h-[28px] items-center rounded-full border border-line px-2.5 text-[13px] font-medium text-foreground no-underline hover:underline"
-                >
-                  {WORKSPACE_VIEW_LABEL}
-                </AppLink>
-              ) : null}
-              {/* The one green pill: `N people wanted`, and it goes to the
-                  section that says where. Green always means "this is open
-                  to you" (XP-1). */}
-              {openRoles.length > 0 ? (
-                <a
-                  href="#people-wanted"
-                  className="tap inline-flex h-[28px] items-center gap-1.5 rounded-full bg-success-soft px-2.5 text-[13px] font-medium text-success no-underline hover:brightness-[0.97]"
-                >
-                  {/* OB5 (D4) — the seat, the site's one glyph for an open role. */}
-                  <RoleIcon className="h-4 w-4 shrink-0" />
-                  {rolesOpenLabel(openRoles.length)}
-                </a>
-              ) : null}
-            </div>
-          </div>
-
-          {/* ── the stat strip (OB5) ───────────────────────────────── */}
-          {/* HOW IT IS MOVING, FIRST. Four figures moved up from the rail so a
-              reader meets them under the name: this week's merged changes,
-              this week's counted upvotes, the place on the front page's Most
-              active list, and when the last change landed. Each is a glyph
-              the rows use, a label, and a value that is a dash — never a zero
-              — when it was not observed (OPC-C). The labels carry the moment
-              of each read in their title (I9). */}
-          <dl
-            data-stat-strip
-            className="m-0 mt-8 grid grid-cols-4 border-t border-line max-sm:grid-cols-2"
-          >
-            <Stat
-              icon={<ChangesIcon className="h-[15px] w-[15px] shrink-0" />}
-              label={observedNote(merges, now, BUILD_STAT_LABEL.changes)}
-              value={<MetricValue metric={merges} />}
-              {...(merges ? {} : { pending: PENDING.activity })}
-            />
-            <Stat
-              icon={<UpvoteIcon className="h-[15px] w-[15px] shrink-0" />}
-              label={observedNote(endorsementsRecent, now, BUILD_STAT_LABEL.upvotes)}
-              value={<MetricValue metric={endorsementsRecent} />}
-            />
-            <Stat
-              icon={<ActiveIcon className="h-[15px] w-[15px] shrink-0" />}
-              label={BUILD_STAT_LABEL.rank}
-              value={
-                mostActiveRank === null ? (
-                  DASH
-                ) : (
-                  <AppLink href="/" className="tap-h underline-offset-4 hover:underline">
-                    #{mostActiveRank}
-                  </AppLink>
-                )
-              }
-              title={
-                mostActiveRank === null
-                  ? "Not on the Most active list: its changes are not observed, or it is below the floor"
-                  : "Its place on the front page's Most active list"
-              }
-            />
-            <Stat
-              icon={<ClockIcon className="h-[15px] w-[15px] shrink-0" />}
-              label={observedNote(lastTouched, now, BUILD_STAT_LABEL.lastMerge)}
-              value={lastTouched ? agoOf(fromEpochSeconds(lastTouched.value), now) : DASH}
-              {...(lastTouched ? {} : { pending: PENDING.activity })}
-            />
-          </dl>
-
           {/* ── the outline (PP2) ──────────────────────────────────── */}
-          {/* ANCHORS, NOT ROUTES. The benchmark's product page carries a tab
-              strip that routes; this one carries its outline, which scrolls
-              the one cacheable document. The list is `listingSections`, the
-              same list `j` and `k` walk. Drawn as the design's tab strip
-              inside the hero card's bottom edge; the product bar repeats it
-              once the hero has scrolled away (`product-bar.tsx`). A scrolling
-              row rather than a `<select>`, because a select that navigates on
-              change is a change of context on input (WCAG 3.2.2). */}
+          {/* ANCHORS, NOT ROUTES, in the row where the board keeps a product's
+              sections. The board's own tabs (Updates · About · Crew · Talk)
+              arrive with the posts they switch between (OPR2); until then the
+              row is this page's outline, which scrolls the one cacheable
+              document. The list is `listingSections`, the same list `j` and
+              `k` walk. A scrolling row rather than a `<select>`, because a
+              select that navigates on change is a change of context on input
+              (WCAG 3.2.2). */}
           <nav
             aria-label={SECTION_NAV_LABEL}
-            className="overflow-x-auto border-t border-line px-7 max-sm:px-2"
+            className="overflow-x-auto px-[22px] pb-4 max-sm:px-2.5 max-sm:pb-2.5 max-sm:[scrollbar-width:none]"
           >
-            <ul className="m-0 flex list-none gap-1 p-0 pb-px">
+            <ul className="m-0 flex list-none gap-1.5 p-0">
               {sections.map((section) => (
                 <li key={section.id} className="shrink-0">
-                  <a
-                    href={`#${section.id}`}
-                    className={`tap ${TAB} ${TAB_OFF} h-[46px] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-ring`}
-                  >
+                  <a href={`#${section.id}`} className={`${SECTION_PILL} ${SECTION_PILL_OFF} ${FOCUS}`}>
                     {section.label}
                   </a>
                 </li>
@@ -725,48 +627,27 @@ export default async function OpenproductProfilePage({ params }: PageProps) {
           </nav>
         </section>
 
-        {/* The product bar — the hero's name, outline and one action, pinned
-            under the shell's bar once the hero has scrolled out of view. */}
-        <ProductBar
-          slug={profile.slug}
-          // openproduct-studio OSD3 — the tile is rendered HERE, on the
-          // server, and handed to the client island as a node: the island
-          // reads no data, and `ProductTile` stays a server component.
-          tile={<ProductTile slug={profile.slug} thumbnail={thumbnail} size={32} />}
-          tagline={profile.tagline}
-          sections={sections}
-          heroId={HERO_ID}
-          primary={{ href: primary.kind === "offer" ? "#people-wanted" : "#discussion", label: primary.label }}
-        />
-
         {/* ── the two columns ──────────────────────────────────────── */}
-        <div className={TWO_COL}>
-          {/* THE TRACK IS minmax(0,1fr), NOT THE IMPLICIT `auto` (openproduct-studio
-              OSD1). An implicit column's minimum is its items' min-content,
-              and the gallery strip's min-content is every thumbnail side by
-              side — `overflow-x-auto` on the strip does not lower it. With
-              four images the column grew to 1389px inside a 790px track and
-              the About card ran under the sidebar. */}
-          <div className="grid min-w-0 grid-cols-[minmax(0,1fr)] gap-4">
-            {/* THE DESIGN HAS NO TABS. One column a reader scrolls, and each
-                section carries a heading with an id, so the page has an
-                outline — which is what a long document needs and a tab strip
-                cannot give it. */}
+        <div className={BOARD_COLUMNS}>
+          {/* THE TRACK IS minmax(0,1fr), NOT THE IMPLICIT `auto`
+              (openproduct-studio OSD1). An implicit column's minimum is its
+              items' min-content, and the gallery strip's min-content is every
+              thumbnail side by side — `overflow-x-auto` on the strip does not
+              lower it. */}
+          <div className={BOARD_STACK}>
             <section
               id="about"
               aria-labelledby="about-heading"
               className={SECTION_CARD}
               {...{ [SECTION_ATTRIBUTE]: true }}
             >
-              <h2 id="about-heading" tabIndex={-1} className={`${H2_SECTION} outline-none`}>
+              <h2 id="about-heading" tabIndex={-1} className={`${BOARD_CARD_TITLE} outline-none`}>
                 About
               </h2>
-              {/* MD2 — THE PICTURES, where the design draws a gallery above
-                  the pitch: the maker's hero and gallery in a hairline frame,
-                  the automated capture in a dashed one with its date — and
-                  NOTHING when there are no rows. Never a generated image,
-                  never a stock one. The monogram in the hero is the stand-in
-                  and it says so (VC4). */}
+              {/* MD2 — THE PICTURES, above the pitch: the maker's hero and
+                  gallery, the automated capture with its date — and NOTHING
+                  when there are no rows. Never a generated image, never a
+                  stock one (VC4). */}
               <MediaPanel media={profile.media} apiBase={publicApiBase()} now={new Date(now)} />
               {profile.pitch ? (
                 // The maintainer's own words, rendered as plain text in
@@ -774,30 +655,23 @@ export default async function OpenproductProfilePage({ params }: PageProps) {
                 // this string comes from a form and ends up on a page anyone
                 // can read, and an HTML-rendering pitch is an injection
                 // surface the epic has no reason to open.
-                <p className={`m-0 mt-4 whitespace-pre-wrap ${PROSE}`}>
+                <p className={`m-0 mt-3 whitespace-pre-wrap ${SECTION_PROSE}`}>
                   {profile.pitch}
                 </p>
               ) : (
-                <p className="m-0 mt-4 max-w-[68ch] text-[16px] leading-[1.65] text-muted-foreground">
+                <p className="m-0 mt-3 max-w-[68ch] text-[15px] leading-[1.6] text-muted-foreground">
                   No pitch has been published for this product yet.
                 </p>
               )}
 
               {/* PV2 — HOW TO GET IT, immediately after what it is, inside the
-                  About card as the design draws it: a mono box with Copy.
+                  About card: a mono box with Copy.
 
                   ABSENT WHEN THERE IS NONE, never an empty box with a
-                  placeholder. A listing without an install line is a listing
-                  whose maintainers have not given one — a plaque saying "no
-                  install command" is a claim about a product this page has not
-                  measured, and OPC-C's rule is that a panel whose data does not
-                  exist renders absent rather than as a zero. */}
+                  placeholder (OPC-C). */}
               {profile.installLine ? (
-                <div id="install" aria-labelledby="install-heading" className="mt-5 border-t border-line pt-4">
-                  <h3
-                    id="install-heading"
-                    className="m-0 text-[13px] font-medium tracking-[0.01em] text-muted-foreground"
-                  >
+                <div id="install" aria-labelledby="install-heading" className="mt-4">
+                  <h3 id="install-heading" className="m-0 text-[13px] font-semibold text-foreground">
                     {INSTALL_HEADING}
                   </h3>
                   <InstallLine command={profile.installLine} />
@@ -805,87 +679,70 @@ export default async function OpenproductProfilePage({ params }: PageProps) {
               ) : null}
             </section>
 
-            {/* The design gives this its own card rather than tucking it
-                under About, and the difference is not cosmetic: it is the
-                section a contributor came for. A reader scanning headings for
-                somewhere to help finds one that says so.
+            {/* HELP WANTED — what each open seat asks for, in the maker's
+                words. The crew card beside the page lists the same seats as
+                rows; this is where a reader finds out what one is.
 
                 ABSENT WHEN THERE IS NOTHING OPEN, not empty. A heading over
-                "nothing right now" is a section whose job is to disappoint;
-                the Makers section below already says bug reports and reviews
-                are welcome, which is the true and useful version of the same
-                thing. */}
+                "nothing right now" is a section whose job is to disappoint. */}
             {openRoles.length > 0 ? (
               <section className={SECTION_CARD} id="people-wanted" aria-labelledby="people-wanted-heading">
-                <h2 id="people-wanted-heading" className={`${H2_SECTION} flex items-center gap-2`}>
-                  <RoleIcon className="h-[17px] w-[17px] shrink-0 text-success" />
-                  {BUILD_ROLES_HEADING}
+                <h2 id="people-wanted-heading" className={BOARD_CARD_TITLE}>
+                  {SEATS_HEADING}
                 </h2>
-                <ul className="m-0 mt-1 grid list-none p-0">
+                <ul className="m-0 mt-3 grid list-none gap-2.5 p-0">
                   {openRoles.map((role) => (
-                    <li key={role.id} className="border-t border-line pb-1 pt-4">
-                      <div className="flex flex-wrap items-baseline gap-x-2.5 gap-y-1">
-                        <span className="text-[15px] font-semibold text-foreground">{role.title}</span>
-                        {role.commitment ? (
-                          <span className="text-[13px] text-muted-foreground">{role.commitment}</span>
-                        ) : null}
-                      </div>
-                      {role.description ? (
-                        <p className="m-0 mt-1.5 max-w-[68ch] text-[14.5px] leading-[1.55] text-copy">
-                          {role.description}
-                        </p>
-                      ) : null}
-                      <div className="mt-3 flex flex-wrap items-center gap-3">
-                        {/* The apply door (OD4). A LINK, not a form: applying
-                            requires sign-in, and `/join/{secret}` is the
-                            shipped page that handles that — there is no
-                            anonymous write anywhere in this epic. Since OX2
-                            the door lives on the CONSOLE origin (seam edge
-                            S5). */}
-                        {role.joinLinkRef ? (
-                          <a
-                            href={`${consoleOrigin()}/join/${role.joinLinkRef}?from=openproduct`}
-                            className={`tap ${BTN_OUTLINE}`}
-                          >
-                            Offer to contribute
-                          </a>
-                        ) : (
-                          <span className="text-[13px] text-muted-foreground">
-                            Not accepting offers yet.
-                          </span>
-                        )}
+                    <li key={role.id} className="flex flex-wrap items-center gap-x-4 gap-y-3 rounded-[14px] bg-seat-wash px-4 py-3.5">
+                      <span aria-hidden="true" className={`${SEAT_RING} grid h-[44px] w-[44px] place-items-center border-2 text-seat`}>
+                        <PlusIcon className="h-[18px] w-[18px]" />
+                      </span>
+                      <div className="min-w-0 flex-[1_1_220px]">
+                        <div className="text-card-title font-semibold tracking-[-0.015em] text-foreground">{role.title}</div>
                         {/* CB2's demand line — floored at three by the API,
                             never here. The page renders the sentence the
-                            contract chose; it never sees a raw count, because
-                            a raw count in the response is a raw count anybody
-                            can read (OPC-F). */}
-                        {demandLine(role.demand) ? (
-                          <span className="text-[13px] text-muted-foreground">
-                            {demandLine(role.demand)}
-                          </span>
+                            contract chose; it never sees a raw count
+                            (OPC-F). */}
+                        {role.commitment || demandLine(role.demand) ? (
+                          <div className="text-[13px] text-muted-foreground">
+                            {[role.commitment, demandLine(role.demand)].filter(Boolean).join(" · ")}
+                          </div>
+                        ) : null}
+                        {role.description ? (
+                          <p className="m-0 mt-1.5 max-w-[68ch] text-[15px] leading-[1.5] text-copy">
+                            {role.description}
+                          </p>
                         ) : null}
                       </div>
+                      {/* The apply door (OD4). A LINK, not a form: applying
+                          requires sign-in, and `/join/{secret}` is the shipped
+                          page that handles that — there is no anonymous write
+                          anywhere. Since OX2 the door lives on the CONSOLE
+                          origin (seam edge S5). No door, no button. */}
+                      {role.joinLinkRef ? (
+                        <a
+                          href={`${consoleOrigin()}/join/${role.joinLinkRef}?from=openproduct`}
+                          className={`${BTN_SEAT} max-sm:w-full`}
+                        >
+                          Take the seat
+                        </a>
+                      ) : null}
                     </li>
                   ))}
                 </ul>
               </section>
             ) : null}
 
-            {/* PV4 — WHAT CHANGED. Below the product and above the
-                components, because it is a fact ABOUT the listing rather than
-                part of it: a reader who came for the product reads the pitch,
-                the install line and the roles first, and a returning reader
-                scrolls to this. Absent entirely when there is no earlier
-                snapshot — see `changes.tsx`. */}
+            {/* PV4 — WHAT CHANGED. A fact ABOUT the listing rather than part
+                of it. Absent entirely when there is no earlier snapshot — see
+                `changes.tsx`. */}
             <Changes changes={profile.changes} now={now} />
 
             {/* PP5 — LAUNCHES. Every launch this listing has made, newest
                 first, each with where the board put it and how many spoke
                 under it — READ from the feed's own rows (OL-2a), so this
                 list, the feed and the archive cannot disagree. Absent when
-                there is none: a heading over "no launches" is a claim about
-                a count. A day the sweep has not ranked says so rather than
-                showing a zero (OPC-C). */}
+                there is none. A day the sweep has not ranked says so rather
+                than showing a zero (OPC-C). */}
             {profile.launches.length > 0 ? (
               <section
                 className={SECTION_CARD}
@@ -893,18 +750,20 @@ export default async function OpenproductProfilePage({ params }: PageProps) {
                 aria-labelledby="launches-heading"
                 {...{ [SECTION_ATTRIBUTE]: true }}
               >
-                <h2 id="launches-heading" tabIndex={-1} className={`${H2_SECTION} outline-none`}>
+                <h2 id="launches-heading" tabIndex={-1} className={`${BOARD_CARD_TITLE} outline-none`}>
                   Launches
                 </h2>
-                <ul className="m-0 mt-3 list-none p-0">
+                <ul className="m-0 mt-2 list-none p-0">
                   {profile.launches.map((entry) => (
                     <li
                       key={`${entry.day}-${entry.launchedAt}`}
-                      className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 border-t border-line py-3 text-[14px]"
+                      className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 border-t border-line py-2.5 text-[15px] first:border-t-0"
                     >
                       <span className="flex min-w-0 items-baseline gap-2 text-foreground">
                         {entry.versionLabel ? (
-                          <span className="font-mono text-[13px]">{entry.versionLabel}</span>
+                          <span className="rounded-full bg-version-soft px-2 py-px font-mono text-[13px] text-version">
+                            {entry.versionLabel}
+                          </span>
                         ) : (
                           <span className="text-muted-foreground">Launched</span>
                         )}
@@ -916,7 +775,7 @@ export default async function OpenproductProfilePage({ params }: PageProps) {
                           {longDate(entry.launchedAt) ?? entry.day}
                         </AppLink>
                       </span>
-                      <span className="flex items-baseline gap-4 tabular-nums text-muted-foreground">
+                      <span className="flex items-baseline gap-4 text-[13px] tabular-nums text-muted-foreground">
                         {entry.rank !== null && entry.of !== null ? (
                           <span
                             className="text-foreground"
@@ -927,108 +786,15 @@ export default async function OpenproductProfilePage({ params }: PageProps) {
                         ) : (
                           <span title="The board has not ranked that day yet">not yet ranked</span>
                         )}
-                        <span>
-                          {entry.commentCount} {entry.commentCount === 1 ? "comment" : "comments"}
-                        </span>
-                      </span>
-                    </li>
-                  ))}
-                </ul>
-              </section>
-            ) : null}
-
-            {/* CP-R3 — a panel only when something is published; none is
-                said once, in the *Not yet* line under the discussion. */}
-            {components.length > 0 ? (
-              <section className={SECTION_CARD} id="components" aria-labelledby="components-heading">
-                <h2 id="components-heading" className={H2_SECTION}>
-                  Components
-                </h2>
-                <ul className="m-0 mt-3 list-none p-0">
-                  {components.map((component) => (
-                    <li
-                      key={component.name}
-                      className="grid grid-cols-[minmax(0,1fr)_auto_auto] items-baseline gap-4 border-t border-line py-[11px]"
-                    >
-                      <span className="min-w-0 break-words font-mono text-[13.5px] text-foreground">
-                        {component.name}
-                      </span>
-                      {/* The design's third column is a note about the
-                          component. The note this app will carry is what the
-                          repository says — test counts and last touched —
-                          and nothing observes those yet, so the cell is a
-                          dash that says which part of the product fills it
-                          rather than a sentence somebody typed. */}
-                      <span
-                        className="font-mono text-[12.5px] text-muted-foreground"
-                        {...pendingProps(PENDING.componentTests)}
-                      >
-                        {DASH}
-                      </span>
-                      <span className="text-[13px] text-muted-foreground">
-                        {component.kind ?? DASH}
-                      </span>
-                    </li>
-                  ))}
-                </ul>
-                {/* A snapshot is never mistaken for a live view: the publish
-                    moment sits under it (OH4, and now OPC-7). Names and kinds
-                    come from the workspace's own component manifest at
-                    publish; nothing here is typed by hand, and nothing private
-                    is carried across. */}
-                {publishedOn ? (
-                  <p className="m-0 mt-2 text-[12.5px] text-muted-foreground">Snapshot · {publishedOn}</p>
-                ) : null}
-              </section>
-            ) : null}
-
-            {profile.maintainers.length > 0 ? (
-              <section
-                className={SECTION_CARD}
-                id="makers"
-                aria-labelledby="makers-heading"
-                {...{ [SECTION_ATTRIBUTE]: true }}
-              >
-                <h2 id="makers-heading" tabIndex={-1} className={`${H2_SECTION} outline-none`}>
-                  Makers
-                </h2>
-                <ul className="m-0 mt-3 list-none p-0">
-                  {profile.maintainers.map((maintainer) => (
-                    <li
-                      key={maintainer.subjectId}
-                      className="flex items-center gap-3 border-t border-line py-3"
-                    >
-                      <span
-                        aria-hidden="true"
-                        className="grid h-[40px] w-[40px] shrink-0 place-items-center rounded-full bg-secondary font-mono text-[12px] text-copy"
-                      >
-                        {initialsOf(maintainerLabel(maintainer.displayName))}
-                      </span>
-                      <span className="grid min-w-0 leading-[1.35]">
-                        {/* CG4 — a link when there is somewhere to go, plain
-                            text otherwise. The rule lives in `PersonName`
-                            rather than in a ternary here, so it cannot be
-                            written twice and hold once (XP-5). The label is
-                            a written fallback, never a raw subject id. */}
-                        <PersonName
-                          name={maintainerLabel(maintainer.displayName)}
-                          handle={maintainer.handle}
-                          className="tap-h text-[14.5px] font-semibold text-foreground"
-                        />
-                        {maintainer.roleLabel ? (
-                          <span className="text-[13px] text-muted-foreground">
-                            {maintainer.roleLabel}
+                        {entry.commentCount > 0 ? (
+                          <span>
+                            {entry.commentCount} {entry.commentCount === 1 ? "comment" : "comments"}
                           </span>
                         ) : null}
                       </span>
                     </li>
                   ))}
                 </ul>
-                {/* CG3 — the sentence the roster owes a reader. Every name
-                    above is there because its owner put it there; a
-                    maintainer can name somebody, and only that person can
-                    make it public (OPC-5). Offers are read by these people,
-                    and the list is never derived from a workspace roster. */}
               </section>
             ) : null}
 
@@ -1039,9 +805,9 @@ export default async function OpenproductProfilePage({ params }: PageProps) {
               {...{ [SECTION_ATTRIBUTE]: true }}
             >
               <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-2">
-                <h2 id="discussion-heading" tabIndex={-1} className={`${H2_SECTION} outline-none`}>
+                <h2 id="discussion-heading" tabIndex={-1} className={`${BOARD_CARD_TITLE} outline-none`}>
                   Discussion{" "}
-                  <span className="ml-1 font-normal text-muted-foreground">
+                  <span className="ml-1 text-[13px] font-normal tracking-normal text-muted-foreground">
                     {/* OPP14 — the document's count, plus what this browser
                         just posted and the document has not caught up with. */}
                     <LiveCount
@@ -1058,24 +824,22 @@ export default async function OpenproductProfilePage({ params }: PageProps) {
                     rather than in the outline. */}
                 <AppLink
                   href={listingForumPath(profile.slug)}
-                  className="tap text-[13.5px] text-muted-foreground hover:text-foreground hover:underline hover:underline-offset-[3px]"
+                  className="tap text-[13px] font-semibold text-link no-underline hover:underline hover:underline-offset-[3px]"
                 >
                   Open the {LISTING_FORUM_TITLE.toLowerCase()}
                 </AppLink>
               </div>
-              {/* DQ0b — the design's comment box FIRST, because it is what a
-                  reader of a product page came to the section for: something
-                  to say, and what other people said. The titled discussions
-                  follow it as what they are — longer conversations somebody
-                  chose to name and classify. */}
+              {/* DQ0b — the comment box FIRST, because it is what a reader of
+                  a product page came to the section for: something to say,
+                  and what other people said. */}
               <Comments
                 slug={profile.slug}
                 launch={discussion?.launch ?? null}
               />
 
-              {/* PP0 (WC-6) — ONE CONVERSATION. The second module is gone;
-                  what remains is a link list for titled threads that already
-                  existed, which renders nothing when there are none. */}
+              {/* PP0 (WC-6) — ONE CONVERSATION. What remains is a link list
+                  for titled threads that already existed, which renders
+                  nothing when there are none. */}
               <EarlierDiscussions threads={discussion?.threads ?? null} />
             </section>
 
@@ -1085,10 +849,10 @@ export default async function OpenproductProfilePage({ params }: PageProps) {
                 on the sentence that answers it. Absent when every section
                 has something in it. */}
             {notYet.length > 0 ? (
-              <p data-not-yet className="m-0 px-2 text-[14px] leading-[1.6] text-muted-foreground">
+              <p data-not-yet className="m-0 px-2 text-[13px] leading-[1.6] text-muted-foreground">
                 Not yet on {profile.slug}:{" "}
                 {notYet.map((item, index) => (
-                  <span key={item.id} id={item.id} className="scroll-mt-[72px] sm:scroll-mt-[116px]">
+                  <span key={item.id} id={item.id} className="scroll-mt-[80px]">
                     {index > 0 ? <span className="text-faint"> · </span> : null}
                     {item.label}
                   </span>
@@ -1098,16 +862,171 @@ export default async function OpenproductProfilePage({ params }: PageProps) {
             ) : null}
           </div>
 
-          {/* ── the rail ─────────────────────────────────────────────── */}
-          {/* The rail sits under the product bar once that is pinned, so its
-              sticky top is the bar's bottom edge rather than the shell's. */}
-          <aside className={`${RAIL} lg:top-[88px]`}>
+          {/* ── the side column ──────────────────────────────────────── */}
+          {/* The board's three cards first — Crew, Built with, In the open —
+              then what the page already read from the repository and from
+              this site, in the same flat card. */}
+          <aside className={BOARD_STACK}>
+            {/* CREW (board `Product`): the people on the listing, then each
+                open seat as a teal row with its dashed ring. Every name is
+                there because its owner put it there; a maintainer can name
+                somebody, and only that person can make it public (OPC-5, CG3).
+                The list is never derived from a workspace roster.
+
+                ABSENT when there is nobody and no seat: the *Not yet* line
+                says so once. */}
+            {profile.maintainers.length > 0 || openRoles.length > 0 ? (
+              <section
+                id="crew"
+                aria-labelledby="crew-heading"
+                className={`${SIDE_CARD} scroll-mt-[80px]`}
+                {...{ [SECTION_ATTRIBUTE]: true }}
+              >
+                <h2 id="crew-heading" tabIndex={-1} className={`${SIDE_TITLE} outline-none`}>
+                  Crew
+                </h2>
+                {profile.maintainers.length > 0 ? (
+                  <ul id="makers" className="m-0 grid list-none scroll-mt-[80px] gap-3 p-0">
+                    {profile.maintainers.map((maintainer) => (
+                      <li key={maintainer.subjectId} className="flex items-center gap-2.5">
+                        <span
+                          aria-hidden="true"
+                          className="grid h-[38px] w-[38px] shrink-0 place-items-center rounded-full bg-sunken text-[13px] font-semibold text-copy"
+                        >
+                          {initialsOf(maintainerLabel(maintainer.displayName))}
+                        </span>
+                        <span className="grid min-w-0 leading-[1.35]">
+                          {/* CG4 — a link when there is somewhere to go, plain
+                              text otherwise. The rule lives in `PersonName`
+                              rather than in a ternary here, so it cannot be
+                              written twice and hold once (XP-5). The label is
+                              a written fallback, never a raw subject id. */}
+                          <PersonName
+                            name={maintainerLabel(maintainer.displayName)}
+                            handle={maintainer.handle}
+                            className="tap-h truncate text-[15px] font-semibold text-foreground"
+                          />
+                          {maintainer.roleLabel ? (
+                            <span className="truncate text-[13px] text-muted-foreground">
+                              {maintainer.roleLabel}
+                            </span>
+                          ) : null}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                ) : null}
+                {openRoles.map((role) => (
+                  <div key={role.id} className={SEAT_ROW}>
+                    <span className="flex min-w-0 items-center gap-2.5">
+                      <span aria-hidden="true" className={`${SEAT_RING} h-[32px] w-[32px] border-[1.5px]`} />
+                      <span className="min-w-0 break-words text-[15px] text-foreground">{role.title}</span>
+                    </span>
+                    {role.joinLinkRef ? (
+                      <a
+                        href={`${consoleOrigin()}/join/${role.joinLinkRef}?from=openproduct`}
+                        className="tap shrink-0 justify-end text-[13px] font-semibold text-seat-ink no-underline hover:underline hover:underline-offset-[3px]"
+                      >
+                        Take it
+                        <span className="sr-only">: {role.title}</span>
+                      </a>
+                    ) : null}
+                  </div>
+                ))}
+              </section>
+            ) : null}
+
+            {/* BUILT WITH (board `Product`): the stack, the published
+                components and the hosting, as the board's pills — a dot and a
+                word. Names and kinds come from the workspace's own component
+                manifest at publish; nothing here is typed by hand, and
+                nothing private is carried across.
+
+                ABSENT when the listing states none of the three: a listing
+                that has not stated its stack has not stated it, which is
+                different from being built with nothing. */}
+            {builtWith.length > 0 ? (
+              <section className={SIDE_CARD} id="components" aria-labelledby="stack-heading">
+                <h2 id="stack-heading" className={SIDE_TITLE}>
+                  Built with
+                </h2>
+                <ul className="m-0 flex list-none flex-wrap gap-1.5 p-0">
+                  {builtWith.map((entry, index) => (
+                    <li key={entry} className={STACK_PILL}>
+                      <span
+                        aria-hidden="true"
+                        className={`h-2 w-2 shrink-0 rounded-full ${STACK_DOTS[index % STACK_DOTS.length]}`}
+                      />
+                      {entry}
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            ) : null}
+
+            {/* IN THE OPEN (board `Product`): where the work is, as
+                label/value rows — the repository, the workspace, the pricing.
+                Each row only when the listing has it. */}
+            {profile.repoUrl || profile.workspaceRef || profile.pricing ? (
+              <section className={SIDE_CARD} aria-labelledby="open-heading">
+                <h2 id="open-heading" className={SIDE_TITLE}>
+                  In the open
+                </h2>
+                <div className="grid gap-2.5">
+                  {profile.repoUrl ? (
+                    <div className={SIDE_ROW}>
+                      <span className="text-muted-foreground">Repository</span>
+                      <a
+                        href={profile.repoUrl}
+                        rel="noreferrer noopener"
+                        className="tap-h min-w-0 break-all text-right text-link underline-offset-[3px] hover:underline"
+                      >
+                        {repositoryLabel(profile.repoUrl)}
+                      </a>
+                    </div>
+                  ) : null}
+                  {/* The workspace view door (openproduct-reader OPR5, seam
+                      S12). A PLAIN ANCHOR to the consent page on THIS origin,
+                      rendered on `workspaceRef` alone — present only while the
+                      maker's link grant attests a public workspace — so the
+                      page stays the same bytes signed in and out (OPC-1/I6)
+                      and no listing without a door shows one. */}
+                  {profile.workspaceRef ? (
+                    <div className={SIDE_ROW}>
+                      <span className="text-muted-foreground">Workspace</span>
+                      <AppLink
+                        href={workspaceConsentPath(profile.slug)}
+                        className="tap-h text-right text-link underline-offset-[3px] hover:underline"
+                      >
+                        {WORKSPACE_VIEW_LABEL}
+                      </AppLink>
+                    </div>
+                  ) : null}
+                  {/* PP3 — pricing, authored, and the hover says so (WC-3).
+                      The link is the filter page: the same list every other
+                      listing that answered this way is on. */}
+                  {profile.pricing ? (
+                    <div className={SIDE_ROW}>
+                      <span className="text-muted-foreground">Pricing</span>
+                      <AppLink
+                        href={pricingPath(profile.pricing)}
+                        title={PRICING_PROVENANCE_NOTE}
+                        className="tap-h text-right text-link underline-offset-[3px] hover:underline"
+                      >
+                        {labelOf("pricing", profile.pricing) ?? profile.pricing}
+                      </AppLink>
+                    </div>
+                  ) : null}
+                </div>
+              </section>
+            ) : null}
+
             {/* THE REPOSITORY PANEL. Two halves, drawn apart on purpose: the
                 observed frame (PV0) is what was READ from the repository,
                 with the moment of the read and every line linking its rule;
-                `On openproduct` under it is what happened on this site.
-                What is not observed yet is a dash with a reason, never a
-                zero (OPC-C, SN-1). */}
+                the details under it are what happened on this site. What is
+                not observed yet is a dash with a reason, never a zero
+                (OPC-C, SN-1). */}
             <section
               className={PANEL}
               aria-labelledby={observed.length > 0 ? "observed" : "facts-heading"}
@@ -1117,26 +1036,69 @@ export default async function OpenproductProfilePage({ params }: PageProps) {
                 id="facts-heading"
                 className={
                   observed.length > 0
-                    ? "m-0 mt-4 text-[13px] font-medium text-muted-foreground"
+                    ? "m-0 mt-4 text-[13px] font-semibold text-muted-foreground"
                     : H3
                 }
               >
                 {BUILD_DETAILS_HEADING}
               </h3>
-              <div className="mt-1 grid">
+              {/* ── the four figures (OB5) ─────────────────────────────── */}
+              {/* HOW IT IS MOVING, and no longer what the page leads with
+                  (redesign §1: it counted instead of showing). This week's
+                  merged changes, this week's counted upvotes, the place on
+                  the Most active list, and when the last change landed. Each
+                  is a glyph the rows use, a label, and a value that is a dash
+                  — never a zero — when it was not observed (OPC-C). The
+                  labels carry the moment of each read in their title (I9). */}
+              <dl data-stat-strip className="m-0 mt-2 grid grid-cols-2 gap-2">
+                <Stat
+                  icon={<ChangesIcon className="h-[15px] w-[15px] shrink-0" />}
+                  label={observedNote(merges, now, BUILD_STAT_LABEL.changes)}
+                  value={<MetricValue metric={merges} />}
+                  {...(merges ? {} : { pending: PENDING.activity })}
+                />
+                <Stat
+                  icon={<UpvoteIcon className="h-[15px] w-[15px] shrink-0" />}
+                  label={observedNote(endorsementsRecent, now, BUILD_STAT_LABEL.upvotes)}
+                  value={<MetricValue metric={endorsementsRecent} />}
+                />
+                <Stat
+                  icon={<ActiveIcon className="h-[15px] w-[15px] shrink-0" />}
+                  label={BUILD_STAT_LABEL.rank}
+                  value={
+                    mostActiveRank === null ? (
+                      DASH
+                    ) : (
+                      <AppLink href="/" className="tap underline-offset-4 hover:underline">
+                        #{mostActiveRank}
+                      </AppLink>
+                    )
+                  }
+                  title={
+                    mostActiveRank === null
+                      ? "Not on the Most active list: its changes are not observed, or it is below the floor"
+                      : "Its place on the front page's Most active list"
+                  }
+                />
+                <Stat
+                  icon={<ClockIcon className="h-[15px] w-[15px] shrink-0" />}
+                  label={observedNote(lastTouched, now, BUILD_STAT_LABEL.lastMerge)}
+                  value={lastTouched ? agoOf(fromEpochSeconds(lastTouched.value), now) : DASH}
+                  {...(lastTouched ? {} : { pending: PENDING.activity })}
+                />
+              </dl>
+              <div className="mt-3 grid gap-2.5">
                 {/* UV1 — WHERE IT PLACED ON THE DAY IT LAUNCHED, and the row
                     is absent when there is nothing to say: no launch, or a
-                    day the sweep has not reached. The rank is not
-                    unmeasured, it does not exist.
+                    day the sweep has not reached.
 
                     "2nd of 11" rather than a bare ordinal, because a
                     position a reader cannot scale is a number they have to
                     take on trust. The day links to its own board, so the
                     claim is checkable in one click (OPC-4).
 
-                    THE ORDER IS THE BOARD'S, read rather than derived, so
-                    this page, the feed and the archive cannot disagree
-                    about who was first (OL-2a). */}
+                    THE ORDER IS THE BOARD'S, read rather than derived
+                    (OL-2a). */}
                 {profile.launch ? (
                   <div className={FACT_ROW}>
                     <span className="text-muted-foreground">Rank that day</span>
@@ -1153,66 +1115,25 @@ export default async function OpenproductProfilePage({ params }: PageProps) {
                     </AppLink>
                   </div>
                 ) : null}
-                {/* OB5 — the week's upvotes, the merges and the last touch
-                    moved UP, to the stat strip under the name; this list
-                    keeps what the maintainers answered and what happened on
-                    this site. */}
                 <Fact
                   label="Published"
                   value={publishedOn ?? DASH}
                   title={publishedOn ? "first listed" : "not published yet"}
                 />
-                {/* PV0 MOVED THE LICENCE OUT OF THIS LIST. It sat here beside
-                    Category and Hosting — which a maintainer chose — and a
-                    page that renders "what we read" and "what they answered"
-                    the same way is a page saying they are equally its word
-                    for it. The observed frame above is where it lives now. */}
-                {/* CT1 — the assigned facets. Absent, not "Other", when the
-                    listing has not answered: a default bucket would put it in
-                    a facet its maintainers did not choose. */}
-                {profile.category ? (
-                  <Fact
-                    label="Category"
-                    value={labelOf("category", profile.category) ?? profile.category}
-                    href={topicPath(profile.category)}
-                  />
-                ) : null}
-                {profile.hosting ? (
-                  <Fact
-                    label="Hosting"
-                    value={labelOf("hosting", profile.hosting) ?? profile.hosting}
-                  />
-                ) : null}
-                {/* PP3 — pricing, authored, and the hover says so (WC-3). The
-                    link is the filter page: the same list every other listing
-                    that answered this way is on. */}
-                {profile.pricing ? (
-                  <Fact
-                    label="Pricing"
-                    value={labelOf("pricing", profile.pricing) ?? profile.pricing}
-                    href={pricingPath(profile.pricing)}
-                    title={PRICING_PROVENANCE_NOTE}
-                  />
-                ) : null}
+                {/* The category and the licence are on the header's line of
+                    facts, the hosting is a "Built with" pill and the pricing
+                    is an "In the open" row: each is said once. */}
                 {/* CB2 — the summary over the whole listing, DERIVED FROM
                     WHAT THE CARDS ALREADY SAY, never from a separate total
                     (OPC-F). */}
                 <Fact label="Taking offers" value={offersSummary(openRoles)} />
               </div>
-              {/* OPC-4 — the count in the vote box is discounted, and a
-                  number that decides what a reader sees owes them a sentence
-                  at an address. The moment it was read rides beside it (I9). */}
-              {/* PV3 — THE CLEAN-VOTE MARK, and the note renders in both
-                  states: beside the mark it explains why most listings lack
-                  one, and in place of the mark it says the same thing. A
-                  reader who is not told supplies their own explanation for
-                  an absence, and the one they supply is the accusation the
-                  floor was spent to avoid. */}
+              {/* PV3 — THE CLEAN-VOTE MARK. */}
               {profile.cleanVotes ? (
-                <p className="m-0 mt-3 flex flex-wrap items-baseline gap-x-1.5 border-t border-line pt-3 text-[12px] leading-[1.5] text-muted-foreground">
+                <p className="m-0 mt-3 flex flex-wrap items-baseline gap-x-1.5 text-[13px] leading-[1.5] text-muted-foreground">
                   <span
                     title={CLEAN_VOTE_TITLE}
-                    className="rounded-[5px] border border-border px-1.5 py-px font-medium text-foreground"
+                    className="rounded-full bg-sunken px-2 py-px font-medium text-foreground"
                   >
                     {CLEAN_VOTE_LABEL}
                   </span>
@@ -1222,49 +1143,18 @@ export default async function OpenproductProfilePage({ params }: PageProps) {
 
             {/* PP6 — LAUNCH HEALTH (PV1 carried): five observed facts, a
                 checklist and no number. After the repository panel because
-                it is read from the same repository read, and drawn as its
-                own panel because it answers a different question — "is this
-                product in a state to try" rather than "what is it". */}
+                it is read from the same repository read. */}
             <LaunchHealth items={launchHealth(profile, new Date(now))} now={now} />
 
-            {/* `Built with`, ITS OWN PANEL: a stack is the first thing a
-                contributor scans a listing for. Same words the directory's
-                rows carry, as the design's mono chips. */}
-            <section className={PANEL} aria-labelledby="stack-heading">
-              <h3 id="stack-heading" className={H3}>
-                Built with
-              </h3>
-              {profile.stack.length > 0 ? (
-                <div className="mt-2 flex flex-wrap gap-1.5">
-                  {profile.stack.map((entry) => (
-                    <span
-                      key={entry}
-                      className="inline-flex h-[26px] items-center rounded-[7px] bg-secondary px-[9px] font-mono text-[12px] text-copy"
-                    >
-                      {entry}
-                    </span>
-                  ))}
-                </div>
-              ) : (
-                // NOT "none": a listing that has not stated its stack has not
-                // stated it, which is different from being built with nothing.
-                <p className="m-0 mt-1 text-[13.5px] leading-[1.45] text-muted-foreground">Stack not stated.</p>
-              )}
-            </section>
-
             {/* `IN COLLECTIONS` IS ABSENT, DELIBERATELY: nothing reads the
-                membership rows BY LISTING yet, and a card cannot be rendered
-                empty here — "In no collections" is a claim about curation
-                this page has not measured (OPC-C). It lands with the read. */}
+                membership rows BY LISTING yet (OPC-C). */}
 
-            {/* PV2 — alternatives, and the reason beside every one.
-                REPLACES DS4's "Similar launches". The reason DIFFERS per row
-                — and a reason only some readers get is the unexplained list
-                this milestone's done-when refuses, so it is rendered where
-                everybody can see it. Ties break alphabetically, so the panel
-                is the same for every reader and the same tomorrow. */}
+            {/* PV2 — alternatives, and the reason beside every one. The
+                reason DIFFERS per row, so it is rendered where everybody can
+                see it. Ties break alphabetically, so the panel is the same
+                for every reader and the same tomorrow. */}
             <section
-              className={`${PANEL} scroll-mt-[72px] sm:scroll-mt-[88px]`}
+              className={`${PANEL} scroll-mt-[80px]`}
               id="alternatives"
               aria-labelledby="alternatives-heading"
               {...{ [SECTION_ATTRIBUTE]: true }}
@@ -1274,62 +1164,47 @@ export default async function OpenproductProfilePage({ params }: PageProps) {
               </h3>
               {alternatives === null ? (
                 // The catalog could not be read. NOT "nothing overlaps": an
-                // empty room and a locked door look nothing alike to a reader,
-                // and this panel should not have to guess.
-                <p className="m-0 mt-1 text-[13.5px] leading-[1.45] text-muted-foreground">
+                // empty room and a locked door look nothing alike to a reader.
+                <p className="m-0 mt-1 text-[13px] leading-[1.45] text-muted-foreground">
                   Couldn&rsquo;t load these just now.
                 </p>
               ) : alternatives.length === 0 ? (
-                <p className="m-0 mt-1 text-[13.5px] leading-[1.45] text-muted-foreground">
+                <p className="m-0 mt-1 text-[13px] leading-[1.45] text-muted-foreground">
                   None yet.
                 </p>
               ) : (
-                <>
-                  <ul className="m-0 mt-1 grid list-none p-0">
-                    {alternatives.map(({ card, reason }) => (
-                      <li key={card.slug} data-keyrow className="border-t border-line">
-                        <AppLink
-                          href={`/${card.slug}`}
-                          className="tap flex items-center gap-3 py-2.5 no-underline"
-                        >
-                          <ProductTile slug={card.slug} thumbnail={card.thumbnail} size={44} />
-                          <span className="grid min-w-0 leading-[1.35]">
-                            <span className="truncate text-[14px] font-medium text-foreground">{card.slug}</span>
-                            {/* THE REASON, not the tagline. A sidebar row has
-                                one line to spend and this milestone is about
-                                spending it on why the listing is here — the
-                                tagline is on the listing's own page, one
-                                click away. */}
-                            <span className="truncate text-[12.5px] text-muted-foreground">
-                              {reason}
-                            </span>
+                <ul className="m-0 mt-1 grid list-none p-0">
+                  {alternatives.map(({ card, reason }) => (
+                    <li key={card.slug} data-keyrow>
+                      <AppLink
+                        href={`/${card.slug}`}
+                        className="tap flex items-center gap-3 py-1.5 no-underline"
+                      >
+                        <ProductTile slug={card.slug} thumbnail={card.thumbnail} size={44} />
+                        <span className="grid min-w-0 leading-[1.35]">
+                          <span className="truncate text-[15px] font-semibold text-foreground">{card.slug}</span>
+                          {/* THE REASON, not the tagline: why the listing is
+                              here. The tagline is on its own page, one click
+                              away. */}
+                          <span className="truncate text-[13px] text-muted-foreground">
+                            {reason}
                           </span>
-                        </AppLink>
-                      </li>
-                    ))}
-                  </ul>
-                  {/* OPC-4 — the order resolves to published prose, at an
-                      address, from the panel it ordered. The design draws no
-                      line for it, so it is there for a screen reader and the
-                      keyboard, not the eye. */}
-                </>
+                        </span>
+                      </AppLink>
+                    </li>
+                  ))}
+                </ul>
               )}
             </section>
 
-            {/* RE4 — THE BADGE, AND ITS LINE. An embeddable badge is the
-                audit's own nomination for "Product Hunt's single largest
-                organic growth loop", and it is worth nothing unless the
-                person who would paste it can find the line without reading
-                documentation. So the line lives here, on the listing, in the
-                design's collapsible panel — for the maintainer rather than
+            {/* RE4 — THE BADGE, AND ITS LINE, for the maintainer rather than
                 for the reader who arrived from a search result.
 
-                `null` on a deployment with no canonical origin, for the reason
-                every absolute URL in this product is gated: a snippet copied
-                off a preview host would put that host in somebody's README
-                permanently. */}
+                `null` on a deployment with no canonical origin: a snippet
+                copied off a preview host would put that host in somebody's
+                README permanently. */}
             {badgeChoices ? (
-              <details className="rounded-[12px] border border-border bg-card px-5 py-4">
+              <details className={`${CARD} px-[18px] py-3.5`}>
                 <summary
                   id="badge-heading"
                   className="tap flex cursor-pointer list-none items-center justify-between gap-2 text-[15px] font-semibold text-foreground marker:content-none [&::-webkit-details-marker]:hidden"
@@ -1348,38 +1223,67 @@ export default async function OpenproductProfilePage({ params }: PageProps) {
           </aside>
         </div>
       </main>
-
-      {/* The page's own footer: what was observed at publish, the theme
-          control (FR1 — this page carries its own footer instead of the
-          site's, so it carries the control too), and the page's short
-          address. The root layout's footer steps aside here. */}
-      <footer className="border-t border-border">
-        <div className="mx-auto box-border flex w-full max-w-[1180px] flex-wrap items-center justify-between gap-x-5 gap-y-3 px-7 pb-9 pt-5 text-[13px] text-muted-foreground max-sm:px-4">
-          <span>
-            Components, openings and licence as observed at publish
-            {publishedOn ? ` — ${publishedOn}` : ""}.
-          </span>
-          <ThemeToggle />
-          {apex ? <span className="font-mono">openproduct.live/{profile.slug}</span> : null}
-        </div>
-      </footer>
     </>
   );
 }
 
-/** The hero card's id, which the product bar watches for. */
+/** The header card's id — the listing's one keyboard row. */
 const HERO_ID = "listing-hero";
 
-/** A facts row: a `--line` rule above, `9px 0`, 13.5px, label muted and the
- *  value tabular in `--foreground`, as the design's rail rows. */
-const FACT_ROW = "flex items-baseline justify-between gap-3 border-t border-line py-[9px] text-[13.5px]";
+/** The header's tile (board `Product`): 92px at a 26px radius, the name's
+ *  initials at 30px/600, with the card's own colour ringed 5px round it where
+ *  it overlaps the cover band. On a phone it is `ProductTile`'s 52px, at the
+ *  phone board's 16px radius, and there is no band to ring it against. */
+const HERO_TILE =
+  "ring-[5px] ring-card max-sm:ring-0 sm:!h-[92px] sm:!w-[92px] sm:!rounded-[26px] sm:!font-sans sm:!text-[30px] sm:!font-semibold max-sm:!rounded-[16px]";
 
-/** The `·` between two entries of the meta line. */
-function Dot() {
+/** The heading over what each open seat asks for: the site's own name for it
+ *  (the navigation's *Help wanted*). */
+const SEATS_HEADING = "Help wanted";
+
+/** `N open seats`, the header's last fact (board: "2 open seats"). */
+function openSeatsLabel(count: number): string {
+  return count === 1 ? "1 open seat" : `${count} open seats`;
+}
+
+/** The dots before the "Built with" pills, in the board's order: muted,
+ *  slate, amber, teal, the lighter amber, lavender — decoration that tells
+ *  one pill from the next, and nothing else. */
+const STACK_DOTS = ["bg-muted-foreground", "bg-version", "bg-amber", "bg-seat", "bg-brand-amber-inverted", "bg-idea"] as const;
+
+/** `owner/repo` out of a repository address (board: "pullely/ackstack"); the
+ *  host and path when it is not that shape, and the address itself when it
+ *  does not parse. A bare URL in a row is noise; the name is the fact. */
+function repositoryLabel(url: string): string {
+  try {
+    const parsed = new URL(url);
+    const parts = parsed.pathname.split("/").filter((part) => part.length > 0);
+    if (parts.length >= 2) return `${parts[0]}/${parts[1]!.replace(/\.git$/, "")}`;
+    return `${parsed.hostname.replace(/^www\./, "")}${parsed.pathname.replace(/\/$/, "")}`;
+  } catch {
+    return url;
+  }
+}
+
+/** A facts row: 15px, the label muted and the value tabular in
+ *  `--foreground`, as the board's side-card rows — no rule between them. */
+const FACT_ROW = SIDE_ROW;
+
+/** The line of facts under the pitch: 13px in `--muted`, a `·` between the
+ *  entries that are there and none where one is absent. */
+function HeroFacts({ children }: { children: ReactNode }) {
+  const facts = Children.toArray(children);
+  if (facts.length === 0) return null;
   return (
-    <span aria-hidden="true" className="text-border-strong">
-      ·
-    </span>
+    <div data-hero-facts className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[13px] leading-[1.4] text-muted-foreground">
+      {facts.map((fact, index) => (
+        // The dot travels with the fact after it, so a line never ends on one.
+        <span key={index} className="inline-flex items-center gap-2">
+          {index > 0 ? <span aria-hidden="true">·</span> : null}
+          {fact}
+        </span>
+      ))}
+    </div>
   );
 }
 
@@ -1436,8 +1340,8 @@ function offersSummary(roles: readonly { demand: Demand }[]): string {
 }
 
 /**
- * One row of the facts card, at the design's measurements: a 14px row, the
- * label muted, the value 500 and tabular. `href` makes the value a link where
+ * One row of the facts card, at the board's measurements: a 15px row, the
+ * label muted, the value tabular. `href` makes the value a link where
  * the fact has an address of its own; without one it is plain text, because a
  * link that goes nowhere is worse than a word (XP-5). `pending` marks a value
  * that is a dash because nothing observes it yet, and says what will.
@@ -1454,9 +1358,9 @@ function Stat({
   href,
   pending,
 }: {
-  icon: React.ReactNode;
-  label: React.ReactNode;
-  value: React.ReactNode;
+  icon: ReactNode;
+  label: ReactNode;
+  value: ReactNode;
   title?: string;
   href?: string;
   /** An unobserved figure's dash says why it is a dash (XP0's convention). */
@@ -1464,10 +1368,10 @@ function Stat({
 }) {
   const inert = pending ? pendingProps(pending) : {};
   return (
-    // THE TILE'S FIGURES, GROWN (openproduct-calm CL3, CL-R3): a small faint
-    // label over a large number, with room around it.
-    <div className="border-line px-9 py-6 max-sm:px-5 max-sm:py-4 [&:not(:first-child)]:border-l max-sm:[&:nth-child(3)]:border-l-0 max-sm:[&:nth-child(n+3)]:border-t">
-      <dt className="text-[13px] text-faint">
+    // A small muted label over the figure at the card title's size, on the
+    // lighter well — two to a row in the side card.
+    <div className="rounded-[14px] bg-well px-3 py-2.5">
+      <dt className="text-[13px] text-muted-foreground">
         {/* The glyph rides INSIDE the link when there is one, so the tap
             height lifts both together and the glyph stays beside its word. */}
         {href ? (
@@ -1483,7 +1387,7 @@ function Stat({
         )}
       </dt>
       <dd
-        className="m-0 mt-2.5 text-[30px] font-medium leading-none tracking-[-0.02em] tabular-nums text-foreground max-sm:text-[24px]"
+        className="m-0 mt-1 text-card-title font-semibold tabular-nums text-foreground"
         {...(title ? { title } : {})}
         {...inert}
       >
@@ -1500,8 +1404,8 @@ function Fact({
   title,
   pending,
 }: {
-  label: React.ReactNode;
-  value: React.ReactNode;
+  label: ReactNode;
+  value: ReactNode;
   href?: string;
   title?: string;
   pending?: (typeof PENDING)[keyof typeof PENDING];

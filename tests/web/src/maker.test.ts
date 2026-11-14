@@ -105,13 +105,35 @@ describe("the tab strip", () => {
     expect(strip).toContain('"aria-current": "page"');
   });
 
-  it("names all four, from the contract", () => {
+  it("names all four, from the contract — and the first as the site names it", () => {
     const strip = read("people/[handle]/maker-tabs.tsx");
     expect(strip).toContain("MAKER_TABS.map");
-    expect(strip).toContain("MAKER_TAB_LABELS[tab]");
     // PE1 — History is the fourth.
-    // OB6 — the default tab is Builds (id `launched`, the bare address).
+    // OB6 — the default tab is id `launched`, the bare address.
     expect(Object.values(MAKER_TAB_LABELS)).toEqual(["Builds", "Upvoted", "Comments", "History"]);
+    // openproduct-redesign OPR1 — the board's pill for what a person runs is
+    // *Products*, the navigation's own word. The page renames that ONE label
+    // over the contract's and takes the other three as they are, so a fifth
+    // tab still arrives named.
+    expect(strip).toMatch(
+      /export const SECTION_LABELS: Record<MakerTab, string> = \{\s*\.\.\.MAKER_TAB_LABELS,\s*launched: "Products",\s*\};/,
+    );
+    expect(strip).toContain("{SECTION_LABELS[tab]}");
+    expect(strip).not.toContain("{MAKER_TAB_LABELS[tab]}");
+    // …and a section's title in the browser tab says the same word.
+    expect(read(VIEW)).toContain("`${title} · ${SECTION_LABELS[tab]}`");
+  });
+
+  it("draws them as the board's pills in the profile card, the current one ink", () => {
+    const strip = markupOf("people/[handle]/maker-tabs.tsx");
+    expect(strip).toContain('aria-label="Profile sections"');
+    expect(strip).toContain("${SECTION_PILL} ${isCurrent ? SECTION_PILL_ON : SECTION_PILL_OFF}");
+    const design = read("ui/design.ts");
+    expect(design).toContain('export const SECTION_PILL_ON = "bg-primary font-semibold text-primary-foreground";');
+    // 36px, and 44px where the pointer is a finger.
+    expect(design).toMatch(/export const SECTION_PILL =\s*"inline-flex h-\[36px\][^"]*rounded-full[^"]*max-sm:h-\[44px\]/);
+    // A count is said only above zero.
+    expect(strip).toMatch(/\{count > 0 \? \(/);
   });
 
   it("takes its counts from the DOCUMENT, never from `rows.length`", () => {
@@ -224,5 +246,149 @@ describe("I6 — one document with no actor in it", () => {
       const reads = new Set(read(file).match(/await (?:load|fetch)[A-Z]\w*\(/g));
       expect([file, [...reads]]).toEqual([file, ["await loadMaker("]]);
     }
+  });
+});
+
+// openproduct-redesign OPR1 — the profile card of boards `Person` and
+// `PhonePerson`: the maker's public profile, on the data a person has today.
+describe("the profile card is the board's", () => {
+  const view = markupOf(VIEW);
+  const card = view.slice(view.indexOf('<section aria-label="Profile"'), view.indexOf("</section>", view.indexOf("<MakerTabs")));
+
+  it("has ONE h1 across the page, and it is the person's name in the page title", () => {
+    const rows = "people/[handle]/maker-rows.tsx";
+    const pieces = [BARE, TAB, VIEW, "people/[handle]/maker-tabs.tsx", rows, "people/[handle]/product-rows.tsx"];
+    const count = pieces.reduce((sum, file) => sum + (markupOf(file).match(/<h1\b/g) ?? []).length, 0);
+    expect(count).toBe(1);
+    expect(card).toContain("<h1 className={`${PAGE_TITLE} break-words`}>{title}</h1>");
+  });
+
+  it("draws the cover band, the round mark over it, the name, their line and the facts", () => {
+    const order = ["className={COVER_PERSON}", "{initialsOf(title)}", "<h1", "{person.bio}", "Maker of", "on openproduct since"].map(
+      (mark) => card.indexOf(mark),
+    );
+    expect(order.every((at) => at > -1)).toBe(true);
+    expect([...order].sort((a, b) => a - b)).toEqual(order);
+    // The board's 92px mark with the card's colour ringed round it; 72px on a
+    // phone.
+    expect(card).toMatch(/h-\[92px\] w-\[92px\][^"]*rounded-full[^"]*ring-\[5px\] ring-card[^"]*max-sm:h-\[72px\]/);
+    const design = read("ui/design.ts");
+    expect(design).toMatch(/export const COVER_PERSON =\s*"h-\[120px\][^"]*max-sm:h-\[72px\]"/);
+  });
+
+  it("says Maker of N products from the list the Products pill opens, and only when there is one", () => {
+    expect(card).toMatch(/\{products > 0 \? \(/);
+    expect(view).toContain("const products = person.maintains.length;");
+    expect(card).toMatch(/Maker of\{" "\}\s*<StatInline\s+value=\{person\.maintains\.length\}\s+label=\{products === 1 \? "product" : "products"\}/);
+    // A count that is zero is not said.
+    expect(card).toMatch(/\{person\.followers > 0 \? \(/);
+    expect(card).toMatch(/\{doc\.counts\.upvotesGiven > 0 \? \(/);
+  });
+
+  it("carries ONE Follow, and it follows the PERSON", () => {
+    // Owner rule 3: a person is followed only from their own profile. One
+    // control, in the card, of kind `person`, on their handle.
+    const follows = [BARE, TAB, VIEW, "people/[handle]/maker-rows.tsx", "people/[handle]/product-rows.tsx"].flatMap(
+      (file) => markupOf(file).match(/<FollowButton\b[\s\S]*?\/>/g) ?? [],
+    );
+    expect(follows).toHaveLength(1);
+    expect(follows[0]).toMatch(/kind="person"\s+value=\{person\.handle\}/);
+    expect(follows[0]).toContain("returnTo={`/@${person.handle}`}");
+    expect(card).toContain(follows[0]);
+    // …and nothing on the page follows a product: the rows link to them.
+    expect(view).not.toContain('kind="listing"');
+    // The board's ink button; the product page's Follow is the outlined one.
+    // Both are variants of the control itself (`size="hero"` and a `tone`),
+    // not selectors wrapped round it from outside.
+    expect(follows[0]).toMatch(/size="hero"\s+tone="ink"/);
+    expect(markupOf("[slug]/page.tsx")).toMatch(/size="hero"\s+tone="outline"/);
+    expect(read("ui/design.ts")).not.toContain("FOLLOW_PILL");
+    const control = markupOf("ui/follow-button.tsx");
+    expect(control).toContain('"h-[40px] justify-center px-5 text-[15px] font-semibold max-sm:h-[44px] max-sm:w-full"');
+    expect(control).toContain('tone?: "plain" | "outline" | "ink";');
+    expect(markupOf("[slug]/page.tsx")).toMatch(/<FollowButton\s+kind="listing"\s+value=\{profile\.slug\}/);
+  });
+
+  it("puts the sections in the card's bottom edge, and keeps every address the page had", () => {
+    expect(card).toContain("<MakerTabs handle={person.handle} current={doc.tab} counts={doc.counts}");
+    // The tab and cursor routes are where they were.
+    expect(read(TAB)).toContain("parseMakerTab(raw)");
+    expect(read("people/[handle]/[tab]/[cursor]/page.tsx")).toContain("parseHistoryCursor(rawCursor)");
+    expect(view).toContain("makerHistoryPath(person.handle, doc.nextCursor)");
+    expect(MAKER_TABS.map((tab) => makerPath("ada", tab))).toEqual([
+      "/@ada",
+      "/@ada/upvoted",
+      "/@ada/comments",
+      "/@ada/history",
+    ]);
+  });
+});
+
+describe("what a person did is flat cards, and what they run is rows", () => {
+  it("draws each act as a card of its own, not a ruled row", () => {
+    const rows = markupOf("people/[handle]/maker-rows.tsx");
+    expect(rows).toContain('<ul className="m-0 grid list-none gap-[18px] p-0 max-sm:gap-2.5">');
+    expect(rows).toContain("${BOARD_CARD}");
+    expect(rows).not.toMatch(/border-t border-line/);
+    expect(rows).not.toMatch(/border-dashed/);
+    expect(rows).toContain("data-keyrow");
+  });
+
+  it("lists their products as rows that are links to the product pages", () => {
+    const products = markupOf("people/[handle]/product-rows.tsx");
+    expect(products).toContain("href={`/${listing.slug}`}");
+    expect(products).toContain("min-h-[56px]");
+    expect(products).not.toContain('"use client"');
+    // The bare page lists them; every other section keeps them in the side
+    // card (board `Person`), under one heading.
+    const view = markupOf(VIEW);
+    expect(view).toMatch(/<h2 id="maker-products" className=\{SIDE_TITLE\}>\s*Products\s*<\/h2>/);
+    expect(view).toContain("<ProductRows listings={person.maintains} />");
+  });
+
+  it("copies no placeholder off the board", () => {
+    for (const file of [BARE, TAB, VIEW, "people/[handle]/maker-tabs.tsx", "people/[handle]/maker-rows.tsx"]) {
+      expect([file, /\[(Maker of|Their one-line|Your name|date|n)\b[^\]]*\]/.test(markupOf(file))]).toEqual([file, false]);
+      expect([file, /Welcome to openproduct/.test(markupOf(file))]).toEqual([file, false]);
+    }
+  });
+});
+
+describe("nothing personal is in a profile's server render (I6)", () => {
+  it("hands Follow only what every visitor shares", () => {
+    const view = markupOf(VIEW);
+    expect(view).toMatch(
+      /<FollowButton\s+kind="person"\s+value=\{person\.handle\}\s+followers=\{person\.followers\}\s+returnTo=\{`\/@\$\{person\.handle\}`\}\s+size="hero"\s+tone="ink"\s+countHidden\s+\/>/,
+    );
+    for (const file of [BARE, TAB, VIEW, "people/[handle]/maker-tabs.tsx", "people/[handle]/product-rows.tsx"]) {
+      const source = markupOf(file);
+      for (const personal of ["isFollowing", "useOverlay", "readSession", "following="]) {
+        expect([file, personal, source.includes(personal)]).toEqual([file, personal, false]);
+      }
+      expect([file, /from "next\/headers"/.test(source)]).toEqual([file, false]);
+    }
+  });
+
+  it("stays a cached document: every profile address declares its revalidate", () => {
+    for (const file of [BARE, TAB, "people/[handle]/[tab]/[cursor]/page.tsx"]) {
+      expect([file, read(file).includes("export const revalidate = 60;")]).toEqual([file, true]);
+    }
+  });
+});
+
+describe("the people directory took the tokens, and nothing else (OPR1)", () => {
+  it("draws people as flat cards with no border and no dashed panel", () => {
+    for (const file of ["people/people-list.tsx", "people/(index)/page.tsx"]) {
+      const source = markupOf(file);
+      expect([file, /border-dashed|border border-border\b|rounded-\[20px\]/.test(source)]).toEqual([file, false]);
+      expect([file, source.includes("EMPTY_NOTE")]).toEqual([file, true]);
+    }
+    expect(markupOf("people/people-list.tsx")).toContain("rounded-[16px] bg-card px-[22px] py-5");
+  });
+
+  it("still has its one h1 and its own address", () => {
+    const page = markupOf("people/(index)/page.tsx");
+    expect(page.match(/<h1\b/g)).toHaveLength(1);
+    expect(page).toContain("<h1 className={PAGE_TITLE}>People building in the open</h1>");
   });
 });

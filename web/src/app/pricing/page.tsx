@@ -13,7 +13,7 @@ import {
 import { fetchPublicDirectory, publicApexOrigin } from "../public-api";
 import { listOpenGraph } from "../ui/og";
 import { JsonLd } from "../ui/json-ld";
-import { PAGE_TITLE } from "../ui/design";
+import { FOCUS, PAGE, PAGE_TITLE, TILE } from "../ui/design";
 import { AppLink } from "../ui/link";
 
 /**
@@ -57,7 +57,7 @@ export default async function PricingPage() {
   const origin = publicApexOrigin();
 
   return (
-    <main className="mx-auto w-full max-w-[1180px] px-7 pb-[72px] pt-7 max-sm:px-4">
+    <main className={PAGE}>
       <JsonLd
         data={collectionPageJsonLd(
           {
@@ -74,19 +74,19 @@ export default async function PricingPage() {
       </h1>
       {/* OPC-4 — what this list IS, where the list begins. */}
 
-      <ul className="m-0 mt-[26px] grid list-none grid-cols-[repeat(auto-fill,minmax(250px,1fr))] gap-3 p-0">
+      <ul className="m-0 mt-[48px] grid list-none grid-cols-[repeat(auto-fill,minmax(250px,1fr))] gap-[14px] p-0 max-sm:mt-8">
         {tally.map((entry) => (
           <li
             key={entry.value}
-            className="flex flex-col gap-[10px] rounded-[16px] border border-border bg-card px-[18px] pb-4 pt-[18px] transition-colors hover:border-faint"
+            className={`flex flex-col gap-[10px] p-6 ${TILE}`}
           >
             <AppLink
               href={pricingPath(entry.value)}
-              className="tap font-serif text-[22px] font-normal leading-[1.1] tracking-[-0.01em] text-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+              className={`tap self-start font-sans text-card-title font-semibold tracking-[-0.01em] text-foreground ${FOCUS}`}
             >
               {entry.label}
             </AppLink>
-            <span className="text-[13.5px] text-muted-foreground">
+            <span className="text-[13px] text-muted-foreground">
               {entry.products} {entry.products === 1 ? "product" : "products"}
             </span>
           </li>

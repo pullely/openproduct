@@ -15,7 +15,7 @@ import { LIST_CARDS, listOpenGraph } from "../ui/og";
 import { FailurePanel } from "../ui/failure";
 
 import { AppLink } from "../ui/link";
-import { PAGE, PAGE_SUBTITLE, PAGE_TITLE } from "../ui/design";
+import { FOCUS, PAGE, PAGE_SUBTITLE, PAGE_TITLE, TILE, TILE_LINK } from "../ui/design";
 
 /**
  * `/collections` (openproduct-commons LC4).
@@ -56,7 +56,7 @@ export default async function CollectionsPage() {
         what="Collections could not be loaded. It is not something you did, and trying again in a moment usually works."
         actions={[
           { label: "Try again", href: "/collections" },
-          { label: "Browse the directory", href: "/" },
+          { label: "Products", href: "/products" },
         ]}
       />
     );
@@ -81,7 +81,7 @@ export default async function CollectionsPage() {
 
       {collections.length === 0 ? (
         <EmptyState
-          className="mt-[26px] rounded-[12px] border border-dashed border-border px-5 py-10"
+          className={`mt-8 px-6 py-10 ${TILE}`}
           says={COLLECTIONS_EMPTY_NOTE}
           // VC0's "one action". The old copy ended "build in the open, and you
           // can publish one", which describes an action without offering one —
@@ -89,19 +89,19 @@ export default async function CollectionsPage() {
           action={<AppLink href="/submit" className="tap">Open a build →</AppLink>}
         />
       ) : (
-        <ul className="m-0 mt-[26px] grid list-none grid-cols-[repeat(auto-fill,minmax(330px,1fr))] gap-[14px] p-0">
+        <ul className="m-0 mt-[48px] grid list-none grid-cols-[repeat(auto-fill,minmax(330px,1fr))] gap-[14px] p-0 max-sm:mt-8 max-sm:grid-cols-1">
           {collections.map((collection) => (
             <li key={collection.slug} className="flex">
               <AppLink
                 href={`/collections/${collection.slug}`}
-                className="flex w-full flex-col gap-[14px] rounded-[12px] border border-border bg-card p-5 no-underline transition-colors hover:border-faint focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+                className={`flex w-full flex-col gap-[14px] p-6 no-underline ${TILE_LINK} ${FOCUS}`}
               >
                 <div>
-                  <div className="font-sans text-[18px] font-semibold leading-[1.25] tracking-[-0.01em] text-foreground">
+                  <div className="font-sans text-card-title font-semibold tracking-[-0.01em] text-foreground">
                     {collection.title}
                   </div>
                   {collection.blurb ? (
-                    <p className="m-0 mt-1.5 text-[14px] leading-[1.5] text-copy">
+                    <p className="m-0 mt-1.5 text-[15px] leading-[1.5] text-copy">
                       {collection.blurb}
                     </p>
                   ) : null}

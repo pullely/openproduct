@@ -1,14 +1,15 @@
 // The catalogue, continued (openproduct-scale OS1).
 //
-// The page after the front page's *Open builds* — one document at one
-// address, reached by a plain link — and the directory read that pages it.
+// The page after the Products page's first — one document at one address,
+// reached by a plain link — and the directory read that pages it.
 
 import { readFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { CATALOGUE_NEXT_LABEL, cataloguePagePath } from "@openproduct/contracts";
+import { cataloguePagePath } from "@openproduct/contracts";
 
+import { PRODUCTS_MORE_LABEL } from "@openproduct-web/app/feed/products";
 import { DIRECTORY_WALK_LIMIT, fetchAllDirectoryProjects, fetchDirectoryPage } from "@openproduct-web/app/public-api";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -78,35 +79,36 @@ describe("the page after the first", () => {
     expect(source).toContain("export const revalidate = 60;");
     expect(source).toContain("export async function generateStaticParams()");
     expect(source).toContain("fetchDirectoryPage(cursor)");
-    expect(source).toContain("<BuildTile key={card.slug} card={card} />");
+    // OPR1 — the Products page's own card, in its grid.
+    expect(source).toContain("<ProductCard key={card.slug} card={card} returnTo={cataloguePagePath(cursor)} />");
     expect(source).toContain("frontPageEligible");
     expect(source).toContain("alternates: { canonical: cataloguePagePath(cursor) }");
     // A cursor the directory refuses is a 404, never a soft 200 with a panel.
     expect(source).toContain("if (page === null) notFound();");
     expect(source).not.toContain("FailurePanel");
+    expect(source.match(/<h1\b/g)).toHaveLength(1);
   });
 
-  it("links forward with a plain link, and back to the front page", () => {
+  it("links forward with a plain link, and back to the first page", () => {
     const source = page();
     expect(source).toContain("href={cataloguePagePath(page.next)}");
-    expect(source).toContain("{CATALOGUE_NEXT_LABEL} →");
-    expect(source).toContain('href="/"');
+    expect(source).toContain("{PRODUCTS_MORE_LABEL}");
+    // Back to the Products page (it was `/` while the list lived there).
+    expect(source).toContain('href="/products"');
     expect(source).not.toMatch(/onClick|fetch\(|"use client"/);
   });
 
-  it("the front page's catalogue links to it with the same label, only when there is a next", () => {
-    // OB4 — the list is `feed/builds.tsx`, and only Most active pages: the
-    // cursor is a position in that order (OS-1). Since openproduct-calm CL2
-    // the link is drawn by `more-builds.tsx`, which renders it on the server
-    // exactly as before and reads the pages behind it after paint (CL-R7).
-    const feed = code("feed/builds.tsx");
-    expect(feed).toContain('{order === "most-active" && next !== null ? <MoreBuilds next={next} returnTo={returnTo} /> : null}');
-    const more = code("feed/more-builds.tsx");
+  it("the Products list links to it with the same label, only when there is a next", () => {
+    // Only the default sort pages: the cursor is a position in that order
+    // (OS-1). The link is drawn by `product-list.tsx`, which renders it on
+    // the server and reads the page behind it in place when it is pressed.
+    const more = code("feed/product-list.tsx");
+    expect(more).toContain("{cursor !== null ? (");
     expect(more).toContain("href={cataloguePagePath(cursor)}");
-    expect(more).toContain("{CATALOGUE_NEXT_LABEL} →");
+    expect(more).toContain("{PRODUCTS_MORE_LABEL}");
     expect(more).toContain("useState<string | null>(next)");
     expect(cataloguePagePath("abc")).toBe("/products/abc");
-    expect(CATALOGUE_NEXT_LABEL.length).toBeGreaterThan(0);
+    expect(PRODUCTS_MORE_LABEL.length).toBeGreaterThan(0);
   });
 
   it("the sitemap walks the whole catalogue rather than its first page", () => {

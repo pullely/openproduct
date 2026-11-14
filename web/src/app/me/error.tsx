@@ -12,8 +12,8 @@ export default function MeError({ error, reset }: { error: Error & { digest?: st
       reset={reset}
       what="This page stopped part way through. Nothing you saved has been lost — reloading is worth one try."
       actions={[
-        { label: "Your saved products", href: "/me/saved" },
-        { label: "Open builds", href: "/" },
+        { label: "Your saved products", href: "/me?section=saved" },
+        { label: "Products", href: "/products" },
       ]}
     />
   );

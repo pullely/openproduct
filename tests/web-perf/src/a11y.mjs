@@ -499,8 +499,21 @@ export async function runA11y(base) {
           sized: imgs.filter((i) => i.getAttribute("width") && i.getAttribute("height")).length,
           named: imgs.filter((i) => (i.getAttribute("alt") ?? "").trim().length > 0).length,
           galleryLinks: panel ? panel.querySelectorAll('ul[aria-label="Gallery"] a[href]').length : 0,
-          dashed: panel
-            ? [...panel.querySelectorAll("figure")].filter((f) => getComputedStyle(f).borderStyle === "dashed").length
+          // OPR1 — THE CAPTURE'S FRAME IS A WELL, NOT DASHES. The redesign is
+          // flat and draws no borders, so the observed picture is told from
+          // the maker's by standing inside a padded, filled figure with a
+          // caption under it; the maker's pictures have neither. Both halves
+          // are measured: the well (padding and a fill of its own) and that
+          // no OTHER figure carries a caption.
+          welled: panel
+            ? [...panel.querySelectorAll("figure")].filter((f) => {
+                const cs = getComputedStyle(f);
+                return parseFloat(cs.paddingTop) > 0 && cs.backgroundColor !== "rgba(0, 0, 0, 0)" && f.querySelector("figcaption") !== null;
+              }).length
+            : 0,
+          captioned: panel ? [...panel.querySelectorAll("figure")].filter((f) => f.querySelector("figcaption") !== null).length : 0,
+          bordered: panel
+            ? [...panel.querySelectorAll("figure")].filter((f) => parseFloat(getComputedStyle(f).borderTopWidth) > 0).length
             : 0,
           captionDated: panel ? panel.querySelectorAll("figure figcaption time[datetime]").length : 0,
         };
@@ -511,9 +524,9 @@ export async function runA11y(base) {
         JSON.stringify(pictures),
       );
       check(
-        "product page: the capture is in the dashed frame, dated — and the maker's pictures are not",
-        pictures.dashed === 1 && pictures.captionDated === 1,
-        `${pictures.dashed} dashed frame(s), ${pictures.captionDated} dated caption(s)`,
+        "product page: the capture stands in its own well, dated — and the maker's pictures do not; nothing is bordered",
+        pictures.welled === 1 && pictures.captioned === 1 && pictures.captionDated === 1 && pictures.bordered === 0,
+        `${pictures.welled} well(s), ${pictures.captioned} captioned figure(s), ${pictures.captionDated} dated caption(s), ${pictures.bordered} bordered`,
       );
       const galleryReach = await keyboardReach(page, 'main ul[aria-label="Gallery"] li:first-child a');
       check("product page: the gallery is operable by keyboard alone — its first image is reached and shows focus", galleryReach.ok, galleryReach.why);
@@ -582,12 +595,15 @@ export async function runA11y(base) {
             title: document.title,
             rows: rows.length,
             named: targets.every((a) => ((a.getAttribute("aria-label") ?? a.textContent ?? "").trim().length > 0)),
-            back: document.querySelector('main a[href="/"]') !== null,
+            // OPR1 — the way back is to the list's own first page. It was
+            // `/` while the front page WAS the catalogue; Products has an
+            // address of its own now, and a continuation page goes back to it.
+            back: document.querySelector('main a[href="/products"]') !== null,
             h1: document.querySelector("main h1")?.textContent?.trim() ?? null,
           };
         });
         check(
-          "catalogue page: the next page is rows with named targets, a way back, and the same heading",
+          "catalogue page: the next page is rows with named targets, a way back to /products, and the same heading",
           next.rows > 0 && next.named && next.back && heading !== null && next.h1 === heading,
           JSON.stringify({ ...next, frontPageHeading: heading }),
         );
@@ -727,16 +743,23 @@ export async function runA11y(base) {
     // script, because the order is in the URL. A switch built from buttons
     // would pass the generic sweep above and leave the order unlinkable.
     {
-      await page.goto(base + "/builds/upvoted", { waitUntil: "load" });
+      // openproduct-redesign OPR1 — the switch is the Products page's sort:
+      // the default at `/products`, the others at `/products/by/<order>` — a
+      // path, never a query string, so each order is one cacheable document.
+      // `[data-product-sort]` is the track drawn from `sm` up; a phone draws
+      // the same links inside a `<details>`.
+      await page.goto(base + "/products/by/upvoted", { waitUntil: "load" });
       await page.waitForTimeout(1200);
       const orderNav = await page.evaluate(() => {
-        const nav = document.querySelector('nav[aria-label="Order builds by"]');
+        const nav = document.querySelector("nav[data-product-sort]");
         if (!nav) return null;
         const links = [...nav.querySelectorAll("a")];
         return {
           count: links.length,
           hrefs: links.map((a) => new URL(a.href).pathname + new URL(a.href).search),
-          current: links.filter((a) => a.getAttribute("aria-current") === "page").map((a) => new URL(a.href).pathname),
+          current: links
+            .filter((a) => a.getAttribute("aria-current") === "page")
+            .map((a) => new URL(a.href).pathname + new URL(a.href).search),
           labels: links.map((a) => (a.textContent ?? "").trim()),
           buttons: nav.querySelectorAll("button").length,
         };
@@ -750,19 +773,19 @@ export async function runA11y(base) {
         orderNav !== null && orderNav.count >= 2 && orderNav.buttons === 0,
         orderNav
           ? `${orderNav.count} link(s), ${orderNav.buttons} button(s) — ${orderNav.labels.join(" | ")}`
-          : 'no [aria-label="Order builds by"] switch found',
+          : "no [data-product-sort] switch found",
       );
       check(
         "order switch: exactly one order is announced as current, and it is this page's",
-        orderNav !== null && orderNav.current.length === 1 && orderNav.current[0] === "/builds/upvoted",
+        orderNav !== null && orderNav.current.length === 1 && orderNav.current[0] === "/products/by/upvoted",
         orderNav ? `marked aria-current=page: ${orderNav.current.join(" | ") || "none"}` : "no switch",
       );
       check(
-        "order switch: every order is a real address — the default at /, the rest under /builds",
+        "order switch: every order is a real address — the default at /products, the rest at /products/by/<order>, none in a query string",
         orderNav !== null &&
-          orderNav.hrefs.includes("/") &&
-          orderNav.hrefs.includes("/builds/upvoted") &&
-          orderNav.hrefs.every((h) => h === "/" || /^\/builds\/[a-z-]+$/.test(h)),
+          orderNav.hrefs.includes("/products") &&
+          orderNav.hrefs.includes("/products/by/upvoted") &&
+          orderNav.hrefs.every((h) => /^\/products(\/by\/[a-z-]+)?$/.test(h)),
         orderNav ? orderNav.hrefs.join(" | ") : "no switch",
       );
 
@@ -839,10 +862,11 @@ export async function runA11y(base) {
         // (XP0's own done-when). That is not a missing menu; it is the other
         // branch, and it has its own rule: no overlay request is made.
         const signIn = await page.evaluate(() => {
-          const el = [...document.querySelectorAll("header a, header button")].find((e) =>
-            /sign in/i.test(e.textContent ?? ""),
-          );
-          return el ? (el.textContent ?? "").trim() : null;
+          // The control is a round disc with a glyph since OPR1, so its name is
+          // its `aria-label`; the text is read as the fallback it used to be.
+          const nameOf = (e) => (e.getAttribute("aria-label") ?? e.textContent ?? "").trim();
+          const el = [...document.querySelectorAll("header a, header button")].find((e) => /sign in/i.test(nameOf(e)));
+          return el ? nameOf(el) : null;
         });
         check("account menu: signed out shows a named Sign in control instead", !!signIn, signIn ?? "neither a menu trigger nor a sign-in control in the header");
       } else {
@@ -856,12 +880,12 @@ export async function runA11y(base) {
         // second half is the one that gets forgotten, and losing focus to
         // <body> drops a keyboard user back at the top of the document.
         await page.evaluate(() => {
-          (document.querySelector("header [aria-haspopup]") ?? document.querySelector("header [aria-expanded]"))?.focus();
+          document.querySelector('header [aria-haspopup="menu"]')?.focus();
         });
         await page.keyboard.press("Enter");
         await page.waitForTimeout(300);
         const opened = await page.evaluate(() => ({
-          expanded: (document.querySelector("header [aria-haspopup]") ?? document.querySelector("header [aria-expanded]"))?.getAttribute("aria-expanded"),
+          expanded: document.querySelector('header [aria-haspopup="menu"]')?.getAttribute("aria-expanded"),
           menu: !!document.querySelector('[role="menu"]'),
         }));
         check("account menu: Enter opens it", opened.expanded === "true" || opened.menu, `expanded=${opened.expanded} role=menu ${opened.menu}`);
@@ -869,7 +893,9 @@ export async function runA11y(base) {
         await page.keyboard.press("Escape");
         await page.waitForTimeout(300);
         const closed = await page.evaluate(() => {
-          const trigger = document.querySelector("header [aria-haspopup]") ?? document.querySelector("header [aria-expanded]");
+          // `="menu"`, as the lookup above: the header search is a combobox with
+          // a popup of its own since OPR1, and it comes first in the header.
+          const trigger = document.querySelector('header [aria-haspopup="menu"]');
           return {
             expanded: trigger?.getAttribute("aria-expanded"),
             focusReturned: document.activeElement === trigger,
@@ -1066,7 +1092,7 @@ export async function runA11y(base) {
         // width exactly one is in the accessibility tree. That is asserted
         // below rather than assumed, because it is the whole reason the
         // duplicate name is not a defect.
-        const named = [...document.querySelectorAll('nav[aria-label="Sections"]')];
+        const named = [...document.querySelectorAll('nav[aria-label="Main"]')];
         const shown = named.filter((el) => el.getBoundingClientRect().height > 0);
         const nav = shown[0];
         if (!nav) return { named: named.length, shown: shown.length };
@@ -1109,15 +1135,17 @@ export async function runA11y(base) {
       check(
         "bottom bar: it is rendered at 375",
         !!bar && bar.cells > 0,
-        bar ? `${bar.cells} cells` : "no nav[aria-label=Sections]",
+        bar ? `${bar.cells} cells` : "no nav[aria-label=Main]",
       );
       check(
-        "bottom bar: exactly one Sections landmark is in the tree at this width",
+        "bottom bar: exactly one Main landmark is in the tree at this width",
         !!bar && bar.shown === 1,
         bar ? `${bar.shown} shown of ${bar.named} named` : "none",
       );
       if (bar && bar.cells > 0) {
-        check("bottom bar: it is a named landmark", bar.landmark === "Sections", bar.landmark ?? "(none)");
+        // "Main" since openproduct-redesign OPR1 (boards `Products`, `PhoneFeed`);
+        // it was "Sections".
+        check("bottom bar: it is a named landmark", bar.landmark === "Main", bar.landmark ?? "(none)");
         check("bottom bar: it is a list, so its size is announced", bar.list, `${bar.cells} items`);
         check(
           "bottom bar: exactly one cell claims to be the current page",
@@ -1149,14 +1177,14 @@ export async function runA11y(base) {
         // there at all, and that a person can see when it has.
         // `.fixed` is the bottom bar's own class and the header's nav does not
         // carry it — the narrowest true statement that separates the two.
-        const first = await keyboardReach(page, "nav.fixed[aria-label=\"Sections\"] a[href]");
+        const first = await keyboardReach(page, "nav.fixed[aria-label=\"Main\"] a[href]");
         check("bottom bar: the first cell is reachable by Tab, with a visible ring", first.ok, first.why);
 
         // Every cell, not just the first: a bar whose third link is
         // `tabindex="-1"` passes the check above and strands a reader in the
         // middle of the row.
         const reachable = await page.evaluate(() => {
-          const links = [...document.querySelectorAll('nav.fixed[aria-label="Sections"] a[href]')];
+          const links = [...document.querySelectorAll('nav.fixed[aria-label="Main"] a[href]')];
           const stranded = links.filter((a) => Number(a.getAttribute("tabindex")) < 0);
           return { total: links.length, stranded: stranded.length };
         });

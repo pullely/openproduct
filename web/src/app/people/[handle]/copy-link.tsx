@@ -31,7 +31,7 @@ export function CopyLink({ value, label }: { value: string; label: string }) {
     // `max-w-full` and a truncating label: on a phone the address is wider
     // than the hero's text column, and it must not widen the page. The text
     // is still `select-all`, so what is copied by hand is the whole address.
-    <span className="inline-flex h-[30px] max-w-full items-center gap-2 rounded-[8px] border border-border bg-card pl-3 pr-1">
+    <span className="inline-flex h-[30px] max-w-full items-center gap-2 rounded-full bg-well pl-3 pr-1">
       <span className="min-w-0 select-all truncate font-mono text-[13px] text-muted-foreground">{label}</span>
       <button
         type="button"
@@ -48,7 +48,7 @@ export function CopyLink({ value, label }: { value: string; label: string }) {
           })();
         }}
         aria-live="polite"
-        className="shrink-0 rounded-[6px] px-2 py-0.5 text-[13px] font-medium text-foreground transition-colors hover:bg-accent"
+        className="shrink-0 rounded-full px-2 py-0.5 text-[13px] font-medium text-foreground transition-colors hover:bg-accent"
       >
         {copied ? "Copied" : "Copy"}
       </button>

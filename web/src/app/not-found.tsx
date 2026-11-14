@@ -13,33 +13,32 @@ import { PAGE_TITLE } from "./ui/design";
  * byte-identical, with the one useful next step.
  */
 
-/** The design's 404 column: 700px, `80px 28px 96px`; 16px gutters on a phone. */
-const COLUMN = "mx-auto box-border w-full max-w-[700px] px-7 pb-24 pt-20 max-sm:px-4 max-sm:pt-12";
+/** The 404's column (OPR1): the search page's 760px, `40px 24px 72px`;
+ *  `10px 12px` gutters on a phone. */
+const COLUMN =
+  "mx-auto box-border flex w-full max-w-[760px] flex-col items-start gap-6 px-6 pb-[72px] pt-10 max-sm:gap-4 max-sm:px-3 max-sm:pb-6 max-sm:pt-6";
 
-/** The accent button, 40px here: the one act on the page. */
-const BTN_GO =
-  "inline-flex h-[44px] items-center rounded-full bg-primary px-5 text-[15px] font-medium text-primary-foreground no-underline transition-opacity hover:opacity-90";
+/** The one action back: the ink pill, 40px, 44px on a phone. */
+const BTN_BACK =
+  "inline-flex min-h-[40px] items-center rounded-full bg-primary px-[18px] text-[15px] font-semibold text-primary-foreground no-underline transition-opacity hover:opacity-90 max-sm:min-h-[44px]";
 
-/** The quiet second way out: 40px, a `--border` hairline on `--card`. */
-const BTN_ALSO =
-  "inline-flex h-[44px] items-center rounded-full border border-border px-5 text-[15px] font-medium text-foreground no-underline transition-colors hover:border-faint";
-
+/**
+ * ONE TITLE AND ONE WAY BACK (openproduct-redesign OPR1). The page used to
+ * explain itself in a paragraph and offer two buttons; the title already
+ * says what happened, the header above carries search on every page, and the
+ * one useful next step is the feed.
+ *
+ * The title's words are the same for a private product, a missing one and a
+ * mistyped address — the page cannot tell them apart and must not (the
+ * resource-hiding 404).
+ */
 export default function OpenproductNotFound() {
   return (
     <main className={COLUMN}>
-      <h1 className={PAGE_TITLE}>No build lives at this address</h1>
-      <p className="m-0 mt-4 max-w-[60ch] text-[17.5px] leading-[1.6] text-copy">
-        It may have been unlisted, or the link may be mistyped. Every listed
-        build is on Open builds.
-      </p>
-      <div className="mt-8 flex flex-wrap gap-3">
-        <Link href="/" className={BTN_GO}>
-          Back to Open builds
-        </Link>
-        <Link href="/search" className={BTN_ALSO}>
-          Search
-        </Link>
-      </div>
+      <h1 className={PAGE_TITLE}>No product lives at this address</h1>
+      <Link href="/" className={BTN_BACK}>
+        Back to the feed
+      </Link>
     </main>
   );
 }

@@ -1,5 +1,8 @@
 // POST /me/profile (openproduct host) — the profile form's action (OH2, CG1).
 //
+// The form is on `/me/settings` since openproduct-redesign OPR1, and every
+// outcome returns there; this address did not move, because a form posts to it.
+//
 // Progressive-enhancement form posts, no client JS: the handler reads the
 // session, writes the authored fields through the authenticated client, and
 // redirects back. Signed out lands on sign-in, exactly like the page itself.
@@ -15,11 +18,11 @@ import { NextResponse, type NextRequest } from "next/server";
 
 import { SESSION_COOKIE, decodeSession } from "../../auth/auth";
 import { claimHandle, setProfileVisibility, updateMe, type MeWriteResult } from "../me-api";
-import { planProfileSave, redirectFor } from "./plan";
+import { SETTINGS_PATH, planProfileSave, redirectFor } from "./plan";
 
 export async function POST(request: NextRequest): Promise<NextResponse> {
   const session = decodeSession(request.cookies.get(SESSION_COOKIE)?.value);
-  if (!session) return NextResponse.redirect(new URL("/signin?return_to=%2Fme", request.url), 303);
+  if (!session) return NextResponse.redirect(new URL("/signin?return_to=%2Fme%2Fsettings", request.url), 303);
 
   const form = await request.formData().catch(() => null);
   const plan = planProfileSave({
@@ -48,7 +51,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     if (visibilityOutcome) return NextResponse.redirect(new URL(visibilityOutcome, request.url), 303);
   }
 
-  return NextResponse.redirect(new URL("/me?saved=1", request.url), 303);
+  return NextResponse.redirect(new URL(`${SETTINGS_PATH}?saved=1`, request.url), 303);
 }
 
 async function settle(write: Promise<MeWriteResult<unknown>>): Promise<string | null> {

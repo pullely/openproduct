@@ -21,7 +21,17 @@ const code = (file: string) =>
 const TILE = "rounded-[20px] border border-border bg-card px-8 py-6";
 
 describe("every list is one column of tiles (CL-R3)", () => {
-  it.each(["feed/row-shell.tsx", "launches/board.tsx", "search/page.tsx"])("%s draws its item as a tile", (file) => {
+  // OPR1 — the day board has no board of its own: it takes the shared flat
+  // tile (`TILE_LINK` from `ui/design.ts`) rather than a card spelled inline.
+  it("launches/board.tsx draws its item as the shared flat tile (OPR1)", () => {
+    const source = code("launches/board.tsx");
+    expect(source).toMatch(/className=\{`relative flex list-none items-center [^`]*\$\{TILE_LINK\}`\}/);
+    expect(source).not.toMatch(/rounded-\[20px\]|border border-border bg-card/);
+    expect(source).toContain("size={72} phoneSize={52}");
+    expect(source).not.toMatch(/<li[^>]*className="relative flex[^"]*border-t border-line/);
+  });
+
+  it.each(["feed/row-shell.tsx"])("%s draws its item as a tile", (file) => {
     const source = code(file);
     expect(source).toContain(TILE);
     expect(source).toContain("size={72} phoneSize={52}");
@@ -32,23 +42,43 @@ describe("every list is one column of tiles (CL-R3)", () => {
   it.each([
     ["launches/board.tsx", '<ol className="m-0 mt-8 grid list-none gap-[14px] p-0">'],
     ["topics/[topic]/page.tsx", 'const LIST_TILES = "m-0 grid list-none gap-[14px] p-0";'],
-    ["search/page.tsx", '<ul className="m-0 grid list-none gap-[14px] p-0">'],
   ])("%s stacks them 14px apart", (file, container) => {
     expect(code(file)).toContain(container);
   });
 
+  it("search results are rows in one flat card, as board `Search` draws them (OPR1)", () => {
+    // Was: each result its own 72px tile, 14px apart (CL-R3). The board puts
+    // a class's results in ONE flat card — 16px radius, no border — as rows
+    // on a hairline, with the product's tile at the ladder's 44px step.
+    const frame = code("search/frame.ts");
+    expect(frame).toMatch(/export const RESULT_CARD = "[^"]*rounded-\[16px\] bg-card[^"]*"/);
+    expect(frame).not.toMatch(/border-border|shadow/);
+    const source = code("search/page.tsx");
+    expect(source).toContain("<ul className={RESULT_CARD}>");
+    expect(source).toContain("size={44}");
+    expect(source).toMatch(/<li\s+data-keyrow\s+className="relative flex[^"]*border-t border-line[^"]*first:border-t-0/);
+    expect(source).not.toContain("rounded-[20px] border border-border");
+  });
+
   it("names never hover into the accent (CL-R8)", () => {
-    for (const file of ["feed/row-shell.tsx", "search/page.tsx", "feed/build-tile.tsx"]) {
+    for (const file of ["feed/row-shell.tsx", "search/page.tsx", "feed/product-card.tsx"]) {
       expect([file, code(file).includes("hover:text-endorse-ink")]).toEqual([file, false]);
     }
   });
 });
 
 describe("a build is a build in the words too", () => {
-  it("the 404 says build and sends a reader to Open builds, in a neutral button", () => {
+  it("the 404 is one title and one way back, in the ink button (OPR1)", () => {
+    // Was: "No build lives at this address", a paragraph, and two buttons
+    // (Open builds, Search). The redesign says product, the header carries
+    // search on every page, and a page gets one `h1` and one action.
     const page = code("not-found.tsx");
-    expect(page).toContain("No build lives at this address");
-    expect(page).toContain("Back to Open builds");
+    expect(page.match(/<h1\b/g)).toHaveLength(1);
+    expect(page).toContain("<h1 className={PAGE_TITLE}>No product lives at this address</h1>");
+    expect(page.match(/<Link\b/g)).toHaveLength(1);
+    expect(page).toMatch(/<Link href="\/" className=\{BTN_BACK\}>\s*Back to the feed\s*<\/Link>/);
+    expect(page).not.toMatch(/<p\b|<button\b/);
+    expect(page).toMatch(/const BTN_BACK =\s*"[^"]*min-h-\[40px\][^"]*bg-primary[^"]*max-sm:min-h-\[44px\]/);
     expect(page).not.toContain("the launches");
     expect(page).not.toContain("bg-endorse-ink");
   });
@@ -60,7 +90,13 @@ describe("a build is a build in the words too", () => {
     expect(page).not.toContain("List a product");
   });
 
-  it("a topic follow still says launches, because it notifies on launches (NF0)", () => {
-    expect(code("topics/page.tsx")).toContain("Follow a topic to get its launches in your notifications.");
+  // OPR1 — the owner's rule: no explainer under a control. The index used to
+  // carry a sentence describing the Follow button; the button stays, alone.
+  it("the topics index offers the follow with no sentence explaining it (OPR1)", () => {
+    const topics = code("topics/page.tsx");
+    expect(topics).toContain('<FollowButton');
+    expect(topics).toContain('kind="topic"');
+    expect(topics).not.toContain("PAGE_SUBTITLE");
+    expect(topics).not.toContain("in your notifications");
   });
 });

@@ -271,14 +271,17 @@ describe("CS3 — everything they may take with them, as a file", () => {
     expect(calls.map((c) => `${c.method} ${new URL(c.url).pathname}`)).toEqual(["GET /v1/openproduct/me/export"]);
   });
 
-  it("the website answers /me/export as an attachment from the session's bearer, and /me links to it as a plain link", () => {
+  it("the website answers /me/export as an attachment from the session's bearer, and settings links to it as a plain link", () => {
     const route = readFileSync(resolve(APP_DIR, "me/export/route.ts"), "utf-8");
     expect(route).toContain("fetchExport(session.accessToken)");
     expect(route).toContain('"content-disposition": `attachment; filename="openproduct-${day}.json"`');
     expect(route).toContain('"cache-control": "no-store"');
     expect(route).toContain("/signin?return_to=%2Fme%2Fexport");
-    const page = readFileSync(resolve(APP_DIR, "me/page.tsx"), "utf-8");
+    // The link moved with the account card: it is on `/me/settings` since
+    // openproduct-redesign OPR1, and `/me` is the profile.
+    const page = readFileSync(resolve(APP_DIR, "me/settings/page.tsx"), "utf-8");
     expect(page).toMatch(/<a\s+href="\/me\/export"\s+data-me-export/);
     expect(page).toContain("Download your data");
+    expect(readFileSync(resolve(APP_DIR, "me/page.tsx"), "utf-8")).not.toContain("/me/export");
   });
 });

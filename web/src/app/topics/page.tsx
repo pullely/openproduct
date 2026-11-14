@@ -7,7 +7,7 @@ import { fetchTopics, publicApexOrigin, type TopicsDocument } from "../public-ap
 import { JsonLd } from "../ui/json-ld";
 import { TOPICS_DESCRIPTION, listOpenGraph } from "../ui/og";
 import { FollowButton } from "../ui/follow-button";
-import { PAGE, PAGE_SUBTITLE, PAGE_TITLE } from "../ui/design";
+import { EMPTY_NOTE, FOCUS, PAGE, PAGE_TITLE, TILE } from "../ui/design";
 
 import { AppLink } from "../ui/link";
 
@@ -28,9 +28,9 @@ import { AppLink } from "../ui/link";
  * ONE READ, and it is the directory's own, so the number on a card and the
  * number beside that value in the rail cannot disagree.
  *
- * THE CARD IS THE DESIGN'S, to the pixel: a 250px-minimum grid at gap 12,
- * each card a 12px-radius panel holding the name in sans 18/600, one meta
- * line in 13.5 and the Follow control at the foot. The topic page is the
+ * THE CARD IS THE REDESIGN'S FLAT TILE (OPR1): a 260px-minimum grid at gap
+ * 14, each card the shared `TILE` holding the name at the card-title size
+ * (18/600), one meta line in 13 and the Follow control at the foot. The topic page is the
  * card's one destination — there is no directory to cross-link any more.
  */
 export const revalidate = 600;
@@ -67,10 +67,9 @@ export default async function TopicsPage() {
         )}
       />
       <h1 className={PAGE_TITLE}>Topics</h1>
-      <p className={PAGE_SUBTITLE}>Follow a topic to get its launches in your notifications.</p>
 
       {doc.topics.length === 0 ? (
-        <p className="m-0 mt-[26px] rounded-[12px] border border-dashed border-border px-5 py-10 text-center text-[15px] text-muted-foreground">
+        <p className={`mt-8 ${EMPTY_NOTE}`}>
           No listed product has chosen a category yet.
         </p>
       ) : (
@@ -87,11 +86,11 @@ function Cards({ doc }: { doc: TopicsDocument }) {
       {doc.topics.map((topic) => (
         <li
           key={topic.value}
-          className="flex flex-col gap-3 rounded-[20px] border border-border bg-card px-6 pb-6 pt-6 transition-colors hover:border-border-strong"
+          className={`flex flex-col gap-3 p-6 ${TILE}`}
         >
           <AppLink
             href={topicPath(topic.value)}
-            className="tap self-start font-sans text-[20px] font-semibold leading-[1.25] tracking-[-0.015em] text-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+            className={`tap self-start font-sans text-card-title font-semibold tracking-[-0.01em] text-foreground ${FOCUS}`}
           >
             {topic.label}
           </AppLink>
@@ -104,7 +103,7 @@ function Cards({ doc }: { doc: TopicsDocument }) {
               the button below draws itself alone. Rendered AT ZERO: something
               observes a follow, so a zero has been counted and found empty
               rather than being a claim nobody could make (OPC-C). */}
-          <span className="text-[13.5px] text-muted-foreground">
+          <span className="text-[13px] text-muted-foreground">
             {topic.products} {topic.products === 1 ? "product" : "products"} ·{" "}
             {followerLine(topic.followers)}
           </span>

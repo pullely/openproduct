@@ -44,7 +44,7 @@ export function LaunchHealth({ items, now }: { items: readonly LaunchHealthItem[
         {items.map((item) => (
           <li
             key={item.id}
-            className="flex items-baseline justify-between gap-3 border-t border-line py-[9px] text-[13.5px]"
+            className="flex items-baseline justify-between gap-3 border-t border-line py-[9px] text-[13px]"
           >
             <span
               className={item.state === "withdrawn" ? "text-faint line-through" : "text-muted-foreground"}
@@ -66,7 +66,7 @@ export function LaunchHealth({ items, now }: { items: readonly LaunchHealthItem[
                 item.label
               )}
             </span>
-            <span className="flex items-baseline gap-2 tabular-nums text-[13.5px]">
+            <span className="flex items-baseline gap-2 tabular-nums text-[13px]">
               {item.state === "yes" ? (
                 <span className="text-foreground" aria-label="yes">
                   ✓
@@ -82,7 +82,7 @@ export function LaunchHealth({ items, now }: { items: readonly LaunchHealthItem[
                 </span>
               )}
               {item.observedAt ? (
-                <span className="text-[12px] text-muted-foreground" title={absoluteOf(item.observedAt)}>
+                <span className="text-[13px] text-muted-foreground" title={absoluteOf(item.observedAt)}>
                   {agoOf(item.observedAt, now)}
                 </span>
               ) : null}
@@ -90,7 +90,7 @@ export function LaunchHealth({ items, now }: { items: readonly LaunchHealthItem[
           </li>
         ))}
       </ul>
-      <p className="m-0 mt-2 border-t border-line pt-3 text-[12.5px] text-muted-foreground">
+      <p className="m-0 mt-2 border-t border-line pt-3 text-[13px] text-muted-foreground">
         <AppLink href="#report" className="tap-h underline underline-offset-4">
           {LAUNCH_HEALTH_DISPUTE}
         </AppLink>

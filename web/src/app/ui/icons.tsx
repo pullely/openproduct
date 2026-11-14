@@ -94,6 +94,87 @@ export function PeopleIcon(props: IconProps) {
   );
 }
 
+/**
+ * The chrome's glyphs (openproduct-redesign OPR1), redrawn from the boards'
+ * 24-unit paths onto this set's 20-unit grid. One per destination of the
+ * header and the phone's tab bar, and one each for the header's controls.
+ */
+
+/** The feed: a house — where a reader starts. */
+export function FeedIcon(props: IconProps) {
+  return (
+    <Svg {...props}>
+      <path d="M3.3 9.2 10 3.3l6.7 5.9v7.5H3.3z" />
+    </Svg>
+  );
+}
+
+/** Products: a grid of four tiles. */
+export function ProductsIcon(props: IconProps) {
+  return (
+    <Svg {...props}>
+      <rect x="2.5" y="2.5" width="5.8" height="5.8" rx="1.7" />
+      <rect x="11.7" y="2.5" width="5.8" height="5.8" rx="1.7" />
+      <rect x="2.5" y="11.7" width="5.8" height="5.8" rx="1.7" />
+      <rect x="11.7" y="11.7" width="5.8" height="5.8" rx="1.7" />
+    </Svg>
+  );
+}
+
+/**
+ * Help wanted: a person and a plus — a seat to be taken. The redesign's
+ * glyph for the section; `RoleIcon` stays the mark of one open role on a
+ * row until the page that draws it is rebuilt.
+ */
+export function SeatIcon(props: IconProps) {
+  return (
+    <Svg {...props}>
+      <circle cx="7.5" cy="6.7" r="2.9" />
+      <path d="M2.5 16.7c.7-2.9 2.7-4.6 5-4.6s4.3 1.7 5 4.6" />
+      <path d="M15 6.7v5M12.5 9.2h5" />
+    </Svg>
+  );
+}
+
+/** Activity: a bell. */
+export function ActivityIcon(props: IconProps) {
+  return (
+    <Svg {...props}>
+      <path d="M5 6.7a5 5 0 0 1 10 0c0 5.8 2.5 6.6 2.5 6.6h-15S5 12.5 5 6.7" />
+      <path d="M8.3 16.7a1.7 1.7 0 0 0 3.4 0" />
+    </Svg>
+  );
+}
+
+/** Search: a magnifier. */
+export function SearchIcon(props: IconProps) {
+  return (
+    <Svg {...props}>
+      <circle cx="9.2" cy="9.2" r="5.8" />
+      <path d="m16.7 16.7-2.9-2.9" />
+    </Svg>
+  );
+}
+
+/** One person: the profile control, and a signed-out visitor. */
+export function PersonIcon(props: IconProps) {
+  return (
+    <Svg {...props}>
+      <circle cx="10" cy="6.7" r="3.3" />
+      <path d="M3.3 17.5c1.3-3.3 3.8-5 6.7-5s5.4 1.7 6.7 5" />
+    </Svg>
+  );
+}
+
+/** A disclosure: the chevron that opens (down) or closes (up) what is under a row. */
+export function ChevronIcon({ up = false, ...props }: IconProps & { readonly up?: boolean }) {
+  return (
+    <Svg {...props}>
+      <path d={up ? "m5 12.5 5-5 5 5" : "m5 7.5 5 5 5-5"} />
+    </Svg>
+  );
+}
+
 /** Opening something new: a plus. */
 export function PlusIcon(props: IconProps) {
   return (
@@ -179,6 +260,43 @@ export function ClockIcon(props: IconProps) {
     <Svg {...props}>
       <circle cx="10" cy="10" r="7" />
       <path d="M10 6v4l2.5 2" />
+    </Svg>
+  );
+}
+
+/** Clearing a field, dismissing a notice: a cross. */
+export function CloseIcon(props: IconProps) {
+  return (
+    <Svg {...props}>
+      <path d="m5 5 10 10M15 5 5 15" />
+    </Svg>
+  );
+}
+
+/** Email: an envelope — the email door on sign-in, and "check your email". */
+export function MailIcon(props: IconProps) {
+  return (
+    <Svg {...props}>
+      <rect x="2.5" y="4.2" width="15" height="11.6" rx="1.7" />
+      <path d="m2.5 5.8 7.5 5 7.5-5" />
+    </Svg>
+  );
+}
+
+/** Going back a step: a chevron pointing left. */
+export function BackIcon(props: IconProps) {
+  return (
+    <Svg {...props}>
+      <path d="m12.5 5-5 5 5 5" />
+    </Svg>
+  );
+}
+
+/** Sorting a list: three rules, each shorter than the last. */
+export function SortIcon(props: IconProps) {
+  return (
+    <Svg {...props}>
+      <path d="M3.5 6h13M6 10h8M8.5 14h3" />
     </Svg>
   );
 }

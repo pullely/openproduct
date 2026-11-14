@@ -5,8 +5,7 @@ import { parseMakerTab, type MakerTab } from "@openproduct/contracts";
 
 import { MakerView, loadMaker, makerMetadata } from "../maker-view";
 
-import { CRUMBS, PAGE } from "../../../ui/design";
-import { AppLink } from "../../../ui/link";
+import { BOARD_PAGE } from "../../../ui/design";
 
 /**
  * `/@{handle}/{tab}` (openproduct-launch MP0) — a maker page's other two tabs.
@@ -80,22 +79,10 @@ export async function MakerTabBody({
   if (doc === null) notFound();
 
   return (
-    <main className={PAGE}>
-      <nav aria-label="Breadcrumb" className={CRUMBS}>
-        <AppLink href="/people" className="tap inline-flex items-center gap-1.5 hover:text-foreground">
-          <span aria-hidden="true">←</span> People
-        </AppLink>
-        <span aria-hidden="true" className="text-faint">
-          /
-        </span>
-        {/* The bare page is the person's address, so it is a link from every
-            other tab — a reader who arrived on `upvoted` can get to the page
-            somebody actually handed out. */}
-        <AppLink href={`/@${doc.contributor.handle}`} className="tap-h font-mono hover:text-foreground">
-          @{doc.contributor.handle}
-        </AppLink>
-      </nav>
-
+    // The profile card's pills are how a reader gets from this section to
+    // the others — the bare `/@handle` among them, the address somebody
+    // actually handed out — so the page draws no crumb over the card.
+    <main className={BOARD_PAGE}>
       <MakerView doc={doc} now={Date.parse(doc.observedAt)} />
     </main>
   );

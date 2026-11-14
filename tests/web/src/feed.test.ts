@@ -3,8 +3,9 @@
 // The GROUPING is tested in packages/contracts and the READ in tests/core.
 // What is pinned here is what the web layer is responsible for:
 //
-//   - `/` is the feed, and the ONLY list: `/products` and `/launches` are
-//     redirects to it, issued from next.config.mjs
+//   - `/` lists the products under the title Products (it becomes the feed
+//     of posts in OPR2); `/products` is the same view, with its other sorts at
+//     `/products/by/<order>`; `/launches` redirects to `/` from next.config.mjs
 //   - nothing on the page decides an order (OL-2a)
 //   - the row is the design's fourteen measurements, and a fact it does not
 //     have renders absent rather than as a zero (OPC-C)
@@ -16,130 +17,209 @@ import { existsSync, readFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
+import { BUILD_ORDERS, catalogueMomentCopy, type PublicProfileCard } from "@openproduct/contracts";
 import {
-  BUILD_TILE_LABEL,
-  BUILD_ORDERS,
-  BUILD_ORDER_LABEL,
-  FEED_PAGE_HEADING,
-  buildOrderPath,
-  catalogueMomentCopy,
-} from "@openproduct/contracts";
+  PRODUCTS_EMPTY,
+  PRODUCT_SORTS,
+  PRODUCT_SORT_LABEL,
+  openSeatsLabel,
+  productFacts,
+} from "@openproduct-web/app/feed/products";
 import { ordinal } from "@openproduct-web/app/ui/ordinal";
 import { hueFor, initialsOf } from "@openproduct-web/app/feed/tile";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const APP_DIR = resolve(__dirname, "../../../web/src/app");
 const read = (file: string) => readFileSync(resolve(APP_DIR, file), "utf-8");
+/** The same file with its comments removed: what the page draws, not what it says about itself. */
+const code = (file: string) =>
+  read(file)
+    .replace(/\{\/\*[\s\S]*?\*\/\}/g, "")
+    .replace(/\/\*[\s\S]*?\*\//g, "")
+    .replace(/^\s*\/\/.*$/gm, "");
 
-describe("`/` is Open builds, and there is no second list (OB4)", () => {
-  it("the front page reads the catalogue, and nothing else", () => {
+describe("`/` lists the products, and says so (openproduct-redesign OPR1)", () => {
+  it("the front page draws the Products view in the default sort, and nothing else", () => {
     const page = read("page.tsx");
-    // ONE read since openproduct-calm CL2: the margin left with render C
-    // (CL-R5), so the sidebar's document is no longer read here. The day
-    // board left at OB4.
-    expect(page).toContain("const directory = await fetchDirectoryPage();");
-    expect(page.match(/fetch[A-Z]\w+\(\)/g)).toEqual(["fetchDirectoryPage()"]);
+    // ONE BODY: the Products page's own view, in today's default order. `/`
+    // becomes the feed of posts in OPR2; until then it is the product list
+    // and is titled as one — nothing on it claims to be a feed.
+    expect(page).toContain('<ProductsView sort={DEFAULT_PRODUCT_SORT} returnTo="/" retryHref="/" />');
+    expect(page).toContain('title: "Products · openproduct"');
+    expect(page).not.toMatch(/<h1[^>]*>\s*Feed|FEED_PAGE_HEADING|Open builds ·/);
     expect(page).not.toContain("fetchFeed(");
     expect(page).not.toContain("fetchSidebar(");
     expect(page).not.toContain("<Sidebar");
     expect(existsSync(resolve(APP_DIR, "feed/sidebar.tsx"))).toBe(false);
-  });
-
-  it("is titled Open builds, renders no day board, and draws the list in the Most active order", () => {
-    expect(FEED_PAGE_HEADING).toBe("Open builds");
-    const page = read("page.tsx");
-    expect(page).toContain("{FEED_PAGE_HEADING}");
-    expect(page).toContain("{FEED_PAGE_SUBTITLE}");
-    // The order is the contract's: the floor, then the comparator.
-    expect(page).toContain('orderBuilds(cards, "most-active")');
-    expect(page).toContain('order="most-active"');
+    // Static: it reads no query string, so it stays one revalidated document.
+    expect(page).toContain("export const revalidate = 60;");
+    expect(page).not.toMatch(/searchParams/);
     // No board on the front page: no groups, no day cards, no launch rows.
     for (const gone of ["groups.map", "GroupCard", "FeedRow", "feedIsEmpty", "launches/${"]) {
       expect([gone, page.includes(gone)]).toEqual([gone, false]);
     }
     expect(existsSync(resolve(APP_DIR, "feed/feed.tsx"))).toBe(false);
-    const list = read("feed/builds.tsx");
-    expect(list).toContain("<SortControl current={order} />");
-    expect(list).toContain("<BuildTile key={card.slug} card={card}");
-    // The tile invents nothing a card does not carry: no rank, no comment
-    // count, the listing's own public total on the vote box.
-    const tile = read("feed/build-tile.tsx");
-    expect(tile).toContain("size={72} phoneSize={52}");
-    expect(tile).toContain("text-[22px]");
-    expect(tile).toContain("count={endorsementsOf(card)}");
-    expect(tile).not.toContain("#discussion");
-    expect(tile).not.toContain('"use client"');
+  });
+
+  it("the view is titled Products, with one h1, the count beside it and the sort", () => {
+    const view = read("feed/products-view.tsx");
+    expect(view.match(/<h1\b/g)).toHaveLength(1);
+    expect(view).toContain("<h1 className={PAGE_TITLE}>Products</h1>");
+    expect(view).toContain("{productsCountLine(products.count, products.belowFloor)}");
+    expect(view).toContain("<SortMenu current={sort} />");
+    expect(view).toContain("sort={<SortControl current={sort} />}");
+    // The default sort is the catalogue's first page, continued by cursor;
+    // any other sort is the whole catalogue, ordered by the contract.
+    expect(view).toContain("const directory = await fetchDirectoryPage();");
+    expect(view).toContain("const all = await fetchAllDirectoryProjects();");
+    expect(view).toContain("orderBuilds(directory.projects, sort)");
+    expect(view).toContain("orderBuilds(all, sort)");
+    expect(view).toContain("ordered.slice(0, BUILD_ORDER_PAGE_SIZE)");
+    // The stage filter and the milestone bar arrive with OPR2: not drawn, and
+    // not faked.
+    expect(code("feed/products-view.tsx")).not.toMatch(/Shipping|Ideas|aria-label="Product stages"/);
+  });
+
+  it("the card is the board's: face, name, category, facts, pitch, seats and Follow", () => {
+    const card = read("feed/product-card.tsx");
+    expect(card).toContain("<ProductTile slug={card.slug} thumbnail={card.thumbnail} size={44} />");
+    expect(card).toContain("text-card-title font-semibold");
+    expect(card).toContain("{productFacts(card)}");
+    // Two lines of pitch at most.
+    expect(card).toContain("line-clamp-2");
+    // The seats link is drawn only when a seat is open, and goes to Help wanted.
+    expect(card).toMatch(/card\.roleOpeningCount > 0 \? \(\s*<AppLink\s+href="\/help-wanted"/);
+    expect(card).toContain("{openSeatsLabel(card.roleOpeningCount)}");
+    // Follow follows the LISTING, through the overlay.
+    expect(card).toContain("<FollowProduct slug={card.slug} returnTo={returnTo} />");
+    const follow = read("feed/follow-product.tsx");
+    expect(follow).toContain('followKey({ kind: "listing", value: slug })');
+    expect(follow).toContain('useToggle("follows", key, !following)');
+    expect(follow).toContain("aria-pressed={following}");
+    // The card invents nothing: no rank, no comment count, no stage, no vote.
+    expect(card).not.toContain("#discussion");
+    expect(code("feed/product-card.tsx")).not.toMatch(/VoteBox|Shipping|Idea\b/);
+    expect(card).not.toContain('"use client"');
     expect(existsSync(resolve(APP_DIR, "feed/card-row.tsx"))).toBe(false);
+    // The old tile's name is gone with its last importer — one card, one name.
+    expect(existsSync(resolve(APP_DIR, "feed/build-tile.tsx"))).toBe(false);
   });
 
-  it("each tile names its three figures once and shows the number (CL-R3, CL-R4)", () => {
-    expect(BUILD_TILE_LABEL).toEqual({ changes: "Changes · 7d", upvotes: "Upvotes · 7d", roles: "Roles open" });
-    const tile = read("feed/build-tile.tsx");
-    expect(tile).toContain("mergesOf(card)");
-    // A dash for a repo we did not read — never a zero (OPC-C).
-    expect(tile).toContain("changes === null ? DASH : changes");
-    expect(tile).toContain("{recentEndorsementsOf(card)}");
-    expect(tile).toContain("{card.roleOpeningCount}");
-    for (const label of ["{BUILD_TILE_LABEL.changes}", "{BUILD_TILE_LABEL.upvotes}", "{BUILD_TILE_LABEL.roles}"]) {
-      expect(tile).toContain(label);
-    }
-    // The sentences the row repeated beside every number are gone.
-    expect(tile).not.toContain("changes this week");
-    expect(tile).not.toContain("roles open\"");
-    expect(tile).not.toContain("contributors wanted");
-    // Two lines of tagline at most.
-    expect(tile).toContain("line-clamp-2");
+  it("the card's facts say what was observed, and leave out what was not (OPC-C)", () => {
+    const card = (metrics: Array<{ key: string; value: number }>) => ({ metrics }) as unknown as PublicProfileCard;
+    expect(productFacts(card([{ key: "merges.7d", value: 12 }, { key: "endorsements.7d", value: 3 }]))).toBe(
+      "12 changes · 3 upvotes · 7 days",
+    );
+    expect(productFacts(card([{ key: "merges.7d", value: 1 }, { key: "endorsements.7d", value: 1 }]))).toBe(
+      "1 change · 1 upvote · 7 days",
+    );
+    // A repository nobody read is not zero changes: the fact is absent.
+    expect(productFacts(card([]))).toBe("0 upvotes · 7 days");
+    expect(openSeatsLabel(1)).toBe("1 open seat");
+    expect(openSeatsLabel(2)).toBe("2 open seats");
   });
 
-  it("the sort control is four links, Most active first, each its own cacheable address", () => {
+  it("the sort control is three links, the default first, and never a client re-sort", () => {
     expect([...BUILD_ORDERS]).toEqual(["most-active", "newest", "upvoted", "roles"]);
-    expect(BUILD_ORDERS.map((o) => BUILD_ORDER_LABEL[o])).toEqual(["Most active", "Newest", "Upvoted", "Roles"]);
-    expect(buildOrderPath("most-active")).toBe("/");
-    expect(buildOrderPath("roles")).toBe("/builds/roles");
+    expect([...PRODUCT_SORTS]).toEqual(["most-active", "newest", "upvoted"]);
+    expect(PRODUCT_SORTS.map((sort) => PRODUCT_SORT_LABEL[sort])).toEqual(["Most active", "Newest", "Upvoted"]);
     const control = read("feed/sort-control.tsx");
-    expect(control).toContain("href={buildOrderPath(order)}");
-    expect(control).toContain('aria-current={on ? "page" : undefined}');
+    expect(control.match(/href=\{productsPath\(sort\)\}/g)).toHaveLength(2);
+    expect(control).toContain('aria-current={sort === current ? "page" : undefined}');
     expect(control).not.toContain('"use client"');
-    // A query string would make the document dynamic (UV2's finding).
-    const orders = read("builds/[order]/page.tsx");
-    expect(orders).toContain("export const revalidate = 60;");
-    // Not `dynamicParams = false`: the incremental cache starts each deploy
-    // empty, so Next would 404 every order (it did, in production).
-    expect(orders).not.toMatch(/export const dynamicParams/);
-    expect(orders).toContain("if (!isBuildOrder(order) || order === \"most-active\") notFound();");
-    expect(orders).toContain("BUILD_ORDER_SEGMENTS.map((order) => ({ order }))");
-    expect(orders).not.toMatch(/searchParams/);
-    expect(read("page.tsx")).not.toMatch(/searchParams/);
+    // The phone's control opens without JavaScript.
+    expect(control).toContain("<details data-product-sort-menu");
+    expect(control).not.toMatch(/endorse/);
   });
 
-  it("the directory and the board index are redirects to `/`, issued at the edge", () => {
-    expect(existsSync(resolve(APP_DIR, "products/page.tsx"))).toBe(false);
+  it("the board index is a redirect to `/`, issued at the edge, and the faceted directory is gone", () => {
     expect(existsSync(resolve(APP_DIR, "launches/page.tsx"))).toBe(false);
     expect(existsSync(resolve(APP_DIR, "list/directory.tsx"))).toBe(false);
     const config = readFileSync(resolve(APP_DIR, "../../next.config.mjs"), "utf-8");
-    expect(config).toContain('{ source: "/products", destination: "/", permanent: true }');
     expect(config).toContain('{ source: "/launches", destination: "/", permanent: true }');
     // A day's own board survives as the archive, outside the nav.
     expect(existsSync(resolve(APP_DIR, "launches/[day]/page.tsx"))).toBe(true);
   });
 
-  it("the front page is canonical at `/`, and the sitemap names no second list", () => {
+  it("`/products` is the same view in the default sort, and each other sort is the same view at its own path", () => {
+    const products = read("products/page.tsx");
+    expect(products).toContain(
+      "<ProductsView sort={DEFAULT_PRODUCT_SORT} returnTo={productsPath()} retryHref={productsPath()} />",
+    );
+    const sorted = read("products/by/[order]/page.tsx");
+    expect(sorted).toContain("const sort = productSortOfSegment((await params).order);");
+    expect(sorted).toContain("<ProductsView sort={sort} returnTo={productsPath(sort)} retryHref={productsPath(sort)} />");
+    // No page of the list reads `searchParams` — one that did would be
+    // dynamic, and the `revalidate` beside it accepted and ignored. Each is
+    // a static document on the site's minute (the census's STATIC and ISR
+    // classes), and still resolves no actor (I6).
+    for (const page of [products, sorted]) {
+      const source = page.replace(/\/\*[\s\S]*?\*\//g, "");
+      expect(source).toMatch(/^export const revalidate = 60;$/m);
+      expect(source).not.toContain("searchParams");
+      expect(source).not.toMatch(/cookies\(|headers\(|readSession/);
+    }
+    // Not a redirect — a redirect and a page at one address would be the
+    // redirect winning, and the pill landing on `/`. The ONE entry that
+    // names `/products` as a source is conditional on `?sort=`: the query
+    // form the sort had for a few hours, sent on to the path.
+    const config = readFileSync(resolve(APP_DIR, "../../next.config.mjs"), "utf-8");
+    const sources = config.match(/source: "\/products",[\s\S]*?permanent: true,?\s*\}/g) ?? [];
+    expect(sources).toHaveLength(1);
+    expect(sources[0]).toContain('has: [{ type: "query", key: "sort", value: "(?<order>newest|upvoted)" }]');
+    expect(sources[0]).toContain('destination: "/products/by/:order"');
+    expect(sources[0]).toContain("permanent: true");
+  });
+
+  it("each list address is canonical at itself, and the sitemap names both", () => {
     expect(read("page.tsx")).toContain("${publicApexOrigin()}/`");
-    expect(read("sitemap.xml/route.ts")).not.toContain('{ path: "products"');
+    // The default list says `/products`; a sort's canonical is its own
+    // address, and being a page of its own it is in the sitemap too.
+    expect(read("products/page.tsx")).toContain("alternates: { canonical: `${origin}${productsPath()}` }");
+    expect(read("products/by/[order]/page.tsx")).toContain("alternates: { canonical: `${origin}${productsPath(sort)}` }");
+    expect(read("sitemap.xml/route.ts")).toContain('{ path: "products", lastmod: null }');
+    expect(read("sitemap.xml/route.ts")).toContain(
+      "...PRODUCT_ORDER_SEGMENTS.map((order) => ({ path: productsPath(order).slice(1), lastmod: null })),",
+    );
+  });
+
+  it("Help wanted is its own page of seats, and the old address redirects", () => {
+    const page = read("help-wanted/page.tsx");
+    expect(page.match(/<h1\b/g)).toHaveLength(1);
+    expect(page).toContain("<h1 className={PAGE_TITLE}>Help wanted</h1>");
+    // The products with a seat open come from the contract's Roles order.
+    expect(page).toContain('orderBuilds(cards, "roles")');
+    expect(page).toContain("<SeatCard key={seat.id} seat={seat} action={seatAction(seat, { consoleOrigin: origin })} />");
+    expect(page).toContain("export const revalidate = 60;");
+    expect(page).toContain("${publicApexOrigin()}/help-wanted`");
+    expect(page).not.toMatch(/searchParams|cookies\(|headers\(/);
+    const config = readFileSync(resolve(APP_DIR, "../../next.config.mjs"), "utf-8");
+    expect(config).toContain('{ source: "/builds/roles", destination: "/help-wanted", permanent: true }');
+    expect(read("sitemap.xml/route.ts")).toContain('{ path: "help-wanted", lastmod: null }');
   });
 
   it("distinguishes a failed read from an empty catalogue", () => {
-    const page = read("page.tsx");
+    const view = read("feed/products-view.tsx");
     // An empty room and a locked door look nothing alike to a visitor (OD5).
-    expect(page).toContain("cards === null ? (");
-    expect(page).toContain("<FailurePanel");
-    expect(read("feed/builds.tsx")).toContain("BUILD_ORDER_EMPTY[order]");
+    expect(view).toContain("if (products === null) {");
+    expect(view).toContain("<FailurePanel");
+    expect(read("feed/product-list.tsx")).toContain("{searching ? noProductsMatch(query) : PRODUCTS_EMPTY}");
+    expect(PRODUCTS_EMPTY).toBe("No products are listed yet.");
   });
 });
 
 describe("nothing on the page decides an order (OL-2a)", () => {
   it("neither the page nor the list sorts, ranks or compares a count — the contract does", () => {
-    for (const file of ["page.tsx", "feed/builds.tsx", "feed/build-tile.tsx", "feed/more-builds.tsx", "builds/[order]/page.tsx"]) {
+    for (const file of [
+      "page.tsx",
+      "products/page.tsx",
+      "feed/products-view.tsx",
+      "feed/products.ts",
+      "feed/product-card.tsx",
+      "feed/product-list.tsx",
+      "help-wanted/page.tsx",
+      "help-wanted/seats.ts",
+    ]) {
       const source = read(file);
       expect([file, /\.sort\(/.test(source)]).toEqual([file, false]);
       expect([file, /\brankBoard\b/.test(source)]).toEqual([file, false]);
@@ -265,7 +345,7 @@ describe("the row is the design's own measurements", () => {
     // The vote box's own measurements moved with the box at UV0 — it is a
     // control both this row and the product page draw, so its numbers live in
     // one file rather than in two that have to stay in step. 58×58, radius
-    // 12, the mark at 11px over Geist Mono 14px: the design's box.
+    // 12, the mark at 11px over IBM Plex Mono 14px: the design's box.
     const box = read("ui/vote-box.tsx");
     for (const measurement of ["h-[52px] w-[52px]", "rounded-[10px]", "text-[14px]"]) {
       expect([measurement, box.includes(measurement)]).toEqual([measurement, true]);
@@ -283,7 +363,7 @@ describe("the row is the design's own measurements", () => {
     // The count is the day's, identical for every reader; the visitor's own
     // vote state arrives after paint from the overlay (UV0, I6).
     expect(row).not.toContain('"use client"');
-    expect(read("feed/builds.tsx")).not.toContain('"use client"');
+    expect(read("feed/products-view.tsx")).not.toContain('"use client"');
     expect(read("page.tsx")).not.toContain('"use client"');
   });
 });
@@ -322,27 +402,41 @@ describe("no link promises a directory that no longer exists", () => {
     for (const file of [
       "not-found.tsx",
       "submit/page.tsx",
-      "me/saved/page.tsx",
-      "me/applications/page.tsx",
+      // The saved list and the applications are sections of `/me` since
+      // openproduct-redesign OPR1; the links they drew are in these two.
+      "me/page.tsx",
+      "me/sections.tsx",
       "shell/palette.tsx",
       "shell/palette-rows.ts",
       "[slug]/page.tsx",
       "topics/page.tsx",
       "topics/[topic]/page.tsx",
-      "launches/[day]/page.tsx",
     ]) {
       const source = read(file);
       expect([file, /href="\/products"|"\/products\?|DIRECTORY_PATH|topicDirectoryPath/.test(source)]).toEqual([file, false]);
     }
   });
 
-  it("the wordmark and the Products pill both point at the root, because the root is the list", () => {
+  it("a day's board says where its list lives now: Products, at /products", () => {
+    // Its breadcrumb read "Launches" and went to `/` — the board index that
+    // folded into the front page. Since openproduct-redesign OPR1 `/` is the
+    // feed and `/products` is a page again (no hop), so the trail names the
+    // section the day's products belong to, in the nav's own word, and the
+    // structured trail beside it says the same thing.
+    const day = code("launches/[day]/page.tsx");
+    expect(day).toMatch(/<AppLink href="\/products" className=\{`tap \$\{LINK_QUIET\}`\}>\s*Products\s*<\/AppLink>/);
+    expect(day).toContain('{ name: "Products", path: "/products" },');
+    expect(day).not.toMatch(/DIRECTORY_PATH|topicDirectoryPath/);
+  });
+
+  it("the wordmark and the Feed pill point at the root; Products has an address of its own", () => {
     expect(read("shell/top-panel.tsx")).toContain('href="/"');
     const shell = read("shell/shell.ts");
-    // PL0 — the label is the list's name; the id stays, because `sectionFor`
-    // and the archive's paths key on it. OB1 — the list is the builds.
-    expect(shell).toContain('{ id: "launches", label: "Builds", href: "/", status: "live", icon: "build" }');
-    expect(shell).not.toContain('"/products"');
+    // OPR1 — the header is Feed, Products, Help wanted. `/products` is in
+    // the shell again, and this time it is a page (above), not a promise.
+    expect(shell).toContain('{ id: "feed", label: "Feed", href: "/", icon: "feed" }');
+    expect(shell).toContain('{ id: "products", label: "Products", href: "/products", icon: "products" }');
+    expect(existsSync(resolve(APP_DIR, "products/page.tsx"))).toBe(true);
   });
 });
 
@@ -403,15 +497,15 @@ describe("the ordinal", () => {
 
 describe("OS5 — the catalogue's moment is on the page", () => {
   it("the heading's line says when the catalogue was computed, from the contract, and says nothing on the live join", () => {
-    const source = read("feed/builds.tsx");
-    // The line beside the control is the count, the order and the moment.
-    expect(source).toContain("buildsMeta(order, builds.length, belowFloor, total)");
-    expect(source).toContain("catalogueMomentCopy(computedAt)");
+    const source = read("feed/products-view.tsx");
+    // The line beside the title is the count and the moment.
+    expect(source).toContain("{productsCountLine(products.count, products.belowFloor)}");
+    expect(source).toContain("catalogueMomentCopy(products.computedAt)");
     expect(source).toContain("data-catalogue-moment");
-    expect(source).toMatch(/<time dateTime=\{computedAt \?\? undefined\}/);
+    expect(source).toMatch(/<time dateTime=\{products\.computedAt \?\? undefined\}/);
     expect(catalogueMomentCopy(null)).toBeNull();
-    // The page hands the directory's moment through; the cursor page renders it the same way.
-    expect(read("page.tsx")).toContain("computedAt={directory?.computedAt ?? null}");
+    // The view reads the directory's moment; the cursor page renders it the same way.
+    expect(source).toContain("computedAt: directory.computedAt,");
     expect(read("products/[cursor]/page.tsx")).toContain("catalogueMomentCopy(page.computedAt)");
   });
 });

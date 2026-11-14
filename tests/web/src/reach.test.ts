@@ -101,9 +101,15 @@ describe("the sitemap reaches the boards and the forum", () => {
     expect(sitemap).toContain("path: `launches/${entry.day}`");
   });
 
-  it("lists the front page's other orders, and none of the leaderboard's ranges (OB7)", () => {
-    // The leaderboard folded into the Upvoted order and redirects there.
-    expect(sitemap).toContain("BUILD_ORDER_SEGMENTS.map((order) => ({ path: `builds/${order}`, lastmod: null }))");
+  it("lists Products and Help wanted, and none of the addresses that redirect (OB7, OPR1)", () => {
+    // The leaderboard folded into the Upvoted order and redirects there. At
+    // openproduct-redesign OPR1 the orders themselves moved: Newest and
+    // Upvoted are sorts of the Products page, Roles is the Help wanted
+    // section, and every `/builds/{order}` address redirects. A sitemap
+    // names where a page lives, never an address that redirects.
+    expect(sitemap).not.toMatch(/builds\//);
+    expect(sitemap).toContain('{ path: "help-wanted", lastmod: null }');
+    expect(sitemap).toContain('{ path: "products", lastmod: null }');
     expect(sitemap).not.toContain('{ path: "leaderboard", lastmod: null }');
   });
 

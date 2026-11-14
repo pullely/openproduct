@@ -97,13 +97,19 @@ const TOKENS = [
   ["--success-soft", "--success-soft"],
 ];
 
-/** The three faces OL-9 replaced the system stack with, and where each is
- *  supposed to speak. Compared as COMPUTED font-family on a real element,
- *  because a variable that is declared and never applied is the failure this
- *  catches. */
+/** The faces, and where each is supposed to speak. Compared as COMPUTED
+ *  font-family on a real element, because a variable that is declared and
+ *  never applied is the failure this catches.
+ *
+ *  THESE ARE THE REDESIGN'S (openproduct-redesign OPR1), not the launch
+ *  artboard's: Hanken Grotesk took Geist's place and Lora took Newsreader's.
+ *  The token half of this report still reads the LAUNCH artboard, which the
+ *  redesign's boards supersede — so from OPR1 on its mismatches are the
+ *  redesign's palette showing up, and it stays what it always was, a report
+ *  and not a gate. */
 const FACES = [
-  { role: "body", selector: "body", expect: "Geist" },
-  { role: "display", selector: "h1", expect: "Newsreader" },
+  { role: "body", selector: "body", expect: "Hanken Grotesk" },
+  { role: "display", selector: "h1", expect: "Lora" },
 ];
 
 /** `oklch(0.985 0.004 80)` and `0.985 0.004 80` are the same colour written

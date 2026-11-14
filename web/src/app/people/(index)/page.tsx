@@ -4,16 +4,14 @@ import {
   collectionPageJsonLd,
   ASKING_HEADING,
   DIRECTORY_ELIGIBILITY_NOTE,
-  askingAllLabel,
   askingPreview,
-  buildOrderPath,
   listingsAsking,
 } from "@openproduct/contracts";
 
 import { fetchContributorsDirectory, fetchPublicDirectory, publicApexOrigin } from "../../public-api";
 import { JsonLd } from "../../ui/json-ld";
 import { LIST_CARDS, listOpenGraph } from "../../ui/og";
-import { CARD, H2, HEAD_META, PAGE, PAGE_HEAD, PAGE_TITLE } from "../../ui/design";
+import { CARD, EMPTY_NOTE, H2, HEAD_META, PAGE, PAGE_HEAD, PAGE_TITLE } from "../../ui/design";
 import { RoleIcon } from "../../ui/icons";
 import { AppLink } from "../../ui/link";
 import { PeopleList } from "../people-list";
@@ -102,14 +100,14 @@ export default async function ContributorsPage() {
           // THE READ FAILED. Not "nobody is here" — an empty room and a locked
           // door look nothing alike to a visitor, and this page should not have
           // to guess (the OD5 finding, kept).
-          <p className="m-0 rounded-[20px] border border-dashed border-border px-6 py-12 text-center text-[15px] text-muted-foreground">
+          <p className={EMPTY_NOTE}>
             Couldn&rsquo;t load the directory just now. It is worth another try in a moment.
           </p>
         ) : contributors.length === 0 ? (
           // AND THIS IS THE HONEST EMPTY. We read a complete record and found
           // nobody — which on a young estate is a true and unembarrassing thing
           // to say, and it comes with the reason rather than a shrug.
-          <p className="m-0 rounded-[20px] border border-dashed border-border px-6 py-12 text-center text-[15px] text-muted-foreground">
+          <p className={EMPTY_NOTE}>
             Nobody has published a profile yet. A profile appears here once somebody who maintains
             a listed product chooses to make theirs public.
           </p>
@@ -146,31 +144,35 @@ export default async function ContributorsPage() {
                 {asking.length} {asking.length === 1 ? "listing" : "listings"} with a role open
               </span>
             </div>
-            <AppLink href={buildOrderPath("roles")} className="tap text-[14px] font-medium text-copy underline underline-offset-4 hover:text-foreground">
-              {askingAllLabel(asking.length)} →
+            {/* OPR1 — the builds asking for people are the Help wanted
+                section, at its own address; the link says where it goes in
+                the site's word for it (the contract's label still says
+                "Roles", the order's old name). */}
+            <AppLink href="/help-wanted" className="tap text-[13px] font-semibold text-link no-underline hover:underline hover:underline-offset-[3px]">
+              {asking.length === 1 ? "See it in Help wanted" : `See all ${asking.length} in Help wanted`} →
             </AppLink>
           </div>
           <ul className={`m-0 list-none p-0 ${CARD}`}>
             {askingPreview(asking).map((listing) => (
               <li
                 key={listing.slug}
-                className="relative flex items-center gap-4 border-t border-line px-7 py-[18px] transition-colors first:border-t-0 hover:bg-accent max-sm:px-5"
+                className="relative flex items-center gap-4 border-t border-line px-[22px] py-4 transition-colors first:border-t-0 hover:bg-accent max-sm:px-[14px]"
               >
                 <span className="min-w-0 flex-1">
                   <AppLink
                     href={`/${listing.slug}#people-wanted`}
-                    className="block text-[16px] font-semibold tracking-[-0.01em] text-foreground after:absolute after:inset-0 after:content-[''] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+                    className="block text-[15px] font-semibold text-foreground after:absolute after:inset-0 after:content-[''] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
                   >
                     {listing.slug}
                   </AppLink>
                   {listing.tagline ? (
-                    <span className="mt-0.5 block truncate text-[14.5px] text-muted-foreground">{listing.tagline}</span>
+                    <span className="mt-0.5 block truncate text-[15px] text-muted-foreground">{listing.tagline}</span>
                   ) : null}
                 </span>
                 {/* The count is the maintainers' own — authored, and nothing
                     observes whether a role is still needed. The seat is the
                     site's one glyph for an open role. */}
-                <span className="inline-flex shrink-0 items-center gap-1.5 text-[15px] font-medium tabular-nums text-success">
+                <span className="inline-flex shrink-0 items-center gap-1.5 text-[15px] font-medium tabular-nums text-seat-ink">
                   <RoleIcon className="h-4 w-4 shrink-0" />
                   {listing.roleOpeningCount}
                   <span className="sr-only">{listing.roleOpeningCount === 1 ? " role open" : " roles open"}</span>

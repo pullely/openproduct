@@ -7,17 +7,20 @@
 //     openproduct page that is allowed to be
 //   - no sentence is written here; every one comes from the contract
 //   - reading the page writes nothing — the cursor moves on a POST and only on
-//     a POST
+//     a POST; switching the subset shown is a link
+//   - the tabs are the subsets today's kinds allow, and a row offers only the
+//     action its kind has (openproduct-redesign OPR1, board `Activity`)
 //   - the badge shows nothing rather than zero while the overlay is loading
 //   - the unread dot carries a word, not only a colour
 
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 import {
   INBOX_BADGE_CAP,
   INBOX_EMPTY,
+  INBOX_KINDS,
   INBOX_MARK_READ,
   inboxBadge,
   inboxHref,
@@ -35,7 +38,7 @@ const markupOf = (file: string) =>
     .replace(/\/\*[\s\S]*?\*\//g, "")
     .replace(/^\s*\/\/.*$/gm, "");
 
-const page = () => read("me/notifications/page.tsx");
+const page = () => read("activity/page.tsx");
 const readRoute = () => read("me/notifications/read/route.ts");
 
 describe("the page that is about the reader", () => {
@@ -49,7 +52,32 @@ describe("the page that is about the reader", () => {
   });
 
   it("sends a signed-out reader to sign in, and back here afterwards", () => {
-    expect(page()).toContain("/signin?return_to=%2Fme%2Fnotifications");
+    // "Here" is `/activity` since openproduct-redesign OPR1: returning to
+    // the old address would work, through one more redirect.
+    // The door is built from the address being shown — `/activity`, or the
+    // subset of it — so somebody who signs in from Comments lands on Comments.
+    expect(page()).toContain('const here = TABS.find((t) => t.key === tab)?.href ?? "/activity";');
+    expect(page()).toContain("if (!session) redirect(signInFor(here));");
+    expect(read("me/section.ts")).toContain("return `/signin?return_to=${encodeURIComponent(path)}`;");
+    expect(page()).not.toContain("/me/notifications\"");
+    expect(page()).not.toContain("%2Fme%2Fnotifications");
+  });
+
+  it("lives at /activity, and the old address arrives there from the edge", () => {
+    // One implementation, one address. The page MOVED to `/activity` (no
+    // module is left at the old path to render a second copy), it is still
+    // uncached, and `/me/notifications` is a `redirects()` entry — issued
+    // before the renderer, so the status is a real 308 (the lesson `/create`
+    // taught, in next.config.mjs).
+    expect(existsSync(resolve(APP_DIR, "me/notifications/page.tsx"))).toBe(false);
+    expect(existsSync(resolve(APP_DIR, "activity/loading.tsx"))).toBe(true);
+    expect(page()).toContain('export const dynamic = "force-dynamic";');
+    const config = readFileSync(resolve(APP_DIR, "../../next.config.mjs"), "utf-8");
+    expect(config).toContain('{ source: "/me/notifications", destination: "/activity", permanent: true }');
+    // The form's POST target is a different path and is NOT redirected: a
+    // 308 would replay the POST at a page.
+    expect(config).not.toMatch(/source: "\/me\/notifications\/(?::|read)/);
+    expect(page()).toContain('action="/me/notifications/read"');
   });
 
   it("tells a failed read apart from an empty inbox (OD5)", () => {
@@ -57,17 +85,18 @@ describe("the page that is about the reader", () => {
     // the empty note. Printing "nothing yet" over a database that was down is
     // the one thing OD5 exists to stop.
     const src = page();
-    expect(src).toContain('result.kind === "unavailable"');
-    expect(src).toContain("MeUnavailable");
-    // The empty state is the short "Nothing yet." rather than INBOX_EMPTY's explanation.
-    expect(src).toContain("Nothing yet.");
+    expect(src).toContain('if (result.kind === "unavailable") return <MeUnavailable />;');
+    // The empty state is the board's one short line rather than INBOX_EMPTY's
+    // explanation — and it is also what an empty SUBSET says.
+    expect(src).toContain("Nothing here yet.");
+    expect(src).toContain("groups.length === 0 ?");
   });
 
   it("writes no sentence of its own", () => {
     // Every line a reader sees comes from the contract's phrasebook, so a
     // wording somebody regrets is a deploy rather than a backfill.
     expect(page()).toContain("inboxSentence(item)");
-    const markup = markupOf("me/notifications/page.tsx");
+    const markup = markupOf("activity/page.tsx");
     for (const phrase of ["replied", "reached #1", "launched in", "was upvoted"]) {
       expect(markup).not.toContain(phrase);
     }
@@ -89,7 +118,10 @@ describe("the page that is about the reader", () => {
 describe("reading is not a write", () => {
   it("moves the cursor on a POST and nowhere else", () => {
     const src = page();
-    expect(src).toContain('<form method="post" action="/me/notifications/read">');
+    expect(src).toContain('<form method="post" action="/me/notifications/read"');
+    // One form: the board puts the action opposite the title on a desktop and
+    // opposite the tabs on a phone, and that is placement, not a second form.
+    expect(src.match(/action="\/me\/notifications\/read"/g)?.length).toBe(1);
     // The page itself never marks. A GET that moved the cursor would make
     // opening the page destroy the thing the page is for.
     expect(src).not.toContain("markInboxRead");
@@ -97,10 +129,29 @@ describe("reading is not a write", () => {
     expect(readRoute()).toContain("export async function POST");
   });
 
-  it("offers the button only when there is something to mark", () => {
-    expect(page()).toContain("unread > 0");
-    expect(page()).toContain("INBOX_MARK_READ");
+  it("draws the button spent, and disabled, when there is nothing to mark", () => {
+    // The board keeps the control in its place and greys it rather than
+    // removing it, so the title row does not change shape with the count. A
+    // disabled submit posts nothing: the cursor still only moves when there
+    // is something to move it past.
+    expect(page()).toContain("disabled={unread === 0}");
+    expect(page()).toContain("disabled:cursor-default");
+    // The board's label on the page; the contract keeps its own for the
+    // surfaces that read it.
+    expect(page()).toContain('const MARK_ALL_READ = "Mark all read";');
     expect(INBOX_MARK_READ).toBe("Mark all as read");
+  });
+
+  it("switches the subset with links, which write nothing either", () => {
+    const markup = markupOf("activity/page.tsx");
+    expect(markup).toContain('{ key: "all", label: "All", href: "/activity" }');
+    expect(markup).toContain('{ key: "comments", label: "Comments", href: "/activity?show=comments" }');
+    expect(markup).toContain('{ key: "launches", label: "Launches", href: "/activity?show=launches" }');
+    expect(markup).toContain('<nav aria-label="Show"');
+    expect(markup).toContain('{ "aria-current": "page" as const }');
+    // No script and no button: a tab is an address.
+    expect(markup).not.toContain('"use client"');
+    expect(markup).not.toMatch(/aria-pressed|onClick/);
   });
 
   it("returns a 303 to the same page rather than rendering its own", () => {
@@ -108,7 +159,8 @@ describe("reading is not a write", () => {
     // on this estate.
     const src = readRoute();
     expect(src).toContain("303");
-    expect(src).toContain('new URL("/me/notifications", request.url)');
+    // The page's address is `/activity` since OPR1.
+    expect(src).toContain('new URL("/activity", request.url)');
   });
 
   it("does not invent a page state for a mark that failed", () => {
@@ -140,12 +192,57 @@ describe("the badge", () => {
     const chip = read("shell/account-chip.tsx");
     expect(chip).toContain("overlay.overlay.unread");
     const shell = read("shell/shell.ts");
-    expect(shell).toContain('href: "/me/notifications"');
-    expect(shell).toContain('countKey: "unread"');
+    expect(shell).toContain('export const ACTIVITY_PATH = "/activity";');
+    expect(shell).toContain('href: ACTIVITY_PATH, countKey: "unread"');
+    // The header's bell and the phone's Activity tab wear a DOT fed by the
+    // same read, and nothing until it answers.
+    const bell = read("shell/notification-bell.tsx");
+    expect(bell).toContain("unreadCount(useOverlay(");
+    expect(bell).toContain("href={ACTIVITY_PATH}");
+    expect(bell).toMatch(/unread > 0 \? <UnreadDot/);
   });
 
-  it("appears in the contributor's own nav beside the other personal pages", () => {
-    expect(read("me/nav.tsx")).toContain('item("notifications", "/me/notifications", "Notifications")');
+  it("is reached from the chrome, not from a strip of tabs on the profile", () => {
+    // The strip of `/me` tabs that listed Notifications went with the pages
+    // it switched between (openproduct-redesign OPR1): the profile's switcher
+    // holds what you HOLD, and the inbox is the header's bell and the phone's
+    // fourth tab — both asserted above.
+    expect(read("me/nav.tsx")).not.toContain('"/activity"');
+    expect(read("shell/shell.ts")).toContain('export const ACTIVITY_PATH = "/activity";');
+  });
+});
+
+describe("the board's rows, from today's kinds (OPR1)", () => {
+  const markup = () => markupOf("activity/page.tsx");
+
+  it("sorts every kind into a subset and a tile, so a new kind cannot arrive unsorted", () => {
+    // `Record<InboxKind, …>` is what makes that a build failure; this pins
+    // that both maps ARE keyed on the contract's own list.
+    expect(markup()).toContain('const SUBSET_OF: Record<InboxKind, "comments" | "launches"> = {');
+    expect(markup()).toContain("const TILE_OF: Record<InboxKind, { glyph: string; tile: string }> = {");
+    for (const kind of INBOX_KINDS) {
+      expect(markup().match(new RegExp(`"${kind.replace(".", "\\.")}":`, "g"))?.length).toBe(2);
+    }
+  });
+
+  it("groups them Today and Earlier, with the time on every row", () => {
+    expect(markup()).toContain('{ label: "Today", rows: shown.filter(isToday) }');
+    expect(markup()).toContain('{ label: "Earlier", rows: shown.filter((item) => !isToday(item)) }');
+    // A group with nothing in it is not drawn.
+    expect(markup()).toContain(".filter((group) => group.rows.length > 0)");
+    expect(markup()).toContain("<time dateTime={item.createdAt}");
+    expect(markup()).toContain("agoOf(item.createdAt, now)");
+  });
+
+  it("offers no action a kind does not have", () => {
+    // The board draws Accept / Decline on a seat request and Review on a
+    // finished demo. No notification kind carries either today, so the page
+    // has one form — the read action — and every row's one link.
+    for (const absent of ["Accept", "Decline", "Review"]) {
+      expect(markup()).not.toContain(absent);
+    }
+    expect(markup().match(/<form\b/g)?.length).toBe(1);
+    expect(INBOX_KINDS.some((kind) => /seat|demo/.test(kind))).toBe(false);
   });
 });
 

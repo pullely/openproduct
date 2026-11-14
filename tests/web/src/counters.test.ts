@@ -33,8 +33,8 @@ describe("the counter comes from the list it sits on", () => {
   it.each([
     // page, the expression that produces the number, the array it renders
     // HB0 — the second number is the same array read once more (WC2-6).
-    // OB4 — the builds list counts the array it maps.
-    ["feed/builds.tsx", "buildsMeta(order, builds.length, belowFloor, total)", "builds.map"],
+    // OPR1 — the product list counts the array it maps (what the search kept).
+    ["feed/product-list.tsx", "productsShownLine(shown.length,", "shown.map"],
     ["people/[handle]/page.tsx", "profile.maintains.length", "listings={profile.maintains}"],
     ["collections/[slug]/page.tsx", "visibleCount(", "items.map"],
   ])("%s counts what it renders", (file, counter, list) => {
@@ -69,7 +69,8 @@ describe("a number that cannot agree says why", () => {
     const page = code("people/[handle]/page.tsx");
     const view = code("people/[handle]/maker-view.tsx");
     expect(page).not.toContain("launchedVsMaintainsNote(");
-    expect(page).toContain("<ListingRows listings={profile.maintains} />");
+    // (OPR1: the list is the board's product rows.)
+    expect(page).toContain("<ProductRows listings={profile.maintains} />");
     expect(view).toContain("value={person.maintains.length}");
     expect(view).toContain("builds={person.maintains.length}");
   });

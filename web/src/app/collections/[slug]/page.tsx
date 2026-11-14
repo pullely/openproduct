@@ -24,7 +24,7 @@ import { ReportControl } from "../../ui/report-control";
 
 import { AppLink } from "../../ui/link";
 import { initialsOf } from "../../feed/tile";
-import { BADGE_WANTED, CARD, PAGE, PAGE_TITLE } from "../../ui/design";
+import { BADGE_SEAT, CARD, PAGE, PAGE_TITLE, TILE } from "../../ui/design";
 
 /**
  * `/collections/<slug>` (openproduct-commons LC4).
@@ -55,7 +55,7 @@ import { BADGE_WANTED, CARD, PAGE, PAGE_TITLE } from "../../ui/design";
 export const revalidate = 60;
 
 /** The design's way back to the index: 13.5px in `--muted`, `--fg` on hover. */
-const BACK = "inline-flex items-center gap-1.5 text-[13.5px] text-muted-foreground hover:text-foreground";
+const BACK = "inline-flex items-center gap-1.5 text-[13px] text-muted-foreground hover:text-foreground";
 
 /** XP4 — without this the `revalidate` above is accepted and ignored, and the
  *  route is served `no-store` to everybody. See the long note on the same
@@ -139,7 +139,7 @@ export default async function CollectionPage({
             {collection.blurb}
           </p>
         ) : null}
-        <div className="mt-3.5 flex items-center gap-2 text-[13.5px] text-muted-foreground">
+        <div className="mt-3.5 flex items-center gap-2 text-[13px] text-muted-foreground">
           <span
             aria-hidden="true"
             className="grid h-[24px] w-[24px] shrink-0 place-items-center rounded-full bg-secondary font-mono text-[10px] text-copy"
@@ -150,7 +150,7 @@ export default async function CollectionPage({
             Curated by{" "}
             <AppLink
               href={`/@${collection.curatorHandle}`}
-              className="text-foreground underline underline-offset-[3px]"
+              className="text-link underline underline-offset-[3px]"
             >
               @{collection.curatorHandle}
             </AppLink>{" "}
@@ -159,9 +159,9 @@ export default async function CollectionPage({
         </div>
       </header>
 
-      <div className="mt-[26px] min-w-0">
+      <div className="mt-8 min-w-0">
         {count === 0 ? (
-          <EmptyState says={COLLECTION_EMPTY_NOTE} why={COLLECTION_EMPTY_WHY} />
+          <EmptyState className={`px-6 py-8 ${TILE}`} says={COLLECTION_EMPTY_NOTE} why={COLLECTION_EMPTY_WHY} />
         ) : (
           // PRODUCTS, not launches: an item is a listing the curator chose,
           // whether or not it ever launched — and in the order they added
@@ -198,7 +198,7 @@ export default async function CollectionPage({
  * row rather than an 18px line of 15px text sitting 2px above a second link
  * to the same place — which is what axe's target-size rule measured once the
  * design shrank the name. The tagline is plain text for the reason
- * `build-tile.tsx` gives: under the stretch it was a second tab stop to the
+ * `product-card.tsx` gives: under the stretch it was a second tab stop to the
  * same address that nothing could press. The topic sits above the stretch.
  */
 function Row({ item }: { item: CollectionItem }) {
@@ -230,14 +230,14 @@ function Row({ item }: { item: CollectionItem }) {
             {/* Observed at publish, never a maintainer's claim (OPC-7). No
                 detected licence renders nothing rather than "unknown". */}
             {item.card.licence ? (
-              <span className="text-[12.5px] tracking-[0.04em] text-muted-foreground">
+              <span className="text-[13px] tracking-[0.04em] text-muted-foreground">
                 {item.card.licence}
               </span>
             ) : null}
             {/* CB2's demand line; zero is a fact, not a disappointment, so
                 it is simply not rendered. */}
             {item.card.roleOpeningCount > 0 ? (
-              <span className={BADGE_WANTED}>
+              <span className={BADGE_SEAT}>
                 {item.card.roleOpeningCount} {item.card.roleOpeningCount === 1 ? "contributor" : "contributors"}{" "}
                 wanted
               </span>
@@ -245,7 +245,7 @@ function Row({ item }: { item: CollectionItem }) {
           </div>
 
           {item.card.tagline ? (
-            <p className="m-0 mt-[2px] text-[13.5px] leading-[1.45] text-muted-foreground">{item.card.tagline}</p>
+            <p className="m-0 mt-[2px] text-[13px] leading-[1.45] text-muted-foreground">{item.card.tagline}</p>
           ) : null}
 
           {topicLabel || stackLine ? (
@@ -270,7 +270,7 @@ function Row({ item }: { item: CollectionItem }) {
           theirs rather than ours. Indented to the text column: 18px of
           padding, the 44px tile, the 14px gap. */}
       {item.note ? (
-        <blockquote className="m-0 mb-3.5 ml-[76px] mr-[18px] border-l-2 border-border pl-3.5 text-[14.5px] leading-[1.55] text-copy max-sm:ml-4">
+        <blockquote className="m-0 mb-3.5 ml-[76px] mr-[18px] border-l-2 border-line pl-3.5 text-[15px] leading-[1.55] text-copy max-sm:ml-4">
           {item.note}
         </blockquote>
       ) : null}

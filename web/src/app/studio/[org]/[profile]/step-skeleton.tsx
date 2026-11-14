@@ -6,7 +6,9 @@
 // router prefetches it with each tab ("auto"), so a click paints this at once
 // instead of leaving the last tab frozen until every read is back.
 
+import { PANEL } from "../../../ui/design";
 import { LoadingAnnouncement, Shimmer, ShimmerLine } from "../../../ui/skeleton";
+import { STEP_CARD } from "./step-card";
 
 export function StepSkeleton() {
   return (
@@ -14,16 +16,16 @@ export function StepSkeleton() {
       <LoadingAnnouncement what="this part of your listing" />
       <div className="grid min-w-0 gap-4">
         {[0, 1].map((i) => (
-          <section key={i} className="rounded-[12px] border border-border bg-card px-6 pb-5 pt-4 max-sm:px-4">
+          <section key={i} className={STEP_CARD}>
             <ShimmerLine width="w-[28%]" className="h-[18px]" />
             <ShimmerLine width="w-[88%]" className="mt-4" />
             <ShimmerLine width="w-[72%]" className="mt-2" />
-            <Shimmer className="mt-4 h-[38px] w-full" />
+            <Shimmer className="mt-4 h-[44px] w-full" />
           </section>
         ))}
       </div>
       <aside className="grid min-w-0 gap-4">
-        <div className="rounded-[12px] border border-border bg-card px-5 pb-[18px] pt-4">
+        <div className={PANEL}>
           <ShimmerLine width="w-[50%]" className="h-[16px]" />
           <ShimmerLine width="w-[80%]" className="mt-3" />
           <ShimmerLine width="w-[64%]" className="mt-2" />

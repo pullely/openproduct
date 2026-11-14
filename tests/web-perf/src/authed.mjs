@@ -122,7 +122,10 @@ export async function runAuthed(base) {
     {
       const context = await browser.newContext({ viewport: PASSES[0].viewport });
       const page = await context.newPage();
-      for (const path of ["/me", "/me/saved", "/me/export", "/studio", "/studio/reports"]) {
+      // OPR1 — `/me/settings` stands where `/me/saved` did: the saved list is
+      // a section of `/me` now, and its old address sends a signed-out
+      // visitor back to the SECTION rather than to itself.
+      for (const path of ["/me", "/me/settings", "/me/export", "/studio", "/studio/reports"]) {
         const res = await page.goto(base + path, { waitUntil: "load" });
         // `res` is the LAST response of the navigation: after an HTTP redirect
         // it is the sign-in page's 200, and `redirectedFrom()` says so. A page

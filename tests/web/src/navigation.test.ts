@@ -134,7 +134,7 @@ describe("the intent prefetch", () => {
     expect(link).toContain("prefetch = false");
   });
 
-  it("the palette's own push reports the click too", () => {
+  it("the header search's own push reports the click too", () => {
     const palette = code("shell/palette.tsx");
     expect(palette).toContain("navigationStarted(href, window.location.pathname + window.location.search)");
     expect(palette.indexOf("navigationStarted(")).toBeLessThan(palette.indexOf("router.push(href)"));
@@ -143,7 +143,9 @@ describe("the intent prefetch", () => {
 
 describe("viewport prefetch on the fixed set", () => {
   const sectionLinks = (source: string) =>
-    (source.match(/<AppLink\b[\s\S]*?>/g) ?? []).filter((link) => link.includes("href={section.href}"));
+    (source.match(/<AppLink\b[\s\S]*?>/g) ?? []).filter(
+      (link) => link.includes("href={section.href}") || link.includes("href={tab.href}"),
+    );
 
   it("is OFF on both bars and the wordmark — QE0's budget on the wire", () => {
     // OPP13 turned it on; the audit counted what it costs (four RSC
@@ -167,7 +169,7 @@ describe("viewport prefetch on the fixed set", () => {
   });
 
   it("stays off on a list row, whose cardinality is the catalogue's", () => {
-    for (const file of ["feed/feed-row.tsx", "feed/build-tile.tsx", "feed/more-builds.tsx", "people/people-list.tsx"]) {
+    for (const file of ["feed/feed-row.tsx", "feed/product-card.tsx", "feed/product-list.tsx", "help-wanted/seat-card.tsx", "people/people-list.tsx"]) {
       const links = code(file).match(/<AppLink\b[\s\S]*?>/g) ?? [];
       for (const link of links) {
         expect([file, /\bprefetch\b/.test(link)]).toEqual([file, false]);

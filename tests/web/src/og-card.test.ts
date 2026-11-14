@@ -80,8 +80,9 @@ function toOklch(hex: string) {
 
 describe("the converter, against the stylesheet's own recorded hexes", () => {
   // OL1 moved 164 colours from hex to OKLCH and WROTE THE ORIGINAL HEX BESIDE
-  // EACH ONE. Forty-five of those annotations survive in `globals.css`, which
-  // makes them a ground-truth corpus this repository already owns: forty-five
+  // EACH ONE, and OPR1 kept the habit when it re-derived the palette from the
+  // redesign's hexes. The annotations in `globals.css` are therefore a
+  // ground-truth corpus this repository already owns: ninety-six
   // independently-derived (L C H) → #rrggbb pairs that nothing in `ui/og.ts`
   // had any hand in producing.
   //
@@ -104,7 +105,9 @@ describe("the converter, against the stylesheet's own recorded hexes", () => {
     [1, 3, 5].map((at) => Number.parseInt(hex.slice(at, at + 2), 16));
 
   it("found the corpus, so a stylesheet that lost its annotations fails here", () => {
-    expect(PAIRS.length).toBeGreaterThan(30);
+    // The light ramp annotates its hexes and, since OPR1, so do the dark
+    // ramp's kind tokens: ninety-six pairs.
+    expect(PAIRS.length).toBeGreaterThan(90);
   });
 
   it("round-trips every stored triple through an independent inverse", () => {
@@ -135,44 +138,31 @@ describe("the converter, against the stylesheet's own recorded hexes", () => {
     expect(off).toEqual([]);
   });
 
-  it("lands on the hex each token was converted FROM, except where OL1's own conversion drifted", () => {
-    // ─── THE SLACK IS IN THE DATA, NOT THE CODE, AND HERE IS WHICH ────────
+  it("lands on the hex each token was converted FROM — every one of them", () => {
+    // ─── THE ANNOTATION IS A CHECK NOW, NOT A MEMORY ──────────────────────
     //
-    // Thirty-six of the forty-five annotations reproduce within two on 255.
-    // Nine do not, by up to seven — and that is NOT this converter: the
-    // assertion above shows it round-trips every stored triple to within
-    // 0.003 in OKLab. Put a stubborn hex through the same inverse and the
-    // disagreement is visible in the SOURCE: `#EBDDBB` is
-    // oklch(0.9001 0.0474 88.30), and the stylesheet stores
-    // (0.8938 0.0357 88.99) — a chroma out by a quarter.
+    // Until openproduct-redesign OPR1 nine annotations did not reproduce, by
+    // up to seven on 255: OL1's conversion had been lossy on them, each
+    // comment was the pre-conversion original rather than a check on the
+    // result, and the nine were pinned here as a list so a tenth could not
+    // join silently.
     //
-    // So OL1's conversion was lossy on these nine, and each comment is the
-    // pre-conversion original rather than a check on the result. Every one of
-    // them is a status or verdict colour rather than a surface, the drift is
-    // under a just-noticeable difference, and it is not worth reopening 164
-    // values over.
-    //
-    // THE SET IS PINNED RATHER THAN A TOLERANCE COUNTED, because a tolerance
-    // absorbs a tenth failure silently and a list does not: a colour that
-    // joins this group is a new fact about the palette and shows up here as
-    // one.
+    // OPR1 re-derived the palette from the redesign's hexes, each triple
+    // computed from the hex written beside it, and the last of the nine
+    // (`--tier-bronze`, which the redesign does not restyle) was recomputed
+    // from its own annotation. So the list is EMPTY, and it is still a list
+    // rather than a tolerance: a triple that drifts from its hex — a value
+    // nudged without its comment, a comment copied from another token — is a
+    // new fact about the palette and shows up here by name.
     const off = (limit: number) =>
       PAIRS.filter((pair) => {
         const got = channels(oklchToHex(...pair.oklch));
         return channels(pair.hex).some((want, at) => Math.abs(got[at]! - want) > limit);
       }).map((pair) => pair.token);
 
-    expect(off(2)).toEqual([
-      "--warning-soft-border",
-      "--warning-wash-soft",
-      "--info-strong",
-      "--warning-accent",
-      "--verdict-pass",
-      "--verdict-fail",
-      "--status-healthy",
-      "--tier-bronze",
-      "--run-failed-ink",
-    ]);
+    // Within one on 255: the triples are stored to four decimals, which is
+    // finer than a byte, so only rounding at a byte boundary is left.
+    expect(off(1)).toEqual([]);
     // And nothing anywhere is grossly wrong — a swapped matrix row or a
     // missing gamma step would move every colour by tens, not by sevens.
     expect(off(8)).toEqual([]);

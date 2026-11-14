@@ -79,6 +79,7 @@
 import { useRouter } from "next/navigation";
 import * as React from "react";
 
+import { TILE } from "../ui/design";
 import { blockerCopy } from "./publish-disclosure";
 import { noticeFromUrl, type StudioNotice, type StudioVocabulary } from "./notices";
 
@@ -332,10 +333,8 @@ function NoticeBanner({ notice, busy }: { notice: StudioNotice; busy: boolean })
     <p
       role="status"
       data-studio-notice={refused ? "refused" : "said"}
-      className={`m-0 mt-5 max-w-[70ch] rounded-[8px] border px-3.5 py-2.5 text-[14.5px] transition-opacity ${
-        refused
-          ? "border-warning-soft-border bg-warning-soft font-medium text-warning-strong"
-          : "border-border bg-card text-copy"
+      className={`m-0 mt-5 max-w-[70ch] rounded-[14px] px-3.5 py-2.5 text-[15px] transition-opacity ${
+        refused ? "bg-warning-soft font-medium text-warning-strong" : "bg-card text-copy"
       } ${busy ? "opacity-60" : ""}`}
     >
       {busy ? WORKING_MESSAGE : notice.message}
@@ -353,7 +352,7 @@ function Working() {
     <p
       role="status"
       data-studio-notice="working"
-      className="m-0 mt-5 max-w-[70ch] rounded-[8px] border border-border bg-card px-3.5 py-2.5 text-[14.5px] text-muted-foreground"
+      className="m-0 mt-5 max-w-[70ch] rounded-[14px] bg-card px-3.5 py-2.5 text-[15px] text-muted-foreground"
     >
       {WORKING_MESSAGE}
     </p>
@@ -365,9 +364,9 @@ function Blockers({ blockers }: { blockers: readonly { title: string; remedy: st
   return (
     <ul className="m-0 mt-5 grid max-w-[70ch] list-none gap-2 p-0">
       {blockers.map((blocker) => (
-        <li key={blocker.title} className="rounded-[12px] border border-border bg-card px-4 py-3.5">
-          <div className="text-[14.5px] font-medium text-foreground">{blocker.title}</div>
-          <p className="m-0 mt-1 text-[13.5px] leading-[1.5] text-muted-foreground">
+        <li key={blocker.title} className={`px-5 py-4 ${TILE}`}>
+          <div className="text-[15px] font-semibold text-foreground">{blocker.title}</div>
+          <p className="m-0 mt-1 text-[13px] leading-[1.5] text-muted-foreground">
             {blocker.remedy}
           </p>
         </li>

@@ -33,7 +33,7 @@ import {
 } from "@openproduct/contracts";
 
 import { fetchTransparency } from "../public-api";
-import { H2_SECTION, PAGE_SUBTITLE, PAGE_TITLE } from "../ui/design";
+import { H2_SECTION, PAGE_SUBTITLE, PAGE_TITLE, PANEL } from "../ui/design";
 import { FailurePanel } from "../ui/failure";
 
 import { AppLink } from "../ui/link";
@@ -93,7 +93,7 @@ const TP_LEDE = "m-0 mt-2 max-w-[68ch] text-[16px] leading-[1.6] text-copy";
 /** A note under a list: 14px/1.7 in `--muted`, 12px below. */
 const TP_NOTE = "m-0 mt-3 max-w-[68ch] text-[14px] leading-[1.7] text-muted-foreground";
 /** A count list: a `--border` rule above, 16px under the lede. */
-const TP_LIST = "m-0 mt-4 grid gap-0 border-t border-border";
+const TP_LIST = "m-0 mt-4 grid gap-0 border-t border-line";
 /** A count row: the label and its figure on one baseline, `10px 0`, a `--line` rule under. */
 const TP_ROW = "flex items-baseline justify-between gap-4 border-b border-line py-2.5";
 /** The label: 14.5px in `--foreground`. */
@@ -182,7 +182,7 @@ export default async function TransparencyPage() {
       <p className={`${TP_NOTE} mt-10`}>
         {TRANSPARENCY_APPEAL_INVITATION} It is offered beside every decision, in the studio for the
         listing it was about. The checks that run without a person are published at{" "}
-        <AppLink href="/docs/checks" className="underline underline-offset-4">
+        <AppLink href="/docs/checks" className="text-link underline underline-offset-4">
           /docs/checks
         </AppLink>
         .
@@ -211,7 +211,7 @@ function Judgement({ report }: { report: TransparencyReport }) {
   const rate = share(reversing, against);
 
   return (
-    <section data-transparency-figures className="mt-10 rounded-[20px] border border-border bg-card px-8 py-7 max-sm:px-5 max-sm:py-5">
+    <section data-transparency-figures className={`mt-10 ${PANEL}`}>
       <dl className="m-0 grid gap-6 sm:grid-cols-3">
         <Figure label="Acts taken against something" value={against} />
         <Figure label="Acts undone" value={reversing} />
@@ -228,8 +228,8 @@ function Judgement({ report }: { report: TransparencyReport }) {
 function Figure({ label, value }: { label: string; value: number | string }) {
   return (
     <div>
-      <dt className="text-[13px] leading-[1.45] text-faint">{label}</dt>
-      <dd className="m-0 mt-2 text-[30px] font-medium leading-none tracking-[-0.02em] tabular-nums text-foreground max-sm:text-[24px]">
+      <dt className="text-[13px] leading-[1.45] text-muted-foreground">{label}</dt>
+      <dd className="m-0 mt-2 text-title font-medium leading-none tracking-[-0.02em] tabular-nums text-foreground">
         {value}
       </dd>
     </div>

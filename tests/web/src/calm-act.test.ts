@@ -37,7 +37,7 @@ describe("the act is ink (CP-R1)", () => {
   });
 
   it("every button token is a pill", () => {
-    for (const name of ["BTN_PRIMARY", "BTN_OUTLINE", "BTN_QUIET", "BTN_SMALL", "BTN_COMPACT"]) {
+    for (const name of ["BTN_PRIMARY", "BTN_OUTLINE", "BTN_QUIET", "BTN_SMALL", "BTN_SOFT", "BTN_INK", "BTN_SEAT"]) {
       const token = design.match(new RegExp(`export const ${name} =\\s*"([^"]*)"`))?.[1] ?? "";
       expect([name, token.includes("rounded-full")]).toEqual([name, true]);
     }
@@ -65,16 +65,22 @@ describe("the act is ink (CP-R1)", () => {
   });
 });
 
-describe("one kind of tab (CP-R2)", () => {
+describe("the sign-in card has no tabs (OPR1)", () => {
   const card = code("shell/auth-modal.tsx");
 
-  it("the sign-in card's modes are the underline strip, not a pill in a tray", () => {
-    expect(card).toContain('className="-mt-1 flex gap-4 border-b border-line"');
-    expect(card).toContain("${tab === value ? TAB_ON : TAB_OFF}");
+  it("switches its two modes with one line under the form, not a strip and not a tray", () => {
+    // Was: the modes were the underline strip (CP-R2), never a pill in a
+    // tray. Board `SignIn` has neither — `New here? Create an account` is a
+    // line under the form — so the card draws no tab of any kind.
+    expect(card).not.toMatch(/\bTAB(_ON|_OFF)?\b/);
+    expect(card).not.toContain("border-b border-line");
     expect(card).not.toContain("grid grid-cols-2 gap-1 rounded-[8px] bg-secondary p-1");
+    expect(card).toContain('onClick={() => switchTo(creating ? "signin" : "create")}');
   });
 
-  it("the sign-in page opens on its title; the wordmark is said by the bar", () => {
-    expect(card).toMatch(/\{inDialog \? \(\s*<div className="mb-6 flex items-center gap-\[9px\]">\s*<Logomark/);
+  it("the sign-in page opens on its title; the wordmark is said by the header", () => {
+    // Unchanged in meaning: the mark and the word head the card only over a
+    // scrim. At the boards' size now — a 24px mark beside 18px/600.
+    expect(card).toMatch(/\{inDialog \? \(\s*<div className="flex items-center gap-\[10px\] text-\[18px\] font-semibold[^"]*">\s*<Logomark size=\{24\} \/>\s*openproduct/);
   });
 });

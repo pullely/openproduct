@@ -45,24 +45,46 @@ describe("OV4 — the authenticated walk is a gate", () => {
     expect(read(resolve(PERF, "studio.mjs"))).not.toContain("function sessionCookie(");
   });
 
-  it("walks every signed-in page the app has — a page added under /me or /studio must join the list", () => {
+  it("walks every signed-in page the app has — a page added under /me, /studio or /activity must join the list", () => {
     const fixture = read(resolve(PERF, "fixture.mjs"));
     const block = fixture.slice(fixture.indexOf("export const AUTHED_ROUTES = ["), fixture.indexOf("];", fixture.indexOf("export const AUTHED_ROUTES = [")));
     const listed = [...block.matchAll(/\{ path: (?:"([^"]+)"|`([^`]+)`)/g)]
       .map((m) => m[1] ?? m[2] ?? "")
       .map((p) => p.replace("${STUDIO_ORG}", "[org]").replace("${STUDIO_PROFILE}", "[profile]"));
-    const pages = [...pagesUnder(resolve(APP, "me")), ...pagesUnder(resolve(APP, "studio"))];
-    expect(pages.length).toBeGreaterThanOrEqual(16);
-    const unwalked = pages.filter((p) => !listed.includes(p));
+    // A section of `/me` is walked at its own address (`/me?section=saved`);
+    // the PAGE it is a view of is the path before the query.
+    const listedPages = [...new Set(listed.map((p) => p.split("?")[0] ?? p))];
+    // `/activity` is the inbox: a signed-in page that left `/me` for an
+    // address of its own at openproduct-redesign OPR1, and is still walked.
+    const pages = [
+      ...pagesUnder(resolve(APP, "me")),
+      ...pagesUnder(resolve(APP, "studio")),
+      ...pagesUnder(resolve(APP, "activity")),
+    ];
+    expect(pages).toContain("/activity");
+    // OPR1 — the settings page is new, and joined the list with the change
+    // that added it. The two old addresses under `/me` are redirects now
+    // (`MOVED` holds their status); what is walked is the two SECTIONS they
+    // arrive at, each at its own address.
+    expect(pages).toContain("/me/settings");
+    expect(pages).not.toContain("/me/saved");
+    expect(pages).not.toContain("/me/applications");
+    expect(listed).toContain("/me?section=saved");
+    expect(listed).toContain("/me?section=seats");
+    expect(pages.length).toBeGreaterThanOrEqual(14);
+    const unwalked = pages.filter((p) => !listedPages.includes(p));
     expect(unwalked).toEqual([]);
     // And nothing listed that is not a page.
-    const phantom = listed.filter((p) => !existsSync(resolve(APP, `.${p}/page.tsx`)));
+    const phantom = listedPages.filter((p) => !existsSync(resolve(APP, `.${p}/page.tsx`)));
     expect(phantom).toEqual([]);
   });
 
   it("checks the door as well as the rooms: signed out, the addresses keep the visitor's return address", () => {
     const lane = read(resolve(PERF, "authed.mjs"));
-    expect(lane).toContain('for (const path of ["/me", "/me/saved", "/me/export", "/studio", "/studio/reports"])');
+    // `/me/settings` since openproduct-redesign OPR1: the saved list became a
+    // section of `/me`, and its old address returns a signed-out visitor to
+    // the section, not to itself — so it is no longer a door of its own.
+    expect(lane).toContain('for (const path of ["/me", "/me/settings", "/me/export", "/studio", "/studio/reports"])');
     expect(lane).toContain('landed.pathname === "/signin" && returnTo === path');
     expect(lane).toContain("the gate rendered as a page");
   });

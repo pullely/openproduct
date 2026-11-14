@@ -90,10 +90,17 @@ describe("the control", () => {
     // alone (XP-1, CL-R8): followed is the neutral fill on a strong hairline,
     // at rest the card on a hairline — the state still reads, by its word and
     // its fill, without spending the colour an upvote means.
+    //
+    // openproduct-redesign OPR1: a header card's Follow (`size="hero"`) is
+    // the soft pill once followed — 6% of ink, still neutral — and the
+    // unfollowed button has the boards' tones; none of them is the accent.
     const control = markupOf("ui/follow-button.tsx");
-    expect(control).toMatch(/following\s*\n?\s*\?\s*"border-border-strong bg-secondary text-foreground"/);
+    expect(control).toContain(
+      'const followed = hero ? "border-transparent bg-foreground/[0.06] text-copy" : "border-border-strong bg-secondary text-foreground";',
+    );
     expect(control).toMatch(/:\s*"border-border-strong bg-card text-foreground/);
-    expect(control).not.toMatch(/endorse/);
+    expect(control).toContain("following ? followed : resting");
+    expect(control).not.toMatch(/bg-(accent|amber|brand)|text-(accent|amber|brand)|endorse/);
   });
 
   it("keeps the count OUTSIDE the button", () => {

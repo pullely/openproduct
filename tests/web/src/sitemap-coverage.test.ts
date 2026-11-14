@@ -69,9 +69,9 @@ function routes(dir: string, prefix = ""): string[] {
 const EXCLUDED: Record<string, string> = {
   "": "the root is emitted by `sitemapXml` itself, always first",
   me: "personal — rendered per request for one reader, and behind a session",
-  "me/applications": "personal — one reader's requests",
-  "me/notifications": "personal — one reader's inbox",
-  "me/saved": "personal — one reader's private list (OPC-3)",
+  activity:
+    "personal — one reader's inbox (it was `me/notifications` until openproduct-redesign OPR1 moved the address)",
+  "me/settings": "personal — one reader's own settings, behind a session (openproduct-redesign OPR1)",
   studio: "personal — the maintainer's own workspace, behind a session",
   "studio/appeals": "personal — one maintainer's appeals",
   "studio/collections": "personal — one curator's collections",
@@ -138,11 +138,15 @@ describe("AG0 — the API is reachable, and that is the whole milestone", () => 
     // It linked `/docs/checks` — a CHILD of a page it did not link — so the
     // only ways in were from `/docs`' own two children, themselves reached
     // from footnotes under a formula.
+    // Since OPR1 the footer maps one list (`FOOTER_LINKS` in `shell.ts`);
+    // the door and its child are entries of it.
     const footer = read("shell/site-footer.tsx")
       .replace(/\{\/\*[\s\S]*?\*\/\}/g, "")
       .replace(/\/\*[\s\S]*?\*\//g, "");
-    expect(footer).toContain('href="/docs"');
-    expect(footer).toContain('href="/docs/checks"');
+    expect(footer).toContain("FOOTER_LINKS.map");
+    const links = read("shell/shell.ts");
+    expect(links).toMatch(/\{ label: "[^"]+", href: "\/docs" \}/);
+    expect(links).toMatch(/\{ label: "[^"]+", href: "\/docs\/checks" \}/);
   });
 
   it("the sitemap names the docs surface and both its pages", () => {

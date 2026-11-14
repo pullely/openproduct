@@ -7,36 +7,40 @@ import {
 } from "@openproduct/contracts";
 
 import { AppLink } from "../../ui/link";
+import { SECTION_PILL, SECTION_PILL_OFF, SECTION_PILL_ON } from "../../ui/design";
 
 /**
- * The design's `tabStyle` for a person's page: 42px tall, `0 14px`, 14.5/500,
- * a 2px underline in `--foreground` when current (the accent until
- * openproduct-calm CL4; CL-R8 keeps it for the upvote). It carries its count beside the
- * label.
+ * The words on a person's section pills (openproduct-redesign OPR1, board
+ * `Person`). The default section — every listing they run — is *Products*,
+ * the site's own word for them (the navigation's, the board's); the other
+ * three keep the contract's labels. The ids, and so the addresses, are the
+ * contract's and do not move.
  */
-const PERSON_TAB =
-  "-mb-px flex h-[42px] max-sm:min-h-[44px] max-sm:mb-0 shrink-0 items-center gap-1 border-b-2 px-3.5 text-[14.5px] font-medium no-underline transition-colors";
-const PERSON_TAB_ON = "border-foreground text-foreground";
-const PERSON_TAB_OFF = "border-transparent text-muted-foreground hover:text-foreground";
+export const SECTION_LABELS: Record<MakerTab, string> = {
+  ...MAKER_TAB_LABELS,
+  launched: "Products",
+};
 
 /**
- * The three tabs on a maker page (openproduct-launch MP0).
+ * The sections of a person's page (openproduct-launch MP0), as the board's
+ * row of pills at the bottom of the profile card: 36px, the current one ink;
+ * 44px on a phone.
  *
- * ANCHORS, NOT BUTTONS, and the difference is not cosmetic. The design draws
- * `<button>`s that swap client state; each tab here is a different DOCUMENT at
- * a different address, so it is a link — which means it can be opened in a new
- * tab, bookmarked, sent to somebody, crawled, and read by a screen reader as
- * the navigation it is. UV2's range switch made the same call and the a11y
- * lane pins it there; this is the same rule on a second surface.
+ * ANCHORS, NOT BUTTONS, and the difference is not cosmetic. The board draws
+ * `<button>`s that swap client state; each section here is a different
+ * DOCUMENT at a different address, so it is a link — which means it can be
+ * opened in a new tab, bookmarked, sent to somebody, crawled, and read by a
+ * screen reader as the navigation it is.
  *
- * THE CURRENT TAB IS STILL A LINK, marked `aria-current="page"` rather than
+ * THE CURRENT ONE IS STILL A LINK, marked `aria-current="page"` rather than
  * removed. A missing link where a reader expects one is a control that looks
  * broken; a link to where you already are costs nothing and keeps the row's
- * shape stable as the tab changes.
+ * shape stable as the section changes.
  *
  * EACH COUNT IS THE LENGTH OF THE LIST BEHIND IT, computed once by core and
  * rendered here — never `rows.length`, which would be the truncated number and
- * would disagree with the tab the moment somebody has more than the page shows.
+ * would disagree with the list the moment somebody has more than the page
+ * shows. Above zero only: a pill that reads `0` leads with what is not there.
  */
 export function MakerTabs({
   handle,
@@ -47,30 +51,30 @@ export function MakerTabs({
   handle: string;
   current: MakerTab;
   counts: MakerCounts;
-  /** OB6 — the Builds tab counts the listings they run, the list it opens. */
+  /** OB6 — the Products pill counts the listings they run, the list it opens. */
   builds: number;
 }) {
   return (
-    // On a phone the four tabs are wider than the screen, so the strip
-    // scrolls itself rather than the page (`-mb-px` comes off there, or the
-    // 1px overhang would open a vertical scrollbar).
+    // On a phone the four pills can be wider than the screen, so the row
+    // scrolls itself rather than the page.
     <nav
-      aria-label="What this person has done"
-      className="mb-2 flex gap-1 border-b border-border max-sm:overflow-x-auto max-sm:[scrollbar-width:none]"
+      aria-label="Profile sections"
+      className="flex gap-1.5 overflow-x-auto px-[22px] pb-4 max-sm:px-2.5 max-sm:pb-2.5 max-sm:[scrollbar-width:none]"
     >
       {MAKER_TABS.map((tab) => {
         const isCurrent = tab === current;
+        const count = countOf(counts, tab, builds);
         return (
           <AppLink
             key={tab}
             href={makerPath(handle, tab)}
             {...(isCurrent ? { "aria-current": "page" as const } : {})}
-            className={`${PERSON_TAB} ${isCurrent ? PERSON_TAB_ON : PERSON_TAB_OFF}`}
+            className={`${SECTION_PILL} ${isCurrent ? SECTION_PILL_ON : SECTION_PILL_OFF} focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring`}
           >
-            {MAKER_TAB_LABELS[tab]}
-            <span className="font-mono text-[12.5px] font-normal text-muted-foreground tabular-nums">
-              {countOf(counts, tab, builds)}
-            </span>
+            {SECTION_LABELS[tab]}
+            {count > 0 ? (
+              <span className="text-[13px] font-normal tabular-nums opacity-70">{count}</span>
+            ) : null}
           </AppLink>
         );
       })}
@@ -84,7 +88,7 @@ export function MakerTabs({
 function countOf(counts: MakerCounts, tab: MakerTab, builds: number): number {
   if (tab === "upvoted") return counts.upvotesGiven;
   if (tab === "comments") return counts.comments;
-  // OB6 — the default tab is Builds: every listing they run, counted as the
+  // OB6 — the default section is every listing they run, counted as the
   // list under it is.
   if (tab === "launched") return builds;
   return counts.launched;

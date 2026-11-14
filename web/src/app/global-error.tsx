@@ -15,7 +15,8 @@ import { claimReload, isStaleDeployError } from "@/lib/stale-deploy";
 // A styled page here would be a page betting that the failure was not in the
 // styling. That bet is exactly the one you lose in the case this file exists
 // for. What it CAN borrow from the design costs nothing: the 26px/600 title,
-// the 36px 8px-radius button, spelled inline.
+// the 40px ink pill and the page colour (openproduct-redesign OPR1), spelled
+// inline.
 
 export default function GlobalError({
   error,
@@ -46,8 +47,8 @@ export default function GlobalError({
         style={{
           margin: 0,
           minHeight: "100dvh",
-          background: "#fafafa",
-          color: "#171717",
+          background: "#F6F4EE",
+          color: "#141413",
           font: "16px/1.55 system-ui, sans-serif",
           padding: "64px 20px",
         }}
@@ -68,12 +69,12 @@ export default function GlobalError({
                 font: "inherit",
                 fontSize: 14,
                 fontWeight: 500,
-                height: 36,
-                padding: "0 15px",
-                borderRadius: 8,
-                border: "1px solid #171717",
-                background: "#171717",
-                color: "#fafafa",
+                height: 40,
+                padding: "0 18px",
+                borderRadius: 999,
+                border: "1px solid #141413",
+                background: "#141413",
+                color: "#FAF9F5",
                 cursor: "pointer",
               }}
             >

@@ -70,7 +70,7 @@ export function CommentVote({
         aria-pressed={voted}
         aria-label={`${voted ? COMMENT_VOTED_LABEL : COMMENT_VOTE_LABEL} this comment`}
         title={COMMENT_VOTE_NOTE}
-        className={`inline-flex h-[28px] items-center gap-1.5 rounded-[6px] border px-[10px] text-[13px] transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring ${
+        className={`inline-flex h-[28px] items-center gap-1.5 rounded-full border px-[10px] text-[13px] transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring ${
           voted
             ? "border-border bg-muted text-foreground"
             : "border-border bg-card text-muted-foreground hover:border-faint hover:text-foreground"

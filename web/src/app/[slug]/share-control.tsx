@@ -123,7 +123,7 @@ export function ShareControl({
         <div
           role="group"
           aria-label={SHARE_LABEL}
-          className="absolute left-0 top-[calc(100%+6px)] z-50 w-[min(320px,calc(100vw-32px))] rounded-[12px] border border-border bg-card p-3 shadow-menu"
+          className="absolute right-0 top-[calc(100%+6px)] max-sm:left-0 max-sm:right-auto z-50 w-[min(320px,calc(100vw-32px))] rounded-[16px] bg-card p-3 shadow-menu"
         >
           <div className="flex items-center gap-2">
             {/* The same reachable-scroll-region treatment as the badge
@@ -134,7 +134,7 @@ export function ShareControl({
               role="region"
               aria-label="The address"
               tabIndex={0}
-              className="min-w-0 flex-1 select-all overflow-x-auto rounded-[8px] border border-border bg-surface-2 px-2.5 py-1.5 font-mono text-[12.5px] text-copy focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+              className="min-w-0 flex-1 select-all overflow-x-auto rounded-[14px] bg-well px-2.5 py-1.5 font-mono text-[13px] text-copy focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
             >
               {url}
             </code>

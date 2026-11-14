@@ -3,19 +3,19 @@
     "top": 0,
     "left": 0,
     "width": 1270,
-    "height": 81
+    "height": 60
   },
   "sectionBar": null,
   "main": {
-    "top": 81,
+    "top": 60,
     "left": 35,
     "width": 1200
   },
   "h1": {
-    "top": 202,
+    "top": 181,
     "left": 79,
-    "width": 328,
-    "height": 48
+    "width": 294,
+    "height": 44
   },
   "firstRow": {
     "left": 79,
@@ -23,18 +23,18 @@
     "height": 119
   },
   "footer": {
-    "left": 0,
-    "width": 1270,
-    "height": 148
+    "left": 45,
+    "width": 1180,
+    "height": 130
   },
   "themeControl": {
-    "width": 60,
+    "width": 57,
     "height": 26
   },
   "colours": {
-    "body": "oklch(0.165 0.004 80)",
-    "text": "oklch(0.935 0.006 80)",
-    "header": "oklch(0.165 0.004 80)",
-    "h1": "oklch(0.935 0.006 80)"
+    "body": "oklch(0.18 0.004 95)",
+    "text": "oklch(0.96 0.005 95)",
+    "header": "oklch(0.225 0.005 95 / 0.62)",
+    "h1": "oklch(0.96 0.005 95)"
   }
 }

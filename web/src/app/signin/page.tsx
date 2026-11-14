@@ -22,7 +22,7 @@ import { SignInCard } from "./sign-in-card";
  * behind the top panel's `Sign in`.
  *
  * So the bounce lands HERE now, and this page is the same card the modal
- * holds: email and password, or `Continue with Orunbase`. Orunbase is a
+ * holds: `Continue with Orunbase`, or email and password. Orunbase is a
  * choice on openproduct's door rather than the door itself, which is exactly
  * the shape `Continue with Google` has everywhere it appears.
  *
@@ -56,7 +56,10 @@ export default async function SignInPage(props: {
   const returnTo = sanitizeReturnTo((await props.searchParams).return_to);
 
   return (
-    <main className="mx-auto flex w-full max-w-[768px] justify-center px-6 pb-20 pt-16 max-sm:px-4">
+    // Boards `SignIn` and `PhoneSignIn` (OPR1): the card alone, centred in
+    // the column — no illustration beside it and no paragraph around it. On
+    // a phone it sits under the header at the feed's own gutters.
+    <main className="mx-auto box-border flex w-full max-w-[1180px] justify-center px-6 pb-[72px] pt-16 max-sm:px-3 max-sm:pb-6 max-sm:pt-[10px]">
       <SignInCard returnTo={returnTo} />
     </main>
   );

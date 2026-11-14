@@ -18,17 +18,27 @@ const code = (file: string) =>
     .replace(/^\s*\/\/.*$/gm, "");
 
 describe("sections a reader can find (CP-R4)", () => {
-  it("the section card has the tile's radius and room", () => {
-    expect(code("[slug]/sections.ts")).toContain(
-      '"rounded-[20px] border border-border bg-card px-8 py-7 scroll-mt-[72px] max-sm:px-5 max-sm:py-5 sm:scroll-mt-[116px]"',
+  it("the section card is the flat card with the board's room (OPR1)", () => {
+    // openproduct-redesign: white at a 16px radius, no border, no shadow,
+    // `20px 22px` inside and 14px on a phone — one string, in `ui/design.ts`,
+    // and the page's sections add only the room an anchored heading needs
+    // under the site's header.
+    expect(code("ui/design.ts")).toContain(
+      'export const BOARD_CARD = "rounded-[16px] bg-card px-[22px] py-5 max-sm:p-[14px]";',
     );
+    expect(code("[slug]/sections.ts")).toContain("export const SECTION_CARD = `${BOARD_CARD} scroll-mt-[80px]`;");
+    expect(code("[slug]/sections.ts")).not.toMatch(/\bborder\b|shadow/);
   });
 
-  it("every section heads at 20px", () => {
-    expect(code("ui/design.ts")).toMatch(/export const H2_SECTION = "m-0 text-\[20px\] font-semibold/);
+  it("every section heads at the card title's 18px (OPR1)", () => {
+    expect(code("ui/design.ts")).toContain(
+      'export const BOARD_CARD_TITLE = "m-0 text-card-title font-semibold tracking-[-0.015em] text-foreground";',
+    );
     for (const file of ["[slug]/page.tsx", "[slug]/changes.tsx", "[slug]/forum/page.tsx"]) {
       const source = code(file);
-      expect([file, source.includes("H2_SECTION")]).toEqual([file, true]);
+      expect([file, source.includes("BOARD_CARD_TITLE")]).toEqual([file, true]);
+      // Neither of the old headings: the 20px one, or the card head's 16px.
+      expect([file, source.includes("H2_SECTION")]).toEqual([file, false]);
       expect([file, /className=\{`?\$?\{?H2\}/.test(source)]).toEqual([file, false]);
     }
   });
@@ -37,11 +47,18 @@ describe("sections a reader can find (CP-R4)", () => {
 describe("a section earns its panel (CP-R3)", () => {
   const page = code("[slug]/page.tsx");
 
-  it("components and makers render a panel only when there is something in it", () => {
-    expect(page).toMatch(/\{components\.length > 0 \? \(\s*<section className=\{SECTION_CARD\} id="components"/);
-    expect(page).toMatch(/\{profile\.maintainers\.length > 0 \? \(\s*<section\s+className=\{SECTION_CARD\}\s+id="makers"/);
+  it("Built with and Crew render a card only when there is something in it", () => {
+    // OPR1 — the components are Built with pills and the makers are the Crew
+    // card, both in the side column; each still earns its card.
+    expect(page).toMatch(/\{builtWith\.length > 0 \? \(\s*<section className=\{SIDE_CARD\} id="components"/);
+    expect(page).toMatch(
+      /\{profile\.maintainers\.length > 0 \|\| openRoles\.length > 0 \? \(\s*<section\s+id="crew"/,
+    );
+    // The old `#makers` address still lands on the people.
+    expect(page).toMatch(/\{profile\.maintainers\.length > 0 \? \(\s*<ul id="makers"/);
     expect(page).not.toContain("No components published.");
     expect(page).not.toContain("No makers listed yet.");
+    expect(page).not.toContain("Stack not stated.");
   });
 
   it("nothing changed folds too; no earlier snapshot is still absent", () => {
@@ -60,11 +77,13 @@ describe("a section earns its panel (CP-R3)", () => {
 });
 
 describe("the maker's words have a measure (CP-R5)", () => {
-  it("the About pitch is 16.5px/1.7 in at most 68ch", () => {
-    expect(code("ui/design.ts")).toContain(
-      'export const PROSE = "max-w-[68ch] text-[16.5px] leading-[1.7] text-copy max-sm:text-[15.5px]";',
+  it("the About pitch is the board's 15px body in at most 68ch (OPR1)", () => {
+    // The shared `PROSE` (16.5px) still serves the pages with no board; a
+    // product's pitch sits in a card at the redesign's body size.
+    expect(code("[slug]/sections.ts")).toContain(
+      'export const SECTION_PROSE = "max-w-[68ch] text-[15px] leading-[1.6] text-copy";',
     );
-    expect(code("[slug]/page.tsx")).toContain("className={`m-0 mt-4 whitespace-pre-wrap ${PROSE}`}");
+    expect(code("[slug]/page.tsx")).toContain("className={`m-0 mt-3 whitespace-pre-wrap ${SECTION_PROSE}`}");
   });
 });
 

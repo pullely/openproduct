@@ -2,9 +2,9 @@
 // digest (openproduct-commons LC5).
 //
 // ONE ROUTE, TWO DIRECTIONS, dispatched on a hidden field. The form posts
-// from `/me` and from the public digest page, and both land back where they
-// came from — somebody who subscribes while reading week 34 wants to still be
-// reading week 34.
+// from the settings page (`/me/settings`) and from the public digest page,
+// and both land back where they came from — somebody who subscribes while
+// reading week 34 wants to still be reading week 34.
 //
 // THE SESSION IS READ HERE, SERVER-SIDE. The control on the public digest
 // page is static markup, identical for every visitor (OPC-1, I6): reading a
@@ -17,7 +17,7 @@ import { setDigestSubscription } from "../me-api";
 export async function POST(request: NextRequest): Promise<NextResponse> {
   const form = await request.formData();
   // `sanitizeReturnTo` is the authority — same-host paths only, never /auth.
-  const returnTo = sanitizeReturnTo(String(form.get("return_to") ?? "")) ?? "/me";
+  const returnTo = sanitizeReturnTo(String(form.get("return_to") ?? "")) ?? "/me/settings";
   const subscribed = String(form.get("subscribed") ?? "") === "true";
 
   const session = decodeSession(request.cookies.get(SESSION_COOKIE)?.value);

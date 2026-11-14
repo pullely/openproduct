@@ -61,7 +61,11 @@ describe("the two pages are addresses, not queries", () => {
 describe("the chip on a listing", () => {
   it("renders only when answered, links to the filter, and says whose word it is on hover", () => {
     const page = code("[slug]/page.tsx");
-    expect(page).toMatch(/\{profile\.pricing \? \(\s*<Fact\s+label="Pricing"/);
+    // OPR1 — a row of the board's In the open card: the label, then the value
+    // as the link.
+    expect(page).toMatch(
+      /\{profile\.pricing \? \(\s*<div className=\{SIDE_ROW\}>\s*<span className="text-muted-foreground">Pricing<\/span>/,
+    );
     expect(page).toContain("href={pricingPath(profile.pricing)}");
     expect(page).toContain("title={PRICING_PROVENANCE_NOTE}");
     expect(PRICING_PROVENANCE_NOTE).toMatch(/Not a price this directory charges or checks/);

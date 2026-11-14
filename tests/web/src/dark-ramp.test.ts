@@ -5,8 +5,14 @@
 // OKLCH, lightness is a coordinate. A dark theme is a second set of values on
 // the same tokens (WC-8) rather than a second stylesheet.
 //
+// THE VALUES ARE THE REDESIGN'S NOW (openproduct-redesign OPR1). The light
+// ramp is the boards' palette and the dark one is derived from it; what this
+// suite holds is unchanged — every token in both ramps, every colour one sRGB
+// can hold, every text pair measured — and it gained the four kind families
+// (amber, idea, version, seat), whose inks are text and are measured as text.
+//
 // EVERYTHING BELOW IS ABOUT THE STYLESHEET AS DATA, because that is what it
-// is: 82 tokens whose values decide every surface on the site, and whose
+// is: 103 tokens whose values decide every surface on the site, and whose
 // mistakes are invisible until somebody with a dark laptop opens the page. A
 // missing token does not throw; it renders one element in the other ramp's
 // colour and looks like a design choice.
@@ -73,7 +79,7 @@ describe("every colour token is defined in both ramps", () => {
   });
 
   it("has a real number of them, so an empty parse cannot pass", () => {
-    expect(Object.keys(LIGHT).length).toBeGreaterThan(80);
+    expect(Object.keys(LIGHT).length).toBeGreaterThan(100);
   });
 
   it("switches every one of them in both dark scopes", () => {
@@ -95,7 +101,7 @@ describe("every colour token is defined in both ramps", () => {
   });
 
   it("carries no value in either dark scope — only aliases", () => {
-    // The eighty-two numbers live once, in `:root`. A literal here would be a
+    // The hundred and three numbers live once, in `:root`. A literal here would be a
     // second copy free to drift from the first.
     for (const scope of [EXPLICIT, PREFERRED]) {
       expect(Object.keys(numeric(scope))).toEqual([]);
@@ -140,7 +146,7 @@ describe("the accent family still redefines nothing outside itself", () => {
 describe("every colour this stylesheet names is one sRGB can hold", () => {
   // FOUND BY WRITING THIS TEST, and it is the finding of the milestone: six of
   // the light ramp's own values were outside sRGB, all in the accent family,
-  // including ocean's `--endorse` — the ▲, the logo dot, the unread badge. A
+  // including the default `--endorse` — the ▲, the logo's ring, the unread badge. A
   // browser gamut-maps them, so the stylesheet was naming colours it never
   // painted. They are written at the chroma sRGB can hold now, which changes
   // no pixel and makes the file true.
@@ -245,7 +251,44 @@ describe("contrast, measured, in both ramps", () => {
     ["--info-foreground", "--info"],
     ["--panel-foreground", "--panel"],
     ["--panel-muted", "--panel"],
+    // OPR1 — the redesign's wells and its four kinds. A kind's `ink` / `deep`
+    // is the member that is a word, on the page, on a card and on its own
+    // tint; the hue itself is a word too wherever it clears (idea, version
+    // and seat do; amber does not, and is not in this list — see below).
+    ["--muted-foreground", "--sunken"],
+    ["--muted-foreground", "--well"],
+    ["--copy", "--sunken"],
+    ["--success", "--success-soft"],
+    ["--amber-ink", "--background"],
+    ["--amber-ink", "--card"],
+    ["--idea", "--background"],
+    ["--idea", "--card"],
+    ["--idea", "--idea-soft"],
+    ["--idea", "--idea-wash"],
+    ["--idea-deep", "--idea-soft"],
+    ["--version", "--background"],
+    ["--version", "--card"],
+    ["--version", "--version-soft"],
+    ["--seat", "--background"],
+    ["--seat", "--card"],
+    ["--seat", "--seat-soft"],
+    ["--seat-ink", "--seat-soft"],
+    ["--seat-ink", "--seat-wash"],
+    ["--on-accent", "--endorse"],
   ];
+
+  it("keeps the amber a MARK: its word is the ink, and on its own tint the deeper ink", () => {
+    // The one pair in the redesign's palette that does not clear AA as
+    // written: #8A6420 on #F3E7CC is 4.36:1. So an amber word on the amber
+    // tint takes `--endorse-ink` / `--warning-strong` (one step deeper, and
+    // in TEXT_PAIRS above), `--amber-ink` is for the page and a card, and
+    // `--amber` itself is a mark and not a word in the light ramp. Pinned so nobody
+    // "fixes" the board's hex or pairs the two without noticing.
+    expect(ratio(LIGHT["--amber-ink"]!, LIGHT["--amber-soft"]!)).toBeLessThan(4.5);
+    expect(ratio(LIGHT["--amber"]!, LIGHT["--card"]!)).toBeLessThan(4.5);
+    expect(ratio(LIGHT["--endorse-ink"]!, LIGHT["--amber-soft"]!)).toBeGreaterThanOrEqual(4.5);
+    expect(LIGHT["--endorse-soft"]).toEqual(LIGHT["--amber-soft"]);
+  });
 
   it("holds 4.5:1 in BOTH ramps on every pair the estate paints as text", () => {
     // 4.5 is AA for normal text, and normal is what these are: the smallest
@@ -320,8 +363,8 @@ describe("contrast, measured, in both ramps", () => {
     // Not a requirement — an observation worth pinning, because it explains
     // why the numbers above pass so comfortably. The light ramp's chromatic
     // inks were drawn to sit on a near-white page; their dark counterparts sit
-    // far from a near-black one, so `--warning` on the page goes from 3.83
-    // to 9.59.
+    // far from a near-black one, so `--link` on the page goes from 4.87
+    // to 10.98.
     const better = PAIRS.filter(([fg, bg]) => ratio(DARK[fg]!, DARK[bg]!) > ratio(LIGHT[fg]!, LIGHT[bg]!));
     expect(better.length).toBeGreaterThan(PAIRS.length / 2);
   });

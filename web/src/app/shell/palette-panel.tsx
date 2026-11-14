@@ -1,275 +1,170 @@
 "use client";
 
-// The search field's dropdown (openproduct-performance OPP11).
+// The header search's results card (openproduct-redesign OPR1; a separate
+// file since openproduct-performance OPP11).
 //
 // ─── WHY THIS IS A SEPARATE FILE ──────────────────────────────────────────
 //
-// It is the same panel `palette.tsx` used to render inline, moved behind a
-// `next/dynamic` boundary and nothing else. The field itself CANNOT move: it
-// is the header's visible `role="combobox"` input, rendered on every page for
-// every visitor, and deleting it from the server render would reintroduce
-// exactly the layout shift OPP9 removed. The dropdown can, because it renders
-// only while `open` — which is never true on the server and false on the vast
-// majority of page views.
+// It is the half of the search that renders only while the card is open,
+// behind a `next/dynamic` boundary. The field itself CANNOT move: it is the
+// header's visible `role="combobox"` input, rendered on every page for every
+// visitor, and deleting it from the server render would reintroduce exactly
+// the layout shift OPP9 removed. The card can, because it is never open on
+// the server and is closed on the vast majority of page views.
 //
 // ─── PURE PRESENTATION, ON PURPOSE ────────────────────────────────────────
 //
-// Every piece of state and every effect stayed in `palette.tsx`: the query,
-// the debounced read, the recents, the keyboard selection. This component
-// owns nothing and decides nothing, so the split moved BYTES and not
-// BEHAVIOUR — the keyboard model in particular stays in one place, which is
-// the thing a split of a combobox most easily breaks.
+// Every piece of state and every effect is in `palette.tsx`: the query, the
+// debounced read, which person rows are open, the keyboard highlight. This
+// component owns nothing and decides nothing, so the keyboard model stays on
+// one side of the lazy boundary with the field it belongs to — a split that
+// put Arrow/Enter on one side and the rows on the other would be a race with
+// a keyboard in it.
 //
-// The alternative was to move the search machinery down here and report rows
-// back up, which would have put the `⌘K` field\'s Arrow/Enter handling on one
-// side of a lazy boundary and the rows it navigates on the other. That is a
-// race with a keyboard in it, bought for a few hundred bytes.
+// ─── ONE CARD, AND THE FIELD IS ITS FIRST ROW ─────────────────────────────
+//
+// The board's construction: the card is positioned behind the field and 6px
+// proud of it on the top and sides, with 54px of top padding where the field
+// sits. It is flat white with a one-pixel inset ring (an edge, not a drop
+// shadow: design.md §2 rule 11) and 22px corners, which is the field's pill
+// radius plus the 6px it stands proud by.
 
-import * as React from "react";
+import { NO_MATCHES, canExpand, type PaletteRow } from "./palette-rows";
 
-import { searchPath, type SearchTopicHit } from "@openproduct/contracts";
-
-import { PALETTE_SECTIONS, type PaletteRow } from "./palette-rows";
-import { SearchGlyph } from "./palette-glyph";
-
+import { ChevronIcon } from "../ui/icons";
 import { AppLink } from "../ui/link";
 
 export default function PalettePanel({
-  hasQuery,
-  trimmed,
-  rows,
+  id,
+  rowDomId,
+  list,
+  answered,
   failed,
   active,
-  recent,
-  suggestions,
+  expanded,
   onActive,
   onSelect,
-  onForget,
+  onToggle,
 }: {
-  hasQuery: boolean;
-  trimmed: string;
-  rows: PaletteRow[] | null;
+  id: string;
+  rowDomId: (index: number) => string;
+  /** The rows in drawing order, the door out last (`visibleRows`). */
+  list: readonly PaletteRow[];
+  /** The read for this query has answered (or failed). Before it does —
+   *  and for a single character, which asks nothing — the card makes no
+   *  claim about what matched. */
+  answered: boolean;
   failed: boolean;
   active: number;
-  recent: readonly string[];
-  suggestions: readonly SearchTopicHit[];
+  expanded: ReadonlySet<string>;
   onActive: (index: number) => void;
-  onSelect: (entry: string) => void;
-  onForget: (entry: string) => void;
+  onSelect: () => void;
+  onToggle: (id: string) => void;
 }) {
-  const list = rows ?? [];
+  const results = list.filter((row) => row.type !== "all");
+  const doorIndex = list.findIndex((row) => row.type === "all");
+  const door = doorIndex >= 0 ? list[doorIndex] : undefined;
   return (
+    <div
+      id={id}
+      role="dialog"
+      aria-label="Search results"
+      className="absolute -inset-x-[6px] -top-[6px] z-20 box-border flex max-h-[560px] animate-menu-in flex-col gap-[2px] overflow-y-auto rounded-[22px] bg-card px-[6px] pb-[6px] pt-[54px] ring-1 ring-inset ring-foreground/10 motion-reduce:animate-none"
+    >
+      {results.map((row) => {
+        const index = list.indexOf(row);
+        const child = row.under !== undefined;
+        const opened = expanded.has(row.id);
+        return (
+          <div
+            key={`${row.type}:${row.id}`}
+            // A person's product sits indented under them, on a 2px rule.
+            className={`flex items-center gap-[2px] ${
+              child ? "ml-6 border-l-2 border-secondary pl-2" : ""
+            }`}
+          >
+            <AppLink
+              id={rowDomId(index)}
+              href={row.href}
+              data-active={index === active ? "" : undefined}
+              onMouseEnter={() => onActive(index)}
+              onClick={onSelect}
+              className={`flex min-h-[44px] min-w-0 flex-1 items-center gap-[10px] rounded-[12px] px-[10px] text-foreground no-underline focus-visible:outline focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-ring ${
+                index === active ? "bg-well" : ""
+              }`}
+            >
+              <RowMark row={row} small={child} />
+              <span className="min-w-0 flex-1 truncate text-[15px] font-semibold">{row.title}</span>
+              {row.kind ? (
+                <span className="shrink-0 text-[13px] text-muted-foreground">{row.kind}</span>
+              ) : null}
+            </AppLink>
+            {canExpand(row) ? (
+              // The row and its chevron are SIBLINGS: a button inside an
+              // anchor is invalid HTML that browsers repair by splitting the
+              // anchor. 40px round, the board's size.
+              <button
+                type="button"
+                onClick={() => onToggle(row.id)}
+                aria-expanded={opened}
+                aria-label={`${opened ? "Hide" : "Show"} products of ${row.title}`}
+                className="grid h-[40px] w-[40px] shrink-0 place-items-center rounded-full border-0 bg-transparent text-muted-foreground hover:text-foreground focus-visible:outline focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-ring"
+              >
+                <ChevronIcon up={opened} className="h-[14px] w-[14px]" />
+              </button>
+            ) : null}
+          </div>
+        );
+      })}
 
-        <div
-          id="search-results"
-          role="listbox"
-          aria-label="Search results"
-          // FR1 — ANCHORED TO THE VIEWPORT ON A PHONE, not to the field. The
-          // dropdown is `min(560px, 100vw - 32px)` wide and the field now
-          // starts about 48px in from the left edge at 375px, so an
-          // `absolute left-0` panel ran 16px past the right edge and gave the
-          // whole document a horizontal scroll. `fixed` with a gutter on both
-          // sides is the same panel, measured from the thing it actually has
-          // to fit inside.
-          className="absolute left-0 top-[calc(100%+6px)] z-50 max-h-[70vh] w-[min(560px,calc(100vw-32px))] animate-menu-in overflow-y-auto rounded-[12px] border border-border bg-card py-1.5 shadow-menu max-sm:fixed max-sm:inset-x-4 max-sm:top-[62px] max-sm:max-h-[60vh] max-sm:w-auto"
-        >
-          {!hasQuery ? (
-            <BeforeTyping
-              recent={recent}
-              suggestions={suggestions}
-              onSelect={onSelect}
-              onForget={onForget}
-            />
-          ) : rows === null ? (
-            <p className="m-0 px-4 py-6 text-[14.5px] text-muted-foreground">Searching…</p>
-          ) : failed ? (
-            <p className="m-0 px-4 py-6 text-[14.5px] text-muted-foreground">
-              Search is not answering right now. Nothing is wrong with your query — try again in a
-              moment, or browse{" "}
-              <AppLink href="/" className="underline underline-offset-4">
-                the builds
-              </AppLink>
-              .
-            </p>
-          ) : list.length === 0 ? (
-            <p className="m-0 px-4 py-6 text-[14.5px] text-muted-foreground">
-              Nothing matched “{trimmed}”.
-            </p>
-          ) : (
-            list.map((row, i) => (
-              <React.Fragment key={`${row.type}:${row.id}`}>
-                {PALETTE_SECTIONS[row.type] && row.type !== list[i - 1]?.type ? (
-                  <div className="px-4 pb-1 pt-2.5 font-mono text-[11.5px] uppercase tracking-[0.1em] text-muted-foreground">
-                    {PALETTE_SECTIONS[row.type]}
-                  </div>
-                ) : null}
-                <AppLink
-                  href={row.href}
-                  role="option"
-                  aria-selected={i === active}
-                  onMouseEnter={() => onActive(i)}
-                  onClick={() => onSelect(trimmed)}
-                  className={`flex items-center gap-3 px-4 py-2 no-underline ${
-                    i === active ? "bg-accent" : ""
-                  }`}
-                >
-                  <RowGlyph row={row} />
-                  <span className="min-w-0 flex-1">
-                    <span className="block truncate text-[14.5px] font-medium text-foreground">
-                      {row.title}
-                    </span>
-                    {row.detail ? (
-                      <span className="block truncate text-[13px] text-muted-foreground">
-                        {row.detail}
-                      </span>
-                    ) : null}
-                  </span>
-                </AppLink>
-              </React.Fragment>
-            ))
-          )}
+      {failed ? (
+        // The read failed. Not "No matches": that is a claim about the
+        // catalogue, and a read that did not answer has not made it.
+        <div role="status" className="px-[10px] py-3 text-[13px] text-muted-foreground">
+          Search is not answering right now
         </div>
+      ) : answered && results.length === 0 ? (
+        // The empty state: the read answered, and nothing matched.
+        <div role="status" className="px-[10px] py-3 text-[13px] text-muted-foreground">
+          {NO_MATCHES}
+        </div>
+      ) : null}
+
+      {door ? (
+        <AppLink
+          id={rowDomId(doorIndex)}
+          href={door.href}
+          data-active={doorIndex === active ? "" : undefined}
+          onMouseEnter={() => onActive(doorIndex)}
+          onClick={onSelect}
+          className={`mt-[2px] flex min-h-[40px] items-center justify-center rounded-b-[16px] border-t border-line text-[13px] font-semibold text-amber-ink no-underline focus-visible:outline focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-ring ${
+            doorIndex === active ? "bg-well" : ""
+          }`}
+        >
+          {door.title}
+        </AppLink>
+      ) : null}
+    </div>
   );
 }
 
 /**
- * What the field offers before anybody has typed: this browser's own recent
- * searches, then a few topics to start from.
+ * A row's mark: a product wears its two letters on a rounded tile, a person
+ * on a disc. 30px, or 26px for a product indented under a person.
  *
- * NOT A HISTORY OF ANYBODY ELSE. Both lists are as public as the page — the
- * recents never left this browser, and the topics are the vocabulary's
- * declared order — so nothing here is a claim about what other people are
- * searching for, which is a claim this product cannot make and would not want
- * to (OPC-4).
+ * LETTERS, NOT A LOGO. The board's tile is a product's logo; the search read
+ * returns no image for a hit, so the tile carries the same two letters the
+ * feed's tile falls back to.
  */
-function BeforeTyping({
-  recent,
-  suggestions,
-  onSelect,
-  onForget,
-}: {
-  recent: readonly string[];
-  suggestions: readonly { value: string; label: string; href: string }[];
-  onSelect: (entry: string) => void;
-  onForget: (entry: string) => void;
-}) {
-  return (
-    <>
-      {recent.length > 0 ? (
-        <>
-          <div className="px-4 pb-1 pt-2 font-mono text-[11.5px] uppercase tracking-[0.1em] text-muted-foreground">
-            Recent
-          </div>
-          {recent.map((entry) => (
-            // The row and its ✕ are SIBLINGS: a button inside an anchor is
-            // invalid HTML that browsers repair by splitting the anchor, and
-            // the repair puts the control somewhere nobody aimed at.
-            <div key={entry} className="flex items-center gap-3 px-4 py-2 hover:bg-accent">
-              <ClockGlyph />
-              <AppLink
-                href={searchPath(entry)}
-                onClick={() => onSelect(entry)}
-                className="min-w-0 flex-1 truncate text-[14.5px] text-foreground no-underline"
-              >
-                {entry}
-              </AppLink>
-              <button
-                type="button"
-                aria-label={`Remove ${entry} from recent searches`}
-                onClick={() => onForget(entry)}
-                className="grid h-[24px] w-[24px] shrink-0 place-items-center rounded-full text-muted-foreground hover:bg-secondary hover:text-foreground"
-              >
-                <svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true">
-                  <path d="M1 1 9 9M9 1 1 9" stroke="currentColor" strokeWidth="1.6" fill="none" />
-                </svg>
-              </button>
-            </div>
-          ))}
-        </>
-      ) : null}
-      <div className="px-4 pb-1 pt-2.5 font-mono text-[11.5px] uppercase tracking-[0.1em] text-muted-foreground">
-        Try searching for
-      </div>
-      {suggestions.map((topic) => (
-        <AppLink
-          key={topic.value}
-          href={topic.href}
-          onClick={() => onSelect(topic.label)}
-          className="flex items-center gap-3 px-4 py-2 no-underline hover:bg-accent"
-        >
-          {/* The design's topic tile: a 28px square in `--secondary` carrying
-              `#` in mono, and `Topic` under the label — the same row a topic
-              hit wears once a query is typed. */}
-          <span
-            aria-hidden="true"
-            className="grid h-[28px] w-[28px] shrink-0 place-items-center rounded-[8px] bg-secondary font-mono text-[10.5px] text-copy"
-          >
-            #
-          </span>
-          <span className="min-w-0 flex-1">
-            <span className="block truncate text-[14.5px] font-medium text-foreground">{topic.label}</span>
-            <span className="block truncate text-[13px] text-muted-foreground">Topic</span>
-          </span>
-        </AppLink>
-      ))}
-    </>
-  );
-}
-
-/** A row's mark: a launch wears its initials, a maker wears a disc, a topic
- *  and a stack wear a glyph. */
-function RowGlyph({ row }: { row: PaletteRow }) {
-  if (row.type === "person") {
-    return (
-      <span
-        aria-hidden="true"
-        className="grid h-[28px] w-[28px] shrink-0 place-items-center rounded-full bg-secondary font-mono text-[10.5px] text-copy"
-      >
-        {row.initials}
-      </span>
-    );
-  }
-  if (row.type === "product") {
-    return (
-      <span
-        aria-hidden="true"
-        className="grid h-[28px] w-[28px] shrink-0 place-items-center rounded-[8px] bg-secondary font-mono text-[10.5px] text-copy"
-      >
-        {row.initials}
-      </span>
-    );
-  }
-  if (row.type === "all") {
-    return (
-      <span
-        aria-hidden="true"
-        className="grid h-[28px] w-[28px] shrink-0 place-items-center rounded-[8px] text-muted-foreground"
-      >
-        <SearchGlyph />
-      </span>
-    );
-  }
+function RowMark({ row, small }: { row: PaletteRow; small: boolean }) {
   return (
     <span
       aria-hidden="true"
-      className="grid h-[28px] w-[28px] shrink-0 place-items-center rounded-[8px] bg-secondary font-mono text-[10.5px] text-copy"
+      className={`grid shrink-0 place-items-center bg-sunken text-label font-semibold text-copy ${
+        row.type === "person" ? "rounded-full" : "rounded-[9px]"
+      } ${small ? "h-[26px] w-[26px]" : "h-[30px] w-[30px]"}`}
     >
-      #
+      {row.initials}
     </span>
-  );
-}
-
-function ClockGlyph() {
-  return (
-    <svg
-      width="14"
-      height="14"
-      viewBox="0 0 14 14"
-      aria-hidden="true"
-      className="shrink-0 text-muted-foreground"
-    >
-      <circle cx="7" cy="7" r="5.4" fill="none" stroke="currentColor" strokeWidth="1.4" />
-      <path d="M7 4v3.3l2.2 1.3" stroke="currentColor" strokeWidth="1.4" fill="none" />
-    </svg>
   );
 }

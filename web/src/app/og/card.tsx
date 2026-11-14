@@ -85,8 +85,9 @@ export function ogResponse(copy: OgCopy): ImageResponse {
                 borderRadius: 34,
                 marginBottom: 44,
                 overflow: "hidden",
-                background: "#ffffff",
-                border: `2px solid ${c.border}`,
+                // OPR1 — the card token, flat: white on the page colour is
+                // the tile's whole edge, as on the site (no border).
+                background: c.card,
               }}
             >
               <img src={copy.logo} width={128} height={128} alt="" style={{ objectFit: "contain" }} />

@@ -103,7 +103,7 @@ export function CommentDraft({ slug }: { slug: string }) {
           maxLength={MAX_POST_BODY}
           onChange={(event) => remember(event.target.value)}
           placeholder="Ask the makers something"
-          className="box-border block w-full resize-y border-0 bg-transparent p-0 text-[14.5px] leading-[1.55] text-foreground outline-none placeholder:text-muted-foreground"
+          className="box-border block w-full resize-y border-0 bg-transparent p-0 text-[15px] leading-[1.55] text-foreground outline-none placeholder:text-muted-foreground"
         />
       </label>
     </>

@@ -91,23 +91,60 @@ const nextConfig = {
   async redirects() {
     return [
       { source: "/create", destination: "/submit", permanent: true },
-      // THERE ARE NOT TWO PAGES. The faceted directory at `/products` and the
-      // board index at `/launches` were two more addresses for the list the
-      // front page already shows; the design draws one `Launches` pill and
-      // one list, and `/` is it. Both old addresses still ARRIVE — permanent,
-      // so a crawler moves its weight rather than keeping two entries for
-      // one list — and for the reason above they arrive from the edge, never
-      // from a route module. A day's own board keeps `/launches/<day>`.
-      { source: "/products", destination: "/", permanent: true },
+      // THE BOARD INDEX AT `/launches` was one more address for the list the
+      // front page shows. The old address still ARRIVES — permanent, so a
+      // crawler moves its weight rather than keeping two entries for one
+      // list — and for the reason above it arrives from the edge, never from
+      // a route module. A day's own board keeps `/launches/<day>`.
+      //
+      // `/products` USED TO BE HERE TOO, redirecting to `/`. It is a page
+      // again since openproduct-redesign OPR1 (`app/products/page.tsx`): the
+      // header's Products pill needs an address, and `/` becomes the feed.
       { source: "/launches", destination: "/", permanent: true },
+      // openproduct-redesign OPR1 (design.md §5) — THE LIST'S ORDERS MOVED.
+      // `/builds/newest` and `/builds/upvoted` were two of the list's orders,
+      // each its own page; they are sorts of the Products page now, each
+      // still its own page at `/products/by/<order>` — a PATH, so the
+      // document is static and cacheable as the old one was. The builds
+      // asking for people were the Roles order; they are the Help wanted
+      // section, at an address of its own. Every order is named here, and
+      // HERE ONLY: there is no route under `/builds/` any more, so a segment
+      // that was never an order falls through to the site's own 404 page
+      // rather than to a handler's plain-text one.
+      { source: "/builds/newest", destination: "/products/by/newest", permanent: true },
+      { source: "/builds/upvoted", destination: "/products/by/upvoted", permanent: true },
+      { source: "/builds/roles", destination: "/help-wanted", permanent: true },
       // OB7 (openproduct-open-builds D5) — THE LEADERBOARD FOLDED INTO THE
       // UPVOTED ORDER. It ranked launches by the upvotes each day's board
-      // had published; the front page's Upvoted order is the builds by their
-      // counted upvotes, one sentence at /docs/formulas. Both of its
-      // addresses (the week, and each range) arrive there from the edge, for
-      // the reason above.
-      { source: "/leaderboard", destination: "/builds/upvoted", permanent: true },
-      { source: "/leaderboard/:range", destination: "/builds/upvoted", permanent: true },
+      // had published; Upvoted is the builds by their counted upvotes, one
+      // sentence at /docs/formulas. Both of its addresses (the week, and
+      // each range) arrive at that sort in ONE hop — straight to where the
+      // order lives now, never through the `/builds/upvoted` it used to
+      // name, which would be a redirect to a redirect.
+      { source: "/leaderboard", destination: "/products/by/upvoted", permanent: true },
+      { source: "/leaderboard/:range", destination: "/products/by/upvoted", permanent: true },
+      // OPR1 — THE SORT WAS A QUERY STRING FOR A FEW HOURS, and design.md was
+      // written with that form, so links to `/products?sort=<order>` exist.
+      // They arrive at the path. Matched HERE, at the edge, so the page
+      // itself never reads a query string and stays one static document; the
+      // order is captured by name and only the two published ones match, so
+      // `?sort=anything-else` is simply `/products` (which ignores it).
+      {
+        source: "/products",
+        has: [{ type: "query", key: "sort", value: "(?<order>newest|upvoted)" }],
+        destination: "/products/by/:order",
+        permanent: true,
+      },
+      // OPR1 — THE INBOX AND THE TWO LISTS UNDER `/me` MOVED. The inbox is
+      // Activity, where the header's bell goes; the saved list and the
+      // applications are sections of `/me` (board `Me`). Each source is the
+      // exact path: `/me/notifications/read`, the form's POST target, is a
+      // different path and is not redirected. The two sections are reached
+      // through `/me`, which reads the session itself and sends a signed-out
+      // visitor to sign in and back to the section they asked for.
+      { source: "/me/notifications", destination: "/activity", permanent: true },
+      { source: "/me/saved", destination: "/me?section=saved", permanent: true },
+      { source: "/me/applications", destination: "/me?section=seats", permanent: true },
     ];
   },
   // `output: "standalone"` is required by the @opennextjs/cloudflare adapter,

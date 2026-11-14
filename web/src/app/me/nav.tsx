@@ -1,62 +1,127 @@
-import Link from "next/link";
+import { EYEBROW } from "../ui/design";
+import { AppLink } from "../ui/link";
+import { GLYPH_PRODUCTS, GLYPH_SAVED, GLYPH_SEATS, Glyph } from "./glyph";
+import { meSectionHref, type MeSection } from "./section";
 
-import { TAB, TAB_OFF, TAB_ON } from "../ui/design";
+// The switcher between the sections of `/me`, and the columns the signed-in
+// pages stand in (openproduct-redesign OPR1). What a section IS, and where
+// it lives, is `section.ts`.
+
+interface SectionDef {
+  readonly key: MeSection;
+  readonly label: string;
+  readonly glyph: string;
+  /** The 32px tile beside the label, at rest: the kind's tint and ink. */
+  readonly tile: string;
+  /** The same tile on the current section: the kind's hue, filled. */
+  readonly tileOn: string;
+}
 
 /**
- * The authenticated half's sub-navigation (openproduct-home OH2). Static
- * markup — the pages behind it each read the session themselves.
- *
- * THE DESIGN'S SHAPE: a row of 32px chips, 4px apart, the current one on
- * `--secondary` and the rest in `--muted` ink. It sits at the top of the
- * 768px column every one of these pages shares (`ME_MAIN`), 28px above the
- * page's title.
- *
- * The fifth chip is an anchor into the profile page (LC5's digest control
- * lives there), so it is never the active one: it is a way in, not a page.
+ * The switcher's rows, in the board's order. A colour here is a KIND
+ * (design.md §3): amber is what shipped — your products; ink is what you
+ * kept; teal is seats.
  */
-export function MeNav({
+export const ME_SECTIONS: readonly SectionDef[] = [
+  {
+    key: "products",
+    label: "Your products",
+    glyph: GLYPH_PRODUCTS,
+    tile: "bg-amber-soft text-amber-ink",
+    tileOn: "bg-amber text-card",
+  },
+  {
+    key: "saved",
+    label: "Saved",
+    glyph: GLYPH_SAVED,
+    tile: "bg-sunken text-foreground",
+    tileOn: "bg-foreground text-card",
+  },
+  {
+    key: "seats",
+    label: "Seats",
+    glyph: GLYPH_SEATS,
+    tile: "bg-seat-soft text-seat-ink",
+    tileOn: "bg-seat text-card",
+  },
+];
+
+/**
+ * The switcher. A card of rows beside the section on a desktop (board `Me`:
+ * a mono label, then a 32px tile, the label and its count); a row of 44px
+ * pills that scrolls sideways on a phone (board `PhoneMe`), the current one
+ * in ink.
+ *
+ * `count` is null when that section's read failed: no number is drawn,
+ * because a zero would be a claim (OPC-C).
+ */
+export function MeSections({
   active,
+  counts,
 }: {
-  active: "profile" | "applications" | "saved" | "notifications";
+  active: MeSection;
+  counts: Record<MeSection, number | null>;
 }) {
-  const item = (key: typeof active | null, href: string, label: string) => (
-    <Link
-      href={href}
-      {...(key === active ? { "aria-current": "page" as const } : {})}
-      className={`tap-h ${TAB} px-0 no-underline ${key === active ? TAB_ON : TAB_OFF}`}
-    >
-      {label}
-    </Link>
-  );
   return (
-    // ONE KIND OF TAB (CP-R2): your pages are views of you, so they are the
-    // underline strip every list's sorts use, not chips.
-    <nav aria-label="Your pages" className="flex flex-wrap items-center gap-x-6 border-b border-line">
-      {item("profile", "/me", "Profile")}
-      {item("applications", "/me/applications", "Applications")}
-      {item("saved", "/me/saved", "Saved")}
-      {/* NF0 — the inbox. No badge HERE: this nav renders on the server on a
-          personal page that already knows, and a second count would be a
-          second number to keep in step. The badge lives in the shell, where
-          it arrives after paint from the overlay. */}
-      {item("notifications", "/me/notifications", "Notifications")}
-      {item(null, "/me#digest", "Digest")}
+    <nav
+      aria-label="Your sections"
+      className="flex flex-col gap-0.5 rounded-[16px] bg-card p-2.5 [scrollbar-width:none] max-md:-mx-3 max-md:flex-row max-md:gap-1.5 max-md:overflow-x-auto max-md:rounded-none max-md:bg-transparent max-md:px-3 max-md:py-0"
+    >
+      <div className={`${EYEBROW} px-2.5 pb-2 pt-1.5 max-md:hidden`}>You</div>
+      {ME_SECTIONS.map((section) => {
+        const on = section.key === active;
+        const count = counts[section.key];
+        return (
+          <AppLink
+            key={section.key}
+            href={meSectionHref(section.key)}
+            {...(on ? { "aria-current": "page" as const } : {})}
+            className={`flex min-h-[40px] items-center gap-3 rounded-[14px] px-2.5 text-[15px] no-underline transition-colors max-md:min-h-[44px] max-md:shrink-0 max-md:gap-2 max-md:whitespace-nowrap max-md:rounded-full max-md:px-3.5 ${
+              on
+                ? "font-semibold text-foreground max-md:bg-primary max-md:text-primary-foreground"
+                : "text-copy hover:bg-accent max-md:bg-card max-md:font-medium"
+            }`}
+          >
+            <span
+              className={`grid h-8 w-8 shrink-0 place-items-center rounded-[10px] max-md:h-auto max-md:w-auto max-md:bg-transparent ${
+                on ? `${section.tileOn} max-md:text-primary-foreground` : section.tile
+              }`}
+            >
+              <Glyph d={section.glyph} />
+            </span>
+            <span className="flex-1 text-left">{section.label}</span>
+            {count === null ? null : (
+              <span
+                className={`font-mono text-[11px] ${
+                  on ? "text-foreground max-md:text-primary-foreground" : "text-muted-foreground"
+                }`}
+              >
+                {count}
+              </span>
+            )}
+          </AppLink>
+        );
+      })}
     </nav>
   );
 }
 
-/** The column every `/me/*` page stands in: 768px, `48px 24px 72px`. */
-export const ME_MAIN =
-  "mx-auto box-border w-full max-w-[768px] px-6 pb-[104px] pt-[80px] max-sm:px-4 max-sm:pb-[72px] max-sm:pt-12";
+/** The boards' column for the inbox: 760px, `36px 24px 64px`, 20px between
+ *  its blocks; `10px 12px` and 10px on a phone (boards `Activity`,
+ *  `PhoneActivity`). */
+export const ACTIVITY_MAIN =
+  "mx-auto box-border flex w-full max-w-[760px] flex-col gap-5 px-6 pb-16 pt-9 max-sm:gap-2.5 max-sm:px-3 max-sm:pb-6 max-sm:pt-2.5";
 
-/** The title, 28px under the nav. */
-export const ME_TITLE_GAP = "mt-7";
+/** The boards' column for settings: 1080px, `32px 24px 64px`, 22px between
+ *  its blocks; `10px 12px` and 10px on a phone (boards `Settings`,
+ *  `PhoneSettings`). */
+export const SETTINGS_MAIN =
+  "mx-auto box-border flex w-full max-w-[1080px] flex-col gap-[22px] px-6 pb-16 pt-8 max-sm:gap-2.5 max-sm:px-3 max-sm:pb-6 max-sm:pt-2.5";
 
-/** The one line under a `/me/*` title: 13.5px/1.6 in `--muted`, 8px below. */
-export const ME_LEDE = "m-0 mt-2 text-[13.5px] leading-[1.6] text-muted-foreground";
+/** A list of the flat cards a section is made of: 14px between, 10px on a
+ *  phone. */
+export const ME_LIST = "m-0 grid list-none gap-3.5 p-0 max-sm:gap-2.5";
 
-/** A padded card on these pages: 12px radius, hairline, `20px 24px`. */
-export const ME_CARD = "rounded-[12px] border border-border bg-card px-6 py-5 max-sm:px-4";
-
-/** The widths of the five chips, for the skeletons that stand in for them. */
-export const ME_NAV_WIDTHS = [68, 106, 66, 118, 68];
+/** What a section says when it holds nothing: one line in `--muted`, no box
+ *  (boards `Me`, `PhoneMe`). */
+export const ME_EMPTY = "m-0 text-[15px] text-muted-foreground max-sm:px-1.5 max-sm:py-1";
