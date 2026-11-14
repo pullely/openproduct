@@ -339,19 +339,21 @@ Design §6, steps 1 and 2. Two pull requests, because the platform's half is in 
 - **orun-cloud (the platform, [#2400](https://github.com/sourceplane/orun-cloud/pull/2400)):**
   - membership-worker's stage `LISTING_SEAM_URL` becomes `https://openproduct-gateway-stage.openproduct.workers.dev`. Prod keeps the monorepo deploy's host until OPN-10;
   - the console's `openproductWebBase` becomes a per-environment table: stage (and dev, which has no openproduct deployment) hands off to `https://openproduct-web-stage.openproduct.workers.dev`, and prod stays `https://openproduct.live`;
-  - the auth seam key gets an escrow document of its own, `integrations/openproduct-auth-seam/<env>`, delivered to identity-worker by `secrets-live`. It is its own document, not a second key in `listing-seam`, so membership-worker never holds it (the reason it is a second key at all).
+  - the platform's copies of both seam keys come from Orunbase, not the AWS escrow: identity-worker reads `OPENPRODUCT_AUTH_SEAM_SECRET` and membership-worker `LISTING_SEAM_SECRET` from orun-cloud's workspace (`ws_537EHJPC`, project `orun-cloud`) through `optionalSecretEnv` and `runtimeSecrets`. orun-cloud's local stack gained the Orunbase push stack-tectonic publishes. The owner's call (2026-11-14): every openproduct secret lives in Orunbase, with no AWS dependency. The escrow's `listing-seam` document keeps only the monorepo deployment's two consumers, which retire at OPN4.
 - **This repository (#11):** core's and the gateway's component notes record the shared-key arrangement, which also puts both in the merge's plan, so they redeploy and `secrets-live` delivers the rotated keys.
 
-**The keys.** Each is generated once and written to both sides in the same step, never printed and never copied from an existing key:
+**The keys.** Each is generated once and written to both workspaces in the same step, never printed and never copied from an existing key:
 
-| Key | Platform side (escrow, `sourceplane/orun-cloud/…`) | This workspace |
+| Key | orun-cloud's workspace (`ws_537EHJPC`) | This workspace |
 |---|---|---|
-| `LISTING_SEAM_SECRET`, stage | `integrations/listing-seam/stage` (rotated) | `stage` |
-| `OPENPRODUCT_AUTH_SEAM_SECRET`, stage and prod | `integrations/openproduct-auth-seam/<env>` (new) | `stage`, `prod` |
+| `LISTING_SEAM_SECRET` | `stage` | `stage` (rotated) |
+| `OPENPRODUCT_AUTH_SEAM_SECRET` | `stage`, `prod` | `stage`, `prod` (rotated) |
 
-Prod's `LISTING_SEAM_SECRET` is left alone: the platform's prod webhooks still go to the monorepo deploy, which verifies them with the escrow's current prod key. It rotates at OPN-10.
+Prod's `LISTING_SEAM_SECRET` is not seeded on the platform's side: membership-worker prod keeps the value it has, which the monorepo deploy shares, because the platform's prod webhooks still go there. It moves at OPN-10.
 
-**Order.** The escrow documents exist before the orun-cloud merge, because every deploy lane fetches each active document and fails on a missing one. Then the orun-cloud merge (membership-worker, identity-worker and the console deploy), then #11's merge (core and the gateway), then the flow on stage.
+**Order.** The keys are seeded first. An unseeded key would not break a deploy (it is skipped by name), but the switch would send stage's webhooks to a gateway holding a different key. Then the orun-cloud merge (membership-worker, identity-worker and the console deploy), then #11's merge (core and the gateway), then the flow on stage.
+
+**A first attempt wrote to AWS.** Before the owner's call, a run created `integrations/openproduct-auth-seam/{stage,prod}` and rotated `integrations/listing-seam/stage` in the escrow, and its writes to this workspace failed: `orun secrets set` creates a key, and these already existed, which the platform answered with a bare 503 instead of a conflict. `orun secrets rotate` is the verb for an existing key. The two new escrow documents are to be deleted and `listing-seam/stage` restored to its previous version.
 
 ## Departures from the design
 

@@ -44,15 +44,15 @@ spec:
   # the Worker deploys and the paths that need it answer 503 or degrade.
   # runtimeSecrets (below) names them for the composition's secrets-live step.
   #   LISTING_SEAM_SECRET          per environment (OPN-K), shared with the
-  #                                platform's escrow from that environment's
-  #                                switch: stage at OPN-9, prod at OPN-10
+  #                                platform's membership-worker from that
+  #                                environment's switch: stage at OPN-9, prod
+  #                                at OPN-10
   #   OPENPRODUCT_AUTH_SEAM_SECRET per environment (OPN-K), shared with the
-  #                                platform's escrow
-  #                                (integrations/openproduct-auth-seam/<env>,
-  #                                delivered to identity-worker) on stage and
+  #                                platform's identity-worker on stage and
   #                                prod since OPN-9; password sign-in needs it
-  #   A rotation writes one fresh value to both sides, then redeploys this
-  #   Worker and the platform's consumer.
+  #   The platform's copies live in orun-cloud's Orunbase workspace, never in
+  #   AWS. A rotation writes one fresh value to both workspaces, then
+  #   redeploys this Worker and the platform's consumer.
   #   SCREENSHOT_CAPTURE_URL/TOKEN the capture service, set by the owner
   # GITHUB_TOKEN (the repository reads, OX-D) is NOT listed yet, on purpose:
   # secrets-live reads each name from the job's environment, and CI's
