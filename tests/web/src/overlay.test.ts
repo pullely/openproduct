@@ -117,6 +117,11 @@ describe("a malformed answer degrades, it does not leak", () => {
       // and whether the page behind it is on.
       handle: "ada",
       profilePublic: true,
+      // OPR-3 — three answers this (older) body does not hold. An overlay
+      // without them is still an overlay; each comes back empty.
+      reactions: {},
+      crew: [],
+      requestedOpenings: [],
     });
     // Not about an attacker — this is our own origin. It is that a shape
     // change downstream must degrade to an anonymous-looking page (always
@@ -307,6 +312,10 @@ function emptyOverlay() {
     listings: 0,
     handle: null,
     profilePublic: false,
+    // OPR-3 — my reactions, the crews I am on, the seats I asked for.
+    reactions: {} as Record<string, string>,
+    crew: [] as Array<{ slug: string; org: string; profile: string }>,
+    requestedOpenings: [] as string[],
   };
 }
 

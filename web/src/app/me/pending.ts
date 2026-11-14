@@ -17,7 +17,8 @@
 //
 // ─── IT CAN ONLY EVER ADD, AND THAT IS THE INVARIANT ──────────────────────
 //
-// There are four kinds here, not six. `unendorse` and `unsave` are missing,
+// There are five kinds here (four until OPR-3 added a product post's
+// reaction), not seven. `unendorse` and `unsave` are missing,
 // and `follow` and `comment-vote` record only their `on` direction, because a
 // signed-out page renders the UNVOTED, UNSAVED, UNFOLLOWED state for everybody
 // (I6) — the only act a signed-out visitor can post is the one that adds. A
@@ -37,7 +38,13 @@
 // keeps the behaviour this milestone replaces, which forgets the intent but
 // has never once performed the wrong one.
 
-import { FOLLOW_KINDS, FOLLOW_VALUE_RE } from "@openproduct/contracts";
+import {
+  FOLLOW_KINDS,
+  FOLLOW_VALUE_RE,
+  PRODUCT_POST_ID_RE,
+  isProductPostReaction,
+  type ProductPostReaction,
+} from "@openproduct/contracts";
 
 import { sanitizeReturnTo } from "../auth/auth";
 
@@ -71,7 +78,10 @@ export type PendingAct =
   | { act: "endorse"; slug: string }
   | { act: "save"; slug: string }
   | { act: "follow"; kind: string; value: string }
-  | { act: "comment-vote"; postId: string };
+  | { act: "comment-vote"; postId: string }
+  // OPR-3 — a reaction on a product post. It SETS one, and a signed-out
+  // visitor holds none, so it can only add; clearing is never recorded.
+  | { act: "react"; postId: string; reaction: ProductPostReaction };
 
 /**
  * Did a page on this origin post this?
@@ -131,6 +141,12 @@ export function decodePending(raw: string | null | undefined): PendingAct | null
     case "comment-vote":
       return typeof record.postId === "string" && POST_ID_RE.test(record.postId)
         ? { act: "comment-vote", postId: record.postId }
+        : null;
+    case "react":
+      return typeof record.postId === "string" &&
+        PRODUCT_POST_ID_RE.test(record.postId) &&
+        isProductPostReaction(record.reaction)
+        ? { act: "react", postId: record.postId, reaction: record.reaction }
         : null;
     default:
       return null;

@@ -46,9 +46,10 @@ import {
   resumeDestination,
   type PendingAct,
 } from "../pending";
+import { setReaction } from "../../posts/posts-api";
 import { endorseProduct, saveProduct, setCommentVote, setFollow } from "../me-api";
 
-/** The four adds, each calling exactly the function its own route calls. */
+/** The five adds, each calling exactly the function its own route calls. */
 async function perform(act: PendingAct, token: string): Promise<void> {
   switch (act.act) {
     case "endorse":
@@ -62,6 +63,9 @@ async function perform(act: PendingAct, token: string): Promise<void> {
       return;
     case "comment-vote":
       await setCommentVote(token, act.postId, true);
+      return;
+    case "react":
+      await setReaction(token, act.postId, act.reaction);
       return;
   }
 }

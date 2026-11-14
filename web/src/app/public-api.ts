@@ -50,7 +50,8 @@ import type {
   PublicProfileCard,
   PublicThread,
   ScreenshotBudget,
-  SearchMakerHit,
+  ProductStage,
+  SearchPersonHit,
   SearchTopicHit,
   SweepHealth,
   Tombstone,
@@ -148,7 +149,12 @@ interface Envelope<T> {
   data?: T;
 }
 
-async function readPublic<T>(path: string, fetchImpl?: PublicFetch): Promise<T | null> {
+/**
+ * The one anonymous read. Exported (OPR-3) so a feature's readers can live
+ * beside the feature (`posts/posts-api.ts`) and still go through this exact
+ * request: the closed header set, no credentials, the 60s revalidate.
+ */
+export async function readPublic<T>(path: string, fetchImpl?: PublicFetch): Promise<T | null> {
   const base = publicApiBase();
   if (!base) return null;
   const doFetch = fetchImpl ?? fetch;
@@ -537,10 +543,13 @@ export interface SearchDocument {
     matched: string;
     /** openproduct-studio OSD3 — a product hit's logo, else null. */
     thumbnail: MediaThumbnail | null;
+    /** OPR-3 — a product hit's stage; null for anything else, and absent
+     *  from a gateway deployed before it. */
+    stage?: ProductStage | null;
   }>;
   /** SR0 — public profiles, read live so the eligibility rule cannot go stale
    *  in the direction "still findable after they turned it off". */
-  makers: SearchMakerHit[];
+  makers: SearchPersonHit[];
   /** SR0 — matched against the contract's own vocabulary; no read at all. */
   topics: SearchTopicHit[];
 }

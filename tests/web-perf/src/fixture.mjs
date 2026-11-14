@@ -120,12 +120,63 @@ export function THUMBNAIL_FOR(slug) {
   return { ref, alt, width, height };
 }
 
+// ─── OPR-3 — stage and milestones ────────────────────────────────────────
+//
+// A product is an idea until its first milestone ships. The corpus holds
+// both: index 1, 4, 7, … are ideas (no milestone shipped), the rest are
+// shipping. `product-00` — the sample, and the product the signed-in walker
+// is on the crew of — has shipped three of four.
+function stageOf(i) {
+  return i % 3 === 1 ? "idea" : "shipping";
+}
+
+const MILESTONE_ID = (n) => `pms_${String(n).padStart(32, "0")}`;
+
+/** A product's milestones as its CREW sees them (ids and positions). The
+ *  public document carries the same rows without either. */
+function CREW_MILESTONES_FOR(slug) {
+  const i = Number(slug.slice(-2)) || 0;
+  const prefix = slug === "product-00" ? "AS" : `M${i}-`;
+  if (stageOf(i) === "idea") {
+    // An idea may have planned milestones; none has shipped.
+    return i % 2 === 0
+      ? [
+          { id: MILESTONE_ID(i * 10 + 1), position: 0, code: `${prefix}1`, title: "A first working version", summary: null, shippedAt: null },
+          { id: MILESTONE_ID(i * 10 + 2), position: 1, code: `${prefix}2`, title: "Five people using it", summary: null, shippedAt: null },
+        ]
+      : [];
+  }
+  const total = slug === "product-00" ? 4 : 2 + (i % 3);
+  const shipped = slug === "product-00" ? 3 : 1 + (i % 2);
+  const titles = ["Sign up and a first run", "Exports", "The re-collection calendar", "Team seats", "An audit trail"];
+  return Array.from({ length: total }, (_, n) => ({
+    id: MILESTONE_ID(i * 10 + n + 1),
+    position: n,
+    code: `${prefix}${n + 1}`,
+    title: titles[n % titles.length],
+    summary: n === 2 ? "Policies re-send on each state's own cycle." : null,
+    shippedAt: n < shipped ? EARLIER : null,
+  }));
+}
+
+function MILESTONES_FOR(slug) {
+  return CREW_MILESTONES_FOR(slug).map(({ code, title, summary, shippedAt }) => ({ code, title, summary, shippedAt }));
+}
+
+function MILESTONE_COUNTS_FOR(slug) {
+  const milestones = MILESTONES_FOR(slug);
+  return { shipped: milestones.filter((m) => m.shippedAt !== null).length, total: milestones.length };
+}
+
 /** One directory card. Exactly PUBLIC_PROFILE_CARD_KEYS, nothing else. */
 function card(i) {
   const stack = STACKS[i % STACKS.length];
   const openings = i % 3 === 0 ? 2 : 0;
   return {
     slug: `product-${String(i).padStart(2, "0")}`,
+    // OPR-3 — every third product is still an idea (`product-01`, `-04`, …);
+    // the rest are shipping. See `stageOf` and `MILESTONES_FOR`.
+    stage: stageOf(i),
     // IN3 — ONE CARD BELOW THE FLOOR, so the walk covers a front page that
     // filters. `product-06` has no topic and is therefore not in the
     // catalogue at all — it is not ordered last, it is absent, which is the
@@ -209,6 +260,11 @@ function CHANGES_FOR(slug) {
   if (n % 3 === 2) return [];
   return null;
 }
+
+/** OPR-3 — the seat the signed-in walker has a pending request for, and the
+ *  product it is on. */
+export const SAMPLE_REQUESTED_OPENING = "opr_00000000000000000000000000000001";
+export const REQUESTED_SEAT_SLUG = "product-03";
 
 /** One project page. Exactly PUBLIC_PROFILE_KEYS. */
 function profile(slug) {
@@ -295,7 +351,10 @@ function profile(slug) {
       c.roleOpeningCount > 0
         ? [
             {
-              id: "rol_000000000000000000000001",
+              // OPR-3 — `product-03`'s seat wears the real id grammar, and it
+              // is the one the signed-in walker has asked for (the overlay's
+              // `requestedOpenings` answers it).
+              id: c.slug === REQUESTED_SEAT_SLUG ? SAMPLE_REQUESTED_OPENING : "rol_000000000000000000000001",
               title: "Frontend contributor",
               description: "Help with the directory surface.",
               commitment: "a-few-hours-a-week",
@@ -314,6 +373,12 @@ function profile(slug) {
     // (UV1's `launch` key is ABSENT for the same reason — a listing that has
     // never launched carries no placement.)
     launches: [],
+    // OPR-3 — the stage, where to try it, and the milestones with their
+    // counts. An idea has no address to try and nothing shipped.
+    stage: c.stage,
+    tryUrl: c.stage === "shipping" ? `https://example.com/${c.slug}` : null,
+    milestones: MILESTONES_FOR(c.slug),
+    milestoneCounts: MILESTONE_COUNTS_FOR(c.slug),
   };
 }
 
@@ -900,6 +965,299 @@ const TRANSPARENCY = {
  *  than no budget, because it reports a surface as healthy without ever
  *  having drawn it. Kept in this file rather than in the lanes so the corpus
  *  and the proof that it landed cannot drift apart. */
+// ─── OPR-3 — product posts ───────────────────────────────────────────────
+//
+// What products say for themselves. One post of each AUTHORED kind across a
+// shipping product (`product-00`) and an idea (`product-01`), in the feed's
+// order (newest first); a second page behind a cursor; one post with a
+// comment thread. Every post here is PUBLISHED — a draft exists only behind
+// the crew routes below, never in a public read.
+const POST_ID = (n) => `ppo_${String(n).padStart(32, "0")}`;
+
+/** The posts the lanes can rely on, by kind. */
+export const SAMPLE_POSTS = {
+  feature: POST_ID(1),
+  version: POST_ID(2),
+  idea: POST_ID(3),
+  seat: POST_ID(4),
+};
+/** The post whose page the lanes open: a Feature shipped with a comment thread. */
+export const SAMPLE_POST = SAMPLE_POSTS.feature;
+/** The post the signed-in walker has reacted to (`curious`): the idea, which
+ *  is nobody's own post — the walker wrote the other three, and core refuses
+ *  a reaction to your own. */
+export const SAMPLE_REACTED_POST = SAMPLE_POSTS.idea;
+/** The thread that holds its comments. */
+export const SAMPLE_POST_THREAD = "thr_000000000000000000000003";
+/** The idea product, and the shipping one (which is `SAMPLE_SLUG`). */
+export const SAMPLE_IDEA_SLUG = CARDS[1].slug;
+/** The feed's second page: the cursor the first page hands out. */
+export const POSTS_PAGE_TWO_CURSOR = "posts-page-2";
+
+/** The product the signed-in walker is on the crew of, and the ids its crew
+ *  routes are addressed by. */
+export const CREW_SLUG = SAMPLE_SLUG;
+export const CREW_ORG = "org_00000000000000000000000000000001";
+export const CREW_PROFILE = "opp_00000000000000000000000000000001";
+/** The draft waiting on that crew, and the pending seat request. */
+export const SAMPLE_DRAFT_POST = POST_ID(90);
+export const SAMPLE_SEAT_REQUEST = "req_00000000000000000000000000000001";
+
+const postProduct = (slug) => {
+  const c = CARDS.find((x) => x.slug === slug) ?? CARDS[0];
+  return { slug: c.slug, name: c.slug, stage: c.stage, logo: c.thumbnail };
+};
+const ADA = { handle: SAMPLE_HANDLE, displayName: "Ada Lovelace" };
+const NO_REACTIONS = { useful: 0, would_use: 0, impressive: 0, curious: 0 };
+
+/** Exactly PUBLIC_PRODUCT_POST_KEYS, each. */
+const PRODUCT_POSTS = [
+  {
+    id: SAMPLE_POSTS.feature,
+    kind: "feature",
+    product: postProduct(SAMPLE_SLUG),
+    author: ADA,
+    blocks: [
+      { block: "feature", value: "The state re-collection calendar" },
+      { block: "what", value: "Policies re-send on each state's own cycle. A new version supersedes the old one, with per-employee and per-policy CSV exports." },
+      { block: "try", value: `https://example.com/${SAMPLE_SLUG}` },
+      { block: "for", value: "employers with staff in more than one state" },
+      { block: "milestone", value: "AS3" },
+    ],
+    publishedAt: "2026-05-30T10:00:00.000Z",
+    reactions: { useful: 3, would_use: 2, impressive: 0, curious: 0 },
+    commentCount: 2,
+    threadId: SAMPLE_POST_THREAD,
+  },
+  {
+    id: SAMPLE_POSTS.version,
+    kind: "version",
+    product: postProduct(SAMPLE_SLUG),
+    author: ADA,
+    blocks: [
+      { block: "version", value: "v0.3.0" },
+      { block: "added", value: "A streaming proxy that meters every call per customer\nPer-policy CSV exports" },
+      { block: "changed", value: "Reminders go out at nine in the recipient's own time zone" },
+      { block: "fixed", value: "A reminder no longer repeats after an acknowledgment" },
+      { block: "security", value: "The provider key is passed through, never stored or logged" },
+    ],
+    publishedAt: "2026-05-28T10:00:00.000Z",
+    reactions: { useful: 0, would_use: 0, impressive: 1, curious: 0 },
+    commentCount: 0,
+    threadId: null,
+  },
+  {
+    id: SAMPLE_POSTS.idea,
+    kind: "idea",
+    product: postProduct(CARDS[1].slug),
+    // Nobody to name: the author has no public page.
+    author: null,
+    blocks: [
+      { block: "problem", value: "Small software vendors selling in the EU have to report exploited vulnerabilities within 24 hours, and have nothing to do it with." },
+      { block: "who", value: "small software vendors selling in the EU" },
+      { block: "why-now", value: "The reporting duty applies from 11 September 2026." },
+      { block: "seats", value: "A first builder who knows the regulation" },
+    ],
+    publishedAt: "2026-05-26T10:00:00.000Z",
+    reactions: { ...NO_REACTIONS, curious: 4 },
+    commentCount: 0,
+    threadId: null,
+  },
+  {
+    id: SAMPLE_POSTS.seat,
+    kind: "seat",
+    product: postProduct(SAMPLE_SLUG),
+    author: ADA,
+    blocks: [
+      { block: "role", value: "HR-compliance advisor" },
+      { block: "what", value: "Tell us which policies each state requires, and check the calendar against them." },
+      { block: "time", value: "A few hours a week" },
+      { block: "return", value: "A share of revenue" },
+    ],
+    publishedAt: "2026-05-24T10:00:00.000Z",
+    // Nobody has reacted, and the card shows no count at all.
+    reactions: NO_REACTIONS,
+    commentCount: 0,
+    threadId: null,
+  },
+];
+
+/** The page after the first: two more, and the last. */
+const PRODUCT_POSTS_PAGE_TWO = [
+  {
+    id: POST_ID(5),
+    kind: "feature",
+    product: postProduct(CARDS[2].slug),
+    author: { handle: "person-01", displayName: "Person 1" },
+    blocks: [
+      { block: "feature", value: "Exports" },
+      { block: "what", value: "Everything you have entered, as one CSV file." },
+      { block: "try", value: `https://example.com/${CARDS[2].slug}` },
+    ],
+    publishedAt: "2026-05-22T10:00:00.000Z",
+    reactions: { ...NO_REACTIONS, useful: 1 },
+    commentCount: 0,
+    threadId: null,
+  },
+  {
+    id: POST_ID(6),
+    kind: "idea",
+    product: postProduct(CARDS[4].slug),
+    author: { handle: "person-02", displayName: null },
+    blocks: [
+      { block: "problem", value: "Nobody can tell which of their job adverts break the new salary-range rules." },
+      { block: "who", value: "recruiters hiring across states" },
+    ],
+    publishedAt: "2026-05-21T10:00:00.000Z",
+    reactions: NO_REACTIONS,
+    commentCount: 0,
+    threadId: null,
+  },
+];
+
+const ALL_PRODUCT_POSTS = [...PRODUCT_POSTS, ...PRODUCT_POSTS_PAGE_TWO];
+
+/** The thread under the sample post: a comment and a reply (`LAUNCH_POSTS`). */
+const POST_THREAD = {
+  id: SAMPLE_POST_THREAD,
+  tag: "launch",
+  title: `Feature shipped on ${SAMPLE_SLUG}`,
+  authorHandle: SAMPLE_HANDLE,
+  authorName: "Ada Lovelace",
+  state: "open",
+  createdAt: "2026-05-30T10:00:00.000Z",
+  lastPostAt: "2026-05-30T12:00:00.000Z",
+  postCount: 2,
+};
+
+/** A post as its crew sees it. Exactly CREW_PRODUCT_POST_KEYS. */
+const crewPost = (post, extra = {}) => ({
+  id: post.id,
+  kind: post.kind,
+  state: "published",
+  blocks: post.blocks,
+  publishedAt: post.publishedAt,
+  milestoneId: null,
+  roleOpeningId: null,
+  threadId: post.threadId,
+  createdAt: post.publishedAt,
+  updatedAt: post.publishedAt,
+  ...extra,
+});
+
+/** The draft core prepared when `AS4` was marked for shipping: it waits on
+ *  the crew, and is in no public read. */
+const DRAFT_POST = {
+  id: SAMPLE_DRAFT_POST,
+  kind: "feature",
+  state: "draft",
+  blocks: [
+    { block: "feature", value: "Team seats" },
+    { block: "try", value: `https://example.com/${SAMPLE_SLUG}` },
+    { block: "milestone", value: "AS4" },
+  ],
+  publishedAt: null,
+  milestoneId: MILESTONE_ID(4),
+  roleOpeningId: null,
+  threadId: null,
+  createdAt: EARLIER,
+  updatedAt: EARLIER,
+};
+
+const CREW_POSTS = [DRAFT_POST, ...PRODUCT_POSTS.filter((p) => p.product.slug === SAMPLE_SLUG).map((p) => crewPost(p))];
+
+/** `GET …/needs-you`: one pending seat request, one draft. The request is
+ *  decided on Orunbase (`requestRef`), never here. */
+const NEEDS_YOU = {
+  requests: [
+    {
+      id: SAMPLE_SEAT_REQUEST,
+      roleOpeningId: "opr_00000000000000000000000000000002",
+      roleTitle: "Frontend contributor",
+      requestRef: "jrq_000000000000000000000001",
+      requester: { handle: "person-01", displayName: "Person 1" },
+      createdAt: EARLIER,
+    },
+  ],
+  drafts: [DRAFT_POST],
+};
+
+/** `GET /v1/openproduct/me/following`. */
+const FOLLOWING = {
+  products: [CARDS[0], CARDS[1], CARDS[2]].map((c) => ({
+    slug: c.slug,
+    name: c.slug,
+    stage: c.stage,
+    tagline: c.tagline,
+    logo: c.thumbnail,
+  })),
+  people: [{ handle: "person-01", displayName: "Person 1" }],
+};
+
+const postsPage = (posts, cursor) => {
+  if (cursor === null) return { posts: posts.slice(0, PRODUCT_POSTS.length), next: posts.length > PRODUCT_POSTS.length ? POSTS_PAGE_TWO_CURSOR : null };
+  if (cursor === POSTS_PAGE_TWO_CURSOR) return { posts: posts.slice(PRODUCT_POSTS.length), next: null };
+  return { __status: 422, error: { code: "validation_failed", message: "Not a position this feed issued" } };
+};
+
+/** The crew routes of `CREW_SLUG`, answered for the signed-in walker. Writes
+ *  are answered with what core would send back; nothing here is stored. */
+function crewAnswer(rest, req) {
+  const method = req.method ?? "GET";
+  const body = req.body && typeof req.body === "object" ? req.body : {};
+  const milestones = CREW_MILESTONES_FOR(CREW_SLUG);
+  const stage = "shipping";
+  if (rest === "") {
+    if (method === "PATCH") {
+      return { profile: { id: CREW_PROFILE, slug: typeof body.slug === "string" ? body.slug : CREW_SLUG, tryUrl: body.tryUrl ?? `https://example.com/${CREW_SLUG}`, tagline: body.tagline ?? CARDS[0].tagline } };
+    }
+    return undefined;
+  }
+  if (rest === "/needs-you") return { needsYou: NEEDS_YOU };
+  if (rest === "/product-posts") {
+    if (method === "POST") {
+      return { post: { ...DRAFT_POST, id: POST_ID(91), kind: body.kind ?? "feature", blocks: Array.isArray(body.blocks) ? body.blocks : [], milestoneId: null } };
+    }
+    return { posts: CREW_POSTS };
+  }
+  const post = /^\/product-posts\/(ppo_[0-9a-f]{32})(\/publish)?$/.exec(rest);
+  if (post) {
+    const found = CREW_POSTS.find((p) => p.id === post[1]) ?? (post[1] === POST_ID(91) ? { ...DRAFT_POST, id: POST_ID(91) } : null);
+    if (!found) return null;
+    if (method === "DELETE") return { removed: true };
+    const blocks = Array.isArray(body.blocks) ? body.blocks : found.blocks;
+    if (post[2]) return { post: { ...found, blocks, state: "published", publishedAt: NOW, updatedAt: NOW } };
+    return { post: { ...found, blocks, updatedAt: NOW } };
+  }
+  if (rest === "/milestones") {
+    if (method === "POST") {
+      return { milestone: { id: MILESTONE_ID(9), position: milestones.length, code: body.code ?? "AS5", title: body.title ?? "Untitled", summary: body.summary ?? null, shippedAt: null }, stage };
+    }
+    if (method === "PUT") {
+      const order = Array.isArray(body.order) ? body.order : milestones.map((m) => m.id);
+      return { milestones: order.map((id, position) => ({ ...(milestones.find((m) => m.id === id) ?? milestones[0]), id, position })), stage };
+    }
+    return { milestones, stage };
+  }
+  const milestone = /^\/milestones\/(pms_[0-9a-f]{32})(\/shipped)?$/.exec(rest);
+  if (milestone) {
+    const found = milestones.find((m) => m.id === milestone[1]);
+    if (!found) return null;
+    if (milestone[2]) {
+      const shipping = method === "PUT";
+      return {
+        milestone: { ...found, shippedAt: shipping ? NOW : null },
+        stage,
+        // Shipping prepares a draft Feature shipped post; un-shipping offers none.
+        offeredPost: shipping ? { ...DRAFT_POST, milestoneId: found.id } : null,
+      };
+    }
+    if (method === "DELETE") return { deleted: true, stage };
+    return { milestone: { ...found, ...(typeof body.code === "string" ? { code: body.code } : {}), ...(typeof body.title === "string" ? { title: body.title } : {}), ...("summary" in body ? { summary: body.summary } : {}) }, stage };
+  }
+  return undefined;
+}
+
 export const ROUTES = [
   // The archetypes come first: they are what XP4's budgets name. `/` is the
   // list of builds. `/products` was a redirect here until
@@ -1200,6 +1558,17 @@ export const MAINTAINER_PROFILE = {
  *  walk uploads one and expects to see it, then removes it. */
 export const STUDIO_MEDIA = [];
 
+/** The overlay's OPR-3 keys, bounded by the request's own parameters. */
+function overlayExtras(search) {
+  const query = new URLSearchParams(search ?? "");
+  const asked = (name) => (query.get(name) ?? "").split(",").filter((v) => v.length > 0);
+  return {
+    reactions: asked("productPosts").includes(SAMPLE_REACTED_POST) ? { [SAMPLE_REACTED_POST]: "curious" } : {},
+    crew: asked("ids").includes(CREW_SLUG) ? [{ slug: CREW_SLUG, org: CREW_ORG, profile: CREW_PROFILE }] : [],
+    requestedOpenings: asked("openings").filter((id) => id === SAMPLE_REQUESTED_OPENING),
+  };
+}
+
 function answer(pathname, search, req = { method: "GET", body: undefined }) {
   const P = "/v1/public/openproduct";
 
@@ -1451,8 +1820,29 @@ function answer(pathname, search, req = { method: "GET", body: undefined }) {
         follows: ["topic:developer-tools"],
         postVotes: [],
         unread: 3,
+        // OPR-3 — the three answers the redesign added, each bounded by what
+        // the page asked: my reaction on the idea post (`productPosts=`),
+        // the product I am on the crew of (`ids=`), the seat I asked for
+        // (`openings=`). A page that asked about none of them gets none.
+        ...overlayExtras(search),
       },
     };
+  }
+  // OPR-3 — my reaction, and what I follow.
+  const reactionPath = /^\/v1\/openproduct\/me\/product-post-reactions\/(ppo_[0-9a-f]{32})$/.exec(pathname);
+  if (reactionPath) {
+    const post = ALL_PRODUCT_POSTS.find((p) => p.id === reactionPath[1]);
+    if (!post) return null;
+    const reaction = req.method === "DELETE" ? null : (req.body?.reaction ?? null);
+    const reactions = { ...post.reactions };
+    if (reaction && reaction in reactions) reactions[reaction] += 1;
+    return { reaction: { postId: post.id, reaction, reactions } };
+  }
+  if (pathname === "/v1/openproduct/me/following") return { following: FOLLOWING };
+  // OPR-3 — the crew routes of the product the walker is on the crew of.
+  const crewRoot = `/v1/organizations/${CREW_ORG}/openproduct/profiles/${CREW_PROFILE}`;
+  if (pathname === crewRoot || pathname.startsWith(`${crewRoot}/`)) {
+    return crewAnswer(pathname.slice(crewRoot.length), req);
   }
   // SR0 — the search page's one read. Three sections, and the fixture answers
   // all three so the lane walks a page with content in every one rather than
@@ -1470,9 +1860,20 @@ function answer(pathname, search, req = { method: "GET", body: undefined }) {
           title: c.slug,
           summary: c.tagline,
           matched: "name-prefix",
+          // OPR-3 — a product hit says its stage.
+          stage: c.stage,
         })),
+      // OPR-3 — a person arrives with the listed products they maintain
+      // (`SearchPersonHit`): one shipping, one idea.
       makers: SAMPLE_HANDLE.includes(q) || q.includes("ada")
-        ? [{ handle: SAMPLE_HANDLE, displayName: "Ada Lovelace", matched: "handle" }]
+        ? [
+            {
+              handle: SAMPLE_HANDLE,
+              displayName: "Ada Lovelace",
+              matched: "handle",
+              products: [CARDS[0], CARDS[1]].map((c) => ({ slug: c.slug, name: c.slug, stage: c.stage })),
+            },
+          ]
         : [],
       topics: q.length >= 3 && SAMPLE_TOPIC.includes(q)
         ? [
@@ -1516,9 +1917,24 @@ function answer(pathname, search, req = { method: "GET", body: undefined }) {
     }
     return { __status: 422, error: { code: "validation_failed", message: "Not a position this directory issued" } };
   }
+  // OPR-3 — the feed, and one post. Published posts only, newest first.
+  if (pathname === `${P}/product-posts`) {
+    return postsPage(ALL_PRODUCT_POSTS, new URLSearchParams(search ?? "").get("cursor"));
+  }
+  if (pathname.startsWith(`${P}/product-posts/`)) {
+    const post = ALL_PRODUCT_POSTS.find((p) => p.id === pathname.slice(`${P}/product-posts/`.length));
+    return post ? { post } : null;
+  }
+  if (pathname === `${P}/threads/${SAMPLE_POST_THREAD}`) return { thread: POST_THREAD, posts: LAUNCH_POSTS };
   if (pathname.startsWith(`${P}/projects/`)) {
     const rest = pathname.slice(`${P}/projects/`.length);
     const [slug, sub] = rest.split("/");
+    if (sub === "product-posts") {
+      // One product's posts. An unknown product is a 404; a product that has
+      // posted nothing is an empty page, which is most of the corpus.
+      if (!CARDS.some((c) => c.slug === decodeURIComponent(slug))) return null;
+      return { posts: ALL_PRODUCT_POSTS.filter((p) => p.product.slug === decodeURIComponent(slug)), next: null };
+    }
     if (sub === "threads") {
       const tag = new URLSearchParams(search).get("tag");
       const threads = tag && tag !== THREAD.tag ? [] : [THREAD];

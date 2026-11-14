@@ -30,7 +30,12 @@
 // every anonymous visitor takes the `absent` path on every page load, it is
 // the most-exercised branch in the module rather than the least.
 
-import type { MeOverlay } from "@openproduct/contracts";
+import {
+  isProductPostReaction,
+  type MeOverlay,
+  type OverlayCrew,
+  type ProductPostReaction,
+} from "@openproduct/contracts";
 
 export type OverlayState =
   | { readonly status: "pending" }
@@ -64,6 +69,8 @@ export function overlayPath(
   ids: readonly string[],
   follows: readonly string[] = [],
   posts: readonly string[] = [],
+  productPosts: readonly string[] = [],
+  openings: readonly string[] = [],
 ): string {
   const parts: string[] = [];
   if (ids.length > 0) parts.push(`ids=${encodeURIComponent(ids.join(","))}`);
@@ -72,6 +79,12 @@ export function overlayPath(
   // one list holding both would make the answer's meaning depend on which
   // kind of page happened to ask.
   if (posts.length > 0) parts.push(`posts=${encodeURIComponent(posts.join(","))}`);
+  // OPR-3 — a fourth and a fifth bound, each its own namespace again: product
+  // posts (`ppo_…`, answered in `reactions`) and seats (`opr_…`, answered in
+  // `requestedOpenings`). `crew` needs no bound of its own: it is answered for
+  // the slugs in `ids`.
+  if (productPosts.length > 0) parts.push(`productPosts=${encodeURIComponent(productPosts.join(","))}`);
+  if (openings.length > 0) parts.push(`openings=${encodeURIComponent(openings.join(","))}`);
   return parts.length === 0 ? "/me/overlay" : `/me/overlay?${parts.join("&")}`;
 }
 
@@ -126,12 +139,38 @@ export function parseOverlay(body: unknown): MeOverlay | null {
     unread: o.unread as number,
     // OPR-3 — the three answers the redesign's overlay adds (my reaction per
     // product post, the products I am on the crew of, the seats I asked for).
-    // Carried through as sent, and empty when a response does not hold them:
-    // nothing reads them yet, and an older body is still a valid overlay.
-    reactions: (typeof o.reactions === "object" && o.reactions !== null ? o.reactions : {}) as MeOverlay["reactions"],
-    crew: (Array.isArray(o.crew) ? o.crew : []) as MeOverlay["crew"],
-    requestedOpenings: (Array.isArray(o.requestedOpenings) ? o.requestedOpenings : []) as MeOverlay["requestedOpenings"],
+    // EACH IS READ MEMBER BY MEMBER, and a member that is not the shape is
+    // dropped: an older body that holds none of them is still a valid overlay
+    // (they come back empty), and nothing but a known reaction word, three
+    // strings or an id can reach a renderer through them.
+    reactions: readReactions(o.reactions),
+    crew: readCrew(o.crew),
+    requestedOpenings: Array.isArray(o.requestedOpenings)
+      ? o.requestedOpenings.filter((id): id is string => typeof id === "string")
+      : [],
   };
+}
+
+function readReactions(raw: unknown): Record<string, ProductPostReaction> {
+  const out: Record<string, ProductPostReaction> = {};
+  if (typeof raw !== "object" || raw === null || Array.isArray(raw)) return out;
+  for (const [postId, reaction] of Object.entries(raw as Record<string, unknown>)) {
+    if (isProductPostReaction(reaction)) out[postId] = reaction;
+  }
+  return out;
+}
+
+function readCrew(raw: unknown): OverlayCrew[] {
+  if (!Array.isArray(raw)) return [];
+  const out: OverlayCrew[] = [];
+  for (const entry of raw) {
+    if (typeof entry !== "object" || entry === null) continue;
+    const { slug, org, profile } = entry as Record<string, unknown>;
+    if (typeof slug === "string" && typeof org === "string" && typeof profile === "string") {
+      out.push({ slug, org, profile });
+    }
+  }
+  return out;
 }
 
 type Listener = () => void;
@@ -150,11 +189,18 @@ interface Store {
   /** DQ1 — the same pair for post ids, and separate for the same reason. */
   wantedPosts: Set<string>;
   coveredPosts: Set<string>;
+  /** OPR-3 — the same pair for product posts and for seats. */
+  wantedProductPosts: Set<string>;
+  coveredProductPosts: Set<string>;
+  wantedOpenings: Set<string>;
+  coveredOpenings: Set<string>;
   listeners: Set<Listener>;
   scheduled: boolean;
   inFlight: boolean;
   /** OPP14 — memberships moved before the overlay arrived, applied on arrival. */
   deferred: DeferredAct[];
+  /** OPR-3 — reactions set before the overlay arrived, by post id. */
+  deferredReactions: Map<string, ProductPostReaction | null>;
 }
 
 const store: Store = {
@@ -165,10 +211,15 @@ const store: Store = {
   coveredFollows: new Set(),
   wantedPosts: new Set(),
   coveredPosts: new Set(),
+  wantedProductPosts: new Set(),
+  coveredProductPosts: new Set(),
+  wantedOpenings: new Set(),
+  coveredOpenings: new Set(),
   listeners: new Set(),
   scheduled: false,
   inFlight: false,
   deferred: [],
+  deferredReactions: new Map(),
 };
 
 export function overlayState(): OverlayState {
@@ -194,46 +245,64 @@ let schedule: (run: () => void) => void = (run) => {
   setTimeout(run, 0);
 };
 
-/** Both covered sets move together, because one fetch answers both bounds and
- *  a page that recorded only half of that would re-ask forever. */
-function cover(
-  ids: readonly string[],
-  follows: readonly string[],
-  posts: readonly string[],
-): void {
-  store.covered = new Set(ids);
-  store.coveredFollows = new Set(follows);
-  store.coveredPosts = new Set(posts);
+/** What one fetch asks about: every bound, sorted. */
+interface Bounds {
+  ids: string[];
+  follows: string[];
+  posts: string[];
+  productPosts: string[];
+  openings: string[];
+}
+
+function wantedBounds(): Bounds {
+  return {
+    ids: [...store.wanted].sort(),
+    follows: [...store.wantedFollows].sort(),
+    posts: [...store.wantedPosts].sort(),
+    productPosts: [...store.wantedProductPosts].sort(),
+    openings: [...store.wantedOpenings].sort(),
+  };
+}
+
+/** Every covered set moves together, because one fetch answers every bound
+ *  and a page that recorded only part of that would re-ask forever. */
+function cover(bounds: Bounds): void {
+  store.covered = new Set(bounds.ids);
+  store.coveredFollows = new Set(bounds.follows);
+  store.coveredPosts = new Set(bounds.posts);
+  store.coveredProductPosts = new Set(bounds.productPosts);
+  store.coveredOpenings = new Set(bounds.openings);
 }
 
 async function flush(): Promise<void> {
   store.scheduled = false;
   if (store.inFlight) return;
-  const ids = [...store.wanted].sort();
-  const follows = [...store.wantedFollows].sort();
-  const posts = [...store.wantedPosts].sort();
+  const bounds = wantedBounds();
   store.inFlight = true;
   try {
-    const res = await fetchImpl(overlayPath(ids, follows, posts), {
-      cache: "no-store",
-      headers: { accept: "application/json" },
-    });
+    const res = await fetchImpl(
+      overlayPath(bounds.ids, bounds.follows, bounds.posts, bounds.productPosts, bounds.openings),
+      {
+        cache: "no-store",
+        headers: { accept: "application/json" },
+      },
+    );
     // 204 is the signed-out AND the failed answer — one branch, taken by
     // every anonymous visitor on every page load, which is what keeps it
     // correct. See `me/overlay/route.ts`.
     if (!res.ok || res.status === 204) {
-      cover(ids, follows, posts);
+      cover(bounds);
       publish(ABSENT);
       return;
     }
     const overlay = parseOverlay(await res.json());
-    cover(ids, follows, posts);
+    cover(bounds);
     publish(overlay ? { status: "ready", overlay } : ABSENT);
     if (overlay) applyDeferred();
   } catch {
     // A network failure is indistinguishable from being signed out, on
     // purpose: neither is something a public page may render differently.
-    cover(ids, follows, posts);
+    cover(bounds);
     publish(ABSENT);
   } finally {
     store.inFlight = false;
@@ -241,7 +310,7 @@ async function flush(): Promise<void> {
     // a client navigation) get their own round. Without this they would wait
     // for a page load, and the visitor would see their own saves appear on
     // some cards and not others.
-    if (missingIds().length > 0) request([]);
+    if (anythingMissing()) request([]);
   }
 }
 
@@ -257,6 +326,16 @@ function missingPosts(): string[] {
   return [...store.wantedPosts].filter((id) => !store.coveredPosts.has(id));
 }
 
+function anythingMissing(): boolean {
+  return (
+    missingIds().length > 0 ||
+    missingFollows().length > 0 ||
+    missingPosts().length > 0 ||
+    [...store.wantedProductPosts].some((id) => !store.coveredProductPosts.has(id)) ||
+    [...store.wantedOpenings].some((id) => !store.coveredOpenings.has(id))
+  );
+}
+
 /**
  * Ask the overlay about these ids. Fire-and-forget by design.
  *
@@ -270,10 +349,14 @@ export function request(
   ids: readonly string[],
   follows: readonly string[] = [],
   posts: readonly string[] = [],
+  productPosts: readonly string[] = [],
+  openings: readonly string[] = [],
 ): void {
   for (const id of ids) store.wanted.add(id);
   for (const key of follows) store.wantedFollows.add(key);
   for (const id of posts) store.wantedPosts.add(id);
+  for (const id of productPosts) store.wantedProductPosts.add(id);
+  for (const id of openings) store.wantedOpenings.add(id);
   // ABSENT IS TERMINAL for this page load, and that is a cost decision as
   // much as a correctness one. Whether the visitor is signed out cannot
   // change without a navigation, so asking again — once per late-hydrating
@@ -282,14 +365,7 @@ export function request(
   // price of keeping the fail-open branch exercised; a dozen is not.
   if (store.state.status === "absent") return;
   // Already answered for everything asked about, and nothing new: no request.
-  if (
-    store.state.status !== "pending" &&
-    missingIds().length === 0 &&
-    missingFollows().length === 0 &&
-    missingPosts().length === 0
-  ) {
-    return;
-  }
+  if (store.state.status !== "pending" && !anythingMissing()) return;
   if (store.scheduled || store.inFlight) return;
   store.scheduled = true;
   schedule(() => {
@@ -389,6 +465,61 @@ function applyDeferred(): void {
   const acts = store.deferred;
   store.deferred = [];
   for (const act of acts) setMembership(act.list, act.key, act.on);
+  const reactions = store.deferredReactions;
+  store.deferredReactions = new Map();
+  for (const [postId, reaction] of reactions) setReaction(postId, reaction);
+}
+
+/**
+ * OPR-3 — set (or, with `null`, clear) my reaction on one product post before
+ * the server has answered, and hand back the undo.
+ *
+ * `setMembership`'s rules, over a map instead of a list: it moves only a
+ * `ready` overlay (a `pending` or `absent` one is a visitor whose reactions
+ * were never received), and the undo restores the snapshot rather than
+ * writing the old value back.
+ */
+export function setReaction(postId: string, reaction: ProductPostReaction | null): () => void {
+  const before = store.state;
+  if (before.status !== "ready") return () => {};
+  const current = before.overlay.reactions[postId] ?? null;
+  if (current === reaction) return () => {};
+  const next: Record<string, ProductPostReaction> = { ...before.overlay.reactions };
+  if (reaction === null) delete next[postId];
+  else next[postId] = reaction;
+  publish({ status: "ready", overlay: { ...before.overlay, reactions: next } });
+  return () => {
+    if (store.state.status === "ready") publish(before);
+  };
+}
+
+/** OPR-3 — `deferMembership` for a reaction: applied at once to a `ready`
+ *  overlay, queued for a `pending` one, dropped for an `absent` one. */
+export function deferReaction(postId: string, reaction: ProductPostReaction | null): void {
+  if (store.state.status === "ready") {
+    setReaction(postId, reaction);
+    return;
+  }
+  if (store.state.status === "absent") return;
+  store.deferredReactions.set(postId, reaction);
+}
+
+/**
+ * OPR-3 — record that a seat was asked for, before the server has answered.
+ * Additive only (a request is withdrawn on Orunbase, not here); a no-op undo
+ * unless the overlay is `ready`.
+ */
+export function setOpeningRequested(openingId: string): () => void {
+  const before = store.state;
+  if (before.status !== "ready") return () => {};
+  if (before.overlay.requestedOpenings.includes(openingId)) return () => {};
+  publish({
+    status: "ready",
+    overlay: { ...before.overlay, requestedOpenings: [...before.overlay.requestedOpenings, openingId] },
+  });
+  return () => {
+    if (store.state.status === "ready") publish(before);
+  };
 }
 
 /** Test seam. Resets every piece of module state, so tests cannot leak. */
@@ -403,6 +534,11 @@ export function __resetOverlayForTests(overrides?: {
   store.wantedPosts = new Set();
   store.coveredFollows = new Set();
   store.coveredPosts = new Set();
+  store.wantedProductPosts = new Set();
+  store.coveredProductPosts = new Set();
+  store.wantedOpenings = new Set();
+  store.coveredOpenings = new Set();
+  store.deferredReactions = new Map();
   store.listeners = new Set();
   store.scheduled = false;
   store.inFlight = false;

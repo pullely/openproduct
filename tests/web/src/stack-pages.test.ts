@@ -112,6 +112,7 @@ describe("the vocabulary is the gate", () => {
 describe("the rail cannot offer a value whose page would be empty", () => {
   const card = (slug: string, canonical: string[]): PublicProfileCard => ({
     slug,
+    stage: "idea",
     tagline: null,
     stack: canonical,
     stackCanonical: canonical,

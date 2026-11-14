@@ -7,6 +7,7 @@ import {
   SEARCH_SCOPE_NOTE,
   searchTitle,
   type SearchTopicHit,
+  isProductStage,
 } from "@openproduct/contracts";
 
 import { RESULT_CARD, SEARCH_COLUMN } from "./frame";
@@ -30,6 +31,7 @@ import { listOpenGraph } from "../ui/og";
 import { ProductTile } from "../ui/product-tile";
 
 import { AppLink } from "../ui/link";
+import { StageWord } from "../ui/stage-mark";
 
 /**
  * `/search?q=` — the results page (openproduct-launch SR0; rebuilt to boards
@@ -204,9 +206,9 @@ export default async function SearchPage({ searchParams }: PageProps) {
  * A product in the results: its tile, its name, its summary with the matched
  * words marked, and Follow — which follows the product (design.md §2 rule 3).
  *
- * NO STAGE BESIDE THE NAME. The board prints `Shipping` or `Idea` there; a
- * product has no stored stage until OPR2 adds `profiles.stage`, and the index
- * returns none, so the row says nothing rather than guessing.
+ * ITS STAGE BESIDE THE NAME (board `Search`): `Shipping` or `Idea`, from
+ * the result's own `stage` (OPR-3). A hit that carries none says nothing
+ * rather than guessing.
  *
  * THE NAME'S LINK COVERS THE ROW (FR2) — one anchor, stretched, rather than
  * a row-wide anchor with a button inside it, which is invalid HTML. The tile
@@ -232,12 +234,15 @@ function ProductRow({
         <ProductTile slug={hit.entityId} thumbnail={hit.thumbnail} size={44} />
       </AppLink>
       <div className="flex min-w-0 flex-1 flex-col gap-px">
-        <AppLink
-          href={href}
-          className={`self-start text-[15px] font-semibold text-foreground no-underline after:absolute after:inset-0 after:content-[''] ${FOCUS}`}
-        >
-          {hit.title}
-        </AppLink>
+        <span className="flex flex-wrap items-center gap-x-[10px] gap-y-px">
+          <AppLink
+            href={href}
+            className={`text-[15px] font-semibold text-foreground no-underline after:absolute after:inset-0 after:content-[''] ${FOCUS}`}
+          >
+            {hit.title}
+          </AppLink>
+          {isProductStage(hit.stage) ? <StageWord stage={hit.stage} /> : null}
+        </span>
         {hit.summary ? (
           <p className="m-0 truncate text-[13px] text-muted-foreground max-sm:line-clamp-2 max-sm:whitespace-normal max-sm:leading-[1.4]">
             {highlightParts(hit.summary, query).map((part, index) =>

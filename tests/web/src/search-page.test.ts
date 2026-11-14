@@ -20,7 +20,7 @@ import { readFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { SEARCH_SCOPE_NOTE, SEE_ALL_RESULTS } from "@openproduct/contracts";
+import { SEARCH_SCOPE_NOTE, SEE_ALL_RESULTS, type SearchPersonHit } from "@openproduct/contracts";
 import {
   NO_MATCHES,
   SEARCH_UNAVAILABLE,
@@ -37,6 +37,7 @@ import {
   visibleSections,
   type SearchPerson,
 } from "@openproduct-web/app/search/segments";
+import { stageWord, stageWordOf } from "@openproduct-web/app/ui/stage";
 import { toRows, visibleRows } from "@openproduct-web/app/shell/palette-rows";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -236,10 +237,18 @@ describe("a product row", () => {
     expect(markupOf("search/person-row.tsx")).not.toMatch(/Follow|\/me\/follow/);
   });
 
-  it("prints no stage, because the read carries none", () => {
-    // The board prints Shipping or Idea beside the name; a product has no
-    // stored stage until OPR2.
-    expect(markupOf("search/page.tsx")).not.toMatch(/Shipping|>Idea</);
+  it("prints the stage the read carries, through the shared mark, and types neither word itself", () => {
+    // OPR-3 — the result carries `stage`, so the board's Shipping / Idea is
+    // real data now. The word is the contract's (`ui/stage.ts`), drawn by the
+    // one shared component; the page spells neither, and a hit with no stage
+    // draws nothing.
+    const page = markupOf("search/page.tsx");
+    expect(page).toContain("{isProductStage(hit.stage) ? <StageWord stage={hit.stage} /> : null}");
+    expect(page).not.toMatch(/Shipping|>Idea</);
+    expect(stageWord("shipping")).toBe("Shipping");
+    expect(stageWord("idea")).toBe("Idea");
+    expect(stageWordOf(undefined)).toBeNull();
+    expect(stageWordOf("launched")).toBeNull();
   });
 
   it("marks whole words, on the board's stems", () => {
@@ -270,8 +279,9 @@ describe("a product row", () => {
 describe("a person row, and the chevron rule", () => {
   const ada: SearchPerson = { handle: "ada", displayName: "Ada Lovelace", matched: "name" };
 
-  it("has NO chevron on today's read, which sends no products for a person", () => {
-    // `/v1/search` returns a handle, a name and which field matched.
+  it("has NO chevron for a person with no listed products, or a read that sent no list", () => {
+    // `/v1/search` sends `products` for every person (OPR-3), empty when they
+    // maintain nothing listed; an older gateway sends no list at all.
     expect(canExpandPerson(ada)).toBe(false);
     expect(personProducts(ada)).toEqual([]);
     expect(canExpandPerson({ ...ada, products: [] })).toBe(false);
@@ -281,13 +291,23 @@ describe("a person row, and the chevron rule", () => {
     const withProducts: SearchPerson = {
       ...ada,
       products: [
-        { slug: "kettleworks", title: "Kettleworks" },
-        { slug: "ackstack", title: "ackstack" },
+        { slug: "kettleworks", name: "kettleworks", stage: "shipping" },
+        { slug: "ackstack", name: "ackstack", stage: "idea" },
       ],
     };
     expect(canExpandPerson(withProducts)).toBe(true);
     expect(personLine(withProducts, "name")).toBe("2 products");
-    expect(personLine({ ...ada, products: [{ slug: "one", title: "One" }] }, "name")).toBe("1 product");
+    expect(personLine({ ...ada, products: [{ slug: "one", name: "one", stage: "idea" }] }, "name")).toBe("1 product");
+    // It is the contract's shape, `SearchPersonHit`: a real response types as a row.
+    const fromWire: SearchPersonHit = { ...ada, products: withProducts.products! };
+    expect(personProducts(fromWire)).toHaveLength(2);
+  });
+
+  it("each product under a person says its name and its stage word", () => {
+    const row = markupOf("search/person-row.tsx");
+    expect(row).toContain("{product.name}");
+    expect(row).toContain("{isProductStage(product.stage) ? <StageWord stage={product.stage} /> : null}");
+    expect(row).not.toContain("product.title");
   });
 
   it("never invents a list from something that is not one", () => {

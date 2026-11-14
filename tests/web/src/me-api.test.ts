@@ -152,11 +152,17 @@ describe("the overlay forwards every bound the page sent (OPP8)", () => {
   // The browser half and the core half were each tested against the contract,
   // and the proxy between them was tested against neither.
 
-  it("names all three bounds in the query string", async () => {
+  it("names every bound in the query string", async () => {
     const { fetchImpl, calls } = recordingFetch({ data: { overlay: {} } });
     await fetchOverlay(
       "t",
-      { ids: "acme-thing,other-thing", follows: "topic:dev-tools", posts: "pst_1" },
+      {
+        ids: "acme-thing,other-thing",
+        follows: "topic:dev-tools",
+        posts: "pst_1",
+        productPosts: "ppo_1,ppo_2",
+        openings: "opr_1",
+      },
       fetchImpl,
     );
     const url = new URL(onlyCall(calls).url);
@@ -164,11 +170,14 @@ describe("the overlay forwards every bound the page sent (OPP8)", () => {
     expect(url.searchParams.get("ids")).toBe("acme-thing,other-thing");
     expect(url.searchParams.get("follows")).toBe("topic:dev-tools");
     expect(url.searchParams.get("posts")).toBe("pst_1");
+    // OPR-3 — the two bounds the redesign added ride the same hop.
+    expect(url.searchParams.get("productPosts")).toBe("ppo_1,ppo_2");
+    expect(url.searchParams.get("openings")).toBe("opr_1");
   });
 
   it("omits a bound the page did not ask about, and the query entirely when it asked nothing", async () => {
     const some = recordingFetch({ data: { overlay: {} } });
-    await fetchOverlay("t", { ids: null, follows: "person:ada", posts: null }, some.fetchImpl);
+    await fetchOverlay("t", { ids: null, follows: "person:ada", posts: null, productPosts: null, openings: null }, some.fetchImpl);
     const url = new URL(onlyCall(some.calls).url);
     expect(url.searchParams.get("follows")).toBe("person:ada");
     expect(url.searchParams.has("ids")).toBe(false);
@@ -177,7 +186,7 @@ describe("the overlay forwards every bound the page sent (OPP8)", () => {
     // The account chip asks about nothing on a page with no cards — one
     // request for the badge and the identity block, and no parameters at all.
     const none = recordingFetch({ data: { overlay: {} } });
-    await fetchOverlay("t", { ids: null, follows: null, posts: null }, none.fetchImpl);
+    await fetchOverlay("t", { ids: null, follows: null, posts: null, productPosts: null, openings: null }, none.fetchImpl);
     const bare = onlyCall(none.calls).url;
     expect(bare).toContain("/v1/openproduct/me/overlay");
     expect(bare).not.toContain("?");
@@ -187,7 +196,8 @@ describe("the overlay forwards every bound the page sent (OPP8)", () => {
     // The route builds its bounds object from this list rather than naming
     // three strings of its own. That is the property that makes a fourth
     // bound impossible to add on one side only.
-    expect([...OVERLAY_BOUND_KEYS]).toEqual(["ids", "follows", "posts"]);
+    // OPR-3 made it five: product posts (my reactions) and seats (my requests).
+    expect([...OVERLAY_BOUND_KEYS]).toEqual(["ids", "follows", "posts", "productPosts", "openings"]);
   });
 });
 

@@ -12,8 +12,11 @@ import {
   SEE_ALL_RESULTS,
   makerPath,
   searchPath,
+  type ProductRef,
   type SearchMakerHit,
 } from "@openproduct/contracts";
+
+import { stageWordOf } from "../ui/stage";
 
 /** One hit as the DS0 index returns it. */
 export interface SearchHit {
@@ -22,21 +25,23 @@ export interface SearchHit {
   readonly title: string;
   readonly summary: string | null;
   readonly matched: string;
+  /** OPR-3 — a product hit's stage (`idea` / `shipping`); null or absent
+   *  when the read does not know it. */
+  readonly stage?: string | null;
 }
 
 /**
- * A maker as `/v1/search` returns one, plus the one field the card can use
- * and the read does not send yet.
+ * A maker as `/v1/search` returns one: the contract's `SearchPersonHit`,
+ * with `products` (`{slug, name, stage}`, at most six) the listed products
+ * they maintain.
  *
- * `products` IS NOT IN TODAY'S RESPONSE. The design's person row opens to
- * show that person's products (design.md §2 rule 6); the search read returns
- * a handle, a name and which field matched, and nothing about what the
- * person makes. The row model takes the list when a response carries it and
- * a person row without one simply has nothing to open — the card never
+ * `products` IS OPTIONAL HERE AND REQUIRED ON THE WIRE. The read has sent it
+ * since OPR-3; a response without it (an older gateway behind a newer page)
+ * is a person row with nothing to open, never a failure — and the card never
  * makes up products for somebody.
  */
 export interface SearchMaker extends SearchMakerHit {
-  readonly products?: readonly { readonly slug: string; readonly title: string }[];
+  readonly products?: readonly ProductRef[];
 }
 
 /** What a row is. `all` is the door out of the card rather than a result. */
@@ -60,10 +65,10 @@ export interface PaletteRow {
 /**
  * The word a row wears at its right edge.
  *
- * A PRODUCT SAYS "Product", NOT ITS STAGE. The board prints "Shipping" or
- * "Idea" there. The index returns a slug, a title and a summary and no
- * stage (a product has no stored stage until OPR2 adds `profiles.stage`),
- * so the row says the one thing the read knows: what kind of thing it is.
+ * A PRODUCT SAYS ITS STAGE — the contract's own word for `shipping` or
+ * `idea` (board `Feed`'s search card), read from the result (OPR-3). A hit
+ * that carries no stage says the one thing the read does know: that it is a
+ * product. The word is never guessed.
  */
 export const ROW_KIND: Record<Exclude<PaletteRowType, "all">, string> = {
   product: "Product",
@@ -106,14 +111,14 @@ export function toRows(
   for (const result of results) {
     if (result.kind !== "product") continue;
     if (rows.length >= PRODUCT_ROW_LIMIT) break;
-    rows.push(productRow(result.entityId, result.title));
+    rows.push(productRow(result.entityId, result.title, result.stage));
   }
   for (const maker of makers.slice(0, PERSON_ROW_LIMIT)) {
     // THEIR NAME IF THEY WROTE ONE, their handle otherwise — never a
     // generated stand-in.
     const name = maker.displayName ?? `@${maker.handle}`;
-    const products = (maker.products ?? []).map((product) =>
-      productRow(product.slug, product.title, maker.handle),
+    const products = (Array.isArray(maker.products) ? maker.products : []).map((product) =>
+      productRow(product.slug, product.name, product.stage, maker.handle),
     );
     rows.push({
       type: "person",
@@ -128,12 +133,12 @@ export function toRows(
   return rows;
 }
 
-function productRow(slug: string, title: string, under?: string): PaletteRow {
+function productRow(slug: string, title: string, stage: unknown, under?: string): PaletteRow {
   return {
     type: "product",
     id: under ? `${under}/${slug}` : slug,
     title,
-    kind: ROW_KIND.product,
+    kind: stageWordOf(stage) ?? ROW_KIND.product,
     href: `/${slug}`,
     initials: initialsOf(title),
     ...(under ? { under } : {}),

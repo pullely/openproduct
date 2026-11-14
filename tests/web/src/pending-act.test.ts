@@ -49,6 +49,9 @@ const ACTS: PendingAct[] = [
   { act: "save", slug: "my-product" },
   { act: "follow", kind: "topic", value: "devtools" },
   { act: "comment-vote", postId: "8f14e45f-ceea-467a-9c2b-1e9f5a3d0c77" },
+  // OPR-3 — a reaction on a product post. It names the reaction to SET; a
+  // signed-out visitor holds none, so it too can only add.
+  { act: "react", postId: `ppo_${"0".repeat(31)}1`, reaction: "useful" },
 ];
 
 describe("the record survives the round trip", () => {
@@ -66,7 +69,7 @@ describe("the record survives the round trip", () => {
     }
   });
 
-  it("refuses everything that is not one of its four shapes", () => {
+  it("refuses everything that is not one of its five shapes", () => {
     const refused = [
       null,
       undefined,
@@ -82,6 +85,9 @@ describe("the record survives the round trip", () => {
       btoa(JSON.stringify({ act: "follow", kind: "planet", value: "devtools" })),
       btoa(JSON.stringify({ act: "follow", kind: "topic", value: "!!" })),
       btoa(JSON.stringify({ act: "comment-vote", postId: "not-a-uuid" })),
+      btoa(JSON.stringify({ act: "react", postId: "not-a-post", reaction: "useful" })),
+      btoa(JSON.stringify({ act: "react", postId: `ppo_${"0".repeat(31)}1`, reaction: "none" })),
+      btoa(JSON.stringify({ act: "react", postId: `ppo_${"0".repeat(31)}1` })),
       "A".repeat(513),
     ];
     const accepted = refused.filter((raw) => decodePending(raw as string) !== null);
@@ -99,14 +105,15 @@ describe("the record survives the round trip", () => {
 });
 
 describe("it can only ever ADD", () => {
-  // THE INVARIANT. There are four kinds, not six: a signed-out page renders
+  // THE INVARIANT. There are five kinds (four until OPR-3's reaction), not
+  // seven: a signed-out page renders
   // every control unvoted, unsaved and unfollowed (I6), so the only act a
   // bounced visitor can have been performing is the one that adds. A record
   // that could subtract would be a replay able to withdraw an endorsement
   // somebody cast in another tab in the ten minutes since — a thing no reader
   // would connect to anything they did.
   it("has no withdrawal shape at all", () => {
-    for (const act of ["unendorse", "unsave", "unfollow"]) {
+    for (const act of ["unendorse", "unsave", "unfollow", "unreact"]) {
       expect(decodePending(btoa(JSON.stringify({ act, slug: "my-product" })))).toBeNull();
     }
   });

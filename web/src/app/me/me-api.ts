@@ -247,11 +247,15 @@ export interface OverlayBounds {
   follows: string | null;
   /** Post ids the page rendered (DQ1). */
   posts: string | null;
+  /** Product post ids (`ppo_…`) the page rendered (OPR-3). */
+  productPosts: string | null;
+  /** Seat ids (`opr_…`) the page rendered (OPR-3). */
+  openings: string | null;
 }
 
 /** The wire names, in one place, so the route and this function cannot
  *  disagree about which parameters exist. */
-export const OVERLAY_BOUND_KEYS = ["ids", "follows", "posts"] as const;
+export const OVERLAY_BOUND_KEYS = ["ids", "follows", "posts", "productPosts", "openings"] as const;
 
 /**
  * The personalisation overlay (XP2). Every bound is passed through verbatim —

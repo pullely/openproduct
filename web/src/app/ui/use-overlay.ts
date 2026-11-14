@@ -2,6 +2,8 @@
 
 import * as React from "react";
 
+import type { OverlayCrew, ProductPostReaction } from "@openproduct/contracts";
+
 import {
   OVERLAY_PENDING,
   overlayState,
@@ -28,6 +30,10 @@ export function useOverlay(
   ids: readonly string[] = [],
   follows: readonly string[] = [],
   posts: readonly string[] = [],
+  /** OPR-3 — product post ids (`ppo_…`); answered in `reactions`. */
+  productPosts: readonly string[] = [],
+  /** OPR-3 — seat ids (`opr_…`); answered in `requestedOpenings`. */
+  openings: readonly string[] = [],
 ): OverlayState {
   const state = React.useSyncExternalStore(subscribeOverlay, overlayState, serverSnapshot);
 
@@ -37,13 +43,17 @@ export function useOverlay(
   const key = ids.join(",");
   const followKeys = follows.join(",");
   const postIds = posts.join(",");
+  const productPostIds = productPosts.join(",");
+  const openingIds = openings.join(",");
   React.useEffect(() => {
     request(
       key.length > 0 ? key.split(",") : [],
       followKeys.length > 0 ? followKeys.split(",") : [],
       postIds.length > 0 ? postIds.split(",") : [],
+      productPostIds.length > 0 ? productPostIds.split(",") : [],
+      openingIds.length > 0 ? openingIds.split(",") : [],
     );
-  }, [key, followKeys, postIds]);
+  }, [key, followKeys, postIds, productPostIds, openingIds]);
 
   return state;
 }
@@ -111,4 +121,54 @@ export function isFollowing(state: OverlayState, key: string): boolean {
  */
 export function unreadCount(state: OverlayState): number {
   return state.status === "ready" ? state.overlay.unread : 0;
+}
+
+// ─── OPR-3 — reactions, crew, requested seats ──────────────────────────────
+//
+// Three more questions, each over its own field, and each a pure reader of a
+// state plus a hook that asks for exactly what it reads. The readers answer
+// "nothing" for a `pending` or `absent` overlay, so the server render and the
+// signed-out page are the same anonymous one (I6).
+
+const NONE: readonly string[] = Object.freeze([]);
+
+/** My reaction on this product post, or null — also null while unknown. */
+export function reactionOn(state: OverlayState, postId: string): ProductPostReaction | null {
+  return state.status === "ready" ? (state.overlay.reactions[postId] ?? null) : null;
+}
+
+/** The crew entry for this slug when the visitor is on its crew, else null. */
+export function crewOf(state: OverlayState, slug: string): OverlayCrew | null {
+  if (state.status !== "ready") return null;
+  return state.overlay.crew.find((entry) => entry.slug === slug) ?? null;
+}
+
+/** Whether the visitor has a pending request for this seat (`opr_…`). */
+export function isOpeningRequested(state: OverlayState, openingId: string): boolean {
+  return state.status === "ready" && state.overlay.requestedOpenings.includes(openingId);
+}
+
+/**
+ * My reaction on one product post. Asks the overlay about this post id
+ * (`productPosts=`), coalesced with every other card on the page.
+ */
+export function useReaction(postId: string): ProductPostReaction | null {
+  const ids = React.useMemo(() => [postId], [postId]);
+  return reactionOn(useOverlay(NONE, NONE, NONE, ids), postId);
+}
+
+/**
+ * Whether the visitor is on this product's crew, with the workspace and
+ * listing ids the crew routes are addressed by. Asks the overlay about the
+ * slug (`ids=`); null until it answers, and null for everybody else.
+ */
+export function useCrewOf(slug: string): OverlayCrew | null {
+  const ids = React.useMemo(() => [slug], [slug]);
+  return crewOf(useOverlay(ids), slug);
+}
+
+/** Whether the visitor asked for this seat. Asks about it (`openings=`). */
+export function useOpeningRequested(openingId: string): boolean {
+  const ids = React.useMemo(() => [openingId], [openingId]);
+  return isOpeningRequested(useOverlay(NONE, NONE, NONE, NONE, ids), openingId);
 }

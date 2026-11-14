@@ -2,7 +2,7 @@
 
 import * as React from "react";
 
-import { MAKER_MATCH_LABELS, makerPath } from "@openproduct/contracts";
+import { MAKER_MATCH_LABELS, isProductStage, makerPath } from "@openproduct/contracts";
 
 import {
   canExpandPerson,
@@ -16,6 +16,7 @@ import { initialsOf } from "../feed/tile";
 import { FOCUS } from "../ui/design";
 import { ChevronIcon } from "../ui/icons";
 import { AppLink } from "../ui/link";
+import { StageWord } from "../ui/stage-mark";
 
 /**
  * A person in the results (openproduct-redesign OPR1, boards `Search` and
@@ -26,11 +27,11 @@ import { AppLink } from "../ui/link";
  * and a chevron that opens the products beneath, indented on a 2px rule.
  *
  * THE CHEVRON IS THERE ONLY WHEN THERE IS SOMETHING UNDER IT. `/v1/search`
- * returns a handle, a name and which field matched, and no products for a
- * person, so today no row has one. The row is built for the list
- * (`canExpandPerson`): when a response carries `products` the chevron
- * appears and opens them; without it nothing is drawn where it would be,
- * and nothing is made up.
+ * sends each person's listed products (`SearchPersonHit.products`, OPR-3):
+ * a name and a stage. Somebody with none has nothing to open
+ * (`canExpandPerson`), so nothing is drawn where the chevron would be, and
+ * nothing is made up. Each product under a person says its name and its
+ * stage word.
  *
  * NO FOLLOW HERE: a person is followed only from their own profile (rule 3).
  *
@@ -101,9 +102,10 @@ export function PersonRow({ person }: { person: SearchPerson }) {
                   aria-hidden="true"
                   className="grid h-[30px] w-[30px] shrink-0 place-items-center rounded-[10px] bg-sunken text-label font-semibold text-copy"
                 >
-                  {initialsOf(product.title)}
+                  {initialsOf(product.name)}
                 </span>
-                <span className="min-w-0 flex-1 font-semibold">{product.title}</span>
+                <span className="min-w-0 flex-1 font-semibold [overflow-wrap:anywhere]">{product.name}</span>
+                {isProductStage(product.stage) ? <StageWord stage={product.stage} /> : null}
               </AppLink>
             </li>
           ))}
