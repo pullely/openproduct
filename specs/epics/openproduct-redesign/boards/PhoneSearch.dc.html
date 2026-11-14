@@ -1,0 +1,247 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Search, phone</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600&amp;family=Lora:ital,wght@0,400;1,400&amp;family=IBM+Plex+Mono:wght@400;500&amp;display=swap">
+<style>
+:root{color-scheme:light}body{margin:0}
+a{color:#8A6420}a:hover{color:#5E4415}
+</style>
+</helmet>
+<div style="position: relative; width: 390px; height: 844px; box-sizing: border-box; background-color: #F6F4EE; background-image: radial-gradient(500px 260px at 50% -6%, rgba(184,134,47,0.2), transparent 65%), radial-gradient(rgba(20,20,19,0.07) 1px, transparent 1.2px); background-size: auto, 20px 20px; color: #141413; font-family: 'Hanken Grotesk', system-ui, sans-serif; font-size: 15px; line-height: 1.5; display: flex; flex-direction: column; overflow: hidden">
+
+<header style="display: flex; align-items: center; gap: 10px; padding: 12px 14px; background: rgba(255,255,255,0.6); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px)">
+<a href="PhoneFeed.dc.html" aria-label="Back" style="width: 44px; height: 44px; border-radius: 50%; background: #FFFFFF; color: #141413; display: flex; align-items: center; justify-content: center; flex-shrink: 0"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M15 18l-6-6 6-6"></path></svg></a>
+<div style="flex: 1; min-width: 0; display: flex; align-items: center; background: #FFFFFF; border-radius: 999px; box-shadow: inset 0 0 0 1px rgba(20,20,19,0.07); padding: 0 0 0 14px; min-height: 44px">
+<label style="flex: 1; min-width: 0; display: flex; align-items: center; gap: 8px; min-height: 44px">
+<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#8A6420" stroke-width="2" aria-hidden="true" style="flex-shrink: 0"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-3.5-3.5"></path></svg>
+<span style="position: absolute; left: -9999px">Search</span>
+<input type="text" inputmode="search" enterkeyhint="search" autocomplete="off" value="{{query}}" onInput="{{setQuery}}" placeholder="Search" style="border: 0; outline: 0; background: transparent; color: #141413; font: inherit; font-size: 16px; flex: 1; min-width: 0; width: 100%">
+</label>
+<sc-if value="{{hasQuery}}" hint-placeholder-val="{{true}}"><button type="button" onClick="{{clearQuery}}" aria-label="Clear search" style="width: 44px; height: 44px; padding: 0; flex-shrink: 0; border: 0; border-radius: 50%; background: transparent; color: #6B6A66; display: flex; align-items: center; justify-content: center; cursor: pointer"><span style="width: 26px; height: 26px; border-radius: 50%; background: rgba(20,20,19,0.06); display: flex; align-items: center; justify-content: center"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg></span></button></sc-if>
+</div>
+</header>
+
+<div style="flex: 1; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; padding: 10px 12px 12px">
+
+<div role="group" aria-label="Show results" style="flex-shrink: 0; display: flex; gap: 2px; padding: 3px; border-radius: 999px; background: rgba(20,20,19,0.06)">
+<sc-for list="{{segments}}" as="s" hint-placeholder-count="4">
+<button type="button" onClick="{{s.pick}}" aria-pressed="{{s.on}}" style="{{s.style}}">{{s.label}}<span style="{{s.countStyle}}">{{s.count}}</span></button>
+</sc-for>
+</div>
+
+<sc-if value="{{showProducts}}" hint-placeholder-val="{{true}}">
+<section aria-label="Products" style="flex-shrink: 0; display: flex; flex-direction: column; gap: 6px">
+<sc-if value="{{showHeads}}" hint-placeholder-val="{{true}}"><h2 style="margin: 0; padding: 0 6px; font-family: 'IBM Plex Mono', monospace; font-weight: 400; font-size: 10.5px; letter-spacing: 0.12em; color: #6B6A66">{{productsHead}}</h2></sc-if>
+<div style="background: #FFFFFF; border-radius: 16px; padding: 4px 12px">
+<sc-for list="{{products}}" as="r" hint-placeholder-count="1">
+<div style="{{r.rowStyle}}">
+<a href="{{r.href}}" aria-label="{{r.name}}" style="{{r.tile}}">{{r.mono}}</a>
+<div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px">
+<div style="display: flex; flex-wrap: wrap; align-items: center; gap: 0 8px">
+<a href="{{r.href}}" style="color: #141413; text-decoration: none; font-weight: 600; font-size: 15px">{{r.name}}</a>
+<span style="{{r.stageStyle}}"><span style="{{r.dotStyle}}"></span>{{r.stage}}</span>
+</div>
+<span style="font-size: 13px; line-height: 1.4; color: #6B6A66; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden"><sc-for list="{{r.parts}}" as="t" hint-placeholder-count="1"><span style="{{t.style}}">{{t.text}}</span></sc-for></span>
+</div>
+<button type="button" onClick="{{r.toggle}}" aria-pressed="{{r.on}}" aria-label="{{r.aria}}" style="{{r.btnStyle}}">{{r.label}}</button>
+</div>
+</sc-for>
+</div>
+</section>
+</sc-if>
+
+<sc-if value="{{showPeople}}" hint-placeholder-val="{{true}}">
+<section aria-label="People" style="flex-shrink: 0; display: flex; flex-direction: column; gap: 6px">
+<sc-if value="{{showHeads}}" hint-placeholder-val="{{true}}"><h2 style="margin: 0; padding: 0 6px; font-family: 'IBM Plex Mono', monospace; font-weight: 400; font-size: 10.5px; letter-spacing: 0.12em; color: #6B6A66">{{peopleHead}}</h2></sc-if>
+<div style="background: #FFFFFF; border-radius: 16px; padding: 4px 6px 4px 12px">
+<sc-for list="{{people}}" as="r" hint-placeholder-count="1">
+<div style="{{r.wrapStyle}}">
+<div style="display: flex; align-items: center; gap: 12px">
+<a href="PhonePerson.dc.html" style="flex: 1; min-width: 0; display: flex; align-items: center; gap: 12px; min-height: 44px; color: #141413; text-decoration: none">
+<span style="width: 40px; height: 40px; border-radius: 50%; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 15px; background: #F0EEE6; color: #2B2A27">{{r.mono}}</span>
+<span style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px">
+<span style="font-weight: 600; font-size: 15px; overflow-wrap: anywhere">{{r.name}}</span>
+<span style="font-size: 13px; color: #6B6A66">{{r.line}}</span>
+</span>
+</a>
+<button type="button" onClick="{{r.toggle}}" aria-expanded="{{r.open}}" aria-label="{{r.toggleLabel}}" style="width: 44px; height: 44px; padding: 0; flex-shrink: 0; border: 0; border-radius: 50%; background: transparent; color: #6B6A66; display: flex; align-items: center; justify-content: center; cursor: pointer"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{r.chev}}"></path></svg></button>
+</div>
+<sc-if value="{{r.open}}" hint-placeholder-val="{{false}}">
+<div style="margin: 0 6px 0 19px; padding-left: 12px; border-left: 2px solid #ECEAE3; display: flex; flex-direction: column; gap: 2px">
+<sc-for list="{{r.products}}" as="c" hint-placeholder-count="1">
+<a href="{{c.href}}" style="display: flex; align-items: center; gap: 10px; min-height: 48px; padding: 0 10px; border-radius: 14px; background: #F7F5EF; color: #141413; text-decoration: none">
+<span style="{{c.tile}}">{{c.mono}}</span>
+<span style="flex: 1; min-width: 0; font-weight: 600">{{c.name}}</span>
+<span style="{{c.stageStyle}}"><span style="{{c.dotStyle}}"></span>{{c.stage}}</span>
+<span style="font-size: 13px; color: #6B6A66">{{c.role}}</span>
+</a>
+</sc-for>
+</div>
+</sc-if>
+</div>
+</sc-for>
+</div>
+</section>
+</sc-if>
+
+<sc-if value="{{showPosts}}" hint-placeholder-val="{{true}}">
+<section aria-label="Posts" style="flex-shrink: 0; display: flex; flex-direction: column; gap: 6px">
+<sc-if value="{{showHeads}}" hint-placeholder-val="{{true}}"><h2 style="margin: 0; padding: 0 6px; font-family: 'IBM Plex Mono', monospace; font-weight: 400; font-size: 10.5px; letter-spacing: 0.12em; color: #6B6A66">{{postsHead}}</h2></sc-if>
+<div style="display: flex; flex-direction: column; gap: 10px">
+<sc-for list="{{posts}}" as="p" hint-placeholder-count="1">
+<article aria-label="{{p.kindLabel}}" style="{{p.cardStyle}}">
+<div style="display: flex; align-items: center; gap: 10px">
+<a href="{{p.href}}" aria-label="{{p.product}}" style="{{p.tile}}">{{p.mono}}</a>
+<div style="flex: 1; min-width: 0; display: flex; flex-direction: column; line-height: 1.3">
+<a href="{{p.href}}" style="color: #141413; text-decoration: none; font-weight: 600; font-size: 15px">{{p.product}}</a>
+<span style="font-size: 13px; color: #6B6A66">by <a href="PhonePerson.dc.html" style="color: #2B2A27; font-weight: 600; text-decoration: none">{{p.by}}</a> · {{p.when}}</span>
+</div>
+</div>
+
+<sc-if value="{{p.isFeature}}" hint-placeholder-val="{{true}}">
+<div style="display: flex; align-items: center; gap: 8px">
+<span style="width: 26px; height: 26px; border-radius: 50%; background: linear-gradient(135deg, #E3B34C, #B8862F); display: flex; align-items: center; justify-content: center; flex-shrink: 0"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2.6" aria-hidden="true"><path d="M5 12l5 5 9-10"></path></svg></span>
+<span style="font-weight: 600; font-size: 18px; letter-spacing: -0.015em; line-height: 1.2">{{p.title}}</span>
+</div>
+<div style="font-size: 13px; color: #2B2A27; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden">{{p.summary}}</div>
+<div style="display: flex; align-items: center; gap: 10px">
+<div style="flex: 1; display: flex; gap: 3px" aria-hidden="true"><span style="flex: 1; height: 4px; border-radius: 2px; background: linear-gradient(90deg, #B8862F, #E3B34C)"></span><span style="flex: 1; height: 4px; border-radius: 2px; background: linear-gradient(90deg, #B8862F, #E3B34C)"></span><span style="flex: 1; height: 4px; border-radius: 2px; background: linear-gradient(90deg, #B8862F, #E3B34C)"></span><span style="flex: 1; height: 4px; border-radius: 2px; background: #EDE9DE"></span></div>
+<span style="font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; letter-spacing: 0.12em; color: #8A6420">3 OF 4</span>
+</div>
+</sc-if>
+
+<sc-if value="{{p.isIdea}}" hint-placeholder-val="{{false}}">
+<span style="font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; letter-spacing: 0.12em; color: #5B3F86">AN IDEA, NOT BUILT YET</span>
+<div style="font-family: Lora, Georgia, serif; font-style: italic; font-size: 18px; line-height: 1.35; color: #2A1F3D">“{{p.title}}”</div>
+<div style="font-size: 13px; color: #3D3550; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden">{{p.summary}}</div>
+</sc-if>
+
+<a href="PhonePost.dc.html" style="{{p.linkStyle}}">Open post<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"></path></svg></a>
+</article>
+</sc-for>
+</div>
+</section>
+</sc-if>
+
+<sc-if value="{{nothing}}" hint-placeholder-val="{{false}}">
+<div style="flex-shrink: 0; padding: 24px 14px; border-radius: 16px; background: #FFFFFF; text-align: center; color: #6B6A66">No matches.</div>
+</sc-if>
+
+</div>
+
+<nav aria-label="Main" style="position: relative; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); margin: 10px 10px 14px; padding: 4px 6px; background: #FFFFFF; border-radius: 16px">
+<a href="PhoneFeed.dc.html" style="min-height: 54px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; color: #6B6A66; text-decoration: none; font-size: 11px">
+<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 11l8-7 8 7v9H4z"></path></svg>Feed</a>
+<a href="PhoneProducts.dc.html" style="min-height: 54px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; color: #6B6A66; text-decoration: none; font-size: 11px">
+<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="2"></rect><rect x="14" y="3" width="7" height="7" rx="2"></rect><rect x="3" y="14" width="7" height="7" rx="2"></rect><rect x="14" y="14" width="7" height="7" rx="2"></rect></svg>Products</a>
+<a href="PhoneSeats.dc.html" style="min-height: 54px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; color: #6B6A66; text-decoration: none; font-size: 11px">
+<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="9" cy="8" r="3.5"></circle><path d="M3 20c.8-3.5 3.2-5.5 6-5.5s5.2 2 6 5.5"></path><path d="M18 8v6M15 11h6"></path></svg>Seats</a>
+<a href="PhoneActivity.dc.html" style="min-height: 54px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; color: #6B6A66; text-decoration: none; font-size: 11px">
+<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 8a6 6 0 0112 0c0 7 3 8 3 8H3s3-1 3-8"></path><path d="M10 20a2 2 0 004 0"></path></svg>Activity</a>
+</nav>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  constructor(props) { super(props); this.state = { query: 'ackstack', seg: 'all', follow: {}, open: {} }; }
+  renderVals() {
+    const st = this.state;
+    const q = st.query;
+    const words = q.toLowerCase().split(/\s+/).filter(Boolean);
+    const hits = (x) => { const hay = (x.name + ' ' + x.text + ' ' + x.tags).toLowerCase(); return words.every(w => hay.includes(w)); };
+    const IDEA_TILE = 'background: #FFFFFF; color: #5B3F86; box-shadow: inset 0 0 0 1.5px rgba(91,63,134,0.3)';
+    const PRODUCTS = [
+      { name: 'ackstack', mono: 'Ak', tileC: 'background: #F3E7CC; color: #8A6420', ship: true, text: 'Send policies, collect e-acknowledgments and re-collect them on each state’s schedule', tags: 'hr compliance policy acknowledgment' },
+      { name: 'aitally', mono: 'At', tileC: 'background: #F0EEE6; color: #2B2A27', ship: true, text: 'An AI tool register, staff AI training records and regulator-ready evidence', tags: 'compliance regulator evidence' },
+      { name: 'rangewise', mono: 'Rw', tileC: 'background: #E3EEE8; color: #2F5E4C', ship: true, text: 'Check job ads for missing or non-compliant salary ranges before they go live', tags: 'compliance pay transparency' },
+      { name: 'expirio', mono: 'Ex', tileC: 'background: #ECE6F3; color: #5B3F86', ship: true, text: 'Never let a license, permit, insurance policy or certification lapse again', tags: 'compliance license permit' },
+      { name: 'beacon24', mono: 'B2', tileC: IDEA_TILE, ship: false, text: 'EU Cyber Resilience Act reporting', tags: 'compliance regulator security' },
+      { name: 'chaseid', mono: 'Ci', tileC: IDEA_TILE, ship: false, text: 'Companies House ID verification chasing', tags: 'compliance regulator verification' }
+    ];
+    const PEOPLE = PRODUCTS.map(p => ({ name: '[Maker of ' + p.name + ']', mono: 'M', text: 'Maker of ' + p.name, tags: p.name, products: [p] }));
+    const POSTS = [
+      { id: 'p1', kind: 'feature', kindLabel: 'Feature shipped', product: 'ackstack', mono: 'Ak', tileC: 'background: #F3E7CC; color: #8A6420', by: '[Maker of ackstack]', when: '30 Sep', name: 'The state re-collection calendar',
+        title: 'The state re-collection calendar',
+        summary: 'Policies re-send on each state’s own cycle: NY, the NY Retail Worker Safety Act, IL and CA. A new version supersedes the old one, with per-employee and per-policy CSV exports.',
+        text: 'feature shipped state re-collection calendar', tags: 'ackstack compliance hr policy' },
+      { id: 'p2', kind: 'idea', kindLabel: 'New idea', product: 'beacon24', mono: 'B2', tileC: IDEA_TILE, by: '[Maker of beacon24]', when: '[date]', name: 'EU Cyber Resilience Act reporting in a box',
+        title: 'EU Cyber Resilience Act reporting in a box',
+        summary: 'Software sold in the EU must report actively exploited vulnerabilities: an early warning in 24 hours, a notification in 72, a final report in 14 days.',
+        text: 'idea vulnerability reporting eu', tags: 'beacon24 compliance regulator security' }
+    ];
+    const pList = PRODUCTS.filter(hits), mList = PEOPLE.filter(hits), sList = POSTS.filter(hits);
+    const total = pList.length + mList.length + sList.length;
+    const seg = st.seg;
+    const isOn = (k) => !!st.follow[k];
+    const flip = (k) => this.setState({ follow: { ...st.follow, [k]: !isOn(k) } });
+    const btn = (on) => 'flex-shrink: 0; min-height: 44px; padding: 0 16px; border: 0; border-radius: 999px; font: inherit; font-size: 13px; font-weight: 600; cursor: pointer; ' + (on ? 'background: rgba(20,20,19,0.06); color: #2B2A27' : 'background: #141413; color: #FAF9F5');
+    const sep = (i) => (i ? '; border-top: 1px solid rgba(20,20,19,0.06)' : '');
+    const esc = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const stems = words.filter(w => w.length > 2).map(w => esc(w.length > 6 ? w.slice(0, w.length - 3) : w));
+    const parts = (text) => {
+      if (!stems.length) return [{ text, style: '' }];
+      const re = new RegExp('(\\S*(?:' + stems.join('|') + ')\\S*)', 'ig');
+      return text.split(re).filter(Boolean).map(t => ({ text: t, style: new RegExp(stems.join('|'), 'i').test(t) ? 'background: rgba(227,179,76,0.3); color: #141413; border-radius: 4px; padding: 0 2px' : '' }));
+    };
+    const stage = (p) => {
+      const c = p.ship ? '#8A6420' : '#5B3F86';
+      return { stage: p.ship ? 'Shipping' : 'Idea',
+        stageStyle: 'display: flex; align-items: center; gap: 5px; flex-shrink: 0; font-size: 13px; font-weight: 500; color: ' + c,
+        dotStyle: 'width: 7px; height: 7px; border-radius: 50%; background: ' + (p.ship ? '#B8862F' : '#5B3F86') };
+    };
+    const products = pList.map((p, i) => {
+      const k = 'product:' + p.name, on = isOn(k);
+      return { href: !p.ship ? 'PhoneProductIdea.dc.html' : 'PhoneProduct.dc.html', name: p.name, mono: p.mono, on, parts: parts(p.text), ...stage(p),
+        tile: 'width: 40px; height: 40px; border-radius: 12px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 15px; text-decoration: none; ' + p.tileC,
+        rowStyle: 'display: flex; align-items: center; gap: 12px; padding: 10px 0' + sep(i),
+        label: on ? 'Following' : 'Follow', aria: (on ? 'Unfollow ' : 'Follow ') + p.name, btnStyle: btn(on), toggle: () => flip(k) };
+    });
+    const people = mList.map((m, i) => {
+      const open = !!st.open[m.name];
+      return { open,
+        toggleLabel: (open ? 'Hide products of ' : 'Show products of ') + m.name,
+        chev: open ? 'M6 15l6-6 6 6' : 'M6 9l6 6 6-6',
+        toggle: () => this.setState({ open: { ...st.open, [m.name]: !open } }),
+        name: m.name, mono: m.mono,
+        line: m.products.length + (m.products.length === 1 ? ' product' : ' products'),
+        wrapStyle: 'display: flex; flex-direction: column; gap: 8px; padding: 8px 0' + sep(i),
+        products: m.products.map(p => ({ href: !p.ship ? 'PhoneProductIdea.dc.html' : 'PhoneProduct.dc.html', name: p.name, mono: p.mono, role: 'Maker', ...stage(p),
+          tile: 'width: 30px; height: 30px; border-radius: 10px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 11px; ' + p.tileC })) };
+    });
+    const posts = sList.map(p => ({ ...p, href: p.kind === 'idea' ? 'PhoneProductIdea.dc.html' : 'PhoneProduct.dc.html', 
+      isFeature: p.kind === 'feature', isIdea: p.kind === 'idea',
+      tile: 'width: 38px; height: 38px; border-radius: 12px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 15px; text-decoration: none; ' + p.tileC,
+      linkStyle: 'align-self: flex-start; display: flex; align-items: center; gap: 6px; min-height: 44px; font-size: 13px; font-weight: 600; text-decoration: none; color: ' + (p.kind === 'idea' ? '#5B3F86' : '#8A6420'),
+      cardStyle: 'display: flex; flex-direction: column; gap: 8px; padding: 14px 14px 4px; ' + (p.kind === 'idea' ? 'border-radius: 4px 16px 16px 16px; background: #F4F0F8' : 'border-radius: 16px; background: radial-gradient(360px 160px at 100% 0%, rgba(227,179,76,0.24), transparent 70%), #FFFFFF')
+    }));
+    const SEG = [['all', 'All', total], ['products', 'Products', pList.length], ['people', 'People', mList.length], ['posts', 'Posts', sList.length]];
+    const segments = SEG.map(([k, label, n]) => { const on = seg === k; return { label, on, count: String(n),
+      pick: () => this.setState({ seg: k }),
+      countStyle: 'font-family: IBM Plex Mono, monospace; font-size: 11px; font-weight: 400; color: ' + (on ? '#8A6420' : '#6B6A66'),
+      style: 'flex: 1 1 auto; display: flex; align-items: center; justify-content: center; gap: 5px; min-height: 44px; padding: 0 8px; border: 0; border-radius: 999px; font: inherit; font-size: 13px; cursor: pointer; ' + (on ? 'background: #FFFFFF; color: #141413; font-weight: 600' : 'background: transparent; color: #2B2A27; font-weight: 500') }; });
+    const showProducts = (seg === 'all' || seg === 'products') && products.length > 0;
+    const showPeople = (seg === 'all' || seg === 'people') && people.length > 0;
+    const showPosts = (seg === 'all' || seg === 'posts') && posts.length > 0;
+    return {
+      query: q, hasQuery: q.length > 0,
+      setQuery: (e) => this.setState({ query: e.target.value }),
+      clearQuery: () => this.setState({ query: '' }),
+      segments, products, people, posts,
+      productsHead: 'PRODUCTS · ' + products.length, peopleHead: 'PEOPLE · ' + people.length, postsHead: 'POSTS · ' + posts.length,
+      showHeads: seg === 'all',
+      showProducts, showPeople, showPosts,
+      nothing: !showProducts && !showPeople && !showPosts
+    };
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,520 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Product profile, ackstack</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600&amp;family=Lora:ital,wght@0,400;0,500;1,400&amp;family=IBM+Plex+Mono:wght@400;500&amp;display=swap">
+<style>
+:root{color-scheme:light}body{margin:0;background:#F6F4EE}
+a{color:#8A6420}a:hover{color:#5E4415}
+@media (prefers-reduced-motion: reduce){header *{transition-duration:0.01ms !important}}
+</style>
+</helmet>
+<div style="background-color: #F6F4EE; background-image: radial-gradient(1100px 460px at 50% -8%, rgba(184,134,47,0.18), transparent 62%), radial-gradient(rgba(20,20,19,0.07) 1px, transparent 1.2px); background-size: auto, 22px 22px; color: #141413; font-family: 'Hanken Grotesk', system-ui, sans-serif; font-size: 15px; line-height: 1.5; min-height: 100%; display: flex; flex-direction: column">
+
+<header style="position: sticky; top: 0; z-index: 5; width: 100%; background: rgba(255,255,255,0.62); backdrop-filter: saturate(160%) blur(16px); -webkit-backdrop-filter: saturate(160%) blur(16px); box-shadow: none">
+<div style="max-width: 1180px; margin: 0 auto; box-sizing: border-box; padding: 10px 24px; display: flex; flex-wrap: wrap; align-items: center; gap: 12px 24px">
+<a href="Feed.dc.html" style="display: flex; align-items: center; gap: 10px; color: #141413; text-decoration: none; font-weight: 600; font-size: 18px; letter-spacing: -0.02em">
+<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 3.5V21" stroke="#141413"></path><circle cx="14" cy="9.5" r="6" stroke="#B8862F"></circle></svg>openproduct</a>
+<nav aria-label="Main" style="display: flex; flex-wrap: wrap; gap: 2px">
+<a href="Feed.dc.html" style="display: flex; align-items: center; min-height: 36px; padding: 0 14px; border-radius: 999px; color: #2B2A27; text-decoration: none; font-weight: 500">Feed</a>
+<a href="Products.dc.html" aria-current="page" style="display: flex; align-items: center; min-height: 36px; padding: 0 14px; border-radius: 999px; background: #141413; color: #FAF9F5; text-decoration: none; font-weight: 600">Products</a>
+<a href="Seats.dc.html" style="display: flex; align-items: center; min-height: 36px; padding: 0 14px; border-radius: 999px; color: #2B2A27; text-decoration: none; font-weight: 500">Help wanted</a>
+</nav>
+<div style="flex: 1 1 280px; display: flex; flex-wrap: wrap; justify-content: flex-end; align-items: center; gap: 10px">
+<div role="group" aria-label="View this page as" style="display: flex; gap: 2px; padding: 3px; border-radius: 999px; background: rgba(20,20,19,0.06)">
+<sc-for list="{{views}}" as="v" hint-placeholder-count="2">
+<button type="button" onClick="{{v.pick}}" aria-pressed="{{v.on}}" style="{{v.style}}">{{v.label}}</button>
+</sc-for>
+</div>
+<div style="{{qWrap}}">
+<label style="{{qLabel}}">
+<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6B6A66" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-3.5-3.5"></path></svg>
+<span style="position: absolute; left: -9999px">Search</span>
+<input type="search" value="{{q}}" onInput="{{setQ}}" placeholder="Search products and people" style="border: 0; outline: 0; background: transparent; color: #141413; font: inherit; font-size: 16px; flex: 1; min-width: 0">
+</label>
+<div style="{{qCard}}">
+<sc-for list="{{qRows}}" as="r" hint-placeholder-count="3">
+<div style="{{r.wrap}}">
+<a href="{{r.href}}" style="{{r.style}}"><span style="{{r.tile}}">{{r.mono}}</span><span style="flex: 1; min-width: 0; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{r.name}}</span><span style="font-size: 13px; color: #6B6A66; flex-shrink: 0">{{r.kind}}</span></a>
+<sc-if value="{{r.canExpand}}" hint-placeholder-val="{{false}}"><button type="button" onClick="{{r.toggle}}" aria-expanded="{{r.open}}" aria-label="{{r.toggleLabel}}" style="width: 40px; height: 40px; flex-shrink: 0; border: 0; border-radius: 50%; background: transparent; color: #6B6A66; display: flex; align-items: center; justify-content: center; cursor: pointer"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{r.chev}}"></path></svg></button></sc-if>
+</div>
+</sc-for>
+<sc-if value="{{qNone}}" hint-placeholder-val="{{false}}"><div style="padding: 12px 10px; font-size: 13px; color: #6B6A66">No matches</div></sc-if>
+<a href="Search.dc.html" style="display: flex; align-items: center; justify-content: center; min-height: 40px; margin-top: 2px; border-top: 1px solid rgba(20,20,19,0.06); font-size: 13px; font-weight: 600; text-decoration: none">See all results</a>
+</div>
+</div>
+<a href="Activity.dc.html" aria-label="Activity" style="position: relative; width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; text-decoration: none; background: #FFFFFF; color: #6B6A66">
+<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9a6 6 0 0112 0c0 6 2.5 7.5 2.5 7.5h-17S6 15 6 9zM10 20a2 2 0 004 0"></path></svg>
+</a>
+<a href="Me.dc.html" aria-label="Your profile" style="position: relative; width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; text-decoration: none; background: #FFFFFF; color: #6B6A66">
+<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="8" r="4"></circle><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"></path></svg></a>
+</div>
+</div>
+</header>
+
+<div style="width: 100%; max-width: 1180px; margin: 0 auto; box-sizing: border-box; padding: 28px 24px 64px; display: flex; flex-direction: column; gap: 24px">
+
+
+<section style="background: #FFFFFF; border-radius: 16px; overflow: hidden; box-shadow: none">
+<div style="height: 140px; position: relative; background: radial-gradient(600px 200px at 85% 0%, rgba(227,179,76,0.55), transparent 70%), linear-gradient(120deg, #F3E7CC, #FBF6EA)" aria-hidden="true">
+<div style="position: absolute; right: 28px; bottom: 18px; display: flex; gap: 5px">
+<span style="width: 30px; height: 8px; border-radius: 999px; background: #6B6A66"></span><span style="width: 30px; height: 8px; border-radius: 999px; background: #5B6B8C"></span><span style="width: 30px; height: 8px; border-radius: 999px; background: #B8862F"></span><span style="width: 30px; height: 8px; border-radius: 999px; background: #4F7A6A"></span><span style="width: 30px; height: 8px; border-radius: 999px; background: #D9A441"></span><span style="width: 30px; height: 8px; border-radius: 999px; background: #8C6A9E"></span>
+</div>
+</div>
+<div style="padding: 0 30px 24px; display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 20px">
+<div style="display: flex; flex-direction: column; gap: 10px; margin-top: -44px; min-width: 0; flex: 1 1 480px">
+<div style="width: 92px; height: 92px; border-radius: 26px; background: #F3E7CC; color: #8A6420; box-shadow: 0 0 0 5px #FFFFFF; display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 30px; letter-spacing: -0.02em">Ak</div>
+<sc-if value="{{reading}}" hint-placeholder-val="{{true}}">
+<div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap">
+<h1 style="margin: 0; font-family: Lora, Georgia, serif; font-weight: 400; font-size: 40px; line-height: 1.1; letter-spacing: -0.015em">{{name}}</h1>
+<span style="display: flex; align-items: center; gap: 6px; font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: 0.1em; color: #8A6420"><span style="width: 8px; height: 8px; border-radius: 50%; background: #B8862F; box-shadow: none"></span>SHIPPING · 3 OF 4</span>
+</div>
+<p style="margin: 0; font-size: 18px; color: #2B2A27; max-width: 640px">{{pitch}}</p>
+</sc-if>
+<sc-if value="{{editing}}" hint-placeholder-val="{{false}}">
+<div style="display: flex; flex-direction: column; gap: 12px; max-width: 640px; padding: 16px; border-radius: 16px; background: #F7F5EF">
+<label style="display: flex; flex-direction: column; gap: 6px"><span style="font-size: 13px; font-weight: 600">Name</span>
+<input type="text" value="{{draftName}}" onInput="{{setName}}" style="min-height: 44px; box-sizing: border-box; padding: 0 14px; border: 0; outline: 0; border-radius: 14px; background: #FFFFFF; box-shadow: inset 0 0 0 1px rgba(20,20,19,0.08); color: #141413; font: inherit; font-size: 16px"></label>
+<label style="display: flex; flex-direction: column; gap: 6px"><span style="display: flex; justify-content: space-between; gap: 10px; font-size: 13px; font-weight: 600"><span>One-line pitch</span><span style="{{countStyle}}">{{countLabel}}</span></span>
+<textarea rows="2" value="{{draftPitch}}" onInput="{{setPitch}}" style="box-sizing: border-box; padding: 10px 14px; border: 0; outline: 0; border-radius: 14px; background: #FFFFFF; box-shadow: inset 0 0 0 1px rgba(20,20,19,0.08); color: #141413; font: inherit; font-size: 16px; resize: vertical"></textarea></label>
+<div style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px">
+<button type="button" style="display: flex; align-items: center; min-height: 40px; padding: 0 18px; border-radius: 999px; text-decoration: none; font: inherit; font-weight: 600; cursor: pointer; border: 0; background: rgba(20,20,19,0.06); color: #141413; font-size: 13px">Change logo</button>
+<button type="button" style="display: flex; align-items: center; min-height: 40px; padding: 0 18px; border-radius: 999px; text-decoration: none; font: inherit; font-weight: 600; cursor: pointer; border: 0; background: rgba(20,20,19,0.06); color: #141413; font-size: 13px">Change cover</button>
+<span style="flex: 1"></span>
+<button type="button" onClick="{{cancelEdit}}" style="display: flex; align-items: center; min-height: 40px; padding: 0 18px; border-radius: 999px; text-decoration: none; font: inherit; font-weight: 600; cursor: pointer; border: 0; background: transparent; color: #6B6A66">Cancel</button>
+<button type="button" onClick="{{saveEdit}}" disabled="{{cantSave}}" style="{{saveStyle}}">Save</button>
+</div>
+</div>
+</sc-if>
+<div style="font-size: 13px; color: #6B6A66">Productivity · MIT · built on cirrus · 2 open seats</div>
+</div>
+<sc-if value="{{isVisitor}}" hint-placeholder-val="{{false}}">
+<div style="display: flex; flex-wrap: wrap; gap: 8px">
+<button type="button" onClick="{{toggleFollow}}" style="{{followStyle}}">{{followLabel}}</button>
+<a href="#crew" style="display: flex; align-items: center; min-height: 40px; padding: 0 18px; border-radius: 999px; text-decoration: none; font: inherit; font-weight: 600; cursor: pointer; border: 0; background: rgba(20,20,19,0.06); color: #141413">Take a seat</a>
+<a href="#" style="display: flex; align-items: center; min-height: 40px; padding: 0 18px; border-radius: 999px; text-decoration: none; font: inherit; font-weight: 600; cursor: pointer; border: 0; background: #141413; color: #FAF9F5; gap: 8px">Try it<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M7 17L17 7M9 7h8v8"></path></svg></a>
+</div>
+</sc-if>
+<sc-if value="{{isMaker}}" hint-placeholder-val="{{true}}">
+<div style="display: flex; flex-wrap: wrap; gap: 8px">
+<button type="button" onClick="{{startEdit}}" style="display: flex; align-items: center; min-height: 40px; padding: 0 18px; border-radius: 999px; text-decoration: none; font: inherit; font-weight: 600; cursor: pointer; border: 0; background: rgba(20,20,19,0.06); color: #141413">Edit details</button>
+<a href="#" style="display: flex; align-items: center; min-height: 40px; padding: 0 18px; border-radius: 999px; text-decoration: none; font: inherit; font-weight: 600; cursor: pointer; border: 0; background: rgba(20,20,19,0.06); color: #141413; gap: 8px">Try it<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M7 17L17 7M9 7h8v8"></path></svg></a>
+<a href="#post" style="display: flex; align-items: center; min-height: 40px; padding: 0 18px; border-radius: 999px; text-decoration: none; font: inherit; font-weight: 600; cursor: pointer; border: 0; background: #141413; color: #FAF9F5; gap: 6px"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg>New post</a>
+</div>
+</sc-if>
+</div>
+<div role="group" aria-label="Product sections" style="display: flex; flex-wrap: wrap; gap: 6px; padding: 0 22px 16px">
+<sc-for list="{{tabs}}" as="t" hint-placeholder-count="4">
+<button type="button" onClick="{{t.pick}}" aria-pressed="{{t.on}}" style="{{t.style}}">{{t.label}}</button>
+</sc-for>
+</div>
+</section>
+
+<div style="display: flex; flex-wrap: wrap; gap: 24px; align-items: flex-start">
+
+<main style="flex: 999 1 520px; min-width: 0; display: flex; flex-direction: column; gap: 18px">
+<sc-if value="{{tabUpdates}}" hint-placeholder-val="{{true}}">
+<div style="display: flex; flex-direction: column; gap: 18px">
+
+<sc-if value="{{isMaker}}" hint-placeholder-val="{{true}}">
+<section aria-label="Needs you, visible to the crew only" style="background: #FFFFFF; border-radius: 16px; padding: 8px; display: flex; flex-direction: column">
+<div style="display: flex; align-items: center; gap: 8px; padding: 6px 10px 10px; font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; letter-spacing: 0.12em; color: #6B6A66"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 11V8a6 6 0 0112 0v3M5 11h14v10H5z"></path></svg>NEEDS YOU</div>
+<div style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; padding: 8px 10px; border-top: 1px solid rgba(20,20,19,0.06)">
+<span style="flex: 1 1 240px; min-width: 0"><a href="Person.dc.html" style="color: #141413; font-weight: 600; text-decoration: none">[Applicant]</a> wants the HR-compliance advisor seat</span>
+<sc-if value="{{seatPending}}" hint-placeholder-val="{{true}}">
+<span style="display: flex; gap: 6px"><button type="button" onClick="{{accept}}" style="display: flex; align-items: center; min-height: 40px; padding: 0 16px; border: 0; border-radius: 999px; background: #141413; color: #FAF9F5; text-decoration: none; font: inherit; font-size: 13px; font-weight: 600; cursor: pointer">Accept</button><button type="button" onClick="{{decline}}" style="display: flex; align-items: center; min-height: 40px; padding: 0 16px; border: 0; border-radius: 999px; background: rgba(20,20,19,0.06); color: #141413; text-decoration: none; font: inherit; font-size: 13px; font-weight: 600; cursor: pointer">Decline</button></span>
+</sc-if>
+<sc-if value="{{seatDecided}}" hint-placeholder-val="{{false}}"><span style="{{seatDecidedStyle}}">{{seatDecidedLabel}}</span></sc-if>
+</div>
+<div style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; padding: 8px 10px; border-top: 1px solid rgba(20,20,19,0.06)">
+<span style="flex: 1 1 240px; min-width: 0">Demo ready to review</span>
+<a href="DemoFlow.dc.html" style="display: flex; align-items: center; min-height: 40px; padding: 0 16px; border: 0; border-radius: 999px; background: rgba(20,20,19,0.06); color: #141413; text-decoration: none; font: inherit; font-size: 13px; font-weight: 600; cursor: pointer">Review</a>
+</div>
+<div style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; padding: 8px 10px; border-top: 1px solid rgba(20,20,19,0.06)">
+<span style="flex: 1 1 240px; min-width: 0">Draft: [Draft title]</span>
+<a href="Compose.dc.html" style="display: flex; align-items: center; min-height: 40px; padding: 0 16px; border: 0; border-radius: 999px; background: rgba(20,20,19,0.06); color: #141413; text-decoration: none; font: inherit; font-size: 13px; font-weight: 600; cursor: pointer">Continue</a>
+</div>
+<div style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; padding: 8px 10px; border-top: 1px solid rgba(20,20,19,0.06)">
+<span style="flex: 1 1 240px; min-width: 0"><a href="Person.dc.html" style="color: #141413; font-weight: 600; text-decoration: none">[Reader]</a> started a private thread</span>
+<button type="button" onClick="{{openPrivate}}" style="display: flex; align-items: center; min-height: 40px; padding: 0 16px; border: 0; border-radius: 999px; background: rgba(20,20,19,0.06); color: #141413; text-decoration: none; font: inherit; font-size: 13px; font-weight: 600; cursor: pointer">Open</button>
+</div>
+</section>
+
+<section id="post" aria-label="New post" style="background: #FFFFFF; border-radius: 16px; padding: 14px 18px; display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px">
+<h2 style="margin: 0; font-size: 15px; font-weight: 600">New post</h2>
+<div style="flex: 1 1 420px; display: flex; flex-wrap: wrap; gap: 6px">
+<sc-for list="{{kinds}}" as="k" hint-placeholder-count="5">
+<a href="{{k.href}}" style="display: flex; align-items: center; gap: 8px; min-height: 40px; padding: 0 14px 0 6px; border-radius: 999px; background: #F7F5EF; color: #141413; text-decoration: none; font-size: 13px; font-weight: 600">
+<span style="{{k.tile}}"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="{{k.stroke}}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{k.d}}"></path></svg></span>{{k.label}}</a>
+</sc-for>
+</div>
+</section>
+</sc-if>
+
+<article aria-label="Feature shipped" style="position: relative; overflow: hidden; border-radius: 16px; box-shadow: none; background: radial-gradient(520px 200px at 100% 0%, rgba(227,179,76,0.22), transparent 70%), #FFFFFF; padding: 20px 22px; display: flex; flex-direction: column; gap: 12px">
+<div style="display: flex; align-items: center; gap: 10px">
+<span style="width: 34px; height: 34px; border-radius: 50%; background: linear-gradient(135deg, #E3B34C, #B8862F); display: flex; align-items: center; justify-content: center; box-shadow: none; flex-shrink: 0"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2.4" aria-hidden="true"><path d="M5 12l5 5 9-10"></path></svg></span>
+<div style="display: flex; flex-direction: column"><span style="font-weight: 600; font-size: 20px; letter-spacing: -0.02em; line-height: 1.2">The state re-collection calendar</span><span style="font-size: 13px; color: #6B6A66">AS3 · 30 Sep · by <a href="Person.dc.html" style="color: #2B2A27; font-weight: 600; text-decoration: none">[Maker of ackstack]</a></span></div>
+</div>
+<div style="color: #2B2A27; font-size: 15px">Policies re-send on each state's own cycle: NY, the NY Retail Worker Safety Act, IL and CA. A new version supersedes the old one, with per-employee and per-policy CSV exports.</div>
+<div style="display: flex; gap: 4px"><div style="flex: 1; height: 5px; border-radius: 3px; background: linear-gradient(90deg, #B8862F, #E3B34C)"></div><div style="flex: 1; height: 5px; border-radius: 3px; background: linear-gradient(90deg, #B8862F, #E3B34C)"></div><div style="flex: 1; height: 5px; border-radius: 3px; background: linear-gradient(90deg, #B8862F, #E3B34C)"></div><div style="flex: 1; height: 5px; border-radius: 3px; background: #EDE9DE"></div></div>
+<div style="display: flex; align-items: center; justify-content: space-between; gap: 10px; font-size: 13px; color: #6B6A66"><span>5 reactions · <a href="Feed.dc.html" style="color: #6B6A66">5 comments</a></span><span style="display: flex; gap: 16px"><sc-if value="{{isMaker}}" hint-placeholder-val="{{true}}"><a href="Compose.dc.html" style="font-weight: 600; text-decoration: none; color: #2B2A27">Edit post</a></sc-if><a href="#" style="font-weight: 600; text-decoration: none">Try it now</a></span></div>
+</article>
+
+<article aria-label="Demo" style="border-radius: 16px; overflow: hidden; background: #FFFFFF; box-shadow: none; display: flex; flex-wrap: wrap">
+<div style="flex: 1 1 240px; min-height: 160px; background: #141413; position: relative; display: flex; align-items: center; justify-content: center">
+<span style="position: absolute; left: 12px; top: 10px; font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; letter-spacing: 0.08em; color: #E3B34C">REC · ORUN</span>
+<a href="Feed.dc.html" aria-label="Play the demo" style="width: 56px; height: 56px; border-radius: 50%; background: rgba(250,249,245,0.12); color: #FAF9F5; display: flex; align-items: center; justify-content: center; box-shadow: none"><svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"></path></svg></a>
+<span style="position: absolute; left: 12px; right: 12px; bottom: 12px; display: flex; gap: 3px" aria-hidden="true"><span style="flex: 1; height: 4px; border-radius: 2px; background: #3D3D3A"></span><span style="flex: 1; height: 4px; border-radius: 2px; background: #3D3D3A"></span><span style="flex: 1; height: 4px; border-radius: 2px; background: #3D3D3A"></span><span style="flex: 1; height: 4px; border-radius: 2px; background: #3D3D3A"></span><span style="flex: 1; height: 4px; border-radius: 2px; background: #3D3D3A"></span></span>
+</div>
+<div style="flex: 1 1 260px; padding: 18px 20px; display: flex; flex-direction: column; gap: 6px; justify-content: center">
+<span style="font-weight: 600; font-size: 18px; letter-spacing: -0.015em">Collect an acknowledgment, start to finish</span>
+<span style="font-size: 13px; color: #6B6A66">5 steps, all passed · recorded by Orun on stage</span>
+</div>
+</article>
+
+<article aria-label="Help wanted" style="position: relative; border-radius: 16px; background: #FFFFFF; box-shadow: none; padding: 18px 26px; display: flex; flex-wrap: wrap; align-items: center; gap: 16px">
+<span aria-hidden="true" style="position: absolute; left: -12px; top: 50%; width: 24px; height: 24px; margin-top: -12px; border-radius: 50%; background: #F6F4EE"></span>
+<span aria-hidden="true" style="position: absolute; right: -12px; top: 50%; width: 24px; height: 24px; margin-top: -12px; border-radius: 50%; background: #F6F4EE"></span>
+<div style="width: 52px; height: 52px; border-radius: 50%; border: 2px dashed #2F6F73; box-sizing: border-box; display: flex; align-items: center; justify-content: center; color: #2F6F73; flex-shrink: 0"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg></div>
+<div style="flex: 1 1 220px; display: flex; flex-direction: column; padding-left: 16px; border-left: 2px dashed #E4E2DA">
+<span style="font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; letter-spacing: 0.12em; color: #1F5357">OPEN SEAT</span>
+<span style="font-weight: 600; font-size: 18px; letter-spacing: -0.015em">HR-compliance advisor</span>
+<span style="font-size: 13px; color: #6B6A66">Open 7 weeks · nobody yet</span>
+</div>
+<a href="#" style="display: flex; align-items: center; min-height: 40px; padding: 0 18px; border-radius: 999px; background: #2F6F73; color: #FFFFFF; text-decoration: none; font-weight: 600; box-shadow: none">{{seatBtn}}</a>
+</article>
+
+<article aria-label="Feature shipped" style="border-radius: 16px; box-shadow: none; background: radial-gradient(420px 160px at 100% 0%, rgba(227,179,76,0.16), transparent 70%), #FFFFFF; padding: 18px 22px; display: flex; gap: 12px; align-items: flex-start">
+<span style="width: 30px; height: 30px; border-radius: 50%; background: linear-gradient(135deg, #E3B34C, #B8862F); display: flex; align-items: center; justify-content: center; flex-shrink: 0"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2.4" aria-hidden="true"><path d="M5 12l5 5 9-10"></path></svg></span>
+<div style="display: flex; flex-direction: column; gap: 4px"><span style="font-weight: 600; font-size: 18px; letter-spacing: -0.015em">Assign and acknowledge</span><span style="font-size: 13px; color: #6B6A66">AS2</span><span style="color: #2B2A27">Assign policies by location, role or state. Staff acknowledge through a no-login link that records the time, IP and version.</span></div>
+</article>
+
+<article aria-label="Feature shipped" style="border-radius: 16px; box-shadow: none; background: radial-gradient(420px 160px at 100% 0%, rgba(227,179,76,0.16), transparent 70%), #FFFFFF; padding: 18px 22px; display: flex; gap: 12px; align-items: flex-start">
+<span style="width: 30px; height: 30px; border-radius: 50%; background: linear-gradient(135deg, #E3B34C, #B8862F); display: flex; align-items: center; justify-content: center; flex-shrink: 0"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2.4" aria-hidden="true"><path d="M5 12l5 5 9-10"></path></svg></span>
+<div style="display: flex; flex-direction: column; gap: 4px"><span style="font-weight: 600; font-size: 18px; letter-spacing: -0.015em">The policy register and staff roster</span><span style="font-size: 13px; color: #6B6A66">AS1</span><span style="color: #2B2A27">Policy PDFs with version history, and the people they apply to.</span></div>
+</article>
+</div>
+</sc-if>
+
+<sc-if value="{{tabAbout}}" hint-placeholder-val="{{false}}">
+<div style="display: flex; flex-direction: column; gap: 18px">
+<section style="background: #FFFFFF; border-radius: 16px; box-shadow: none; padding: 18px; display: flex; flex-direction: column; gap: 12px">
+<div style="display: flex; align-items: center; justify-content: space-between; gap: 10px"><h2 style="margin: 0; font-size: 15px; font-weight: 600">What it does</h2><sc-if value="{{isMaker}}" hint-placeholder-val="{{true}}"><button type="button" onClick="{{startEdit}}" style="border: 0; background: transparent; padding: 0; min-height: 24px; color: #8A6420; font: inherit; font-size: 13px; font-weight: 600; cursor: pointer; text-decoration: none; display: flex; align-items: center">Edit</button></sc-if></div>
+<p style="margin: 0; font-size: 18px; color: #2B2A27">{{pitch}}</p>
+</section>
+<section style="background: #FFFFFF; border-radius: 16px; box-shadow: none; padding: 18px; display: flex; flex-direction: column; gap: 12px">
+<div style="display: flex; align-items: center; justify-content: space-between; gap: 10px"><h2 style="margin: 0; font-size: 15px; font-weight: 600">Milestones</h2><span style="font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; letter-spacing: 0.12em; color: #8A6420">3 OF 4 SHIPPED</span></div>
+<div style="display: flex; flex-direction: column">
+<sc-for list="{{milestones}}" as="m" hint-placeholder-count="4">
+<div style="{{m.row}}">
+<span style="{{m.dot}}"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="{{m.stroke}}" stroke-width="2.6" aria-hidden="true"><path d="{{m.d}}"></path></svg></span>
+<span style="flex: 1 1 240px; min-width: 0; display: flex; flex-direction: column"><span style="{{m.titleStyle}}">{{m.title}}</span><span style="font-size: 13px; color: #6B6A66">{{m.text}}</span></span>
+<span style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: #6B6A66">{{m.code}}</span>
+</div>
+</sc-for>
+</div>
+</section>
+<section style="background: #FFFFFF; border-radius: 16px; box-shadow: none; padding: 18px; display: flex; flex-direction: column; gap: 12px">
+<div style="display: flex; align-items: center; justify-content: space-between; gap: 10px"><h2 style="margin: 0; font-size: 15px; font-weight: 600">Details</h2><sc-if value="{{isMaker}}" hint-placeholder-val="{{true}}"><button type="button" style="border: 0; background: transparent; padding: 0; min-height: 24px; color: #8A6420; font: inherit; font-size: 13px; font-weight: 600; cursor: pointer; text-decoration: none; display: flex; align-items: center">Edit</button></sc-if></div>
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr)); gap: 8px">
+<sc-for list="{{details}}" as="d" hint-placeholder-count="6">
+<div style="padding: 10px 12px; border-radius: 14px; background: #F7F5EF; display: flex; flex-direction: column"><span style="font-size: 13px; color: #6B6A66">{{d.label}}</span><span style="font-weight: 600">{{d.value}}</span></div>
+</sc-for>
+</div>
+</section>
+</div>
+</sc-if>
+
+<sc-if value="{{tabCrew}}" hint-placeholder-val="{{false}}">
+<div style="display: flex; flex-direction: column; gap: 18px">
+<sc-if value="{{isMaker}}" hint-placeholder-val="{{true}}">
+<section aria-label="Seat requests, visible to the crew only" style="background: #FFFFFF; border-radius: 16px; box-shadow: none; padding: 18px; display: flex; flex-direction: column; gap: 12px">
+<div style="display: flex; align-items: center; gap: 8px; font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; letter-spacing: 0.12em; color: #6B6A66"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 11V8a6 6 0 0112 0v3M5 11h14v10H5z"></path></svg>REQUESTS</div>
+<div style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px">
+<span style="flex: 1 1 240px; min-width: 0"><a href="Person.dc.html" style="color: #141413; font-weight: 600; text-decoration: none">[Applicant]</a> wants the HR-compliance advisor seat</span>
+<sc-if value="{{seatPending}}" hint-placeholder-val="{{true}}"><span style="display: flex; gap: 6px"><button type="button" onClick="{{accept}}" style="display: flex; align-items: center; min-height: 40px; padding: 0 16px; border: 0; border-radius: 999px; background: #141413; color: #FAF9F5; text-decoration: none; font: inherit; font-size: 13px; font-weight: 600; cursor: pointer">Accept</button><button type="button" onClick="{{decline}}" style="display: flex; align-items: center; min-height: 40px; padding: 0 16px; border: 0; border-radius: 999px; background: rgba(20,20,19,0.06); color: #141413; text-decoration: none; font: inherit; font-size: 13px; font-weight: 600; cursor: pointer">Decline</button></span></sc-if>
+<sc-if value="{{seatDecided}}" hint-placeholder-val="{{false}}"><span style="{{seatDecidedStyle}}">{{seatDecidedLabel}}</span></sc-if>
+</div>
+</section>
+</sc-if>
+<section style="background: #FFFFFF; border-radius: 16px; box-shadow: none; padding: 18px; display: flex; flex-direction: column; gap: 12px">
+<div style="display: flex; align-items: center; justify-content: space-between; gap: 10px"><h2 style="margin: 0; font-size: 15px; font-weight: 600">On the crew</h2></div>
+<a href="Person.dc.html" style="display: flex; align-items: center; gap: 12px; text-decoration: none; color: #141413"><span style="width: 44px; height: 44px; border-radius: 50%; background: #F0EEE6; color: #2B2A27; display: flex; align-items: center; justify-content: center; font-weight: 600; flex-shrink: 0">M</span><span style="display: flex; flex-direction: column"><span style="font-weight: 600">[Maker of ackstack]</span><span style="font-size: 13px; color: #6B6A66">Maker</span></span></a>
+</section>
+<section style="background: #FFFFFF; border-radius: 16px; box-shadow: none; padding: 18px; display: flex; flex-direction: column; gap: 12px">
+<div style="display: flex; align-items: center; justify-content: space-between; gap: 10px"><h2 style="margin: 0; font-size: 15px; font-weight: 600">Open seats</h2><sc-if value="{{isMaker}}" hint-placeholder-val="{{true}}"><a href="Compose.dc.html" style="border: 0; background: transparent; padding: 0; min-height: 24px; color: #8A6420; font: inherit; font-size: 13px; font-weight: 600; cursor: pointer; text-decoration: none; display: flex; align-items: center">Add a seat</a></sc-if></div>
+<sc-for list="{{openSeats}}" as="o" hint-placeholder-count="2">
+<div style="display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px; padding: 12px 14px; border-radius: 14px; background: #F0F7F6">
+<span aria-hidden="true" style="width: 40px; height: 40px; border-radius: 50%; border: 2px dashed #2F6F73; box-sizing: border-box; flex-shrink: 0"></span>
+<span style="flex: 1 1 220px; min-width: 0; display: flex; flex-direction: column"><span style="font-weight: 600; font-size: 18px; letter-spacing: -0.015em">{{o.role}}</span><span style="font-size: 13px; color: #6B6A66">{{o.sub}}</span></span>
+<a href="{{o.href}}" style="display: flex; align-items: center; min-height: 40px; padding: 0 18px; border-radius: 999px; background: #2F6F73; color: #FFFFFF; text-decoration: none; font-weight: 600">{{seatBtn}}</a>
+</div>
+</sc-for>
+</section>
+</div>
+</sc-if>
+
+<sc-if value="{{tabTalk}}" hint-placeholder-val="{{false}}">
+<div style="display: flex; flex-direction: column; gap: 18px">
+<section aria-label="Start a thread" style="background: #FFFFFF; border-radius: 16px; box-shadow: none; padding: 12px; display: flex; flex-direction: column; gap: 10px">
+<label style="display: flex"><span style="position: absolute; left: -9999px">Start a thread</span>
+<input type="text" value="{{tkDraft}}" onInput="{{tkSet}}" placeholder="Start a thread" style="flex: 1; min-width: 0; min-height: 44px; box-sizing: border-box; padding: 0 16px; border: 0; outline: 0; border-radius: 999px; background: #F7F5EF; color: #141413; font: inherit; font-size: 16px"></label>
+<div style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px">
+<div role="group" aria-label="Kind of thread" style="display: flex; gap: 2px; padding: 3px; border-radius: 999px; background: rgba(20,20,19,0.06)">
+<sc-for list="{{tkKinds}}" as="k" hint-placeholder-count="3">
+<button type="button" onClick="{{k.pick}}" aria-pressed="{{k.on}}" style="{{k.style}}">{{k.label}}</button>
+</sc-for>
+</div>
+<div role="group" aria-label="Who can see it" style="display: flex; gap: 2px; padding: 3px; border-radius: 999px; background: rgba(20,20,19,0.06)">
+<sc-for list="{{tkVis}}" as="v" hint-placeholder-count="2">
+<button type="button" onClick="{{v.pick}}" aria-pressed="{{v.on}}" style="{{v.style}}"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{v.d}}"></path></svg>{{v.label}}</button>
+</sc-for>
+</div>
+<span style="flex: 1"></span>
+<button type="button" onClick="{{tkPost}}" disabled="{{tkCant}}" style="{{tkPostStyle}}">{{tkPostLabel}}</button>
+</div>
+</section>
+
+<div role="group" aria-label="Show threads" style="align-self: flex-start; display: flex; flex-wrap: wrap; gap: 2px; padding: 3px; border-radius: 999px; background: rgba(20,20,19,0.06)">
+<sc-for list="{{tkFilters}}" as="f" hint-placeholder-count="3">
+<button type="button" onClick="{{f.pick}}" aria-pressed="{{f.on}}" style="{{f.style}}">{{f.label}}<span style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: #6B6A66">{{f.count}}</span></button>
+</sc-for>
+</div>
+
+<sc-for list="{{tkThreads}}" as="t" hint-placeholder-count="3">
+<article style="{{t.card}}">
+<div style="display: flex; align-items: center; gap: 10px">
+<span style="width: 36px; height: 36px; border-radius: 50%; background: #F0EEE6; color: #2B2A27; display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 13px; flex-shrink: 0">{{t.mono}}</span>
+<span style="flex: 1; min-width: 0; display: flex; flex-direction: column; line-height: 1.3"><span style="font-weight: 600">{{t.who}}</span><span style="font-size: 13px; color: #6B6A66">{{t.meta}}</span></span>
+<span style="{{t.badge}}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{t.badgeIcon}}"></path></svg>{{t.badgeLabel}}</span>
+</div>
+<div style="font-size: 18px; letter-spacing: -0.01em; line-height: 1.35">{{t.q}}</div>
+<div style="display: flex; flex-wrap: wrap; align-items: center; gap: 6px">
+<button type="button" onClick="{{t.toggle}}" aria-expanded="{{t.open}}" style="{{t.repliesStyle}}">{{t.repliesLabel}}</button>
+<sc-if value="{{t.canResolve}}" hint-placeholder-val="{{false}}"><button type="button" onClick="{{t.resolve}}" aria-pressed="{{t.resolved}}" style="{{t.resolveStyle}}">{{t.resolveLabel}}</button></sc-if>
+<sc-if value="{{t.showResolved}}" hint-placeholder-val="{{false}}"><span style="display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600; color: #2F7A4E"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5 9-10"></path></svg>Resolved</span></sc-if>
+</div>
+<sc-if value="{{t.open}}" hint-placeholder-val="{{false}}">
+<div style="display: flex; flex-direction: column; gap: 8px; padding-left: 14px; border-left: 2px solid #ECEAE3">
+<sc-for list="{{t.replies}}" as="r" hint-placeholder-count="1">
+<div style="padding: 10px 12px; border-radius: 14px; background: #F7F5EF; display: flex; flex-direction: column; gap: 2px"><span style="display: flex; align-items: center; gap: 8px"><span style="font-weight: 600">{{r.who}}</span><span style="font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; letter-spacing: 0.12em; color: #8A6420">{{r.role}}</span></span><span style="color: #2B2A27">{{r.text}}</span></div>
+</sc-for>
+<sc-if value="{{t.canReply}}" hint-placeholder-val="{{true}}">
+<label style="display: flex"><span style="position: absolute; left: -9999px">Reply</span>
+<input type="text" placeholder="{{t.replyHint}}" style="flex: 1; min-width: 0; min-height: 44px; box-sizing: border-box; padding: 0 16px; border: 0; outline: 0; border-radius: 999px; background: #F7F5EF; color: #141413; font: inherit; font-size: 16px"></label>
+</sc-if>
+</div>
+</sc-if>
+</article>
+</sc-for>
+<sc-if value="{{tkEmpty}}" hint-placeholder-val="{{false}}"><div style="padding: 24px; border-radius: 16px; background: #FFFFFF; text-align: center; color: #6B6A66">No threads</div></sc-if>
+</div>
+</sc-if>
+</main>
+
+<aside style="flex: 1 1 300px; min-width: 0; display: flex; flex-direction: column; gap: 18px">
+<section id="crew" style="background: #FFFFFF; border-radius: 16px; box-shadow: none; padding: 18px; display: flex; flex-direction: column; gap: 12px">
+<div style="display: flex; align-items: center; justify-content: space-between; gap: 10px"><h2 style="margin: 0; font-size: 15px; font-weight: 600">Crew</h2><sc-if value="{{isMaker}}" hint-placeholder-val="{{true}}"><a href="Compose.dc.html" style="font-size: 13px; font-weight: 600; text-decoration: none">Add a seat</a></sc-if></div>
+<a href="Person.dc.html" style="display: flex; align-items: center; gap: 10px; text-decoration: none; color: #141413"><div style="width: 38px; height: 38px; border-radius: 50%; background: #F0EEE6; color: #2B2A27; display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 13px">M</div><div style="display: flex; flex-direction: column"><span style="font-weight: 600">[Maker of ackstack]</span><span style="font-size: 13px; color: #6B6A66">Maker</span></div></a>
+<div style="display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 10px 12px; border-radius: 14px; background: #F0F7F6"><div style="display: flex; align-items: center; gap: 10px; min-width: 0"><div style="width: 32px; height: 32px; border-radius: 50%; border: 1.5px dashed #2F6F73; box-sizing: border-box; flex-shrink: 0"></div><span style="font-size: 15px">HR-compliance advisor</span></div><a href="#" style="font-weight: 600; font-size: 13px; text-decoration: none; flex-shrink: 0; color: #1F5357">{{seatLink}}</a></div>
+<div style="display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 10px 12px; border-radius: 14px; background: #F0F7F6"><div style="display: flex; align-items: center; gap: 10px; min-width: 0"><div style="width: 32px; height: 32px; border-radius: 50%; border: 1.5px dashed #2F6F73; box-sizing: border-box; flex-shrink: 0"></div><span style="font-size: 15px">Payroll / HR partner manager</span></div><a href="#" style="font-weight: 600; font-size: 13px; text-decoration: none; flex-shrink: 0; color: #1F5357">{{seatLink}}</a></div>
+</section>
+
+<section style="background: #FFFFFF; border-radius: 16px; box-shadow: none; padding: 18px; display: flex; flex-direction: column; gap: 10px; font-size: 15px">
+<div style="display: flex; align-items: center; justify-content: space-between; gap: 10px"><h2 style="margin: 0 0 2px; font-size: 15px; font-weight: 600">Built with</h2><sc-if value="{{isMaker}}" hint-placeholder-val="{{true}}"><button type="button" style="border: 0; background: transparent; padding: 0; min-height: 24px; color: #8A6420; font: inherit; font-size: 13px; font-weight: 600; cursor: pointer">Edit</button></sc-if></div>
+<div style="display: flex; flex-wrap: wrap; gap: 6px">
+<span style="display: flex; align-items: center; gap: 6px; padding: 6px 10px; border-radius: 999px; background: #F5F3EC; font-size: 13px"><span style="width: 8px; height: 8px; border-radius: 50%; background: #6B6A66"></span>Repo · GitHub</span>
+<span style="display: flex; align-items: center; gap: 6px; padding: 6px 10px; border-radius: 999px; background: #F5F3EC; font-size: 13px"><span style="width: 8px; height: 8px; border-radius: 50%; background: #5B6B8C"></span>Database · D1</span>
+<span style="display: flex; align-items: center; gap: 6px; padding: 6px 10px; border-radius: 999px; background: #F5F3EC; font-size: 13px"><span style="width: 8px; height: 8px; border-radius: 50%; background: #B8862F"></span>Compute · Workers</span>
+<span style="display: flex; align-items: center; gap: 6px; padding: 6px 10px; border-radius: 999px; background: #F5F3EC; font-size: 13px"><span style="width: 8px; height: 8px; border-radius: 50%; background: #4F7A6A"></span>Files · R2</span>
+<span style="display: flex; align-items: center; gap: 6px; padding: 6px 10px; border-radius: 999px; background: #F5F3EC; font-size: 13px"><span style="width: 8px; height: 8px; border-radius: 50%; background: #D9A441"></span>Schedules · Cron</span>
+<span style="display: flex; align-items: center; gap: 6px; padding: 6px 10px; border-radius: 999px; background: #F5F3EC; font-size: 13px"><span style="width: 8px; height: 8px; border-radius: 50%; background: #8C6A9E"></span>Email</span>
+</div>
+</section>
+
+<section style="background: #FFFFFF; border-radius: 16px; box-shadow: none; padding: 18px; display: flex; flex-direction: column; gap: 10px; font-size: 15px">
+<div style="display: flex; align-items: center; justify-content: space-between; gap: 10px"><h2 style="margin: 0 0 2px; font-size: 15px; font-weight: 600">In the open</h2><sc-if value="{{isMaker}}" hint-placeholder-val="{{true}}"><button type="button" style="border: 0; background: transparent; padding: 0; min-height: 24px; color: #8A6420; font: inherit; font-size: 13px; font-weight: 600; cursor: pointer">Edit</button></sc-if></div>
+<div style="display: flex; justify-content: space-between; gap: 10px"><span style="color: #6B6A66">Repository</span><a href="#">pullely/ackstack</a></div>
+<div style="display: flex; justify-content: space-between; gap: 10px"><span style="color: #6B6A66">Workspace</span><a href="#">Open on Orunbase</a></div>
+<div style="display: flex; justify-content: space-between; gap: 10px"><span style="color: #6B6A66">Pricing plan</span><span>$29 a month for 50 staff</span></div>
+</section>
+</aside>
+</div>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1950}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    const name = 'ackstack', pitch = "Send policies, collect e-acknowledgments and re-collect them automatically on each state's schedule.";
+    this.state = { view: 'maker', follow: false, editing: false, name, pitch, draftName: name, draftPitch: pitch, seat: null };
+  }
+  searchVals() {
+    const q = (this.state || {}).q || '';
+    const exp = (this.state || {}).qExp || {};
+    const w = q.trim().toLowerCase();
+    const open = !!w;
+    const EASE = 'cubic-bezier(0.2, 0.8, 0.2, 1)';
+    const P = [['ackstack', 'Ak', '#F3E7CC', '#8A6420', 1], ['meterwise', 'Mw', '#E6E9F2', '#3A4A75', 1], ['expirio', 'Ex', '#ECE6F3', '#5B3F86', 1], ['rangewise', 'Rw', '#E3EEE8', '#2F5E4C', 1], ['aitally', 'At', '#F0EEE6', '#2B2A27', 1], ['rateboard', 'Rb', '#DDEDEC', '#1F5357', 1], ['grantwell', 'Gw', '#E3EEE8', '#2F5E4C', 1], ['leakbook', 'Lb', '#E6E9F2', '#3A4A75', 1], ['arcdesk', 'Ad', '#ECEAE3', '#2B2A27', 1], ['beacon24', 'B2', '#ECE6F3', '#5B3F86', 0], ['chaseid', 'Ci', '#ECE6F3', '#5B3F86', 0]];
+    const link = 'flex: 1; min-width: 0; display: flex; align-items: center; gap: 10px; min-height: 44px; padding: 0 10px; border-radius: 12px; color: #141413; text-decoration: none';
+    const wrap = 'display: flex; align-items: center; gap: 2px';
+    const prod = (p, child) => ({ href: p[4] ? 'Product.dc.html' : 'ProductIdea.dc.html', name: p[0], mono: p[1], kind: child ? 'Maker' : (p[4] ? 'Shipping' : 'Idea'), canExpand: false,
+      wrap: wrap + (child ? '; margin-left: 24px; padding-left: 8px; border-left: 2px solid #ECEAE3' : ''), style: link,
+      tile: 'width: ' + (child ? 26 : 30) + 'px; height: ' + (child ? 26 : 30) + 'px; border-radius: 9px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 600; background: ' + p[2] + '; color: ' + p[3] });
+    const rows = [];
+    if (w) {
+      P.filter(p => p[0].includes(w)).slice(0, 3).forEach(p => rows.push(prod(p, false)));
+      P.filter(p => ('maker of ' + p[0]).includes(w)).slice(0, 3).forEach(p => {
+        const name = '[Maker of ' + p[0] + ']', isOpen = !!exp[name];
+        rows.push({ href: 'Person.dc.html', name, mono: 'M', kind: 'Person', wrap, style: link, canExpand: true, open: isOpen,
+          toggleLabel: (isOpen ? 'Hide products of ' : 'Show products of ') + name,
+          chev: isOpen ? 'M6 15l6-6 6 6' : 'M6 9l6 6 6-6',
+          toggle: () => this.setState({ qExp: { ...exp, [name]: !isOpen } }),
+          tile: 'width: 30px; height: 30px; border-radius: 50%; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 600; background: #F0EEE6; color: #2B2A27' });
+        if (isOpen) rows.push(prod(p, true));
+      });
+    }
+    return { q, setQ: (e) => this.setState({ q: e.target.value }), qOpen: open, qRows: rows, qNone: open && rows.length === 0,
+      qWrap: 'position: relative; display: flex; flex: 0 1 ' + (open ? '380px' : '260px') + '; transition: flex-basis 0.32s ' + EASE,
+      qCard: 'position: absolute; top: -6px; left: -6px; right: -6px; z-index: 20; box-sizing: border-box; overflow: hidden; background: #FFFFFF; border-radius: 22px; box-shadow: inset 0 0 0 1px rgba(20,20,19,0.1); padding: 54px 6px 6px; display: flex; flex-direction: column; gap: 2px; transform-origin: top center; ' + (open ? 'max-height: 560px; opacity: 1; transform: scale(1); visibility: visible; transition: max-height 0.42s ' + EASE + ', opacity 0.2s ease, transform 0.32s ' + EASE : 'max-height: 52px; opacity: 0; transform: scale(0.98); visibility: hidden; pointer-events: none; transition: max-height 0.26s ' + EASE + ', opacity 0.18s ease, transform 0.26s ' + EASE + ', visibility 0s linear 0.26s'),
+      qLabel: 'position: relative; z-index: 21; flex: 1; min-width: 0; display: flex; align-items: center; gap: 8px; border-radius: 999px; padding: 0 14px; min-height: 40px; transition: background 0.25s ease, box-shadow 0.25s ease; ' + (open ? 'background: #F7F5EF; box-shadow: none' : 'background: rgba(255,255,255,0.75); box-shadow: inset 0 0 0 1px rgba(20,20,19,0.07)') };
+  }
+  talkVals(maker, crewName) {
+    const tk = (this.state || {}).tk || {};
+    const set = (patch) => this.setState({ tk: { ...tk, ...patch } });
+    const draft = tk.draft || '', vis = tk.vis || 'public', kind = tk.kind || 'question', filter = tk.filter || 'all';
+    const open = tk.open || { s1: true }, resolved = tk.resolved || {}, added = tk.added || [];
+    const LOCK = 'M6 11V8a6 6 0 0112 0v3M5 11h14v10H5z', GLOBE = 'M12 3a9 9 0 100 18 9 9 0 000-18zM3 12h18M12 3c3 3 3 15 0 18M12 3c-3 3-3 15 0 18';
+    const KIND = { question: 'Question', issue: 'Issue', idea: 'Suggestion' };
+    const seg = (on) => 'display: flex; align-items: center; gap: 6px; min-height: 34px; padding: 0 12px; border: 0; border-radius: 999px; font: inherit; font-size: 13px; cursor: pointer; ' + (on ? 'background: #FFFFFF; color: #141413; font-weight: 600' : 'background: transparent; color: #6B6A66; font-weight: 500');
+    // Sample threads are placeholders. A private thread is seen by its author and the product's crew only.
+    const SAMPLE = [
+      { id: 's1', who: '[Reader]', kind: 'question', vis: 'public', when: '[2d]', q: '[Their question]', replies: [{ who: crewName, role: 'CREW', text: '[The answer]' }] },
+      { id: 's2', who: '[Reader]', kind: 'issue', vis: 'public', when: '[4d]', q: '[The issue they hit]', replies: [] },
+      { id: 's3', who: '[Reader]', kind: 'question', vis: 'private', when: '[5h]', q: '[Their private question]', replies: [], crewOnly: true },
+      { id: 's4', who: 'You', kind: 'question', vis: 'private', when: '[1d]', q: '[Your private question]', replies: [{ who: crewName, role: 'CREW', text: '[The answer]' }], visitorOnly: true }
+    ];
+    const visible = added.concat(SAMPLE).filter(t => t.vis === 'public' || t.mine || (maker ? !t.visitorOnly : !t.crewOnly));
+    const shown = visible.filter(t => filter === 'all' || t.vis === filter);
+    const btn = 'display: flex; align-items: center; min-height: 40px; padding: 0 16px; border: 0; border-radius: 999px; font: inherit; font-size: 13px; font-weight: 600; cursor: pointer; ';
+    return {
+      tkDraft: draft, tkSet: (e) => set({ draft: e.target.value }), tkCant: !draft.trim(),
+      tkKinds: Object.keys(KIND).map(k => ({ label: KIND[k], on: kind === k, pick: () => set({ kind: k }), style: seg(kind === k) })),
+      tkVis: [['public', 'Public', GLOBE], ['private', 'Private', LOCK]].map(([k, label, d]) => ({ label, d, on: vis === k, pick: () => set({ vis: k }), style: seg(vis === k) })),
+      tkPostLabel: vis === 'private' ? 'Send to the crew' : 'Post publicly',
+      tkPostStyle: 'min-height: 40px; padding: 0 18px; border: 0; border-radius: 999px; font: inherit; font-weight: 600; ' + (draft.trim() ? 'background: #141413; color: #FAF9F5; cursor: pointer' : 'background: #E4E2DA; color: #6B6A66; cursor: default'),
+      tkPost: () => { if (draft.trim()) set({ draft: '', filter: 'all', added: [{ id: 'n' + added.length, who: 'You', mine: true, kind, vis, when: 'Just now', q: draft.trim(), replies: [] }].concat(added) }); },
+      tkFilters: [['all', 'All'], ['public', 'Public'], ['private', 'Private']].map(([k, label]) => ({ label, on: filter === k, pick: () => set({ filter: k }),
+        count: String(visible.filter(t => k === 'all' || t.vis === k).length), style: seg(filter === k) })),
+      tkThreads: shown.map(t => {
+        const priv = t.vis === 'private', isOpen = !!open[t.id], done = !!resolved[t.id], n = t.replies.length;
+        return { who: t.who, q: t.q, mono: t.who === 'You' ? 'Y' : 'R', meta: KIND[t.kind] + ' \u00b7 ' + t.when, open: isOpen, resolved: done,
+          badgeIcon: priv ? LOCK : GLOBE, badgeLabel: priv ? 'PRIVATE \u00b7 CREW ONLY' : 'PUBLIC',
+          badge: 'display: flex; align-items: center; gap: 6px; min-height: 26px; padding: 0 10px; border-radius: 999px; flex-shrink: 0; font-family: IBM Plex Mono, monospace; font-size: 10.5px; letter-spacing: 0.12em; ' + (priv ? 'background: #E6E9F2; color: #3A4A75' : 'background: transparent; color: #6B6A66'),
+          card: 'border-radius: 16px; padding: 18px; display: flex; flex-direction: column; gap: 12px; background: #FFFFFF; ' + (priv ? 'box-shadow: inset 0 0 0 1.5px rgba(58,74,117,0.28)' : 'box-shadow: none'),
+          toggle: () => set({ open: { ...open, [t.id]: !isOpen } }),
+          repliesLabel: maker && n === 0 ? 'Answer' : n === 0 ? 'Reply' : n === 1 ? '1 reply' : n + ' replies',
+          repliesStyle: btn + (maker && n === 0 ? 'background: #141413; color: #FAF9F5' : 'background: rgba(20,20,19,0.06); color: #141413'),
+          canResolve: maker && t.kind === 'issue', showResolved: !maker && done,
+          resolve: () => set({ resolved: { ...resolved, [t.id]: !done } }),
+          resolveLabel: done ? 'Resolved' : 'Mark resolved',
+          resolveStyle: btn + (done ? 'background: #E3EEE8; color: #2F5E4C' : 'background: transparent; color: #2B2A27'),
+          replies: t.replies, canReply: true, replyHint: priv ? 'Reply privately' : 'Reply' };
+      }),
+      tkEmpty: shown.length === 0
+    };
+  }
+  renderVals() { return { ...this.pageVals(), ...this.searchVals() }; }
+  pageVals() {
+    const st = this.state;
+    const maker = st.view === 'maker';
+    const on = st.follow;
+    const MAX = 120;
+    const left = MAX - st.draftPitch.length;
+    const cantSave = left < 0 || !st.draftName.trim() || !st.draftPitch.trim();
+    const pill = 'display: flex; align-items: center; min-height: 40px; padding: 0 18px; border: 0; border-radius: 999px; font: inherit; font-weight: 600; ';
+    const KINDS = [
+      ['Feature shipped', 'Something people can use now', 'M5 12l5 5 9-10', '#8A6420', '#F3E7CC', 'Compose.dc.html'],
+      ['New version', 'A release with its changelog', 'M3 12V4h8l9 9-8 8zM7.5 7.5h.01', '#3A4A75', '#E6E9F2', 'Compose.dc.html'],
+      ['Demo', 'Orun records it for you', 'M8 5v14l11-7z', '#141413', '#ECEAE3', 'DemoFlow.dc.html'],
+      ['New idea', 'A problem worth building for', 'M9 18h6M10 21h4M12 3a6 6 0 00-4 10.5c.7.7 1 1.5 1 2.5h6c0-1 .3-1.8 1-2.5A6 6 0 0012 3z', '#5B3F86', '#ECE6F3', 'Compose.dc.html'],
+      ['Help wanted', 'Open a seat on the crew', 'M9 11a4 4 0 100-8 4 4 0 000 8zM2 21c1-4 4-6 7-6s6 2 7 6M19 8v6M16 11h6', '#1F5357', '#DDEDEC', 'Compose.dc.html']
+    ];
+    return {
+      isMaker: maker, isVisitor: !maker,
+      openPrivate: () => this.setState({ tab: 'talk', tk: { ...((this.state || {}).tk || {}), filter: 'private' } }),
+      ...this.talkVals(maker, '[Maker of ackstack]'),
+      ...(() => {
+        const tab = st.tab || 'updates';
+        const pillT = 'display: flex; align-items: center; min-height: 36px; padding: 0 14px; border: 0; border-radius: 999px; font: inherit; cursor: pointer; ';
+        const tabs = [['updates', 'Updates'], ['about', 'About'], ['crew', 'Crew'], ['talk', 'Talk']].map(([k, label]) => ({ label, on: tab === k,
+          pick: () => this.setState({ tab: k }),
+          style: pillT + (tab === k ? 'background: #141413; color: #FAF9F5; font-weight: 600' : 'background: transparent; color: #2B2A27; font-weight: 500') }));
+        const MS = [['AS1', 'The policy register and staff roster', 'Policy PDFs with version history, and the people they apply to.', 1], ['AS2', 'Assign and acknowledge', 'Assign by location, role or state. Staff acknowledge through a no-login link.', 1], ['AS3', 'The state re-collection calendar', 'Policies re-send on each state\u2019s own cycle.', 1], ['AS4', '[Next milestone]', 'Next up', 0]];
+        const milestones = MS.map(([code, title, text, done], i) => ({ code, title, text,
+          d: done ? 'M5 12l5 5 9-10' : 'M12 6v6l4 2', stroke: done ? '#FFFFFF' : '#6B6A66',
+          dot: 'width: 28px; height: 28px; border-radius: 50%; flex-shrink: 0; display: flex; align-items: center; justify-content: center; background: ' + (done ? 'linear-gradient(135deg, #E3B34C, #B8862F)' : '#F0EEE6'),
+          titleStyle: 'font-weight: 600; ' + (done ? 'color: #141413' : 'color: #6B6A66'),
+          row: 'display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; padding: 10px 0; ' + (i ? 'border-top: 1px solid rgba(20,20,19,0.06)' : '') }));
+        const details = [['Category', 'Productivity'], ['License', 'MIT'], ['Built on', 'cirrus'], ['Pricing plan', '$29 a month for 50 staff'], ['Live on', 'Stage'], ['For', '[Who it is for]']].map(([label, value]) => ({ label, value }));
+        const openSeats = [['HR-compliance advisor', 'Open 7 weeks \u00b7 nobody yet'], ['Payroll / HR partner manager', '[Open since]']].map(([role, sub]) => ({ role, sub, href: maker ? 'Compose.dc.html' : '#' }));
+        const useful = st.useful || {}, openT = st.openT || { t1: true }, asked = st.asked || [];
+        const SAMPLE = [{ id: 't1', who: '[Reader]', q: '[Their question]', when: '[2d]', replies: [{ who: '[Maker of ackstack]', role: 'Maker', text: '[The answer]' }] }, { id: 't2', who: '[Reader]', q: '[Their question]', when: '[5d]', replies: [] }];
+        const threads = asked.concat(SAMPLE).map(t => ({ who: t.who, q: t.q, when: t.when, mono: t.who === 'You' ? 'Y' : 'R',
+          open: !!openT[t.id], useful: !!useful[t.id],
+          toggle: () => this.setState({ openT: { ...openT, [t.id]: !openT[t.id] } }),
+          toggleUseful: () => this.setState({ useful: { ...useful, [t.id]: !useful[t.id] } }),
+          usefulStyle: 'display: flex; align-items: center; min-height: 40px; padding: 0 16px; border: 0; border-radius: 999px; font: inherit; font-size: 13px; font-weight: 600; cursor: pointer; ' + (useful[t.id] ? 'background: #F3E7CC; color: #8A6420' : 'background: rgba(20,20,19,0.06); color: #141413'),
+          repliesLabel: t.replies.length === 0 ? 'No replies yet' : t.replies.length === 1 ? '1 reply' : t.replies.length + ' replies',
+          replies: t.replies.map(r => ({ ...r, badge: 'font-family: IBM Plex Mono, monospace; font-size: 10.5px; letter-spacing: 0.12em; color: #8A6420' })) }));
+        const draft = st.talkDraft || '';
+        return { tabs, tabUpdates: tab === 'updates', tabAbout: tab === 'about', tabCrew: tab === 'crew', tabTalk: tab === 'talk',
+          milestones, details, openSeats, threads, talkDraft: draft, cantAsk: !draft.trim(),
+          setTalk: (e) => this.setState({ talkDraft: e.target.value }),
+          ask: () => { if (draft.trim()) this.setState({ talkDraft: '', asked: [{ id: 'a' + asked.length, who: 'You', q: draft.trim(), when: 'Just now', replies: [] }].concat(asked) }); },
+          askStyle: 'min-height: 44px; padding: 0 20px; border: 0; border-radius: 999px; font: inherit; font-weight: 600; ' + (draft.trim() ? 'background: #141413; color: #FAF9F5; cursor: pointer' : 'background: #E4E2DA; color: #6B6A66; cursor: default') };
+      })(),
+      views: [['maker', 'Manage'], ['visitor', 'Visitor']].map(([k, label]) => ({ label, on: st.view === k,
+        pick: () => this.setState({ view: k, editing: false }),
+        style: 'min-height: 34px; padding: 0 12px; border: 0; border-radius: 999px; font: inherit; font-size: 13px; cursor: pointer; ' + (st.view === k ? 'background: #FFFFFF; color: #141413; font-weight: 600' : 'background: transparent; color: #6B6A66; font-weight: 500') })),
+      toVisitor: () => this.setState({ view: 'visitor', editing: false }),
+      toMaker: () => this.setState({ view: 'maker' }),
+      name: st.name, pitch: st.pitch,
+      reading: !(maker && st.editing), editing: maker && st.editing,
+      draftName: st.draftName, draftPitch: st.draftPitch,
+      startEdit: () => this.setState({ editing: true, draftName: st.name, draftPitch: st.pitch }),
+      cancelEdit: () => this.setState({ editing: false }),
+      saveEdit: () => { if (!cantSave) this.setState({ editing: false, name: st.draftName.trim(), pitch: st.draftPitch.trim() }); },
+      setName: (e) => this.setState({ draftName: e.target.value }),
+      setPitch: (e) => this.setState({ draftPitch: e.target.value }),
+      cantSave,
+      countLabel: left < 0 ? (-left) + ' over' : left + ' left',
+      countStyle: 'font-family: IBM Plex Mono, monospace; font-size: 11px; font-weight: 400; color: ' + (left < 0 ? '#8E3B27' : '#6B6A66'),
+      saveStyle: pill + (cantSave ? 'background: #E4E2DA; color: #6B6A66; cursor: default' : 'background: #141413; color: #FAF9F5; cursor: pointer'),
+      seatPending: !st.seat, seatDecided: !!st.seat,
+      seatDecidedLabel: st.seat === 'accepted' ? 'Accepted' : 'Declined',
+      seatDecidedStyle: 'font-size: 13px; font-weight: 600; color: ' + (st.seat === 'accepted' ? '#2F7A4E' : '#6B6A66'),
+      accept: () => this.setState({ seat: 'accepted' }),
+      decline: () => this.setState({ seat: 'declined' }),
+      kinds: KINDS.map(([label, sub, d, stroke, tint, href]) => ({ label, sub, d, stroke, href,
+        tile: 'width: 28px; height: 28px; border-radius: 50%; flex-shrink: 0; display: flex; align-items: center; justify-content: center; background: ' + tint })),
+      seatBtn: maker ? 'Edit seat' : 'Take the seat',
+      seatLink: maker ? 'Edit' : 'Take it',
+      followLabel: on ? 'Following' : 'Follow',
+      toggleFollow: () => this.setState({ follow: !on }),
+      followStyle: pill + 'cursor: pointer; ' + (on ? 'background: rgba(20,20,19,0.06); color: #2B2A27' : 'background: #FFFFFF; color: #141413; box-shadow: inset 0 0 0 1.5px #141413')
+    };
+  }
+}
+</script>
+</body>
+</html>

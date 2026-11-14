@@ -1,0 +1,255 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>New post</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600&amp;family=Lora:ital,wght@0,400;1,400&amp;family=IBM+Plex+Mono:wght@400;500&amp;display=swap">
+<style>
+:root{color-scheme:light}body{margin:0;background:#F6F4EE}
+a{color:#8A6420}a:hover{color:#5E4415}
+input::placeholder,textarea::placeholder{color:#A8A59C}
+</style>
+</helmet>
+<div style="background-color: #F6F4EE; background-image: radial-gradient(1100px 460px at 50% -8%, rgba(184,134,47,0.18), transparent 62%), radial-gradient(rgba(20,20,19,0.07) 1px, transparent 1.2px); background-size: auto, 22px 22px; color: #141413; font-family: 'Hanken Grotesk', system-ui, sans-serif; font-size: 15px; line-height: 1.5; min-height: 100%; display: flex; flex-direction: column">
+
+<header style="position: sticky; top: 0; z-index: 5; width: 100%; background: rgba(255,255,255,0.62); backdrop-filter: saturate(160%) blur(16px); -webkit-backdrop-filter: saturate(160%) blur(16px); box-shadow: none">
+<div style="max-width: 1440px; margin: 0 auto; box-sizing: border-box; padding: 10px 20px; display: flex; align-items: center; gap: 14px">
+<a href="Product.dc.html" aria-label="Back to ackstack" style="width: 38px; height: 38px; border-radius: 50%; background: rgba(20,20,19,0.06); color: #141413; display: flex; align-items: center; justify-content: center"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M15 18l-6-6 6-6"></path></svg></a>
+<span style="display: flex; align-items: center; gap: 8px; font-size: 15px"><span style="width: 26px; height: 26px; border-radius: 9px; background: #F3E7CC; color: #8A6420; font-size: 11px; font-weight: 600; display: flex; align-items: center; justify-content: center">Ak</span><a href="Product.dc.html" style="color: #6B6A66; text-decoration: none">ackstack</a><span style="color: #CFCCC2">/</span><span style="font-weight: 600">New post</span></span>
+<span style="flex: 1"></span>
+<span style="{{readyStyle}}">{{readyText}}</span>
+<button type="button" disabled="{{notReady}}" style="{{postStyle}}">Post</button>
+</div>
+</header>
+
+<div style="width: 100%; max-width: 1440px; margin: 0 auto; box-sizing: border-box; padding: 24px 20px 64px; display: flex; flex-wrap: wrap; gap: 20px; align-items: flex-start">
+
+<nav aria-label="Post type" style="flex: 0 0 76px; display: flex; flex-direction: column; gap: 6px; padding: 8px; box-sizing: border-box; background: #FFFFFF; border-radius: 16px; box-shadow: none">
+<sc-for list="{{types}}" as="t" hint-placeholder-count="6">
+<button type="button" onClick="{{t.pick}}" aria-pressed="{{t.on}}" aria-label="{{t.label}}" title="{{t.label}}" style="{{t.style}}">
+<span style="{{t.tile}}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="{{t.stroke}}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{t.d}}"></path></svg></span>
+<span style="font-size: 10.5px; font-weight: 600; line-height: 1.15">{{t.short}}</span>
+</button>
+</sc-for>
+</nav>
+
+<main style="flex: 999 1 460px; min-width: 0; display: flex; justify-content: center">
+<article style="{{cardStyle}}">
+<sc-if value="{{isSeat}}" hint-placeholder-val="{{false}}">
+<span aria-hidden="true" style="position: absolute; left: -12px; top: 50%; width: 24px; height: 24px; margin-top: -12px; border-radius: 50%; background: #F6F4EE"></span>
+<span aria-hidden="true" style="position: absolute; right: -12px; top: 50%; width: 24px; height: 24px; margin-top: -12px; border-radius: 50%; background: #F6F4EE"></span>
+</sc-if>
+
+<div style="display: flex; align-items: center; gap: 12px; padding: 18px 20px 6px">
+<span style="width: 40px; height: 40px; border-radius: 13px; background: #F3E7CC; color: #8A6420; display: flex; align-items: center; justify-content: center; font-weight: 600; flex-shrink: 0">Ak</span>
+<span style="flex: 1; display: flex; flex-direction: column"><span style="font-weight: 600">ackstack</span><span style="font-size: 13px; color: #6B6A66">by you</span></span>
+<span style="{{badgeStyle}}"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{typeIcon}}"></path></svg>{{typeLabel}}</span>
+</div>
+
+<sc-if value="{{isAuto}}" hint-placeholder-val="{{false}}">
+<div style="padding: 18px 20px 24px; display: flex; flex-direction: column; gap: 12px; align-items: flex-start">
+<span style="font-weight: 600; font-size: 18px">{{autoTitle}}</span>
+<span style="color: #6B6A66">{{autoBody}}</span>
+<sc-if value="{{isDemoType}}" hint-placeholder-val="{{false}}"><a href="DemoFlow.dc.html" style="display: flex; align-items: center; min-height: 40px; padding: 0 18px; border-radius: 999px; background: #141413; color: #FAF9F5; text-decoration: none; font-weight: 600">Record a demo</a></sc-if>
+</div>
+</sc-if>
+
+<sc-if value="{{isBuild}}" hint-placeholder-val="{{true}}">
+<div style="padding: 8px 14px 16px; display: flex; flex-direction: column; gap: 6px">
+<sc-for list="{{blocks}}" as="b" hint-placeholder-count="3">
+<div style="{{b.wrap}}">
+<div style="display: flex; align-items: center; gap: 8px; min-height: 22px">
+<span style="{{b.labelStyle}}">{{b.label}}</span>
+<span style="{{b.countStyle}}">{{b.count}}</span>
+<span style="flex: 1"></span>
+<sc-if value="{{b.removable}}" hint-placeholder-val="{{false}}"><button type="button" onClick="{{b.remove}}" aria-label="{{b.removeLabel}}" style="{{b.ctrl}}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg></button></sc-if>
+</div>
+<sc-if value="{{b.isTitle}}" hint-placeholder-val="{{true}}"><input type="text" aria-label="{{b.label}}" value="{{b.value}}" onInput="{{b.set}}" placeholder="{{b.ph}}" style="{{b.titleStyle}}"></sc-if>
+<sc-if value="{{b.isLine}}" hint-placeholder-val="{{false}}"><input type="text" aria-label="{{b.label}}" value="{{b.value}}" onInput="{{b.set}}" placeholder="{{b.ph}}" style="{{b.lineStyle}}"></sc-if>
+<sc-if value="{{b.isText}}" hint-placeholder-val="{{false}}"><textarea aria-label="{{b.label}}" rows="2" onInput="{{b.set}}" placeholder="{{b.ph}}" style="{{b.textStyle}}">{{b.value}}</textarea></sc-if>
+<sc-if value="{{b.isList}}" hint-placeholder-val="{{false}}">
+<div style="display: flex; flex-direction: column; gap: 2px">
+<sc-for list="{{b.items}}" as="i" hint-placeholder-count="1"><div style="display: flex; gap: 10px; font-size: 15px"><span style="{{b.glyphStyle}}">{{b.glyph}}</span><span>{{i}}</span></div></sc-for>
+<input type="text" aria-label="{{b.addLabel}}" value="{{b.draft}}" onInput="{{b.setDraft}}" onKeyDown="{{b.onKey}}" placeholder="{{b.ph}}" style="{{b.lineStyle}}">
+</div>
+</sc-if>
+<sc-if value="{{b.isLink}}" hint-placeholder-val="{{false}}">
+<div style="display: flex; align-items: center; gap: 8px"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#8A6420" stroke-width="2" aria-hidden="true"><path d="M10 14a4 4 0 005.7 0l3-3a4 4 0 00-5.7-5.7l-1 1M14 10a4 4 0 00-5.7 0l-3 3a4 4 0 005.7 5.7l1-1"></path></svg><input type="text" aria-label="{{b.label}}" value="{{b.value}}" onInput="{{b.set}}" placeholder="{{b.ph}}" style="{{b.lineStyle}}"></div>
+</sc-if>
+<sc-if value="{{b.isChoice}}" hint-placeholder-val="{{false}}">
+<div style="display: flex; flex-wrap: wrap; gap: 6px"><sc-for list="{{b.choices}}" as="c" hint-placeholder-count="3"><button type="button" onClick="{{c.pick}}" aria-pressed="{{c.on}}" style="{{c.style}}">{{c.label}}</button></sc-for></div>
+</sc-if>
+<sc-if value="{{b.isImage}}" hint-placeholder-val="{{false}}">
+<button type="button" style="all: unset; box-sizing: border-box; width: 100%; height: 140px; border-radius: 14px; border: 1.5px dashed #CFCCC2; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; color: #6B6A66; cursor: pointer"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 5h16v14H4zM4 15l5-5 5 5 2-2 4 4"></path></svg><span style="font-size: 13px">Drop a screenshot</span></button>
+</sc-if>
+<sc-if value="{{b.isDemo}}" hint-placeholder-val="{{false}}">
+<a href="DemoFlow.dc.html" style="display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 14px; background: #141413; color: #FAF9F5; text-decoration: none"><span style="width: 32px; height: 32px; border-radius: 50%; background: rgba(250,249,245,0.12); display: flex; align-items: center; justify-content: center"><svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"></path></svg></span><span style="flex: 1; font-size: 13px; font-weight: 500">Attach a recorded demo</span><span style="font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; color: #E3B34C">ORUN</span></a>
+</sc-if>
+</div>
+</sc-for>
+</div>
+</sc-if>
+<sc-if value="{{isVersionType}}" hint-placeholder-val="{{false}}">
+<div aria-label="Deployment, added by Orun" style="margin: 2px 14px 16px; display: flex; flex-wrap: wrap; align-items: center; gap: 10px; padding: 11px 14px; border-radius: 14px; background: #141413; color: #B5B2A8; font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: 0.06em"><span style="width: 9px; height: 9px; border-radius: 50%; box-shadow: inset 0 0 0 1.5px #4ADE80"></span>LIVE ON … <span style="flex: 1"></span><span style="color: #E3B34C">ORUN ADDS THIS WHEN IT DEPLOYS</span></div>
+</sc-if>
+</article>
+</main>
+
+<aside aria-label="Blocks" style="flex: 0 1 230px; min-width: 200px; display: flex; flex-direction: column; gap: 14px">
+<sc-if value="{{isBuild}}" hint-placeholder-val="{{true}}">
+<section style="background: #FFFFFF; border-radius: 16px; box-shadow: none; padding: 12px; display: flex; flex-direction: column; gap: 4px">
+<div style="font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; letter-spacing: 0.12em; color: #6B6A66; padding: 4px 8px 6px">ADD A BLOCK</div>
+<sc-for list="{{palette}}" as="p" hint-placeholder-count="5">
+<button type="button" onClick="{{p.add}}" disabled="{{p.added}}" style="{{p.style}}">
+<span style="{{p.tile}}"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{p.d}}"></path></svg></span>
+<span style="flex: 1; text-align: left">{{p.label}}</span>
+<span style="{{p.markStyle}}">{{p.mark}}</span>
+</button>
+</sc-for>
+</section>
+<section style="background: #FFFFFF; border-radius: 16px; box-shadow: none; padding: 18px; display: flex; flex-direction: column; gap: 8px">
+<div style="font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; letter-spacing: 0.12em; color: #6B6A66">REQUIRED</div>
+<sc-for list="{{required}}" as="r" hint-placeholder-count="3">
+<div style="display: flex; align-items: center; gap: 8px; font-size: 13px"><span style="{{r.dot}}"></span>{{r.label}}</div>
+</sc-for>
+</section>
+</sc-if>
+</aside>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1150}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = {
+      tpl: 'feature',
+      drafts: {},
+      b: {
+        feature: [
+          { key: 'title', value: 'The state re-collection calendar' },
+          { key: 'summary', value: 'Policies re-send on each state’s own cycle: NY, the NY Retail Worker Safety Act, IL and CA.' },
+          { key: 'milestone', value: 'AS3' },
+          { key: 'link', value: '' }
+        ]
+      }
+    };
+  }
+  renderVals() {
+    const I = {
+      title: 'M5 6h14M12 6v12', text: 'M4 7h16M4 12h16M4 17h10', list: 'M9 6h11M9 12h11M9 18h11M4 6h.01M4 12h.01M4 18h.01',
+      link: 'M10 14a4 4 0 005.7 0l3-3a4 4 0 00-5.7-5.7l-1 1M14 10a4 4 0 00-5.7 0l-3 3a4 4 0 005.7 5.7l1-1',
+      line: 'M4 12h16', choice: 'M12 8a4 4 0 100 8 4 4 0 000-8z', image: 'M4 5h16v14H4zM4 15l5-5 5 5 2-2 4 4', demo: 'M8 5v14l11-7z',
+      feature: 'M5 12l5 5 9-10', version: 'M3 12V4h8l9 9-8 8zM7.5 7.5h.01', idea: 'M9 18h6M10 21h4M12 3a6 6 0 00-4 10.5c.7.7 1 1.5 1 2.5h6c0-1 .3-1.8 1-2.5A6 6 0 0012 3z',
+      seat: 'M9 11a4 4 0 100-8 4 4 0 000 8zM2 21c1-4 4-6 7-6s6 2 7 6M19 8v6M16 11h6', deploy: 'M3 12h4l3-8 4 16 3-8h4'
+    };
+    const B = (key, label, kind, o) => ({ key, label, kind, ...o });
+    const CAT = {
+      feature: [B('title', 'Feature', 'title', { req: true, limit: 80, ph: 'What did you ship?' }), B('summary', 'What it does', 'text', { req: true, limit: 280, ph: 'In one or two sentences' }), B('link', 'Try it', 'link', { req: true, ph: 'https://' }),
+        B('forWho', 'For', 'line', { ph: 'Who is it for?' }), B('milestone', 'Milestone', 'choice', { choices: ['AS1', 'AS2', 'AS3'] }), B('shot', 'Screenshot', 'image', {}), B('demo', 'Demo', 'demo', {})],
+      version: [B('version', 'Version', 'title', { req: true, mono: true, ph: '1.4.0' }), B('added', 'Added', 'list', { req: true, glyph: '+', ph: 'Add a line, press Enter' }),
+        B('changed', 'Changed', 'list', { glyph: '~', ph: 'Add a line, press Enter' }), B('fixed', 'Fixed', 'list', { glyph: '✓', ph: 'Add a line, press Enter' }), B('security', 'Security', 'list', { glyph: '⚑', ph: 'Add a line, press Enter' }), B('breaking', 'Breaking change', 'text', { ph: 'What breaks, and how to upgrade' })],
+      idea: [B('problem', 'The problem', 'title', { req: true, serif: true, limit: 90, ph: 'One line, in plain words' }), B('who', 'Who has it', 'line', { req: true, ph: 'e.g. small software vendors in the EU' }),
+        B('why', 'Why now', 'line', { ph: 'What changed?' }), B('details', 'More detail', 'text', { limit: 280, ph: 'Optional context' }), B('seats', 'Seats needed', 'list', { glyph: '○', ph: 'A role, press Enter' }), B('evidence', 'Evidence', 'link', { ph: 'A link that shows the problem is real' })],
+      seat: [B('role', 'Role', 'title', { req: true, limit: 60, ph: 'e.g. HR-compliance advisor' }), B('tasks', 'What you’d do', 'list', { req: true, glyph: '→', ph: 'A task, press Enter' }),
+        B('time', 'Time', 'line', { ph: 'e.g. 2 hours a week' }), B('reward', 'In return', 'choice', { choices: ['Credit', 'Paid', 'Equity'] }), B('skills', 'Skills', 'line', { ph: 'Comma-separated' })]
+    };
+    const TYPES = [['feature', 'Feature', 'Feature shipped', '#B8862F', '#F3E7CC'], ['version', 'Version', 'New version', '#5B6B8C', '#E6E9F2'], ['idea', 'Idea', 'New idea', '#8C6A9E', '#ECE6F3'], ['seat', 'Seat', 'Help wanted', '#2F6F73', '#DDEDEC'], ['demo', 'Demo', 'Demo', '#141413', '#ECEAE3']];
+    const tpl = this.state.tpl;
+    const T = TYPES.find(t => t[0] === tpl);
+    const [, , typeLabel, color, tint] = T;
+    const types = TYPES.map(([k, short, label, c, t]) => {
+      const on = k === tpl;
+      return { short, label, on, d: I[k], stroke: on ? '#FFFFFF' : c, pick: () => this.setState({ tpl: k }),
+        tile: 'width: 38px; height: 38px; border-radius: 12px; display: flex; align-items: center; justify-content: center; background: ' + (on ? c : t) + (on ? '; box-shadow: none' + c : ''),
+        style: 'all: unset; box-sizing: border-box; width: 60px; padding: 8px 0 6px; border-radius: 14px; display: flex; flex-direction: column; align-items: center; gap: 5px; cursor: pointer; ' + (on ? 'background: #FFFFFF; color: #141413; box-shadow: none' : 'color: #6B6A66') };
+    });
+    const isAuto = tpl === 'demo' || tpl === 'deploy';
+    const cat = CAT[tpl] || [];
+    const reqKeys = cat.filter(c => c.req).map(c => c.key);
+    let list = this.state.b[tpl];
+    if (!list) list = reqKeys.map(k => ({ key: k, value: '' }));
+    list = list.slice().sort((p, q) => cat.findIndex(c => c.key === p.key) - cat.findIndex(c => c.key === q.key));
+    const save = (next) => this.setState({ b: { ...this.state.b, [tpl]: next } });
+    const valOf = (x) => Array.isArray(x.value) ? x.value : x.value;
+    const filled = (x) => Array.isArray(x.value) ? x.value.length > 0 : !!(x.value && String(x.value).trim());
+    const inBase = 'width: 100%; box-sizing: border-box; border: 0; outline: 0; background: transparent; color: #141413; font: inherit; padding: 2px 0; ';
+    const ctrl = 'width: 26px; height: 26px; padding: 0; border: 0; border-radius: 8px; background: rgba(20,20,19,0.05); color: #6B6A66; display: flex; align-items: center; justify-content: center; cursor: pointer';
+    const blocks = list.map((x, i) => {
+      const def = cat.find(c => c.key === x.key) || { label: x.key, kind: 'line' };
+      const v = x.value;
+      const ok = filled(x);
+      const len = typeof v === 'string' ? v.length : 0;
+      const over = def.limit && len > def.limit;
+      const move = (d) => () => { const n = list.slice(); const j = i + d; if (j < 0 || j >= n.length) return; [n[i], n[j]] = [n[j], n[i]]; save(n); };
+      const draftKey = tpl + ':' + x.key;
+      const draft = this.state.drafts[draftKey] || '';
+      return {
+        label: def.label, value: typeof v === 'string' ? v : '', ph: def.ph || '',
+        isTitle: def.kind === 'title', isLine: def.kind === 'line', isText: def.kind === 'text', isList: def.kind === 'list', isLink: def.kind === 'link',
+        isChoice: def.kind === 'choice', isImage: def.kind === 'image', isDemo: def.kind === 'demo',
+        removable: !def.req, isFirst: i === 0, isLast: i === list.length - 1,
+        upLabel: 'Move ' + def.label + ' up', downLabel: 'Move ' + def.label + ' down', removeLabel: 'Remove ' + def.label, addLabel: 'Add to ' + def.label,
+        up: move(-1), down: move(1), remove: () => save(list.filter((_, j) => j !== i)),
+        ctrl, ctrlUp: ctrl + (i === 0 ? '; opacity: 0.35; cursor: default' : ''), ctrlDown: ctrl + (i === list.length - 1 ? '; opacity: 0.35; cursor: default' : ''),
+        set: (e) => { const n = list.slice(); n[i] = { ...x, value: e.target.value }; save(n); },
+        items: Array.isArray(v) ? v : [], glyph: def.glyph || '•',
+        glyphStyle: 'width: 14px; flex-shrink: 0; font-family: IBM Plex Mono, monospace; color: ' + color,
+        draft, setDraft: (e) => this.setState({ drafts: { ...this.state.drafts, [draftKey]: e.target.value } }),
+        onKey: (e) => { if (e.key === 'Enter' && draft.trim()) { e.preventDefault(); const n = list.slice(); n[i] = { ...x, value: [...(Array.isArray(v) ? v : []), draft.trim()] }; this.setState({ b: { ...this.state.b, [tpl]: n }, drafts: { ...this.state.drafts, [draftKey]: '' } }); } },
+        choices: (def.choices || []).map(ch => ({ label: ch, on: v === ch, pick: () => { const n = list.slice(); n[i] = { ...x, value: v === ch ? '' : ch }; save(n); },
+          style: 'min-height: 32px; padding: 0 14px; border: 0; border-radius: 999px; font: inherit; font-size: 13px; cursor: pointer; ' + (v === ch ? 'background: ' + color + '; color: #FFFFFF' : 'background: rgba(20,20,19,0.05); color: #2B2A27') })),
+        count: def.limit ? len + '/' + def.limit : '',
+        countStyle: 'font-family: IBM Plex Mono, monospace; font-size: 10.5px; color: ' + (over ? '#B4533C' : '#A8A59C'),
+        labelStyle: 'font-family: IBM Plex Mono, monospace; font-size: 10.5px; letter-spacing: 0.1em; text-transform: uppercase; color: ' + (def.req && !ok ? color : '#8A877F'),
+        wrap: 'display: flex; flex-direction: column; gap: 4px; padding: 10px 12px; border-radius: 16px; ' + (def.req && !ok ? 'box-shadow: inset 0 0 0 1.5px' + color + '55; background: ' + tint + '66' : 'background: rgba(20,20,19,0.025)'),
+        titleStyle: inBase + 'font-size: 22px; font-weight: 600; letter-spacing: -0.02em' + (def.mono ? '; font-family: IBM Plex Mono, monospace; font-weight: 500; font-size: 26px' : '') + (def.serif ? '; font-family: Lora, Georgia, serif; font-style: italic; font-weight: 400' : ''),
+        lineStyle: inBase + 'font-size: 15px',
+        textStyle: inBase + 'font-size: 15px; resize: vertical; line-height: 1.5'
+      };
+    });
+    const have = new Set(list.map(x => x.key));
+    const palette = cat.filter(c => !c.req).map(c => {
+      const added = have.has(c.key);
+      return { label: c.label, d: I[c.kind] || I.line, added, mark: added ? '✓' : '+',
+        add: () => { if (!added) save([...list, { key: c.key, value: c.kind === 'list' ? [] : '' }]); },
+        markStyle: 'font-size: 15px; font-weight: 600; color: ' + (added ? '#2F7A4E' : '#8A877F'),
+        tile: 'width: 30px; height: 30px; border-radius: 10px; display: flex; align-items: center; justify-content: center; ' + (added ? 'background: rgba(20,20,19,0.05); color: #A8A59C' : 'background: ' + tint + '; color: ' + color),
+        style: 'all: unset; box-sizing: border-box; display: flex; align-items: center; gap: 10px; padding: 7px 8px; border-radius: 12px; font-size: 15px; ' + (added ? 'color: #A8A59C; cursor: default' : 'color: #141413; cursor: pointer') };
+    });
+    const required = reqKeys.map(k => { const x = list.find(y => y.key === k); const ok = !!x && filled(x); const def = cat.find(c => c.key === k);
+      return { label: def.label, dot: 'width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; ' + (ok ? 'background: #2F7A4E' : 'box-shadow: inset 0 0 0 1.5px' + color) }; });
+    const nDone = required.filter((r, idx) => { const x = list.find(y => y.key === reqKeys[idx]); return !!x && filled(x); }).length;
+    const tooLong = list.some(x => { const d = cat.find(c => c.key === x.key); return d && d.limit && typeof x.value === 'string' && x.value.length > d.limit; });
+    const ready = !isAuto && nDone === reqKeys.length && !tooLong;
+    const SKIN = {
+      feature: 'background: radial-gradient(520px 200px at 100% 0%, rgba(227,179,76,0.22), transparent 70%), #FFFFFF; border-radius: 16px',
+      version: 'background: linear-gradient(180deg, #F4F6FA, #FFFFFF 40%); border-radius: 16px',
+      idea: 'background: #F4F0F8; border-radius: 4px 16px 16px 16px',
+      seat: 'background: #FFFFFF; border-radius: 16px',
+      demo: 'background: #FFFFFF; border-radius: 16px', deploy: 'background: #FFFFFF; border-radius: 16px'
+    };
+    return {
+      types, blocks, palette, required,
+      isAuto, isBuild: !isAuto, isVersionType: tpl === 'version', isSeat: tpl === 'seat', isDemoType: tpl === 'demo',
+      typeLabel, typeIcon: I[tpl],
+      badgeStyle: 'display: flex; align-items: center; gap: 6px; padding: 5px 10px; border-radius: 999px; font-family: IBM Plex Mono, monospace; font-size: 10.5px; letter-spacing: 0.08em; text-transform: uppercase; background: ' + tint + '; color: ' + (tpl === 'deploy' ? '#2F5E4C' : color === '#B8862F' ? '#8A6420' : color),
+      cardStyle: 'position: relative; width: 100%; max-width: 640px; box-shadow: none; ' + SKIN[tpl],
+      autoTitle: tpl === 'demo' ? 'Recorded, not written' : 'Posts itself',
+      autoBody: tpl === 'demo' ? 'Orun records a flow on stage. You review it, then it posts.' : 'Production deploys, failures and rollbacks post from the Orun run.',
+      readyText: isAuto ? '' : ready ? 'Ready' : nDone + ' of ' + reqKeys.length + ' required',
+      readyStyle: 'font-family: IBM Plex Mono, monospace; font-size: 11px; color: ' + (ready ? '#2F7A4E' : '#8A877F'),
+      notReady: !ready,
+      postStyle: 'min-height: 38px; padding: 0 20px; border: 0; border-radius: 999px; font: inherit; font-weight: 600; ' + (ready ? 'background: #141413; color: #FAF9F5; cursor: pointer; box-shadow: none' : 'background: rgba(20,20,19,0.08); color: #8A877F; cursor: default')
+    };
+  }
+}
+</script>
+</body>
+</html>

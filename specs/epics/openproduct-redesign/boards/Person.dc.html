@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Person profile</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600&amp;family=Lora:wght@400;500&amp;family=IBM+Plex+Mono:wght@400;500&amp;display=swap">
+<style>
+:root{color-scheme:light}body{margin:0;background:#F6F4EE}
+a{color:#8A6420}a:hover{color:#5E4415}
+</style>
+</helmet>
+<div style="background-color: #F6F4EE; background-image: radial-gradient(1100px 460px at 50% -8%, rgba(184,134,47,0.18), transparent 62%), radial-gradient(rgba(20,20,19,0.07) 1px, transparent 1.2px); background-size: auto, 22px 22px; color: #141413; font-family: 'Hanken Grotesk', system-ui, sans-serif; font-size: 15px; line-height: 1.5; min-height: 100%; display: flex; flex-direction: column">
+
+<header style="position: sticky; top: 0; z-index: 5; width: 100%; background: rgba(255,255,255,0.62); backdrop-filter: saturate(160%) blur(16px); -webkit-backdrop-filter: saturate(160%) blur(16px); box-shadow: none">
+<div style="max-width: 1180px; margin: 0 auto; box-sizing: border-box; padding: 10px 24px; display: flex; flex-wrap: wrap; align-items: center; gap: 12px 24px">
+<a href="Feed.dc.html" style="display: flex; align-items: center; gap: 10px; color: #141413; text-decoration: none; font-weight: 600; font-size: 18px; letter-spacing: -0.02em">
+<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 3.5V21" stroke="#141413"></path><circle cx="14" cy="9.5" r="6" stroke="#B8862F"></circle></svg>openproduct</a>
+<nav aria-label="Main" style="display: flex; flex-wrap: wrap; gap: 2px">
+<a href="Feed.dc.html" style="display: flex; align-items: center; min-height: 36px; padding: 0 14px; border-radius: 999px; color: #2B2A27; text-decoration: none; font-weight: 500">Feed</a>
+<a href="Products.dc.html" style="display: flex; align-items: center; min-height: 36px; padding: 0 14px; border-radius: 999px; color: #2B2A27; text-decoration: none; font-weight: 500">Products</a>
+<a href="Seats.dc.html" style="display: flex; align-items: center; min-height: 36px; padding: 0 14px; border-radius: 999px; color: #2B2A27; text-decoration: none; font-weight: 500">Help wanted</a>
+</nav>
+<div style="flex: 1 1 200px; display: flex; justify-content: flex-end; align-items: center; gap: 6px; font-size: 13px; color: #6B6A66">
+<span>Preview:</span>
+<sc-for list="{{views}}" as="v" hint-placeholder-count="2">
+<button type="button" onClick="{{v.pick}}" aria-pressed="{{v.on}}" style="{{v.style}}">{{v.label}}</button>
+</sc-for>
+</div>
+</div>
+</header>
+
+<sc-if value="{{isYou}}" hint-placeholder-val="{{false}}">
+<div style="width: 100%; max-width: 760px; margin: 0 auto; box-sizing: border-box; padding: 48px 24px 64px; display: flex; flex-direction: column; gap: 20px">
+<section style="position: relative; overflow: hidden; background: radial-gradient(500px 220px at 90% 0%, rgba(227,179,76,0.28), transparent 70%), rgba(255,255,255,0.85); backdrop-filter: blur(10px); border-radius: 16px; box-shadow: none; padding: 36px 34px; display: flex; flex-direction: column; gap: 16px">
+<div style="width: 76px; height: 76px; border-radius: 50%; background: #F5F3EC; box-shadow: none; display: flex; align-items: center; justify-content: center; color: #6B6A66"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="8" r="4"></circle><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"></path></svg></div>
+<h1 style="margin: 0; font-family: Lora, Georgia, serif; font-weight: 400; font-size: 40px; line-height: 1.1; letter-spacing: -0.015em">Welcome to openproduct</h1>
+<p style="margin: 0; color: #2B2A27; font-size: 16px; max-width: 560px">Reading needs no account. Sign in to follow products and people, react and comment, take a seat on a crew, and post for the products you build.</p>
+<div style="display: flex; flex-wrap: wrap; gap: 10px">
+<a href="#" style="display: flex; align-items: center; min-height: 40px; padding: 0 22px; border-radius: 999px; background: #141413; color: #FAF9F5; text-decoration: none; font-weight: 600; box-shadow: none">Sign in</a>
+<a href="#" style="display: flex; align-items: center; min-height: 40px; padding: 0 22px; border-radius: 999px; background: rgba(20,20,19,0.06); color: #141413; text-decoration: none; font-weight: 600">Create an account</a>
+</div>
+<div style="font-size: 13px; color: #6B6A66">You sign in with your Orunbase account. It's the same account, not a second one.</div>
+</section>
+<section style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 200px), 1fr)); gap: 14px">
+<div style="background: #FFFFFF; border-radius: 16px; box-shadow: none; padding: 18px; display: flex; flex-direction: column; gap: 4px"><span style="font-weight: 600">Following</span><span style="font-size: 13px; color: #6B6A66">Products and people you follow appear here.</span></div>
+<div style="background: #FFFFFF; border-radius: 16px; box-shadow: none; padding: 18px; display: flex; flex-direction: column; gap: 4px"><span style="font-weight: 600">Saved</span><span style="font-size: 13px; color: #6B6A66">Posts you save, only visible to you.</span></div>
+<div style="background: #FFFFFF; border-radius: 16px; box-shadow: none; padding: 18px; display: flex; flex-direction: column; gap: 4px"><span style="font-weight: 600">Your seats</span><span style="font-size: 13px; color: #6B6A66">Crews you've joined or asked to join.</span></div>
+</section>
+</div>
+</sc-if>
+
+<sc-if value="{{isMaker}}" hint-placeholder-val="{{true}}">
+<div style="width: 100%; max-width: 1180px; margin: 0 auto; box-sizing: border-box; padding: 28px 24px 64px; display: flex; flex-direction: column; gap: 24px">
+<section style="background: #FFFFFF; border-radius: 16px; overflow: hidden; box-shadow: none">
+<div style="height: 120px; background: radial-gradient(600px 200px at 85% 0%, rgba(227,179,76,0.4), transparent 70%), linear-gradient(120deg, #EDEAE0, #FAF9F5)"></div>
+<div style="padding: 0 30px 20px; display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 16px">
+<div style="display: flex; flex-direction: column; gap: 8px; margin-top: -46px">
+<div style="width: 92px; height: 92px; border-radius: 50%; background: #F0EEE6; box-shadow: 0 0 0 5px #FFFFFF; display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 30px; color: #2B2A27">M</div>
+<h1 style="margin: 0; font-family: Lora, Georgia, serif; font-weight: 400; font-size: 40px; line-height: 1.1; letter-spacing: -0.015em">[Maker of ackstack]</h1>
+<div style="color: #2B2A27">[Their one-line headline]</div>
+<div style="font-size: 13px; color: #6B6A66">Maker of 1 product · on openproduct since [date]</div>
+</div>
+<button type="button" onClick="{{toggleFollow}}" style="{{followStyle}}">{{followLabel}}</button>
+</div>
+<nav aria-label="Profile sections" style="display: flex; gap: 6px; padding: 0 22px 16px">
+<a href="#" aria-current="page" style="display: flex; align-items: center; min-height: 36px; padding: 0 14px; border-radius: 999px; background: #141413; color: #FAF9F5; text-decoration: none; font-weight: 600">Posts</a>
+<a href="#" style="display: flex; align-items: center; min-height: 36px; padding: 0 14px; border-radius: 999px; color: #2B2A27; text-decoration: none; font-weight: 500">Products</a>
+<a href="#" style="display: flex; align-items: center; min-height: 36px; padding: 0 14px; border-radius: 999px; color: #2B2A27; text-decoration: none; font-weight: 500">Seats</a>
+</nav>
+</section>
+
+<div style="display: flex; flex-wrap: wrap; gap: 24px; align-items: flex-start">
+<main style="flex: 999 1 520px; min-width: 0; display: flex; flex-direction: column; gap: 18px">
+
+<article aria-label="Feature shipped" style="border-radius: 16px; box-shadow: none; background: radial-gradient(520px 200px at 100% 0%, rgba(227,179,76,0.22), transparent 70%), #FFFFFF; padding: 20px 22px; display: flex; flex-direction: column; gap: 10px">
+<div style="display: flex; align-items: center; gap: 10px">
+<span style="width: 34px; height: 34px; border-radius: 50%; background: linear-gradient(135deg, #E3B34C, #B8862F); display: flex; align-items: center; justify-content: center; box-shadow: none; flex-shrink: 0"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2.4" aria-hidden="true"><path d="M5 12l5 5 9-10"></path></svg></span>
+<div style="display: flex; flex-direction: column"><span style="font-weight: 600; font-size: 18px; letter-spacing: -0.02em">The state re-collection calendar</span><span style="font-size: 13px; color: #6B6A66">for <a href="Product.dc.html" style="font-weight: 600; text-decoration: none">ackstack</a> · 30 Sep</span></div>
+</div>
+<div style="color: #2B2A27">Policies re-send on each state's own cycle: NY, the NY Retail Worker Safety Act, IL and CA.</div>
+</article>
+
+<article aria-label="Help wanted" style="position: relative; border-radius: 16px; background: #FFFFFF; box-shadow: none; padding: 18px 26px; display: flex; flex-wrap: wrap; align-items: center; gap: 16px">
+<span aria-hidden="true" style="position: absolute; left: -12px; top: 50%; width: 24px; height: 24px; margin-top: -12px; border-radius: 50%; background: #F6F4EE"></span>
+<span aria-hidden="true" style="position: absolute; right: -12px; top: 50%; width: 24px; height: 24px; margin-top: -12px; border-radius: 50%; background: #F6F4EE"></span>
+<div style="width: 52px; height: 52px; border-radius: 50%; border: 2px dashed #2F6F73; box-sizing: border-box; display: flex; align-items: center; justify-content: center; color: #2F6F73; flex-shrink: 0"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg></div>
+<div style="flex: 1 1 220px; display: flex; flex-direction: column; padding-left: 16px; border-left: 2px dashed #E4E2DA">
+<span style="font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; letter-spacing: 0.12em; color: #1F5357">OPEN SEAT · ACKSTACK</span>
+<span style="font-weight: 600; font-size: 18px; letter-spacing: -0.015em">HR-compliance advisor</span>
+<span style="font-size: 13px; color: #6B6A66">Open 7 weeks · nobody yet</span>
+</div>
+<a href="#" style="display: flex; align-items: center; min-height: 40px; padding: 0 18px; border-radius: 999px; background: #2F6F73; color: #FFFFFF; text-decoration: none; font-weight: 600">Take the seat</a>
+</article>
+</main>
+<aside style="flex: 1 1 280px; min-width: 0; display: flex; flex-direction: column; gap: 18px">
+<section style="background: #FFFFFF; border-radius: 16px; box-shadow: none; padding: 18px; display: flex; flex-direction: column; gap: 12px">
+<h2 style="margin: 0; font-size: 15px; font-weight: 600">Products</h2>
+<a href="Product.dc.html" style="display: flex; gap: 12px; align-items: center; text-decoration: none; color: #141413">
+<div style="width: 44px; height: 44px; border-radius: 14px; background: #F3E7CC; color: #8A6420; display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 15px">Ak</div>
+<div style="display: flex; flex-direction: column; flex: 1"><span style="font-weight: 600">ackstack</span><span style="font-size: 13px; color: #6B6A66">Maker · shipping, 3 of 4</span></div></a>
+</section>
+</aside>
+</div>
+</div>
+</sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1100}}'>
+class Component extends DCLogic {
+  constructor(props) { super(props); this.state = { view: 'you', follow: false }; }
+  renderVals() {
+    const view = this.state.view;
+    const views = [['you', 'Your profile, signed out'], ['maker', 'A maker’s profile']].map(([k, label]) => ({
+      label, on: view === k, pick: () => this.setState({ view: k }),
+      style: 'min-height: 32px; padding: 0 12px; border: 0; border-radius: 999px; font: inherit; font-size: 13px; cursor: pointer; ' + (view === k ? 'background: #141413; color: #FAF9F5' : 'background: rgba(20,20,19,0.06); color: #2B2A27')
+    }));
+    const on = this.state.follow;
+    return {
+      views, isYou: view === 'you', isMaker: view === 'maker',
+      followLabel: on ? 'Following' : 'Follow',
+      toggleFollow: () => this.setState({ follow: !on }),
+      followStyle: 'min-height: 40px; padding: 0 20px; border: 0; border-radius: 999px; font: inherit; font-weight: 600; cursor: pointer; ' + (on ? 'background: rgba(20,20,19,0.06); color: #2B2A27' : 'background: #141413; color: #FAF9F5')
+    };
+  }
+}
+</script>
+</body>
+</html>

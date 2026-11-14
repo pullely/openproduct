@@ -1,0 +1,41 @@
+# OPR-4: milestone OPR3, threads, public and private. Talk on every product:
+# a thread has a kind and a visibility; a private thread is readable by its
+# author and the product's crew and by nobody else (design §7). The privacy
+# filter lives in the repository's reads and is held by a test that lists
+# every read returning threads or posts.
+# The file is the contract; the task itself lives in Orunbase.
+apiVersion: orun.io/v1
+kind: TaskContract
+metadata:
+  name: OPR-4
+  title: "OPR3: threads, public and private"
+spec:
+  goal: Anyone can start a public or a private thread on a product, and a private thread is seen only by its author and the product's crew.
+  affects:
+    - packages/db/**
+    - packages/contracts/**
+    - core/**
+    - gateway/**
+    - web/**
+    - tests/**
+    - specs/epics/openproduct-redesign/**
+    - tasks/OPR-4.TaskContract.yaml
+    - pnpm-lock.yaml
+    - default/openproduct/openproduct-db
+    - default/openproduct/openproduct-db-migrate
+    - default/openproduct/openproduct-contracts
+    - default/openproduct/openproduct-worker
+    - default/openproduct/openproduct-worker-tests
+    - default/openproduct/openproduct-gateway
+    - default/openproduct/openproduct-gateway-tests
+    - default/openproduct/openproduct-web
+    - default/openproduct/openproduct-web-tests
+    - default/openproduct/openproduct-web-perf
+  deps:
+    - OPR-3
+  doneWhen:
+    - a signed-in visitor starts a private thread and sees it; a second signed-in visitor who is not on the crew gets 404 for its address and sees it in no list
+    - a crew member sees that thread under Private, replies, and the author gets an Activity row for the reply
+    - a private thread's title and text appear in no public page, feed, sitemap, search result or export of another person's data
+    - a crew member marks an issue resolved and the thread shows Resolved to everyone
+  gates: []

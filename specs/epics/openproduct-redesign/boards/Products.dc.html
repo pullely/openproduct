@@ -1,0 +1,288 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Products directory</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600&amp;family=Lora:ital,wght@0,400;0,500;1,400&amp;family=IBM+Plex+Mono:wght@400;500&amp;display=swap">
+<style>
+:root{color-scheme:light}body{margin:0;background:#F6F4EE}
+a{color:#8A6420}a:hover{color:#5E4415}
+@media (prefers-reduced-motion: reduce){header *{transition-duration:0.01ms !important}}
+</style>
+</helmet>
+<div style="background-color: #F6F4EE; background-image: radial-gradient(1100px 460px at 50% -8%, rgba(184,134,47,0.18), transparent 62%), radial-gradient(rgba(20,20,19,0.07) 1px, transparent 1.2px); background-size: auto, 22px 22px; color: #141413; font-family: 'Hanken Grotesk', system-ui, sans-serif; font-size: 15px; line-height: 1.5; min-height: 100%; display: flex; flex-direction: column">
+
+<header style="position: sticky; top: 0; z-index: 5; width: 100%; background: rgba(255,255,255,0.62); backdrop-filter: saturate(160%) blur(16px); -webkit-backdrop-filter: saturate(160%) blur(16px); box-shadow: none">
+<div style="max-width: 1180px; margin: 0 auto; box-sizing: border-box; padding: 10px 24px; display: flex; flex-wrap: wrap; align-items: center; gap: 12px 24px">
+<a href="Feed.dc.html" style="display: flex; align-items: center; gap: 10px; color: #141413; text-decoration: none; font-weight: 600; font-size: 18px; letter-spacing: -0.02em">
+<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 3.5V21" stroke="#141413"></path><circle cx="14" cy="9.5" r="6" stroke="#B8862F"></circle></svg>openproduct</a>
+<nav aria-label="Main" style="display: flex; flex-wrap: wrap; gap: 2px">
+<a href="Feed.dc.html" style="display: flex; align-items: center; min-height: 36px; padding: 0 14px; border-radius: 999px; color: #2B2A27; text-decoration: none; font-weight: 500">Feed</a>
+<a href="Products.dc.html" aria-current="page" style="display: flex; align-items: center; min-height: 36px; padding: 0 14px; border-radius: 999px; background: #141413; color: #FAF9F5; text-decoration: none; font-weight: 600">Products</a>
+<a href="Seats.dc.html" style="display: flex; align-items: center; min-height: 36px; padding: 0 14px; border-radius: 999px; color: #2B2A27; text-decoration: none; font-weight: 500">Help wanted</a>
+</nav>
+<div style="flex: 1 1 280px; display: flex; flex-wrap: wrap; justify-content: flex-end; align-items: center; gap: 10px">
+<div style="{{qWrap}}">
+<label style="{{qLabel}}">
+<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6B6A66" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-3.5-3.5"></path></svg>
+<span style="position: absolute; left: -9999px">Search</span>
+<input type="search" value="{{q}}" onInput="{{setQ}}" placeholder="Search products and people" style="border: 0; outline: 0; background: transparent; color: #141413; font: inherit; font-size: 16px; flex: 1; min-width: 0">
+</label>
+<div style="{{qCard}}">
+<sc-for list="{{qRows}}" as="r" hint-placeholder-count="3">
+<div style="{{r.wrap}}">
+<a href="{{r.href}}" style="{{r.style}}"><span style="{{r.tile}}">{{r.mono}}</span><span style="flex: 1; min-width: 0; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{r.name}}</span><span style="font-size: 13px; color: #6B6A66; flex-shrink: 0">{{r.kind}}</span></a>
+<sc-if value="{{r.canExpand}}" hint-placeholder-val="{{false}}"><button type="button" onClick="{{r.toggle}}" aria-expanded="{{r.open}}" aria-label="{{r.toggleLabel}}" style="width: 40px; height: 40px; flex-shrink: 0; border: 0; border-radius: 50%; background: transparent; color: #6B6A66; display: flex; align-items: center; justify-content: center; cursor: pointer"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{r.chev}}"></path></svg></button></sc-if>
+</div>
+</sc-for>
+<sc-if value="{{qNone}}" hint-placeholder-val="{{false}}"><div style="padding: 12px 10px; font-size: 13px; color: #6B6A66">No matches</div></sc-if>
+<a href="Search.dc.html" style="display: flex; align-items: center; justify-content: center; min-height: 40px; margin-top: 2px; border-top: 1px solid rgba(20,20,19,0.06); font-size: 13px; font-weight: 600; text-decoration: none">See all results</a>
+</div>
+</div>
+<a href="Activity.dc.html" aria-label="Activity" style="position: relative; width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; text-decoration: none; background: #FFFFFF; color: #6B6A66">
+<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9a6 6 0 0112 0c0 6 2.5 7.5 2.5 7.5h-17S6 15 6 9zM10 20a2 2 0 004 0"></path></svg>
+</a>
+<a href="Me.dc.html" aria-label="Your profile" style="position: relative; width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; text-decoration: none; background: #FFFFFF; color: #6B6A66">
+<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="8" r="4"></circle><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"></path></svg></a>
+</div>
+</div>
+</header>
+
+<div style="width: 100%; max-width: 1180px; margin: 0 auto; box-sizing: border-box; padding: 32px 24px 64px; display: flex; flex-direction: column; gap: 24px">
+
+<div style="display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 18px">
+<h1 style="margin: 0; font-family: Lora, Georgia, serif; font-weight: 400; font-size: 40px; line-height: 1.1; letter-spacing: -0.015em">Products</h1>
+<span style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: 0.1em; color: #6B6A66">30 PRODUCTS · 9 SHIPPING · 21 IDEAS</span>
+</div>
+
+<div style="display: flex; flex-wrap: wrap; gap: 28px; align-items: flex-start">
+
+<aside style="flex: 1 1 220px; max-width: 250px; min-width: 0; display: flex; flex-direction: column; gap: 16px">
+<nav aria-label="Product stages" style="background: #FFFFFF; border-radius: 16px; box-shadow: none; padding: 10px; display: flex; flex-direction: column; gap: 2px">
+<div style="font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; color: #6B6A66; letter-spacing: 0.12em; padding: 6px 10px 8px">STAGE</div>
+<sc-for list="{{filters}}" as="f" hint-placeholder-count="3">
+<button type="button" onClick="{{f.pick}}" aria-pressed="{{f.on}}" style="{{f.style}}">
+<span style="{{f.tile}}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="{{f.stroke}}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{f.d}}"></path></svg></span>
+<span style="flex: 1; text-align: left">{{f.label}}</span>
+<span style="{{f.countStyle}}">{{f.count}}</span>
+</button>
+</sc-for>
+</nav>
+</aside>
+
+<main style="flex: 999 1 520px; min-width: 0; display: flex; flex-direction: column; gap: 18px">
+
+<div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px">
+<label style="flex: 1 1 260px; max-width: 380px; display: flex; align-items: center; gap: 8px; background: #FFFFFF; border-radius: 999px; box-shadow: inset 0 0 0 1px rgba(20,20,19,0.07); padding: 0 16px; min-height: 40px">
+<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6B6A66" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-3.5-3.5"></path></svg>
+<span style="position: absolute; left: -9999px">Search products</span>
+<input type="search" value="{{query}}" onInput="{{setQuery}}" placeholder="Search products" style="border: 0; outline: 0; background: transparent; color: #141413; font: inherit; font-size: 16px; flex: 1; min-width: 0">
+</label>
+<div role="group" aria-label="Sort" style="display: flex; gap: 2px; padding: 4px; border-radius: 999px; background: rgba(20,20,19,0.06)">
+<sc-for list="{{sorts}}" as="s" hint-placeholder-count="3">
+<button type="button" onClick="{{s.pick}}" aria-pressed="{{s.on}}" style="{{s.style}}">{{s.label}}</button>
+</sc-for>
+</div>
+</div>
+
+<div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 250px), 1fr)); gap: 18px">
+<sc-for list="{{cards}}" as="p" hint-placeholder-count="12">
+<article style="background: #FFFFFF; border-radius: 16px; box-shadow: none; display: flex; flex-direction: column; overflow: hidden">
+<a href="{{p.href}}" style="flex: 1; display: flex; flex-direction: column; gap: 10px; padding: 18px 18px 12px; color: #141413; text-decoration: none">
+<div style="display: flex; align-items: center; gap: 12px">
+<span style="{{p.tile}}">{{p.mono}}</span>
+<div style="display: flex; flex-direction: column; min-width: 0">
+<span style="font-weight: 600; font-size: 18px; letter-spacing: -0.015em">{{p.name}}</span>
+<span style="font-size: 13px; color: #6B6A66">{{p.category}}</span>
+</div>
+</div>
+<sc-if value="{{p.shipping}}" hint-placeholder-val="{{true}}">
+<div style="display: flex; flex-direction: column; gap: 6px">
+<span style="font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; letter-spacing: 0.1em; color: #8A6420">SHIPPING · 3 OF 4</span>
+<div style="display: flex; gap: 4px" aria-hidden="true"><div style="flex: 1; height: 5px; border-radius: 3px; background: linear-gradient(90deg, #B8862F, #E3B34C)"></div><div style="flex: 1; height: 5px; border-radius: 3px; background: linear-gradient(90deg, #B8862F, #E3B34C)"></div><div style="flex: 1; height: 5px; border-radius: 3px; background: linear-gradient(90deg, #B8862F, #E3B34C)"></div><div style="flex: 1; height: 5px; border-radius: 3px; background: #EDE9DE"></div></div>
+</div>
+</sc-if>
+<sc-if value="{{p.idea}}" hint-placeholder-val="{{false}}">
+<div style="display: flex; flex-direction: column; gap: 6px">
+<span style="font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; letter-spacing: 0.1em; color: #6E4F80">IDEA</span>
+<span style="display: flex; align-items: center; gap: 6px; font-size: 13px; color: #6E4F80"><span style="width: 12px; height: 12px; border-radius: 50%; border: 1.5px dashed #8C6A9E; box-sizing: border-box"></span>Needs a first builder</span>
+</div>
+</sc-if>
+<p style="margin: 0; color: #2B2A27; font-size: 15px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden">{{p.desc}}</p>
+</a>
+<div style="display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 0 18px 16px">
+<a href="Seats.dc.html" style="display: flex; align-items: center; gap: 6px; min-height: 40px; font-size: 13px; color: #1F5357; text-decoration: none; font-weight: 600"><span style="width: 14px; height: 14px; border-radius: 50%; border: 1.5px dashed #2F6F73; box-sizing: border-box"></span>{{p.seats}}</a>
+<button type="button" onClick="{{p.toggle}}" aria-pressed="{{p.following}}" aria-label="{{p.followAria}}" style="{{p.followStyle}}">{{p.followLabel}}</button>
+</div>
+</article>
+</sc-for>
+</div>
+
+<sc-if value="{{empty}}" hint-placeholder-val="{{false}}">
+<div style="padding: 36px 20px; border-radius: 16px; background: #FFFFFF; text-align: center; color: #6B6A66">No products match “{{query}}”.</div>
+</sc-if>
+
+<sc-if value="{{showPager}}" hint-placeholder-val="{{true}}">
+<nav aria-label="Pages" style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; padding-top: 4px">
+<span style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: 0.1em; color: #6B6A66">{{rangeLabel}}</span>
+<div style="display: flex; gap: 6px">
+<button type="button" onClick="{{prev}}" aria-label="Previous page" style="{{prevStyle}}"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="M15 6l-6 6 6 6"></path></svg></button>
+<sc-for list="{{pages}}" as="g" hint-placeholder-count="3">
+<button type="button" onClick="{{g.pick}}" aria-current="{{g.current}}" aria-label="{{g.aria}}" style="{{g.style}}">{{g.label}}</button>
+</sc-for>
+<button type="button" onClick="{{next}}" aria-label="Next page" style="{{nextStyle}}"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="M9 6l6 6-6 6"></path></svg></button>
+</div>
+</nav>
+</sc-if>
+
+</main>
+</div>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1700}}'>
+class Component extends DCLogic {
+  constructor(props) { super(props); this.state = { filter: 'all', query: '', sort: 'recent', page: 0, follow: {} }; }
+  searchVals() {
+    const q = (this.state || {}).q || '';
+    const exp = (this.state || {}).qExp || {};
+    const w = q.trim().toLowerCase();
+    const open = !!w;
+    const EASE = 'cubic-bezier(0.2, 0.8, 0.2, 1)';
+    const P = [['ackstack', 'Ak', '#F3E7CC', '#8A6420', 1], ['meterwise', 'Mw', '#E6E9F2', '#3A4A75', 1], ['expirio', 'Ex', '#ECE6F3', '#5B3F86', 1], ['rangewise', 'Rw', '#E3EEE8', '#2F5E4C', 1], ['aitally', 'At', '#F0EEE6', '#2B2A27', 1], ['rateboard', 'Rb', '#DDEDEC', '#1F5357', 1], ['grantwell', 'Gw', '#E3EEE8', '#2F5E4C', 1], ['leakbook', 'Lb', '#E6E9F2', '#3A4A75', 1], ['arcdesk', 'Ad', '#ECEAE3', '#2B2A27', 1], ['beacon24', 'B2', '#ECE6F3', '#5B3F86', 0], ['chaseid', 'Ci', '#ECE6F3', '#5B3F86', 0]];
+    const link = 'flex: 1; min-width: 0; display: flex; align-items: center; gap: 10px; min-height: 44px; padding: 0 10px; border-radius: 12px; color: #141413; text-decoration: none';
+    const wrap = 'display: flex; align-items: center; gap: 2px';
+    const prod = (p, child) => ({ href: p[4] ? 'Product.dc.html' : 'ProductIdea.dc.html', name: p[0], mono: p[1], kind: child ? 'Maker' : (p[4] ? 'Shipping' : 'Idea'), canExpand: false,
+      wrap: wrap + (child ? '; margin-left: 24px; padding-left: 8px; border-left: 2px solid #ECEAE3' : ''), style: link,
+      tile: 'width: ' + (child ? 26 : 30) + 'px; height: ' + (child ? 26 : 30) + 'px; border-radius: 9px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 600; background: ' + p[2] + '; color: ' + p[3] });
+    const rows = [];
+    if (w) {
+      P.filter(p => p[0].includes(w)).slice(0, 3).forEach(p => rows.push(prod(p, false)));
+      P.filter(p => ('maker of ' + p[0]).includes(w)).slice(0, 3).forEach(p => {
+        const name = '[Maker of ' + p[0] + ']', isOpen = !!exp[name];
+        rows.push({ href: 'Person.dc.html', name, mono: 'M', kind: 'Person', wrap, style: link, canExpand: true, open: isOpen,
+          toggleLabel: (isOpen ? 'Hide products of ' : 'Show products of ') + name,
+          chev: isOpen ? 'M6 15l6-6 6 6' : 'M6 9l6 6 6-6',
+          toggle: () => this.setState({ qExp: { ...exp, [name]: !isOpen } }),
+          tile: 'width: 30px; height: 30px; border-radius: 50%; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 600; background: #F0EEE6; color: #2B2A27' });
+        if (isOpen) rows.push(prod(p, true));
+      });
+    }
+    return { q, setQ: (e) => this.setState({ q: e.target.value }), qOpen: open, qRows: rows, qNone: open && rows.length === 0,
+      qWrap: 'position: relative; display: flex; flex: 0 1 ' + (open ? '380px' : '260px') + '; transition: flex-basis 0.32s ' + EASE,
+      qCard: 'position: absolute; top: -6px; left: -6px; right: -6px; z-index: 20; box-sizing: border-box; overflow: hidden; background: #FFFFFF; border-radius: 22px; box-shadow: inset 0 0 0 1px rgba(20,20,19,0.1); padding: 54px 6px 6px; display: flex; flex-direction: column; gap: 2px; transform-origin: top center; ' + (open ? 'max-height: 560px; opacity: 1; transform: scale(1); visibility: visible; transition: max-height 0.42s ' + EASE + ', opacity 0.2s ease, transform 0.32s ' + EASE : 'max-height: 52px; opacity: 0; transform: scale(0.98); visibility: hidden; pointer-events: none; transition: max-height 0.26s ' + EASE + ', opacity 0.18s ease, transform 0.26s ' + EASE + ', visibility 0s linear 0.26s'),
+      qLabel: 'position: relative; z-index: 21; flex: 1; min-width: 0; display: flex; align-items: center; gap: 8px; border-radius: 999px; padding: 0 14px; min-height: 40px; transition: background 0.25s ease, box-shadow 0.25s ease; ' + (open ? 'background: #F7F5EF; box-shadow: none' : 'background: rgba(255,255,255,0.75); box-shadow: inset 0 0 0 1px rgba(20,20,19,0.07)') };
+  }
+  renderVals() { return { ...this.pageVals(), ...this.searchVals() }; }
+  pageVals() {
+    const S = (name, category, desc, mono, bg, fg) => ({ name, category, desc, mono, bg, fg, stage: 'shipping' });
+    const I = (name, category, desc) => ({ name, category, desc, mono: name.slice(0, 1).toUpperCase() + name.slice(1, 2), bg: '#ECE6F3', fg: '#5B3F86', stage: 'idea' });
+    const ALL = [
+      S('ackstack', 'Productivity', 'Send policies, collect e-acknowledgments and re-collect them on each state’s schedule.', 'Ak', '#F3E7CC', '#8A6420'),
+      S('meterwise', 'Infrastructure', 'Per-customer LLM cost attribution and margin guardrails for AI SaaS.', 'Mw', '#E6E9F2', '#3A4A75'),
+      S('expirio', 'Productivity', 'Never let a license, permit, insurance policy or certification lapse again.', 'Ex', '#ECE6F3', '#5B3F86'),
+      S('rangewise', 'Other', 'Check job ads for missing or non-compliant salary ranges before they go live.', 'Rw', '#E3EEE8', '#2F5E4C'),
+      S('aitally', 'Education', 'An AI tool register, staff AI training records and regulator-ready evidence.', 'At', '#F3E7CC', '#8A6420'),
+      S('rateboard', 'Media', 'Sponsor pipeline and anonymized rate benchmarks for podcasters and newsletter writers.', 'Rb', '#DDEDEC', '#1F5357'),
+      S('grantwell', 'Productivity', 'Grant deadlines, deliverables and reports for nonprofits without a development team.', 'Gw', '#E3EEE8', '#2F5E4C'),
+      S('leakbook', 'Other', 'A phone-first refrigerant log with automatic leak-rate maths and 30-day repair clocks.', 'Lb', '#E6E9F2', '#3A4A75'),
+      S('arcdesk', 'Other', 'An online form, review board and decision-deadline clock for HOA architectural requests.', 'Ad', '#ECEAE3', '#2B2A27'),
+      I('chaseid', 'Productivity', 'Companies House ID verification chasing.'),
+      I('beacon24', 'Security', 'EU Cyber Resilience Act reporting.'),
+      I('stepthrough', 'Dev tools', 'Debug CI locally with breakpoints.'),
+      I('flakeless', 'Dev tools', 'Quarantine flaky tests.'),
+      I('pipebill', 'Dev tools', 'GitHub Actions cost per repo.'),
+      I('sunsetd', 'Infrastructure', 'End-of-life tracking with upgrade PRs.'),
+      I('seatsweep', 'Security', 'Revoke ex-employee SaaS access.'),
+      I('rightkeep', 'Media', 'A licence vault for stock assets.'),
+      I('lapsely', 'Data', 'Unclaimed-property deadlines.'),
+      I('tenready', 'Communication', 'A2P 10DLC pre-check.'),
+      I('renewcue', 'Commerce', 'Stripe auto-renewal notices.'),
+      I('marginmap', 'Data', 'MSP margin per client.'),
+      I('dwelltime', 'Productivity', 'Detention-pay invoices from ELD data.'),
+      I('waiverly', 'Productivity', 'Lien waivers.'),
+      I('certcrate', 'Productivity', 'Subcontractor COIs and W-9s.'),
+      I('unitlog', 'Productivity', 'One phone number per rental unit.'),
+      I('voxquote', 'Productivity', 'Voice note to quote.'),
+      I('stockstitch', 'Commerce', 'Inventory sync across Etsy, Shopify and a market stall.'),
+      I('paidstone', 'Commerce', 'Milestone deposits for freelancers.'),
+      I('holdfast', 'Commerce', 'Deposit links for DMs.'),
+      I('docketdrop', 'Productivity', 'Client tax documents by SMS.')
+    ].map((p, i) => ({ ...p, order: i, seatsN: 2 }));
+    const PER = 12;
+    const st = this.state;
+
+    const HUE = { all: ['#141413', '#F0EEE6'], shipping: ['#B8862F', '#F3E7CC'], idea: ['#8C6A9E', '#ECE6F3'] };
+    const ICON = { all: 'M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z', shipping: 'M5 12l5 5 9-10', idea: 'M9 18h6M10 21h4M12 3a6 6 0 00-4 10.5c.7.7 1 1.5 1 2.5h6c0-1 .3-1.8 1-2.5A6 6 0 0012 3z' };
+    const LABEL = { all: 'Everything', shipping: 'Shipping', idea: 'Ideas' };
+    const filters = ['all', 'shipping', 'idea'].map(k => {
+      const on = st.filter === k;
+      const [c, tint] = HUE[k];
+      const n = k === 'all' ? ALL.length : ALL.filter(p => p.stage === k).length;
+      return { label: LABEL[k], on, d: ICON[k], count: String(n),
+        pick: () => this.setState({ filter: k, page: 0 }),
+        stroke: on ? '#FFFFFF' : c,
+        tile: 'width: 32px; height: 32px; border-radius: 10px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; background: ' + (on ? c : tint) + (on ? '; box-shadow: none' + c : ''),
+        countStyle: 'font-family: IBM Plex Mono, monospace; font-size: 11px; color: ' + (on ? '#141413' : '#8A877F'),
+        style: 'display: flex; align-items: center; gap: 12px; min-height: 40px; padding: 0 10px; border: 0; border-radius: 14px; font: inherit; font-size: 15px; cursor: pointer; ' + (on ? 'background: #FFFFFF; box-shadow: none; color: #141413; font-weight: 600' : 'background: transparent; color: #2B2A27')
+      };
+    });
+
+    const sorts = [['recent', 'Recently shipped'], ['seats', 'Most open seats'], ['az', 'A–Z']].map(([k, label]) => {
+      const on = st.sort === k;
+      return { label, on, pick: () => this.setState({ sort: k, page: 0 }),
+        style: 'min-height: 36px; padding: 0 14px; border: 0; border-radius: 999px; font: inherit; font-size: 13px; cursor: pointer; white-space: nowrap; ' + (on ? 'background: #FFFFFF; color: #141413; font-weight: 600; box-shadow: none' : 'background: transparent; color: #2B2A27') };
+    });
+
+    const q = (st.query || '').trim().toLowerCase();
+    let list = ALL.filter(p => (st.filter === 'all' || p.stage === st.filter) && (!q || p.name.toLowerCase().includes(q) || p.desc.toLowerCase().includes(q)));
+    const byName = (a, b) => a.name.localeCompare(b.name);
+    if (st.sort === 'az') list = list.slice().sort(byName);
+    else if (st.sort === 'seats') list = list.slice().sort((a, b) => (b.seatsN - a.seatsN) || byName(a, b));
+    else list = list.slice().sort((a, b) => a.order - b.order);
+
+    const pageCount = Math.max(1, Math.ceil(list.length / PER));
+    const page = Math.min(st.page, pageCount - 1);
+    const slice = list.slice(page * PER, page * PER + PER);
+
+    const cards = slice.map(p => {
+      const on = !!st.follow[p.name];
+      return { href: p.stage === 'idea' ? 'ProductIdea.dc.html' : 'Product.dc.html', name: p.name, category: p.category, desc: p.desc, mono: p.mono,
+        shipping: p.stage === 'shipping', idea: p.stage === 'idea',
+        seats: p.seatsN + ' open seats',
+        tile: 'width: 46px; height: 46px; border-radius: 14px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 15px; letter-spacing: -0.02em; background: ' + p.bg + '; color: ' + p.fg,
+        following: on, followLabel: on ? 'Following' : 'Follow', followAria: (on ? 'Unfollow ' : 'Follow ') + p.name,
+        toggle: () => this.setState({ follow: { ...st.follow, [p.name]: !on } }),
+        followStyle: 'min-height: 40px; padding: 0 16px; border: 0; border-radius: 999px; font: inherit; font-size: 13px; font-weight: 600; cursor: pointer; ' + (on ? 'background: rgba(20,20,19,0.06); color: #2B2A27' : 'background: #FFFFFF; color: #141413; box-shadow: inset 0 0 0 1.5px #141413')
+      };
+    });
+
+    const pill = (active, disabled) => 'min-width: 40px; height: 40px; padding: 0 12px; border: 0; border-radius: 999px; font: inherit; font-size: 15px; display: flex; align-items: center; justify-content: center; ' + (disabled ? 'background: transparent; color: #C9C6BC; cursor: default' : active ? 'background: #141413; color: #FAF9F5; font-weight: 600; cursor: pointer' : 'background: rgba(20,20,19,0.06); color: #2B2A27; cursor: pointer');
+    const pages = Array.from({ length: pageCount }, (_, i) => ({ label: String(i + 1), current: i === page ? 'page' : 'false', aria: 'Page ' + (i + 1),
+      pick: () => this.setState({ page: i }), style: pill(i === page, false) }));
+    const from = list.length ? page * PER + 1 : 0;
+    const to = Math.min(list.length, page * PER + PER);
+
+    return {
+      filters, sorts, cards, pages,
+      query: st.query,
+      setQuery: (e) => this.setState({ query: e && e.target ? e.target.value : String(e || ''), page: 0 }),
+      empty: list.length === 0,
+      showPager: list.length > 0,
+      rangeLabel: from + '–' + to + ' OF ' + list.length,
+      prev: () => { if (page > 0) this.setState({ page: page - 1 }); },
+      next: () => { if (page < pageCount - 1) this.setState({ page: page + 1 }); },
+      prevStyle: pill(false, page === 0),
+      nextStyle: pill(false, page >= pageCount - 1)
+    };
+  }
+}
+</script>
+</body>
+</html>
