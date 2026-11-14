@@ -57,9 +57,13 @@ export function isSweepPhase(value: unknown): value is SweepPhase {
 }
 
 /**
- * Three times each phase's own interval. The index is rebuilt on RS0's
+ * Three times each phase's own interval. The index is asked on RS0's
  * ten-minute cron and has a 60 s floor; integrity's floor is an hour; the
  * defence sweep's is six hours; the board and digest cuts run on every tick.
+ *
+ * The index is ASKED every tick, not rebuilt every tick: a clean index is
+ * checked and left alone. Since OPN-11 that check is recorded, so the index's
+ * 30 minutes measure the sweep, not how busy the catalogue is.
  */
 export const SWEEP_STALE_AFTER_SECONDS: Record<SweepPhase, number> = {
   // OS5 — rebuilt on every materialisation tick, so three ticks: a catalogue
@@ -82,7 +86,11 @@ export type SweepUnhealthyReason = "never_run" | "stale" | "failed";
 
 /** One phase's durable state — what its singleton row says. */
 export interface SweepPhaseState {
-  /** When the phase last did its work. The index's `built_at`, the others' `swept_at`. */
+  /**
+   * When the phase last did its work. For the index, the later of `built_at`
+   * and `checked_at` (OPN-11: a clean check is a run); the catalogue's
+   * `computed_at`; the others' `swept_at`.
+   */
   readonly lastRunAt: string | null;
   /** Why the last run failed, bounded; `null` once a run succeeds. */
   readonly lastError: string | null;

@@ -1,0 +1,47 @@
+# OPN-11: a defect found on the live standalone deploy during OPN3. The
+# gateway's /health has read `degraded` on stage and prod since 11 Nov 23:30Z:
+# the searchIndex phase reports `stale` with its last run at 23:00Z, the first
+# sweep after go-live. The phase was not failing. Core rebuilds the index only
+# when a listing write has dirtied it, and the catalogue is empty, so every
+# tick since has declined `clean` and written nothing, while /health took the
+# index's `built_at` (which moves only on a rebuild) as the phase's last run.
+# The fix records the clean check (`search_index_state.checked_at`) and reads
+# the phase's last run as the later of the build and the check; `built_at`
+# stays the rebuild floor. Key OPN-11, not OPN-10: OPN-10 is the prod switch
+# OPN-9's contract names.
+# The file is the contract; the task lives in Orunbase.
+apiVersion: orun.io/v1
+kind: TaskContract
+metadata:
+  name: OPN-11
+  title: "OPN3: a quiet search index is not a stale one"
+spec:
+  goal: The searchIndex sweep phase reads healthy on /health whenever the sweep is running, whether or not the catalogue changed, and still reads stale when the sweep stops.
+  affects:
+    - packages/db/src/migrations/2260_openproduct_search_index_checked/**
+    - packages/db/src/manifest.ts
+    - packages/db/src/repository.ts
+    - packages/db/src/types.ts
+    - packages/db/src/pg/media-snapshots-catalogue.test.ts
+    - core/src/handlers/search.ts
+    - tests/core/src/search.test.ts
+    - packages/contracts/src/sweep-health.ts
+    # The unrecorded check logs a line of its own, and the vocabulary is closed (OO2).
+    - packages/contracts/src/log-vocabulary.ts
+    - specs/epics/openproduct-standalone/**
+    - tasks/OPN-11.TaskContract.yaml
+    - default/openproduct/openproduct-db
+    - default/openproduct/openproduct-db-migrate
+    - default/openproduct/openproduct-contracts
+    - default/openproduct/openproduct-worker
+    - default/openproduct/openproduct-worker-tests
+    # Rebuilt, not changed: both read the contracts package, whose only change
+    # is the comment defining `lastRunAt`.
+    - default/openproduct/openproduct-gateway
+    - default/openproduct/openproduct-web
+  doneWhen:
+    - core's search rebuild records `checked_at` when it declines a clean index, and leaves `built_at` (the rebuild floor) alone
+    - the sweep state read reports the index's last run as the later of `built_at` and `checked_at`
+    - a failure to record the check answers 503 naming its class, so the sweep ledger records the phase as failed rather than stale
+    - migration 2260 applies on stage and prod, and the gateway's /health on both reads searchIndex healthy within one sweep tick of the deploy
+  gates: []

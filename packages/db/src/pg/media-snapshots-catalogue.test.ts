@@ -690,6 +690,36 @@ describe("openproduct — a phase that fails says so, in a column (openproduct-w
     expect(index.lastErrorAt).toBeNull();
   });
 
+  // OPN-11. `built_at` moves only when the index is rebuilt, and it is rebuilt
+  // only when something dirtied it — so on an empty or quiet catalogue it
+  // froze, and `/health` called the phase stale while it ran on every tick.
+  it("a clean check is the index phase's run, and it leaves the floor alone (OPN-11)", async () => {
+    const T3 = "2026-09-09T18:20:00.000Z";
+    await repo.replaceSearchIndex("product", [], T1);
+    await repo.markSearchIndexChecked(T2);
+    expect((await repo.getSweepPhaseStates()).searchIndex.lastRunAt).toBe(T2);
+    // `built_at` is still the rebuild floor, and a check is not a build.
+    expect(await repo.getSearchIndexState()).toEqual({ builtAt: T1, dirtyAt: null });
+
+    // A rebuild after the check is the later of the two, and so the run.
+    await repo.replaceSearchIndex("product", [], T3);
+    expect((await repo.getSweepPhaseStates()).searchIndex.lastRunAt).toBe(T3);
+  });
+
+  it("a check on a DIRTY index records nothing — it is not current", async () => {
+    await repo.replaceSearchIndex("product", [], T1);
+    await repo.markSearchIndexDirty(T1);
+    await repo.markSearchIndexChecked(T2);
+    expect((await repo.getSweepPhaseStates()).searchIndex.lastRunAt).toBe(T1);
+  });
+
+  it("a check on an index never built is still never run", async () => {
+    // The seed row is dirty from birth, so this is the guard and the GREATEST
+    // together: no build, no clean check, no run.
+    await repo.markSearchIndexChecked(T2);
+    expect((await repo.getSweepPhaseStates()).searchIndex.lastRunAt).toBeNull();
+  });
+
   it("a success on a phase whose floor another handler owns does not invent a run", async () => {
     await repo.recordSweepOutcomes([{ phase: "integrity", ok: true, reason: null }], T1);
     expect((await repo.getSweepPhaseStates()).integrity.lastRunAt).toBeNull();

@@ -52,6 +52,9 @@ interface Harness {
   peopleThrows: boolean;
   /** LI1a — what the replace throws, when it throws. */
   replaceThrows: unknown;
+  /** OPN-11 — when a clean check was last recorded, and what recording it throws. */
+  checkedAt: string | null;
+  checkThrows: unknown;
   index: Array<{
     kind: string;
     entityId: string;
@@ -86,6 +89,8 @@ function harness(): Harness {
     people: [{ handle: "ada", displayName: "Ada Fenwick", bio: "Builds queues." }],
     peopleThrows: false,
     replaceThrows: undefined,
+    checkedAt: null,
+    checkThrows: undefined,
     state: { builtAt: null, dirtyAt: "2026-08-26T11:00:00.000Z" },
     cards: [
       {
@@ -168,6 +173,11 @@ function harness(): Harness {
     async markSearchIndexDirty(at: string) {
       calls.push("markSearchIndexDirty");
       h.state = { ...h.state, dirtyAt: h.state.dirtyAt ?? at };
+    },
+    async markSearchIndexChecked(at: string) {
+      calls.push("markSearchIndexChecked");
+      if (h.checkThrows !== undefined) throw h.checkThrows;
+      if (h.state.dirtyAt === null) h.checkedAt = at;
     },
     // FL0 — the follower count and the handle it is keyed by. Counted here so
     // the projection can carry a number; nothing lists followers anywhere.
@@ -454,6 +464,56 @@ describe("the rebuild floor", () => {
     expect(((await res.json()) as { data: { reason: string } }).data.reason).toBe("clean");
     expect(h.calls).not.toContain("listPublicCards");
     expect(h.calls).not.toContain("listPublicCardsPage");
+  });
+
+  // OPN-11. The standalone deploy went live on 11 Nov with an empty
+  // catalogue: the index was built once at 23:00Z, nothing ever dirtied it,
+  // every tick since declined `clean`, and `/health` read the frozen
+  // `built_at` as a phase that had stopped — degraded on stage and prod.
+  it("RECORDS a clean decline as a check, without touching the build (OPN-11)", async () => {
+    const h = harness();
+    const builtAt = "2026-08-23T23:00:00.000Z";
+    h.state = { builtAt, dirtyAt: null };
+    const res = await route(new Request(`${BASE}/internal/openproduct/search/rebuild`, { method: "POST" }), env(), h.deps as never);
+    expect(res.status).toBe(200);
+    expect(((await res.json()) as { data: { rebuilt: boolean; reason: string } }).data).toMatchObject({
+      rebuilt: false,
+      reason: "clean",
+    });
+    expect(h.checkedAt).toBe(new Date(NOW).toISOString());
+    // A check is not a build: the floor and the index stay as they were.
+    expect(h.state.builtAt).toBe(builtAt);
+    expect(h.calls.some((c) => c.startsWith("replaceSearchIndex"))).toBe(false);
+  });
+
+  it("does NOT record a check inside the floor — a dirty index is not current", async () => {
+    const h = harness();
+    h.state = { builtAt: new Date(NOW - 1000).toISOString(), dirtyAt: new Date(NOW).toISOString() };
+    await route(new Request(`${BASE}/internal/openproduct/search/rebuild`, { method: "POST" }), env(), h.deps as never);
+    expect(h.calls).not.toContain("markSearchIndexChecked");
+    expect(h.checkedAt).toBeNull();
+  });
+
+  it("does NOT record a check beside a rebuild — the build is the run", async () => {
+    const h = harness();
+    h.state = { builtAt: null, dirtyAt: new Date(NOW).toISOString() };
+    await route(new Request(`${BASE}/internal/openproduct/search/rebuild`, { method: "POST" }), env(), h.deps as never);
+    expect(h.calls).not.toContain("markSearchIndexChecked");
+    expect(h.state.builtAt).toBe(new Date(NOW).toISOString());
+  });
+
+  it("an unrecorded check is a refusal naming its class, so the sweep records it as failed", async () => {
+    const h = harness();
+    h.state = { builtAt: "2026-08-23T23:00:00.000Z", dirtyAt: null };
+    h.checkThrows = Object.assign(new Error('column "checked_at" does not exist'), {
+      name: "PostgresError",
+      code: "42703",
+    });
+    const res = await route(new Request(`${BASE}/internal/openproduct/search/rebuild`, { method: "POST" }), env(), h.deps as never);
+    expect(res.status).toBe(503);
+    const text = await res.text();
+    expect(text).toContain("Search index check failed (42703)");
+    expect(text).not.toContain("checked_at");
   });
 
   it("rebuilds a dirty index past the floor", async () => {
