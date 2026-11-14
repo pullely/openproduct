@@ -8,7 +8,7 @@ the code departed from `design.md`.
 | OPN0 — the spec | ✅ done | [#1](https://github.com/pullely/openproduct/pull/1) |
 | OPN1 — the tree, with D1 proven on one slice | ✅ done: **no-go for D1**, the owner's call (2026-11-11) | [#2](https://github.com/pullely/openproduct/pull/2), [#3](https://github.com/pullely/openproduct/pull/3), [#4](https://github.com/pullely/openproduct/pull/4) |
 | OPN2 — live on its own URLs, on Supabase | ✅ done (2026-11-11). Password sign-up moves to OPN3 (see OPN-8) | [#5](https://github.com/pullely/openproduct/pull/5), [#6](https://github.com/pullely/openproduct/pull/6), [#7](https://github.com/pullely/openproduct/pull/7), [#8](https://github.com/pullely/openproduct/pull/8), [#9](https://github.com/pullely/openproduct/pull/9) |
-| OPN3 — openproduct.live served from here | ◐ in progress: the stage switch (OPN-9) | [#11](https://github.com/pullely/openproduct/pull/11) · orun-cloud: the stage pointers (PR to come) |
+| OPN3 — openproduct.live served from here | ◐ in progress: the stage switch (OPN-9) | [#11](https://github.com/pullely/openproduct/pull/11) · [orun-cloud#2400](https://github.com/sourceplane/orun-cloud/pull/2400) (the stage pointers) |
 | OPN4 — openproduct, listed on openproduct.live | | |
 
 ## Inputs
@@ -336,7 +336,7 @@ instead of failing on keys that do not exist yet.
 
 Design §6, steps 1 and 2. Two pull requests, because the platform's half is in another repository:
 
-- **orun-cloud (the platform):**
+- **orun-cloud (the platform, [#2400](https://github.com/sourceplane/orun-cloud/pull/2400)):**
   - membership-worker's stage `LISTING_SEAM_URL` becomes `https://openproduct-gateway-stage.openproduct.workers.dev`. Prod keeps the monorepo deploy's host until OPN-10;
   - the console's `openproductWebBase` becomes a per-environment table: stage (and dev, which has no openproduct deployment) hands off to `https://openproduct-web-stage.openproduct.workers.dev`, and prod stays `https://openproduct.live`;
   - the auth seam key gets an escrow document of its own, `integrations/openproduct-auth-seam/<env>`, delivered to identity-worker by `secrets-live`. It is its own document, not a second key in `listing-seam`, so membership-worker never holds it (the reason it is a second key at all).
