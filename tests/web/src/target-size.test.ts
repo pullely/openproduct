@@ -214,9 +214,9 @@ describe("the standalone links that had to be told", () => {
     const bar = strip("shell/top-panel.tsx");
     expect(bar).toMatch(/aria-label="Search"\s+className="[^"]*min-h-\[44px\]/);
     expect(bar).toMatch(/max-sm:min-h-\[44px\] max-sm:min-w-\[44px\]/);
-    // The header's pills are 36px, the board's size for a pointer; they are
-    // not displayed on a phone.
-    expect(bar).toMatch(/flex h-\[36px\] shrink-0 items-center/);
+    // The header's sections are plain text in a 44px hit area (openproduct-
+    // ui-fixes UF2); they are not displayed on a phone.
+    expect(bar).toMatch(/relative flex h-\[44px\] shrink-0 items-center/);
     // The account menu's rows: 40px, 44px on a phone.
     expect(chip).toMatch(/flex min-h-\[40px\] items-center[^"]*max-sm:min-h-\[44px\]/);
     // The search card's rows are 44px and its chevron 40px (desktop only).

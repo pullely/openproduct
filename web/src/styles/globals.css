@@ -20,6 +20,8 @@
     /* Lora's italic is a family of its own (layout.tsx declares it apart
        from the upright so it is fetched only where it is drawn). */
     --font-serif-italic: var(--font-lora-italic, "Lora"), var(--font-serif);
+    /* The bar's face (openproduct-ui-fixes UF2), over the UI face. */
+    --font-bar: var(--font-geist, "Geist"), var(--font-sans);
     --font-mono: var(--font-plex-mono, "IBM Plex Mono"), ui-monospace, "SF Mono",
       "Cascadia Code", "JetBrains Mono", Menlo, Consolas, monospace;
 
@@ -943,14 +945,11 @@
      boards write `50% -8%`, which is a share of the box's height — right for
      a fixed artboard, and on a real page it would slide the glow further off
      the top the longer the page got. -72px is that 8% on the 900px board. */
+  /* No dot grid (openproduct-ui-fixes UF2, design §2 rule 7): the owner
+     rejected it. Ivory and the one amber glow at the top. */
   body {
-    background-image:
-      radial-gradient(1100px 460px at 50% -72px, oklch(var(--page-glow) / 0.18), transparent 62%),
-      radial-gradient(oklch(var(--page-dot) / 0.07) 1px, transparent 1.2px);
-    background-size:
-      auto,
-      22px 22px;
-    background-repeat: no-repeat, repeat;
+    background-image: radial-gradient(1100px 460px at 50% -72px, oklch(var(--page-glow) / 0.18), transparent 62%);
+    background-repeat: no-repeat;
   }
   /* The scrollbar is a LAYOUT fact, not a decoration. Every screen in this
      console is a centered column (`Screen`'s 1060px measure, the Agents hero's
@@ -2002,5 +2001,47 @@
   }
   :root.op-signed-in [data-auth-branch="signed-in"] {
     visibility: visible;
+  }
+}
+
+/* ── THE BAR'S FROST (openproduct-ui-fixes UF2, design §2 rule 6) ──────────
+   Not a fill and not a line: a frosted band behind the bar that reaches 10px
+   below it and fades out over its last 14px, so the page melts into the bar
+   with no edge. Light at the top of a page (the glow shows through), deep
+   once the page scrolls: a scroll-driven animation over the first 64px.
+   Where scroll timelines are not supported the band is the deep frost. */
+.bar-frost {
+  isolation: isolate;
+}
+.bar-frost::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 -10px 0;
+  z-index: -1;
+  pointer-events: none;
+  background-color: oklch(var(--background) / 0.92);
+  background-image: linear-gradient(to bottom, rgb(255 255 255 / 0.4), rgb(255 255 255 / 0));
+  -webkit-backdrop-filter: saturate(170%) blur(24px);
+  backdrop-filter: saturate(170%) blur(24px);
+  -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - 14px), transparent);
+  mask-image: linear-gradient(to bottom, #000 calc(100% - 14px), transparent);
+}
+@supports (animation-timeline: scroll()) {
+  .bar-frost::before {
+    animation: bar-frost linear both;
+    animation-timeline: scroll(root block);
+    animation-range: 0 64px;
+  }
+}
+@keyframes bar-frost {
+  from {
+    background-color: oklch(var(--background) / 0.4);
+    -webkit-backdrop-filter: saturate(140%) blur(8px);
+    backdrop-filter: saturate(140%) blur(8px);
+  }
+  to {
+    background-color: oklch(var(--background) / 0.92);
+    -webkit-backdrop-filter: saturate(170%) blur(24px);
+    backdrop-filter: saturate(170%) blur(24px);
   }
 }

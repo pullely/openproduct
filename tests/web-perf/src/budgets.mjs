@@ -158,7 +158,14 @@ const RUNS = Number(process.env.XP4_RUNS ?? 3);
  * visitor takes; budgeting the build directory would guard a number nobody
  * experiences.
  */
-const FONTS = { bytes: 82_000, files: 4 };
+/*
+ * openproduct-ui-fixes UF2 (2026-11-15) — THE BAR'S FACE. The owner chose
+ * Geist for the top bar, which is on every page, so every page fetches a
+ * fifth file: geist-latin-wght.woff2, 29,288 bytes, the unmodified latin
+ * subset the site shipped before OPR1. Five files, 105,212 bytes, and the
+ * same 6,076 bytes of headroom.
+ */
+const FONTS = { bytes: 111_288, files: 5 };
 
 /**
  * OPR-3 — THE FIFTH FILE, ON THE PAGES THAT DRAW IT, AND ONLY THERE.
@@ -184,9 +191,10 @@ const FONTS = { bytes: 82_000, files: 4 };
  * the italic preloaded again, which is the regression `FONTS.files` was
  * written to catch — still fails, on every route, as it did.
  *
- * The same thin headroom as above, to the byte: 98,664 + 6,076.
+ * The same thin headroom as above, to the byte: 127,952 + 6,076 (six files
+ * since UF2 added Geist).
  */
-const FONTS_WITH_ITALIC = { bytes: 104_740, files: 5 };
+const FONTS_WITH_ITALIC = { bytes: 134_028, files: 6 };
 
 /**
  * OPP11 — THE JS BUDGETS CAME DOWN BY 1,107 BYTES, ON EVERY ROUTE.

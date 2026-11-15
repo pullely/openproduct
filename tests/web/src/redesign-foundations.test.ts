@@ -135,9 +135,13 @@ describe("the palette is the boards'", () => {
   });
 });
 
-describe("three faces, five files, self-hosted", () => {
+// openproduct-ui-fixes UF2 added the fourth face: Geist, the top bar's own
+// (design §2 rule 3), one variable file of 29,288 bytes that every page
+// fetches because the bar is on every page.
+describe("four faces, six files, self-hosted", () => {
   const FONTS_DIR = resolve(WEB, "src/fonts");
   const FILES = [
+    "geist-latin-wght.woff2",
     "hanken-grotesk-latin-wght.woff2",
     "ibm-plex-mono-latin-400.woff2",
     "ibm-plex-mono-latin-500.woff2",
@@ -147,24 +151,24 @@ describe("three faces, five files, self-hosted", () => {
   const woff2 = readdirSync(FONTS_DIR).filter((f) => f.endsWith(".woff2")).sort();
   const bytes = woff2.reduce((sum, f) => sum + statSync(resolve(FONTS_DIR, f)).size, 0);
 
-  it("ships exactly the redesign's five files, and nothing left over from before", () => {
+  it("ships exactly these six files, and nothing left over from before", () => {
     expect(woff2).toEqual(FILES);
-    expect(readdirSync(FONTS_DIR).filter((f) => /geist|newsreader/i.test(f))).toEqual([]);
+    expect(readdirSync(FONTS_DIR).filter((f) => /geist-mono|newsreader/i.test(f))).toEqual([]);
   });
 
   it("carries each family's licence beside it", () => {
-    for (const licence of ["hanken-grotesk.OFL.txt", "lora.OFL.txt", "ibm-plex-mono.OFL.txt"]) {
+    for (const licence of ["geist.OFL.txt", "hanken-grotesk.OFL.txt", "lora.OFL.txt", "ibm-plex-mono.OFL.txt"]) {
       expect(existsSync(resolve(FONTS_DIR, licence))).toBe(true);
     }
   });
 
-  it("weighs 98,664 bytes on disk; a page fetches four of the five, and the font budget is those plus thin headroom", () => {
-    expect(bytes).toBe(98_664);
+  it("weighs 127,952 bytes on disk; a page fetches five of the six, and the font budget is those plus thin headroom", () => {
+    expect(bytes).toBe(127_952);
     // The budget is what a page FETCHES. Lora's italic is declared without a
-    // preload, so every walked route takes the other four files.
+    // preload, so every walked route takes the other five files.
     const italic = statSync(resolve(FONTS_DIR, "lora-latin-400-italic.woff2")).size;
     const fetched = bytes - italic;
-    expect(fetched).toBe(75_924);
+    expect(fetched).toBe(105_212);
     const budget = /const FONTS = \{ bytes: ([\d_]+), files: (\d+) \};/.exec(
       readFileSync(resolve(PERF, "budgets.mjs"), "utf-8"),
     );
@@ -209,7 +213,7 @@ describe("three faces, five files, self-hosted", () => {
     }
   });
 
-  it("a page that quotes an idea fetches the fifth, and only such a page may (OPR-3)", () => {
+  it("a page that quotes an idea fetches the sixth, and only such a page may (OPR-3)", () => {
     // The boards quote an idea in Lora's italic. A page that draws a word in
     // it takes the italic's file; every other page is still held to four.
     // The lane decides by what the page PAINTS, not by a list of routes.
@@ -219,8 +223,8 @@ describe("three faces, five files, self-hosted", () => {
     expect(italic).not.toBeNull();
     const [limit, files] = [Number(italic![1]!.replace(/_/g, "")), Number(italic![2])];
     expect(files).toBe(FILES.length);
-    // All five, plus exactly the headroom the four-file budget carries.
-    expect(limit - bytes).toBe(Number(plain![1]!.replace(/_/g, "")) - 75_924);
+    // All six, plus exactly the headroom the five-file budget carries.
+    expect(limit - bytes).toBe(Number(plain![1]!.replace(/_/g, "")) - 105_212);
     expect(lane).toContain("const fonts = m.drawsSerifItalic ? FONTS_WITH_ITALIC : FONTS;");
     expect(lane).toContain('cs.fontStyle === "italic" && /lora/i.test(cs.fontFamily)');
     // Still declared without a preload: the browser takes it only where a
@@ -231,7 +235,7 @@ describe("three faces, five files, self-hosted", () => {
   it("says the same in the fonts README", () => {
     const readme = read("src/fonts/README.md");
     for (const file of FILES) expect(readme).toContain(`\`${file}\``);
-    expect(readme).toContain("98,664");
+    expect(readme).toContain("127,952");
   });
 
   it("loads every one of them from the layout with next/font/local, and nothing else", () => {
@@ -240,13 +244,13 @@ describe("three faces, five files, self-hosted", () => {
     expect(layout).not.toMatch(/next\/font\/google/);
     const loaded = Array.from(layout.matchAll(/"\.\.\/fonts\/([\w.-]+\.woff2)"/g), (m) => m[1]!).sort();
     expect(loaded).toEqual(FILES);
-    // `swap` on every declaration (three families, Lora's two cuts declared
+    // `swap` on every declaration (four families, Lora's two cuts declared
     // apart); weights stop at 600.
-    expect(layout.match(/display: "swap"/g)?.length).toBe(4);
+    expect(layout.match(/display: "swap"/g)?.length).toBe(5);
     expect(layout).toContain('weight: "400 600"');
     expect(layout).not.toMatch(/weight: "[^"]*[7-9]00/);
     expect(layout).toContain(
-      "className={`${hanken.variable} ${lora.variable} ${loraItalic.variable} ${plexMono.variable}`}",
+      "className={`${hanken.variable} ${lora.variable} ${loraItalic.variable} ${plexMono.variable} ${geist.variable}`}",
     );
     // Lora's italic is declared apart from the upright and NOT preloaded:
     // `next/font` preloads every file a declaration names on every route,
@@ -261,14 +265,17 @@ describe("three faces, five files, self-hosted", () => {
     expect(CSS).toMatch(/\.font-serif\.italic \{\s*font-family: var\(--font-serif-italic\);/);
   });
 
-  it("lands them on the three stacks the stylesheet and Tailwind read", () => {
+  it("lands them on the four stacks the stylesheet and Tailwind read", () => {
     expect(CSS).toContain('--font-sans: var(--font-hanken, "Hanken Grotesk"),');
     expect(CSS).toContain('--font-serif: var(--font-lora, "Lora"),');
     expect(CSS).toContain('--font-mono: var(--font-plex-mono, "IBM Plex Mono"),');
     expect(TAILWIND).toContain('sans: ["var(--font-sans)", "system-ui", "sans-serif"]');
     expect(TAILWIND).toContain('serif: ["var(--font-serif)", "Georgia", "serif"]');
     expect(TAILWIND).toContain('mono: ["var(--font-mono)", "ui-monospace", "monospace"]');
-    expect(code(CSS)).not.toMatch(/geist|newsreader/i);
+    // The bar's face (UF2): Geist over the UI face, and only there.
+    expect(CSS).toContain('--font-bar: var(--font-geist, "Geist"), var(--font-sans);');
+    expect(TAILWIND).toContain('bar: ["var(--font-bar)", "system-ui", "sans-serif"]');
+    expect(code(CSS)).not.toMatch(/geist mono|newsreader/i);
   });
 
   it("reaches no third-party host for a font", () => {
@@ -376,11 +383,14 @@ describe("flat cards, pill controls", () => {
 });
 
 describe("the page's ground", () => {
-  it("is a soft amber glow at the top over a faint dot grid, from tokens", () => {
+  // openproduct-ui-fixes UF2 (design §2 rule 7): the owner rejected the dot
+  // grid. The ground is ivory and the one amber glow at the top.
+  it("is a soft amber glow at the top and no dot grid, from tokens", () => {
     const ground = /\n {2}body \{\n {4}background-image:([\s\S]*?)\n {2}\}/.exec(CSS)?.[1] ?? "";
     expect(ground).toContain("radial-gradient(1100px 460px at 50% -72px, oklch(var(--page-glow) / 0.18), transparent 62%)");
-    expect(ground).toContain("radial-gradient(oklch(var(--page-dot) / 0.07) 1px, transparent 1.2px)");
-    expect(ground).toMatch(/background-size:\s*auto,\s*22px 22px;/);
+    expect(ground).not.toContain("--page-dot");
+    expect(ground).not.toMatch(/background-size/);
+    expect(ground).toContain("background-repeat: no-repeat;");
     expect(hex("page-glow")).toBe("#B8862F");
     expect(hex("page-dot")).toBe("#141413");
   });

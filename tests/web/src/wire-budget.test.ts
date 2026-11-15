@@ -26,8 +26,8 @@ const code = (file: string) =>
 describe("WC2-8's three numbers", () => {
   const wire = code(resolve(PERF, "wire.mjs"));
 
-  it("are 276 KB compressed, 30 requests, no third-party host", () => {
-    expect(wire).toContain("export const WIRE = { bytes: 276 * 1024, requests: 30, thirdPartyHosts: 0 };");
+  it("are 305 KB compressed, 31 requests, no third-party host", () => {
+    expect(wire).toContain("export const WIRE = { bytes: 305 * 1024, requests: 31, thirdPartyHosts: 0 };");
   });
 
   it("moved only by a recorded decision: the amendment is in WC2-8 itself", () => {
@@ -46,9 +46,16 @@ describe("WC2-8's three numbers", () => {
       notes: Array<{ date: string; heldKB: number; why: string }>;
     };
     expect(wc28.decision).toBe("WC2-8");
+    // 276 → 305 KB for the top bar's face (openproduct-ui-fixes UF2): one
+    // more font file on every page, and nothing else grew.
     expect(wc28.amendments.map((a) => [a.date, a.fromKB, a.toKB])).toEqual([
       ["2026-10-22", 250, 276],
+      ["2026-11-15", 276, 305],
     ]);
+    expect(wc28.bytesKB).toBe(305);
+    // The font file is one more request on every page, and the listing was
+    // at the limit: 30 → 31 in the same amendment.
+    expect(wc28.requests).toBe(31);
     // Each amendment starts where the last one ended, and says why.
     wc28.amendments.forEach((a, i) => {
       if (i > 0) expect(a.fromKB).toBe(wc28.amendments[i - 1]!.toKB);

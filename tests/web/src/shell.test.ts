@@ -104,12 +104,12 @@ describe("the section nav", () => {
     // draws. The MX1 lesson, applied to the shell.
     const panel = readFileSync(resolve(APP_DIR, "shell/top-panel.tsx"), "utf-8");
     // A FIXED height since FR1, not a minimum: a bar with a floor under it
-    // grows whenever something inside it does. 60px is the board's 40px
-    // controls in its 10px of padding.
-    expect(panel).toContain("h-[60px]");
-    expect(panel).not.toContain("min-h-[60px]");
-    // The pills are the board's 36px.
-    expect(panel).toContain("h-[36px]");
+    // grows whenever something inside it does. 56px since openproduct-ui-
+    // fixes UF2 (design §2 rule 1): the owner's "reduce the padding".
+    expect(panel).toContain("h-[56px]");
+    expect(panel).not.toContain("min-h-[56px]");
+    // The sections are plain text in a 44px hit area (UF2 rule 2).
+    expect(panel).toContain("h-[44px]");
     expect(panel).not.toMatch(/className="[^"]*\bh-(?:9|10|14)\b/);
     const chip = readFileSync(resolve(APP_DIR, "shell/account-chip.tsx"), "utf-8");
     expect(chip).toContain("h-[40px] w-[40px]");
@@ -120,9 +120,14 @@ describe("the section nav", () => {
     const panel = markupOf("shell/top-panel.tsx");
     const header = panel.match(/<header className="([^"]*)"/)?.[1] ?? "";
     expect(header).toContain("sticky top-0");
-    expect(header).toContain("bg-panel/[0.62]");
-    expect(header).toMatch(/backdrop-blur-\[16px\]/);
-    expect(header).toMatch(/backdrop-saturate-/);
+    // The frost is a band behind the bar that fades out below it, not a fill
+    // (openproduct-ui-fixes UF2, design §2 rule 6): `.bar-frost`.
+    expect(header).toContain("bar-frost");
+    expect(header).toContain("font-bar");
+    expect(header).not.toMatch(/\bbg-/);
+    const css = readFileSync(resolve(APP_DIR, "../styles/globals.css"), "utf-8");
+    expect(css).toMatch(/\.bar-frost::before \{[\s\S]*?backdrop-filter: saturate\(170%\) blur\(24px\);[\s\S]*?mask-image: linear-gradient\(to bottom, #000 calc\(100% - 14px\), transparent\);/);
+    expect(css).toMatch(/@media \(prefers-reduced-motion|animation-range: 0 64px;/);
     // design.md §2 rule 11.
     expect(header).not.toMatch(/\bborder(?:-|\b)|\bshadow/);
     // The page's own shell (openproduct-ui-fixes UF1): fluid to 1920px,
@@ -138,8 +143,9 @@ describe("the section nav", () => {
     expect(panel).toContain('aria-current={current ? "page" : undefined}');
     expect(panel).toContain('<NotificationBell current={activeSection === "activity"} />');
     expect((panel.match(/aria-current=/g) ?? []).length).toBe(1);
-    // The current pill is ink with the light ink on it.
-    expect(panel).toMatch(/current\s*\?\s*"bg-foreground font-semibold text-background"/);
+    // The current section is ink at medium weight, the others grey: plain
+    // text, no pill (openproduct-ui-fixes UF2, design §2 rule 2).
+    expect(panel).toMatch(/current\s*\?\s*"font-medium text-foreground"/);
   });
 });
 

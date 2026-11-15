@@ -344,11 +344,12 @@ describe("one search, and the shortcut focuses it", () => {
     expect(box).toMatch(/input\.offsetParent === null\) \{[\s\S]{0,200}?router\.push\(SEARCH_PATH\)/);
   });
 
-  it("is a 40px pill with 16px text and the board's placeholder", () => {
+  it("is a 42px pill with 16px text and the board's placeholder", () => {
     const box = code("shell/palette.tsx");
     expect(SEARCH_PLACEHOLDER).toBe("Search products and people");
     expect(box).toContain("placeholder={SEARCH_PLACEHOLDER}");
-    expect(box).toMatch(/<label[\s\S]*?className=\{`[^`]*\bh-\[40px\][^`]*rounded-full/);
+    // 42px and borderless on a faint fill since openproduct-ui-fixes UF2.
+    expect(box).toMatch(/<label[\s\S]*?className=\{`[^`]*\bh-\[42px\][^`]*rounded-full/);
     expect(box).toMatch(/<input[\s\S]*?className="[^"]*text-\[16px\]/);
   });
 });
@@ -429,10 +430,10 @@ describe("the bar holds still", () => {
     // sections, the bell, the word and the search box (a link stands in for
     // it); at a tablet's width the word steps aside and the box shrinks.
     const panel = read("shell/top-panel.tsx");
-    expect(panel).toContain("h-[60px]");
+    expect(panel).toContain("h-[56px]");
     expect(panel).toContain("flex-nowrap");
     expect(panel).not.toContain("flex-wrap ");
-    expect(panel).not.toContain("min-h-[60px]");
+    expect(panel).not.toContain("min-h-[56px]");
     expect(panel).toContain("max-sm:h-[68px]");
     // The box may shrink rather than push the bell out of the row.
     expect(code("shell/palette.tsx")).toMatch(/relative flex min-w-0 shrink grow-0/);
@@ -443,7 +444,7 @@ describe("the bar holds still", () => {
     // the box widening eats slack to its LEFT; the bell and the profile
     // control stay where they are.
     const panel = code("shell/top-panel.tsx");
-    expect(panel).toMatch(/<div className="flex min-w-0 flex-1 items-center justify-end gap-\[10px\]">\s*(?:\{\}\s*)?(?:<div id="page-view-switch" data-header-slot="view-switch" className="contents" \/>\s*)?(?:\{\}\s*)?<HeaderSearch \/>/);
+    expect(panel).toMatch(/<div className="flex min-w-0 flex-1 items-center justify-end gap-2">\s*(?:\{\}\s*)?(?:<div id="page-view-switch" data-header-slot="view-switch" className="contents" \/>\s*)?(?:\{\}\s*)?<HeaderSearch \/>/);
   });
 
   it("keeps the account control one disc wide in both of its branches", () => {

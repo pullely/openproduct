@@ -254,11 +254,11 @@ describe("the header may not grow", () => {
     expect(row()).not.toMatch(/flex-wrap|min-h-/);
   });
 
-  it("is a fixed 60px, and 68px on a phone", () => {
-    // 60px is the board's 40px controls in 10px of padding; 68px is the
-    // phone board's 44px field in 12px. No hairline to account for: the bar
-    // has no border.
-    expect(row()).toMatch(/(?:^|\s)h-\[60px\]/);
+  it("is a fixed 56px, and 68px on a phone", () => {
+    // 56px since openproduct-ui-fixes UF2 (the owner's "reduce the padding");
+    // 68px is the phone board's 44px field in 12px. No hairline to account
+    // for: the bar has no border.
+    expect(row()).toMatch(/(?:^|\s)h-\[56px\]/);
     expect(row()).toContain("max-sm:h-[68px]");
   });
 

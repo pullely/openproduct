@@ -43,7 +43,7 @@ export function NotificationBell({ current = false }: { readonly current?: boole
       aria-label={unread > 0 ? `Activity — ${unread} unread` : "Activity"}
       aria-current={current ? "page" : undefined}
       className={`relative grid h-[40px] w-[40px] shrink-0 place-items-center rounded-full transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring max-sm:hidden ${
-        current ? "bg-foreground text-background" : "bg-card text-muted-foreground hover:text-foreground"
+        current ? "text-foreground" : "text-muted-foreground hover:text-foreground"
       }`}
     >
       <ActivityIcon className="h-[18px] w-[18px]" />
