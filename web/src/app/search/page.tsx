@@ -206,7 +206,7 @@ export default async function SearchPage({ searchParams }: PageProps) {
  * A product in the results: its tile, its name, its summary with the matched
  * words marked, and Follow — which follows the product (design.md §2 rule 3).
  *
- * ITS STAGE BESIDE THE NAME (board `Search`): `Shipping` or `Idea`, from
+ * ITS STAGE BESIDE THE NAME (board `Search`): `On stage`, `Idea`…, from
  * the result's own `stage` (OPR-3). A hit that carries none says nothing
  * rather than guessing.
  *

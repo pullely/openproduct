@@ -47,7 +47,9 @@ import {
   encodeCursor,
   pageSize,
   milestoneCountsOf,
+  whereItRunsOf,
 } from "@openproduct/contracts";
+import type { ProductStage } from "@openproduct/contracts";
 import type {
   OpenproductRepository,
   ProfileRecord,
@@ -154,7 +156,7 @@ function cardOf(row: {
   hasLiveUrl: boolean;
   indexable: boolean;
   publishedAt: string | null;
-  stage: "idea" | "shipping";
+  stage: ProductStage;
   milestoneCounts: { shipped: number; total: number };
   crewCount: number | null;
 }, metrics: PublicMetric[], thumbnail: MediaThumbnail | null): PublicProfileCard {
@@ -444,6 +446,13 @@ function profileOf(
     // two cannot disagree.
     stage: profile.stage,
     tryUrl: profile.tryUrl,
+    // SC-2 — Where it runs. Who set a row is named THROUGH THE PUBLIC ROSTER
+    // (the same rows `maintainers` below lists): a crew member who has not
+    // agreed to be shown is "the crew", never a subject id.
+    whereItRuns: whereItRunsOf(profile, (subjectId) => {
+      const known = maintainers.find((m) => m.subjectId === subjectId);
+      return known ? { name: known.displayName, handle: known.handle } : null;
+    }),
     milestones: publicMilestones,
     milestoneCounts: milestoneCountsOf(publicMilestones),
     // What the App observed at publish, not what a maintainer typed (§2.5).

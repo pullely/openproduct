@@ -108,7 +108,7 @@ const ada = { handle: "ada", displayName: "Ada Lovelace", matched: "name" as con
 const adaWithProducts = {
   ...ada,
   products: [
-    { slug: "kettleworks", name: "kettleworks", stage: "shipping" as const },
+    { slug: "kettleworks", name: "kettleworks", stage: "stage" as const },
     { slug: "ackstack", name: "ackstack", stage: "idea" as const },
   ],
 };
@@ -129,13 +129,16 @@ describe("what the search read becomes", () => {
 
   it("says what the read knows and no more: its stage when it has one, no logo, no summary", () => {
     // OPR-3 — the result carries `stage`, so the row's word is the board's
-    // "Shipping" or "Idea". It is the CONTRACT's word (`ui/stage.ts`), never
+    // stage word ("On stage", "Idea"; SC-2). It is the CONTRACT's word (`ui/stage.ts`), never
     // typed here; a hit with no stage, or one this page does not know, keeps
     // the word "Product" rather than guessing.
     const [row] = toRows([hit("kettleworks")]);
     expect(Object.keys(row!).sort()).toEqual(["href", "id", "initials", "kind", "title", "type"]);
-    expect(code("shell/palette-rows.ts")).not.toMatch(/"Shipping"|"Idea"/);
-    expect(toRows([{ ...hit("a"), stage: "shipping" }])[0]!.kind).toBe("Shipping");
+    expect(code("shell/palette-rows.ts")).not.toMatch(/"Shipping"|"On stage"|"Building"|"In production"|"Idea"/);
+    expect(toRows([{ ...hit("a"), stage: "stage" }])[0]!.kind).toBe("On stage");
+    expect(toRows([{ ...hit("a"), stage: "production" }])[0]!.kind).toBe("In production");
+    // OPR-3's retired `shipping` is a stage this page does not know.
+    expect(toRows([{ ...hit("a"), stage: "shipping" }])[0]!.kind).toBe("Product");
     expect(toRows([{ ...hit("a"), stage: "idea" }])[0]!.kind).toBe("Idea");
     expect(toRows([{ ...hit("a"), stage: null }])[0]!.kind).toBe("Product");
     expect(toRows([{ ...hit("a"), stage: "launched" }])[0]!.kind).toBe("Product");
@@ -223,7 +226,7 @@ describe("a person is one row until somebody opens it", () => {
     // two rows with two ids.
     expect(child.id).not.toBe("kettleworks");
     // OPR-3 — each product under a person says its stage word.
-    expect(shown.slice(2, 4).map((r) => r.kind)).toEqual(["Shipping", "Idea"]);
+    expect(shown.slice(2, 4).map((r) => r.kind)).toEqual(["On stage", "Idea"]);
   });
 
   it("draws the chevron only on a row that can open, beside the link and never inside it", () => {

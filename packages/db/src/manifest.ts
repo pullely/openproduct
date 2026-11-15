@@ -530,5 +530,14 @@ export const manifest: MigrationManifest = {
       description:
         "openproduct: threads.visibility (public or private; a private thread cannot be made public or moved to another product, and no post can be moved to another thread), threads.kind (question, issue, suggestion) and threads.resolved_at, with two partial indexes over private threads; the inbox's kind and target checks widened for private-thread rows and launch.listing (openproduct-redesign OPR-4)",
     },
+    {
+      id: "2285_openproduct_four_stages",
+      context: "openproduct",
+      path: "2285_openproduct_four_stages/up.sql",
+      checksum:
+        "6ca9c1259332d97d4ed7c15ee7131f70d68e19667cc0ccb2ff498c09108549a5",
+      description:
+        "openproduct: profiles.stage widened to idea, building, stage or production (shipping backfilled to stage with a try link, else building), set by hand; stage_note, production_url, production_since, production_version, production_access, stage_changed_at and stage_changed_by (openproduct-stages-crew SC-2)",
+    },
   ],
 };

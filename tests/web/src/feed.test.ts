@@ -111,7 +111,7 @@ describe("`/` is the feed, and `/products` lists the products (openproduct-redes
     // The card invents nothing: no rank, no comment count, no vote — and the
     // stage's words are `ui/stage.ts`'s, never spelt on the card.
     expect(card).not.toContain("#discussion");
-    expect(code("feed/product-card.tsx")).not.toMatch(/VoteBox|Shipping|Idea\b/);
+    expect(code("feed/product-card.tsx")).not.toMatch(/VoteBox|Shipping|Building|On stage|In production|Idea\b/);
     expect(card).not.toContain('"use client"');
     expect(existsSync(resolve(APP_DIR, "feed/card-row.tsx"))).toBe(false);
     // The old tile's name is gone with its last importer — one card, one name.
@@ -122,7 +122,9 @@ describe("`/` is the feed, and `/products` lists the products (openproduct-redes
     // OPR-3 — the line of observed facts (changes, upvotes, 7 days) left the
     // card with the board's stage mark; what is observed about a product is
     // on its own page. The mark's words are one function's.
-    expect(stageMarkText("shipping", null, { short: true })).toBe("Shipping");
+    expect(stageMarkText("building", null, { short: true })).toBe("Building");
+    expect(stageMarkText("stage", { shipped: 3, total: 4 }, { short: true })).toBe("On stage · 3 of 4");
+    expect(stageMarkText("production", null, { short: true })).toBe("In production");
     expect(stageMarkText("idea", null, { short: true })).toBe("Idea");
     expect(openSeatsLabel(1)).toBe("1 open seat");
     expect(openSeatsLabel(2)).toBe("2 open seats");

@@ -99,15 +99,20 @@ const PROFILE_COPY: Record<string, Omit<DisclosureLine, "key">> = {
     label: "What you said it costs to use",
     note: "Free, open core, paid, or free to self-host — your words, not a price this directory checks; blank if you left it unanswered",
   },
-  // OPR-3 — the four the redesign's product page reads. A stage nobody
-  // types: it follows the milestones, so the line says what moves it.
+  // OPR-3 — the four the redesign's product page reads. SC-2: the stage is
+  // the crew's to set, one step at a time, so the line says how.
   stage: {
-    label: "Whether the product is an idea or shipping",
-    note: "Not something you set: it is an idea until its first milestone ships, and shipping from then on",
+    label: "Where the product is: an idea, building, on stage or in production",
+    note: "You move it yourself, one step at a time, with Change stage inside Edit details",
   },
   tryUrl: {
     label: "The address people can try it at",
-    note: "The \"Try it\" button on your page and your posts goes there",
+    note: "Your stage link: the \"Try it\" button on your page and your posts goes there",
+  },
+  // SC-2 — Where it runs, under the product's header.
+  whereItRuns: {
+    label: "Where it runs",
+    note: "Your stage link and what people can try there, and once it is in production its link, the day it went live, its version and who can use it — with the name of whoever on the crew set it, if they are shown on your page",
   },
   milestones: {
     label: "Your milestones",

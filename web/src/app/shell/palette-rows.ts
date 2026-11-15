@@ -25,7 +25,7 @@ export interface SearchHit {
   readonly title: string;
   readonly summary: string | null;
   readonly matched: string;
-  /** OPR-3 — a product hit's stage (`idea` / `shipping`); null or absent
+  /** OPR-3, SC-2 — a product hit's stage (one of the four); null or absent
    *  when the read does not know it. */
   readonly stage?: string | null;
 }
@@ -65,8 +65,8 @@ export interface PaletteRow {
 /**
  * The word a row wears at its right edge.
  *
- * A PRODUCT SAYS ITS STAGE — the contract's own word for `shipping` or
- * `idea` (board `Feed`'s search card), read from the result (OPR-3). A hit
+ * A PRODUCT SAYS ITS STAGE — the contract's own word for it (`On stage`,
+ * `Idea`; board `Feed`'s search card), read from the result (OPR-3). A hit
  * that carries no stage says the one thing the read does know: that it is a
  * product. The word is never guessed.
  */

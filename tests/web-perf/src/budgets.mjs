@@ -507,7 +507,22 @@ const BUDGETS = {
   // sections it never had before). 24,000 holds that with the headroom the
   // old number had over the old document — 23,000 left a hundred bytes, which
   // is a flake waiting for a longer tagline.
-  [`/${SAMPLE_SLUG}`]: { js: 177_314, doc: 24_997, cls: 0.02, lcp: 2000, reads: 3, images: 400_000 },
+  //
+  // SC-2 (openproduct-stages-crew, 2026-11-15) — RE-MEASURED, WITH THE
+  // NUMBERS NAMED. The page gained Where it runs under its header (two rows,
+  // each a tag, an address and a line) and the stage badge, and the crew's
+  // Edit details is handed where the product is (`stageStartOf`: the stage,
+  // the repository, the stage link and the strip's rows) — all in the
+  // document. The JS is the four stages' words and their colours, which every
+  // badge, mark and word reads; the colours and the badge are modules of
+  // their own (`ui/stage-tone.ts`, `ui/stage-badge.tsx`) so the header
+  // search's bundle on every page does not carry them, and the Change stage
+  // popup and the Stage row are fetched for the crew only. Measured by this
+  // lane in CI: Updates, About and Crew 177,734 B of JS (was 177,307 against
+  // 177,314: seven bytes of room); documents Updates 25,256 B (was 24,626),
+  // About 25,281 (24,561), Crew 22,050 (21,410), Talk 26,418 (25,744). The
+  // new limits are those plus the room each had.
+  [`/${SAMPLE_SLUG}`]: { js: 177_800, doc: 25_650, cls: 0.02, lcp: 2000, reads: 3, images: 400_000 },
   // OPR-3 — THE PRODUCT PAGE'S OTHER THREE TABS, each an address of its own
   // (design §5), budgeted the day they were added (2026-11-15).
   //
@@ -526,8 +541,8 @@ const BUDGETS = {
   // READS: the listing and the directory on every tab; Updates adds the
   // product's posts and Talk the discussion, so About and Crew read twice
   // and Talk three times — concurrently, as the note above says of Updates.
-  [`/${SAMPLE_SLUG}/about`]: { js: 177_314, doc: 24_900, cls: 0.02, lcp: 2000, reads: 2, images: 400_000 },
-  [`/${SAMPLE_SLUG}/crew`]: { js: 177_314, doc: 21_700, cls: 0.02, lcp: 2000, reads: 2, images: 400_000 },
+  [`/${SAMPLE_SLUG}/about`]: { js: 177_800, doc: 25_650, cls: 0.02, lcp: 2000, reads: 2, images: 400_000 },
+  [`/${SAMPLE_SLUG}/crew`]: { js: 177_800, doc: 22_350, cls: 0.02, lcp: 2000, reads: 2, images: 400_000 },
   //
   // OPR-4 — TALK RE-MEASURED, AND ONLY TALK, WITH THE NUMBERS NAMED
   // (2026-11-15). Talk gained its composer (a field, the thread's kind, the
@@ -553,7 +568,9 @@ const BUDGETS = {
   // 25,556 B (the form, the filter and a card per thread are in the document,
   // where a link list was). 184,900 and 26,250 are those plus the ~2.3% and
   // ~2.8% this table carries. The wire budget did not move.
-  [`/${SAMPLE_SLUG}/talk`]: { js: 184_900, doc: 26_250, cls: 0.02, lcp: 2000, reads: 3, images: 400_000 },
+  // SC-2 — Talk's document gained Where it runs too: 26,418 B (was 25,744),
+  // so 26,250 → 26,900, the same room. Its JS did not move past its limit.
+  [`/${SAMPLE_SLUG}/talk`]: { js: 184_900, doc: 26_900, cls: 0.02, lcp: 2000, reads: 3, images: 400_000 },
   // OPR-3 — A POST'S OWN PAGE (design §5: `/{slug}/posts/{id}`), budgeted the
   // day it was added. 183,214 B across 19 chunks: the full card with its
   // reaction controls, and the live thread under it (the comment field, the

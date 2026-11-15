@@ -2,7 +2,7 @@
 //
 // Everything a product's crew does from the product's own pages: write and
 // publish template posts, keep the milestones, read what waits on them, set
-// the address people try the product at. Every route is addressed by the
+// the address people try the product at, and move its stage (SC-2). Every route is addressed by the
 // workspace (`org_…`) and the listing (`opp_…`); core decides who is on the
 // crew and answers 404 to everybody else, so a refusal here never says
 // whether the product exists.
@@ -26,6 +26,7 @@
 import {
   PRODUCT_POST_API,
   type AuthoredProductPostKind,
+  type ChangeStageRequest,
   type CrewMilestone,
   type CrewNeedsYou,
   type CrewProductPost,
@@ -329,6 +330,26 @@ export function deleteCrewSeat(
   fetchImpl?: CrewFetch,
 ): Promise<CrewResult<{ deleted: boolean }>> {
   return crewRequest(token, PRODUCT_POST_API.crewSeat(ids.org, ids.profile, openingId), { method: "DELETE" }, fetchImpl);
+}
+
+// ─── the stage (SC-2) ──────────────────────────────────────────────────────
+
+/** What a stage change answers: the stage now, the first milestone the step
+ *  to Building wrote (null when it wrote none), and whether it was posted
+ *  (never yet: there is no post kind for a stage change). */
+export interface StageAnswer extends WithStage {
+  milestone: CrewMilestone | null;
+  posted: boolean;
+}
+
+/** Move the product one stage, forward or back, with the step's inputs. */
+export function changeCrewStage(
+  token: string,
+  ids: CrewIds,
+  body: ChangeStageRequest,
+  fetchImpl?: CrewFetch,
+): Promise<CrewResult<StageAnswer>> {
+  return crewRequest(token, PRODUCT_POST_API.crewStage(ids.org, ids.profile), { method: "PUT", body }, fetchImpl);
 }
 
 // ─── needs you, and the listing's own fields ───────────────────────────────

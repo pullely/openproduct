@@ -89,7 +89,9 @@ describe("Talk — the privacy rule on the wire (design §7)", () => {
 
   it("a private thread's address is the same shape for every id", () => {
     expect(privateThreadPath("abc")).toBe("/threads/private/abc");
-    expect(talkPath("acme", "shipping")).toBe("/acme/talk");
+    expect(talkPath("acme", "building")).toBe("/acme/talk");
+    expect(talkPath("acme", "stage")).toBe("/acme/talk");
+    expect(talkPath("acme", "production")).toBe("/acme/talk");
     expect(talkPath("acme", "idea")).toBe("/acme#talk");
   });
 });

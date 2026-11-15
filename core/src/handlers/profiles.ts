@@ -245,10 +245,18 @@ function toMaintainerProfile(
     pricing: profile.pricing,
     repoUrl: profile.repoUrl,
     liveUrl: profile.liveUrl,
-    // OPR-3 — the stage follows the milestones (read-only here); the "Try
-    // it" address is the crew's to write.
+    // OPR-3, SC-2 — the stage moves through `PUT …/stage` (read-only here);
+    // the "Try it" address is the crew's to write.
     stage: profile.stage,
     tryUrl: profile.tryUrl,
+    // SC-2 — what each step wrote, so the Change stage popup starts from the
+    // crew's own words. Never who moved it: that is the audit log's.
+    stageNote: profile.stageNote ?? null,
+    productionUrl: profile.productionUrl ?? null,
+    productionSince: profile.productionSince ?? null,
+    productionVersion: profile.productionVersion ?? null,
+    productionAccess: profile.productionAccess ?? null,
+    stageChangedAt: profile.stageChangedAt ?? null,
     repoVisibility: profile.repoVisibility,
     repoLicence: profile.repoLicence,
     repoCheckedAt: profile.repoCheckedAt,

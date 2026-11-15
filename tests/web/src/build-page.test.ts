@@ -1,7 +1,7 @@
 // The product page (openproduct-open-builds OB5; rebuilt to the boards
 // `Product` and `ProductIdea` in openproduct-redesign OPR-3).
 //
-// What is pinned: the shipping page's header card (the stage mark beside the
+// What is pinned: the shipping page's header card (the stage badge beside the
 // name, the pitch, the facts, the actions, the tabs as links), its side
 // column (Crew, Built with, In the open, then the four figures — each a dash
 // rather than a zero when it was not observed), the idea page's note, and
@@ -171,11 +171,26 @@ describe("the header card is the board's", () => {
     expect(code("ui/design.ts")).toContain('export { BTN_OUTLINE, BTN_PRIMARY, BTN_SOFT, FOCUS, PAGE_NARROW, PAGE_TITLE } from "./design-core";');
   });
 
-  it("wears the stage mark beside the name: SHIPPING · N OF M, from the document's counts", () => {
+  it("wears the stage badge beside the name: ON STAGE · N OF M, the document's own stage and counts (SC-2)", () => {
     const mark = header.slice(header.indexOf("<h1"), header.indexOf("<ProductPitch"));
-    expect(mark).toContain('<StageMark stage="shipping" counts={profile.milestoneCounts} />');
+    expect(mark).toContain("<StageBadge stage={profile.stage} counts={profile.milestoneCounts} />");
     // The words are the shared stage module's, so no page spells its own.
-    expect(page).not.toMatch(/SHIPPING ·|\bOF \$\{/);
+    expect(page).not.toMatch(/SHIPPING ·|ON STAGE|IN PRODUCTION|\bOF \$\{/);
+    const badge = code("ui/stage-badge.tsx");
+    expect(badge).toContain("PRODUCT_STAGE_MARKS[stage]");
+    expect(badge).toContain("isBuilt(stage) ? milestoneProgress(counts) : null");
+    expect(badge).toContain("${tone.soft} ${tone.ink}");
+  });
+
+  it("draws Where it runs under the header, for everyone, on both pages (SC-2)", () => {
+    const after = shipping.slice(shipping.indexOf("</section>", shipping.indexOf("id={HERO_ID}")));
+    expect(after.indexOf("<WhereItRunsStrip profile={profile} />")).toBeGreaterThan(-1);
+    expect(after.indexOf("<WhereItRunsStrip profile={profile} />")).toBeLessThan(after.indexOf("<MakerChrome slug={slug} />"));
+    expect(ideaOf(page)).toContain("<WhereItRunsStrip profile={profile} />");
+    const strip = code("[slug]/where-it-runs-strip.tsx");
+    expect(strip).not.toContain('"use client"');
+    expect(strip).toContain("aria-label={WHERE_IT_RUNS_LABEL}");
+    expect(strip).toContain("whereItRunsRows(whereItRunsOfProfile(profile))");
   });
 
   it("draws the cover band, the logo over it, the pitch and the line of facts, in that order", () => {
@@ -186,7 +201,9 @@ describe("the header card is the board's", () => {
     expect([...order].sort((a, b) => a - b)).toEqual(order);
     // The pitch is the listing's one line, and the same paragraph for
     // everybody on the server.
-    expect(header).toContain('<ProductPitch slug={slug} tagline={profile.tagline} tryUrl={profile.tryUrl} look="shipping" />');
+    expect(header).toContain(
+      '<ProductPitch slug={slug} tagline={profile.tagline} tryUrl={profile.tryUrl} start={stageStartOf(profile)} look="shipping" />',
+    );
     // The band is decoration and the desktop board's alone.
     expect(header).toContain('<div aria-hidden="true" className={COVER_PRODUCT} />');
     expect(code("ui/design.ts")).toMatch(/export const COVER_PRODUCT =\s*"h-\[140px\][^"]*max-sm:hidden"/);
@@ -213,7 +230,7 @@ describe("the header card is the board's", () => {
     expect(page).toContain("if (facts.length === 0) return null;");
   });
 
-  it("offers Follow, Take a seat and Try it — and Try it only with `tryUrl`", () => {
+  it("offers Follow, Take a seat and Try it — Try it only with `tryUrl`, Open it in production (SC-2)", () => {
     const actions = header.slice(header.indexOf("data-hero-actions"));
     // Two to a row on a phone (board `PhoneProduct`), and a third action
     // takes the whole row rather than half of one beside a hole.
@@ -225,11 +242,16 @@ describe("the header card is the board's", () => {
     // seat is open.
     expect(shipping).toContain('const seatsHref = `${productTabPath(slug, "crew")}#${SEATS_ANCHOR}`;');
     expect(actions).toMatch(/\{openRoles\.length > 0 \? \(\s*<AppLink href=\{seatsHref\} className=\{BTN_SOFT\}>\s*Take a seat\s*<\/AppLink>/);
-    // Try it is the address the crew gave for the running product, or absent.
+    // Try it is the stage link the crew gave, Open it the production link
+    // once the product is in production — or absent (`liveAction`).
+    expect(shipping).toContain("const live = liveAction(profile);");
     expect(actions).toMatch(
-      /\{profile\.tryUrl \? \(\s*<a href=\{profile\.tryUrl\} rel="noreferrer noopener" data-try-it className=\{BTN_INK\}>\s*Try it/,
+      /\{live \? \(\s*<a href=\{live\.href\} rel="noreferrer noopener" data-try-it className=\{BTN_INK\}>\s*\{live\.label\}/,
     );
-    expect(shipping.match(/Try it/g)?.length).toBe(1);
+    expect(shipping.match(/Try it/g)).toBeNull();
+    const where = code("[slug]/where-it-runs.ts");
+    expect(where).toContain('if (profile.stage === "production" && production) return { label: "Open it", href: production.url };');
+    expect(where).toContain('return profile.tryUrl ? { label: "Try it", href: profile.tryUrl } : null;');
     // No stand-in destination: not the live address, not the repository.
     expect(actions).not.toContain("profile.liveUrl");
     expect(actions).not.toMatch(/Try it[\s\S]{0,40}profile\.repoUrl/);
@@ -317,7 +339,9 @@ describe("the idea page is the lavender note", () => {
   });
 
   it("quotes the idea in one line, in the serif italic, from the tagline", () => {
-    expect(note).toContain('<ProductPitch slug={slug} tagline={profile.tagline} tryUrl={profile.tryUrl} look="idea" />');
+    expect(note).toContain(
+      '<ProductPitch slug={slug} tagline={profile.tagline} tryUrl={profile.tryUrl} start={stageStartOf(profile)} look="idea" />',
+    );
     const pitch = code("[slug]/maker/details.tsx");
     expect(pitch).toMatch(/idea: "[^"]*font-serif text-title italic/);
     // In quotation marks, as the board's note quotes it.

@@ -1,8 +1,9 @@
 // A product page's tabs, and which page an address draws (openproduct-redesign
 // OPR-3; boards `Product`, `ProductIdea`).
 //
-// ONE ADDRESS, TWO PAGES. `/{slug}` is the SHIPPING page when the product's
-// `stage` is `shipping` and the IDEA page when it is `idea`. The stage comes
+// ONE ADDRESS, TWO PAGES. `/{slug}` is the IDEA page when the product's
+// `stage` is `idea`, and the tabbed page — still called `shipping` here —
+// when it is building, on stage or in production (SC-2). The stage comes
 // off the public product document, so the choice is the same for every
 // visitor and the page caches at the edge.
 //
@@ -44,9 +45,10 @@ export const PRODUCT_TABS_LABEL = "Product sections";
 export type ProductPageKind = "shipping" | "idea";
 
 /**
- * The page for a stage. Only the literal `idea` draws the idea page: a
- * document cached before the stage existed carries none, and it draws the
- * shipping page — the page that address has always been.
+ * The page for a stage. Only the literal `idea` draws the idea page; the
+ * other three stages draw the tabbed one. A document cached before the stage
+ * existed carries none, and it draws the tabbed page — the page that address
+ * has always been.
  */
 export function pageKindOf(stage: ProductStage | null | undefined | unknown): ProductPageKind {
   return stage === "idea" ? "idea" : "shipping";

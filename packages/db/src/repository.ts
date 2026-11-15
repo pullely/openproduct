@@ -278,6 +278,8 @@ function parseFacets(value: unknown): Record<string, string[]> {
 const PROFILE_COLUMNS = `
   id, org_id, project_id, slug, visibility, tagline,
   pitch_body, pitch_digest, repo_url, live_url, try_url, stage, install_line, stack,
+  stage_note, production_url, production_since, production_version, production_access,
+  stage_changed_at, stage_changed_by,
   stack_canonical, category, hosting, pricing,
   repo_visibility, repo_licence, repo_checked_at,
   repo_name, repo_description, repo_topics,
@@ -309,6 +311,14 @@ type ProfileRow = {
   // every listing held before it.
   try_url?: string | null;
   stage?: string | null;
+  // SC-2 — optional for the same reason, against a database before 2285.
+  stage_note?: string | null;
+  production_url?: string | null;
+  production_since?: string | Date | null;
+  production_version?: string | null;
+  production_access?: string | null;
+  stage_changed_at?: string | Date | null;
+  stage_changed_by?: string | null;
   stack: unknown;
   stack_canonical?: unknown;
   category?: string | null;
@@ -465,10 +475,29 @@ function moderationStateOf(value: string | null | undefined): ModerationStateNam
   return value === "delisted" || value === "removed" ? value : "visible";
 }
 
-/** OPR-3 — narrow the column to the union. `idea` is the column's default
- *  and what a row read before 2265 means. */
+/**
+ * OPR-3, SC-2 — narrow the column to the union. `idea` is the column's
+ * default and what a row read before 2265 means. `shipping` is what a row
+ * read before 2285 holds — and what a catalogue row materialised before it
+ * holds until the next sweep — and it reads as `building`: it shipped a
+ * milestone, and whether it had somewhere to try it is the migration's call
+ * to make, not this read's.
+ */
 function stageOf(value: string | null | undefined): ProductStageName {
-  return value === "shipping" ? "shipping" : "idea";
+  if (value === "building" || value === "stage" || value === "production") return value;
+  return value === "shipping" ? "building" : "idea";
+}
+
+/** SC-2 — a DATE column as `YYYY-MM-DD`, whichever way the driver sent it. */
+function dayOf(value: string | Date | null | undefined): string | null {
+  if (value === null || value === undefined) return null;
+  if (value instanceof Date) return Number.isNaN(value.getTime()) ? null : value.toISOString().slice(0, 10);
+  return /^\d{4}-\d{2}-\d{2}/.test(value) ? value.slice(0, 10) : null;
+}
+
+/** SC-2 — the access column narrowed to the union; anything else is none. */
+function accessOf(value: string | null | undefined): "everyone" | "waitlist" | "invite" | null {
+  return value === "everyone" || value === "waitlist" || value === "invite" ? value : null;
 }
 
 function profileOf(row: ProfileRow): ProfileRecord {
@@ -483,9 +512,17 @@ function profileOf(row: ProfileRow): ProfileRecord {
     pitchDigest: row.pitch_digest,
     repoUrl: row.repo_url,
     liveUrl: row.live_url,
-    // OPR-3 — the stage follows the milestones; the address is authored.
+    // OPR-3, SC-2 — the stage is set by hand; the address is authored.
     stage: stageOf(row.stage),
     tryUrl: row.try_url ?? null,
+    // SC-2 — what each step wrote.
+    stageNote: row.stage_note ?? null,
+    productionUrl: row.production_url ?? null,
+    productionSince: dayOf(row.production_since),
+    productionVersion: row.production_version ?? null,
+    productionAccess: accessOf(row.production_access),
+    stageChangedAt: iso(row.stage_changed_at ?? null),
+    stageChangedBy: row.stage_changed_by ?? null,
     // PV2 — the maintainer's own words, beside the pitch rather than with the
     // `repo_*` family. Never observed, never derived.
     installLine: row.install_line,
@@ -1608,20 +1645,14 @@ export function createOpenproductRepository(sql: SqlExecutor): OpenproductReposi
   }
 
   /**
-   * OPR-3 — the stage follows the milestones: `shipping` while any is
-   * shipped, `idea` when none is. One UPDATE after each milestone write that
-   * can change the answer, here rather than in a trigger, so the rule is
-   * where the writes are and a reader of this file can see it.
+   * The product's stage as it stands. SC-2 retired OPR-3's `syncStage` (the
+   * stage followed the milestones: `shipping` while any was shipped); the
+   * stage is now set by hand through `setProductStage`, and a milestone write
+   * only reads it, so its answer can still say where the product is.
    */
-  async function syncStage(profileId: string): Promise<ProductStageName> {
+  async function currentStage(profileId: string): Promise<ProductStageName> {
     const res = await sql.execute<{ stage: string }>(
-      `UPDATE openproduct.profiles p
-          SET stage = CASE WHEN EXISTS (
-                        SELECT 1 FROM openproduct.product_milestones m
-                         WHERE m.profile_id = p.id AND m.shipped_at IS NOT NULL
-                      ) THEN 'shipping' ELSE 'idea' END
-        WHERE p.id = $1
-        RETURNING p.stage`,
+      `SELECT stage FROM openproduct.profiles WHERE id = $1`,
       [profileId],
     );
     return stageOf(res.rows[0]?.stage);
@@ -5795,7 +5826,7 @@ export function createOpenproductRepository(sql: SqlExecutor): OpenproductReposi
           WHERE subject_id = $1 AND kind = $2 AND target = $3`,
         [subjectId, kind, target],
       );
-      return (res.rowCount ?? 0) > 0;
+      return res.rowCount > 0;
     },
 
     async countFollowers(kind, targets) {
@@ -8184,10 +8215,8 @@ export function createOpenproductRepository(sql: SqlExecutor): OpenproductReposi
         `DELETE FROM openproduct.product_milestones WHERE profile_id = $1 AND id = $2`,
         [profileId, id],
       );
-      if (res.rowCount === 0) return false;
-      // The deleted milestone may have been the only shipped one.
-      await syncStage(profileId);
-      return true;
+      // SC-2 — the stage stays where the crew put it.
+      return res.rowCount > 0;
     },
 
     async reorderProductMilestones(profileId, ids) {
@@ -8232,12 +8261,58 @@ export function createOpenproductRepository(sql: SqlExecutor): OpenproductReposi
       const row = res.rows[0];
       if (!row) return null;
       const milestone = milestoneOf(row);
-      const stage = await syncStage(profileId);
+      const stage = await currentStage(profileId);
       return {
         milestone,
         stage,
         changed: (iso(row.was_shipped_at) === null) !== (milestone.shippedAt === null),
       };
+    },
+
+    async setProductStage(profileId, input) {
+      // ONE STATEMENT, GUARDED BY THE STAGE IT LEAVES. `WHERE stage = $2`
+      // makes the step a compare-and-set: two crew members pressing Move at
+      // once both validated against the same stage, and only the first
+      // statement finds the product still there. Each step's inputs are
+      // written only when given (a step back gives none), so the crew's words
+      // stay for the next time the product moves forward.
+      const res = await sql.execute<ProfileRow>(
+        `UPDATE openproduct.profiles
+            SET stage              = $3,
+                try_url            = CASE WHEN $4::boolean  THEN $5  ELSE try_url END,
+                stage_note         = CASE WHEN $6::boolean  THEN $7  ELSE stage_note END,
+                production_url     = CASE WHEN $8::boolean  THEN $9  ELSE production_url END,
+                production_since   = CASE WHEN $10::boolean THEN $11::date ELSE production_since END,
+                production_version = CASE WHEN $12::boolean THEN $13 ELSE production_version END,
+                production_access  = CASE WHEN $14::boolean THEN $15 ELSE production_access END,
+                stage_changed_at   = $16::timestamptz,
+                stage_changed_by   = $17,
+                updated_by         = $17,
+                updated_at         = $16::timestamptz
+          WHERE id = $1 AND stage = $2
+         RETURNING ${PROFILE_COLUMNS}`,
+        [
+          profileId,
+          input.from,
+          input.to,
+          input.tryUrl !== undefined,
+          input.tryUrl ?? null,
+          input.stageNote !== undefined,
+          input.stageNote ?? null,
+          input.productionUrl !== undefined,
+          input.productionUrl ?? null,
+          input.productionSince !== undefined,
+          input.productionSince ?? null,
+          input.productionVersion !== undefined,
+          input.productionVersion ?? null,
+          input.productionAccess !== undefined,
+          input.productionAccess ?? null,
+          input.at,
+          input.by,
+        ],
+      );
+      const row = res.rows[0];
+      return row ? profileOf(row) : null;
     },
 
     async createProductPost(input) {

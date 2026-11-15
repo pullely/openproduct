@@ -106,38 +106,45 @@ export function seatTotals(cards: readonly Pick<PublicProfileCard, "roleOpeningC
  */
 export function seatSub(seat: Pick<Seat, "commitment" | "demand"> & { product?: { stage?: ProductStage | null } }): string {
   // OPR-3 — the line opens with the stage of the seat's product (board
-  // `Seats`: "Shipping · …", "Idea · …") when the catalogue said it.
+  // `Seats`: "On stage · …", "Idea · …") when the catalogue said it.
   const stage = seat.product?.stage ? PRODUCT_STAGE_LABELS[seat.product.stage] : "";
   return [stage, seat.commitment?.trim() ?? "", demandLine(seat.demand) ?? ""].filter((part) => part.length > 0).join(" · ");
 }
 
 /**
  * The filter (openproduct-redesign OPR-3; boards `Seats`, `PhoneSeats`):
- * every seat, the seats on shipping products, the seats on ideas.
+ * every seat, then the seats at each of the four stages (SC-2).
  */
-export const SEAT_STAGE_FILTERS = ["all", "shipping", "idea"] as const satisfies readonly ("all" | ProductStage)[];
+export const SEAT_STAGE_FILTERS = ["all", "idea", "building", "stage", "production"] as const satisfies readonly (
+  | "all"
+  | ProductStage
+)[];
 export type SeatStageFilter = (typeof SEAT_STAGE_FILTERS)[number];
 
 export const SEAT_STAGE_FILTER_LABEL: Record<SeatStageFilter, string> = {
   all: "All",
-  shipping: "On shipping products",
   idea: "On ideas",
+  building: "Being built",
+  stage: "On stage",
+  production: "In production",
 };
 
 /** The segment the filtered lists live under, and each stage's word in it —
- *  the Products page's own (`/products/stage/shipping`, `…/ideas`). */
+ *  the Products page's own (`/products/stage/ideas`, `…/on-stage`). */
 export const SEATS_STAGE_SEGMENT = "stage";
 export const SEAT_STAGE_SEGMENT: Record<Exclude<SeatStageFilter, "all">, string> = {
-  shipping: "shipping",
   idea: "ideas",
+  building: "building",
+  stage: "on-stage",
+  production: "in-production",
 };
 export const SEAT_STAGE_SEGMENTS = Object.values(SEAT_STAGE_SEGMENT);
 
 /**
- * Where a filter lives: `/help-wanted`, `/help-wanted/stage/shipping`,
- * `/help-wanted/stage/ideas`. A PATH, NEVER A QUERY STRING — a page that
- * reads `?stage=` is rendered per request and goes out `no-store`; each of
- * these three is one static document (design.md §4, I6).
+ * Where a filter lives: `/help-wanted`, `/help-wanted/stage/ideas`,
+ * `/help-wanted/stage/on-stage`, …. A PATH, NEVER A QUERY STRING — a page
+ * that reads `?stage=` is rendered per request and goes out `no-store`; each
+ * of these five is one static document (design.md §4, I6).
  */
 export function seatsPath(stage: SeatStageFilter = "all"): string {
   return stage === "all" ? "/help-wanted" : `/help-wanted/${SEATS_STAGE_SEGMENT}/${SEAT_STAGE_SEGMENT[stage]}`;
@@ -145,8 +152,9 @@ export function seatsPath(stage: SeatStageFilter = "all"): string {
 
 /** The filter a `/help-wanted/stage/<segment>` address names, or null (a 404). */
 export function seatStageOfSegment(segment: unknown): Exclude<SeatStageFilter, "all"> | null {
-  if (segment === SEAT_STAGE_SEGMENT.shipping) return "shipping";
-  if (segment === SEAT_STAGE_SEGMENT.idea) return "idea";
+  for (const [stage, word] of Object.entries(SEAT_STAGE_SEGMENT)) {
+    if (segment === word) return stage as Exclude<SeatStageFilter, "all">;
+  }
   return null;
 }
 
@@ -156,17 +164,22 @@ export function seatStageCounts(
   cards: readonly (Pick<PublicProfileCard, "roleOpeningCount"> & { stage?: unknown })[],
 ): Record<SeatStageFilter, number> {
   const sum = (list: typeof cards) => list.reduce((total, card) => total + Math.max(card.roleOpeningCount, 0), 0);
+  const at = (stage: ProductStage) => sum(cards.filter((card) => card.stage === stage));
   return {
     all: sum(cards),
-    shipping: sum(cards.filter((card) => card.stage === "shipping")),
-    idea: sum(cards.filter((card) => card.stage === "idea")),
+    idea: at("idea"),
+    building: at("building"),
+    stage: at("stage"),
+    production: at("production"),
   };
 }
 
 /** What a filtered list says when it holds no seat. */
 export const SEATS_EMPTY_AT_STAGE: Record<Exclude<SeatStageFilter, "all">, string> = {
-  shipping: "No shipping product has an open seat right now.",
   idea: "No idea has an open seat right now.",
+  building: "No product being built has an open seat right now.",
+  stage: "No product on stage has an open seat right now.",
+  production: "No product in production has an open seat right now.",
 };
 
 /** The request-to-join door for a seat: the console's `/join/{token}` (OD4,

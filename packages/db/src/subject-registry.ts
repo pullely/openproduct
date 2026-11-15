@@ -165,6 +165,7 @@ export const OPENPRODUCT_SUBJECT_REGISTRY: readonly SubjectColumn[] = [
   { table: "profiles", column: "created_by", class: "record", export: "omit", nullable: false, reason: "The listing's provenance: who created it under the workspace's authority. The listing is the workspace's (OX5c); the creator's id becomes the tombstone." },
   { table: "profiles", column: "updated_by", class: "record", export: "omit", nullable: true, reason: "The listing's provenance, last editor." },
   { table: "profiles", column: "reviewed_by", class: "record", export: "omit", nullable: true, reason: "Who reviewed the listing before publication (TS1). The review happened; the reviewer is nulled." },
+  { table: "profiles", column: "stage_changed_by", class: "record", export: "omit", nullable: true, reason: "Who last moved the listing's stage (SC-2). The move happened; the mover becomes the tombstone, which no roster names, so Where it runs then says the crew set it." },
   { table: "launches", column: "scheduled_by", class: "record", export: "omit", nullable: false, reason: "A launch is the listing's record of a day (LC0). Who scheduled it becomes the tombstone." },
   { table: "launches", column: "cancelled_by", class: "record", export: "omit", nullable: true, reason: "Who cancelled a launch." },
   { table: "audit_log", column: "actor_id", class: "record", export: "omit", nullable: false, reason: "The studio's audit trail is a record of acts under the workspace's authority; the actor becomes the tombstone, the act stays." },

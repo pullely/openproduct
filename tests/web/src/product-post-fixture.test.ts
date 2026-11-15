@@ -31,11 +31,15 @@ import {
   PUBLIC_PROFILE_KEYS,
   PUBLIC_ROLE_OPENING_KEYS,
   SEARCH_PERSON_KEYS,
+  WHERE_IT_RUNS_KEYS,
+  WHERE_IT_RUNS_PRODUCTION_KEYS,
+  WHERE_IT_RUNS_STAGE_KEYS,
   isProductStage,
   milestoneCountsOf,
   validatePostBlocks,
   type CrewProductPost,
   type PublicProductPost,
+  type WhereItRuns,
 } from "@openproduct/contracts";
 
 import { fetchAuthorPosts, fetchFeedPage, fetchProductPost, fetchProductPosts, isDrawablePost } from "@openproduct-web/app/posts/posts-api";
@@ -100,11 +104,11 @@ const viaFixture = ((input: RequestInfo | URL, init?: RequestInit) => {
 }) as typeof fetch;
 
 describe("the feed", () => {
-  it("holds a post of every authored kind, across a shipping product and an idea", async () => {
+  it("holds a post of every authored kind, across a product on stage and an idea", async () => {
     const page = (await get<{ posts: PublicProductPost[]; next: string | null }>(PRODUCT_POST_API.feed())).data;
     expect(keys(page)).toEqual([...PRODUCT_POSTS_PAGE_KEYS]);
     expect([...new Set(page.posts.map((p) => p.kind))].sort()).toEqual([...AUTHORED_PRODUCT_POST_KINDS].sort());
-    expect([...new Set(page.posts.map((p) => p.product.stage))].sort()).toEqual(["idea", "shipping"]);
+    expect([...new Set(page.posts.map((p) => p.product.stage))].sort()).toEqual(["idea", "stage"]);
     expect(page.posts.find((p) => p.kind === "idea")!.product.slug).toBe(fixture.SAMPLE_IDEA_SLUG);
     expect(page.posts.find((p) => p.kind === "feature")!.product.slug).toBe(fixture.SAMPLE_SLUG);
     // The ids the lanes are told they can rely on are the ones served.
@@ -200,7 +204,8 @@ describe("stage and milestones on the product documents and cards", () => {
       expect(PUBLIC_PROFILE_CARD_KEYS.filter((key) => !(key in card))).toEqual([]);
       expect(isProductStage(card.stage)).toBe(true);
     }
-    expect(new Set(cards.map((c) => c.stage)).size).toBe(2);
+    // SC-2 — every one of the four stages is in the corpus.
+    expect([...new Set(cards.map((c) => c.stage))].sort()).toEqual(["building", "idea", "production", "stage"]);
   });
 
   it("a card carries its own progress and crew count, and they are the product document's", async () => {
@@ -240,30 +245,44 @@ describe("stage and milestones on the product documents and cards", () => {
     expect(await fetchAuthorPosts("nobody-here", null, viaFixture)).toBeNull();
   });
 
-  it("a shipping product has an address to try and shipped milestones; an idea has neither", async () => {
+  it("a product on stage has an address to try and shipped milestones; an idea has neither; each says where it runs", async () => {
     const read = async (slug: string) =>
       (await get<{ profile: Record<string, unknown> }>(`/v1/public/openproduct/projects/${slug}`)).data.profile as {
         stage: string;
         tryUrl: string | null;
         milestones: Array<{ shippedAt: string | null }>;
         milestoneCounts: { shipped: number; total: number };
+        whereItRuns: WhereItRuns;
       } & Record<string, unknown>;
-    const shipping = await read(fixture.SAMPLE_SLUG);
-    expect(shipping.stage).toBe("shipping");
-    expect(shipping.tryUrl).toMatch(/^https:\/\//);
-    expect(shipping.milestoneCounts).toEqual({ shipped: 3, total: 4 });
+    const onStage = await read(fixture.SAMPLE_SLUG);
+    expect(onStage.stage).toBe("stage");
+    expect(onStage.tryUrl).toMatch(/^https:\/\//);
+    expect(onStage.milestoneCounts).toEqual({ shipped: 3, total: 4 });
+    expect(onStage.whereItRuns.stage?.url).toBe(onStage.tryUrl);
+    expect(onStage.whereItRuns.production).toBeNull();
     const idea = await read(fixture.SAMPLE_IDEA_SLUG);
     expect(idea.stage).toBe("idea");
     expect(idea.tryUrl).toBeNull();
     expect(idea.milestoneCounts.shipped).toBe(0);
-    for (const profile of [shipping, idea, await read("product-04")]) {
-      // The counts are the list's own, and the stage follows them.
+    expect(idea.whereItRuns).toEqual({ stage: null, production: null });
+    const live = await read("product-03");
+    expect(live.stage).toBe("production");
+    expect(live.whereItRuns.production?.url).toMatch(/^https:\/\//);
+    expect(Object.keys(live.whereItRuns.production!).sort()).toEqual([...WHERE_IT_RUNS_PRODUCTION_KEYS]);
+    expect(Object.keys(onStage.whereItRuns.stage!).sort()).toEqual([...WHERE_IT_RUNS_STAGE_KEYS]);
+    for (const profile of [onStage, idea, live, await read("product-04"), await read("product-02")]) {
+      // The counts are the list's own. SC-2: the stage is set by hand, so it
+      // no longer follows them — but an idea has shipped nothing.
       expect(profile.milestoneCounts).toEqual(milestoneCountsOf(profile.milestones));
       expect(keys(profile.milestoneCounts)).toEqual([...MILESTONE_COUNTS_KEYS]);
-      expect(profile.stage).toBe(profile.milestoneCounts.shipped > 0 ? "shipping" : "idea");
+      expect(isProductStage(profile.stage)).toBe(true);
+      if (profile.stage === "idea") expect(profile.milestoneCounts.shipped).toBe(0);
+      // A stage link only on stage or in production.
+      expect(profile.tryUrl !== null).toBe(profile.stage === "stage" || profile.stage === "production");
+      expect(keys(profile.whereItRuns)).toEqual([...WHERE_IT_RUNS_KEYS]);
       for (const milestone of profile.milestones) expect(keys(milestone)).toEqual([...PUBLIC_MILESTONE_KEYS]);
       // Every key the contract names is there (optional ones may be absent).
-      for (const key of ["stage", "tryUrl", "milestones", "milestoneCounts"]) {
+      for (const key of ["stage", "tryUrl", "milestones", "milestoneCounts", "whereItRuns"]) {
         expect([...PUBLIC_PROFILE_KEYS]).toContain(key);
       }
     }
@@ -402,7 +421,7 @@ describe("the crew routes, for the signed-in maker", () => {
     expect(posts.map((p) => p.state)).toEqual(["draft", "published", "published", "published"]);
     for (const post of posts) expect(keys(post)).toEqual([...CREW_PRODUCT_POST_KEYS]);
     const milestones = (await get<{ milestones: Array<{ id: string; shippedAt: string | null }>; stage: string }>(PRODUCT_POST_API.crewMilestones(org, profile))).data;
-    expect(milestones.stage).toBe("shipping");
+    expect(milestones.stage).toBe("stage");
     expect(milestones.milestones.map((m) => m.shippedAt !== null)).toEqual([true, true, true, false]);
     for (const milestone of milestones.milestones) {
       expect(keys(milestone)).toEqual([...CREW_MILESTONE_KEYS]);
@@ -433,6 +452,9 @@ describe("the crew routes, for the signed-in maker", () => {
     expect([shipped.data.offeredPost?.kind, shipped.data.offeredPost?.state]).toEqual(["feature", "draft"]);
     const unshipped = await get<{ offeredPost: unknown }>(A.crewMilestoneShipped(org, profile, last), { method: "DELETE" });
     expect(unshipped.data.offeredPost).toBeNull();
+    // SC-2 — Change stage answers with the stage it moved to.
+    const moved = await get<{ stage: string; posted: boolean }>(A.crewStage(org, profile), sendJson("PUT", { to: "production" }));
+    expect(moved.data).toEqual({ stage: "production", milestone: null, posted: false });
     const reordered = await get<{ milestones: Array<{ id: string }> }>(
       A.crewMilestones(org, profile),
       sendJson("PUT", { order: [...milestones].reverse().map((m) => m.id) }),

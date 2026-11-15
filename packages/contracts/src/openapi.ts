@@ -147,7 +147,13 @@ export function propsFor(keys: readonly string[], deprecations: readonly ApiDepr
       out[key] = {
         $ref: "#/components/schemas/Fact",
         description:
-          "Whether the product is an idea or is shipping: `idea` until its crew marks its first milestone shipped, `shipping` while at least one is. Derived from the milestones (`product.stage`), never set by hand, and not an ordering input.",
+          "Where the product is: `idea`, `building` (code and a first milestone), `stage` (people can try it) or `production` (real people use it). ALWAYS `authored` since SC1 — the crew sets it by hand, one step at a time, and each step asks for its own inputs; milestones no longer move it. Before SC1 this was derived from the milestones as `idea` or `shipping`; every `shipping` product became `stage` when it had a try link and `building` when it did not. Not an ordering input.",
+      };
+    } else if (key === "whereItRuns") {
+      out[key] = {
+        $ref: "#/components/schemas/Fact",
+        description:
+          "Where the product runs: `{stage, production}`. `stage` is `{url, note, setBy, at}` while the product is on stage or in production and has a stage link, else `null`; `production` is `{url, since, version, access, setBy, at}` while it is in production, else `null`. `since` is a `YYYY-MM-DD` day, `access` is `everyone`, `waitlist` or `invite`. `setBy` is `{kind: \"crew\", name, handle}` — name and handle `null` for a crew member who is not on the public roster — or `null` when nobody is recorded. ALWAYS `authored`: nothing here has checked that an address answers.",
       };
     } else if (key === "tryUrl") {
       out[key] = {

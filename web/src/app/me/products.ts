@@ -3,8 +3,8 @@
 //
 // TWO THINGS OPR1 LEFT OUT, each from a read that exists now:
 //
-//   the stage     a published product's public document says whether it is an
-//                 idea or is shipping, how many of its milestones shipped and
+//   the stage     a published product's public document says which of the
+//                 four stages it is at (SC-2), how many of its milestones shipped and
 //                 which seats are open — the row under "Your products" says
 //                 the same thing a visitor's page does, because it is the
 //                 same read.
@@ -23,6 +23,7 @@ import {
   POST_BLOCK_CATALOGUE,
   PRODUCT_POST_KIND_LABELS,
   isAuthoredProductPostKind,
+  isProductStage,
   listingSettingsPath,
   postBlockValue,
   type CrewProductPost,
@@ -33,7 +34,7 @@ import {
 
 import { HEADLINE_BLOCK } from "../posts/blocks";
 import { fetchNeedsYou, type CrewFetch } from "../posts/crew-api";
-import { milestoneProgress } from "../ui/stage";
+import { isBuilt, milestoneProgress } from "../ui/stage";
 
 import type { MyListing } from "./listings";
 
@@ -52,7 +53,7 @@ export interface MyProductStanding {
 export function standingOf(
   profile: Pick<PublicProfile, "stage" | "milestoneCounts" | "roleOpenings"> | null,
 ): MyProductStanding | null {
-  if (!profile || (profile.stage !== "idea" && profile.stage !== "shipping")) return null;
+  if (!profile || !isProductStage(profile.stage)) return null;
   return {
     stage: profile.stage,
     milestoneCounts: profile.milestoneCounts ?? null,
@@ -61,12 +62,12 @@ export function standingOf(
 }
 
 /**
- * The line under a product's name (board `Me`: "Shipping · 3 of 4 milestones
+ * The line under a product's name (board `Me`: "On stage · 3 of 4 milestones
  * · 2 open seats"). Each part is said only when it is true: no milestone
  * count for a product with none, no "0 open seats".
  */
 export function standingLine(standing: MyProductStanding): string {
-  const progress = standing.stage === "shipping" ? milestoneProgress(standing.milestoneCounts) : null;
+  const progress = isBuilt(standing.stage) ? milestoneProgress(standing.milestoneCounts) : null;
   return [
     PRODUCT_STAGE_LABELS[standing.stage],
     progress ? `${progress} milestones` : null,

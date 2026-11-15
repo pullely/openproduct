@@ -366,7 +366,9 @@ export async function loadCorpus(sql: SqlExecutor, shape: CorpusShape): Promise<
   );
 
   // ── OPR-3: milestones on every fifth listing (four each, the first two
-  //    shipped, so those listings are `shipping`), and product posts on
+  //    shipped, so those listings are `building` — SC-2: a stage is set by
+  //    hand, and a crew with shipped milestones has at least begun), and
+  //    product posts on
   //    every other listing — two published and one draft each, every
   //    published one with its comment thread, a comment, and reactions.
   await step(
@@ -378,7 +380,7 @@ export async function loadCorpus(sql: SqlExecutor, shape: CorpusShape): Promise<
   );
   await step(
     "profiles.stage",
-    `UPDATE openproduct.profiles p SET stage = 'shipping'
+    `UPDATE openproduct.profiles p SET stage = 'building'
       WHERE EXISTS (SELECT 1 FROM openproduct.product_milestones m WHERE m.profile_id = p.id AND m.shipped_at IS NOT NULL)`,
   );
   await step(

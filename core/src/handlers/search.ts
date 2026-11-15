@@ -35,6 +35,7 @@ import {
   type Candidate,
   type SearchPersonHit,
 } from "@openproduct/contracts";
+import type { ProductStage } from "@openproduct/contracts";
 import type { OpenproductRepository } from "@openproduct/db";
 
 import type { Env } from "../env.js";
@@ -179,17 +180,17 @@ export async function handleSearch(
   const [thumbnailFor, stages, productsOf] = await Promise.all([
     thumbnailsForSlugs(deps.repo, productSlugs).catch(() => () => null),
     productSlugs.length === 0
-      ? Promise.resolve(new Map<string, "idea" | "shipping">())
-      : decoration(() => deps.repo.listStagesForSlugs(productSlugs), new Map<string, "idea" | "shipping">()),
+      ? Promise.resolve(new Map<string, ProductStage>())
+      : decoration(() => deps.repo.listStagesForSlugs(productSlugs), new Map<string, ProductStage>()),
     matchedPeople.length === 0
-      ? Promise.resolve(new Map<string, Array<{ slug: string; stage: "idea" | "shipping" }>>())
+      ? Promise.resolve(new Map<string, Array<{ slug: string; tagline: string | null; stage: ProductStage }>>())
       : decoration(
           () =>
             deps.repo.listProductsForHandles(
               matchedPeople.map((person) => person.handle),
               SEARCH_MAKER_PRODUCT_LIMIT,
             ),
-          new Map<string, Array<{ slug: string; stage: "idea" | "shipping" }>>(),
+          new Map<string, Array<{ slug: string; tagline: string | null; stage: ProductStage }>>(),
         ),
   ]);
   const results = ranked.map((hit) =>

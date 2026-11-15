@@ -18,7 +18,7 @@ import { publicApexOrigin } from "../../../../../public-api";
  * OPR-3): `/products/stage/<stage>/by/<order>`.
  *
  * THE TWO PATH SCHEMES COMPOSE: the stage first, then the order, each the
- * same segment it is on its own. Two stages by two orders is four addresses,
+ * same segment it is on its own. Four stages by two orders is eight addresses,
  * all prerendered, each one static document (I6, design.md §4).
  */
 export const revalidate = 60;
@@ -37,7 +37,7 @@ export async function generateMetadata({ params }: { params: Params }): Promise<
   const origin = publicApexOrigin();
   return {
     title: `Products — ${PRODUCT_STAGE_FILTER_LABEL[stage].toLowerCase()}, ${PRODUCT_SORT_LABEL[sort].toLowerCase()}`,
-    description: "Products built in the open, by stage: the ones that are shipping, and the ideas that are not built yet.",
+    description: "Products built in the open, by stage: ideas, products being built, products on stage that people can try, and products in production.",
     ...(origin ? { alternates: { canonical: `${origin}${productsPath(sort, stage)}` } } : {}),
   };
 }

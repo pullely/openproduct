@@ -7,11 +7,12 @@ import { HelpWantedView } from "../../seats-view";
 
 /**
  * Help wanted, on one stage (openproduct-redesign OPR-3; boards `Seats`,
- * `PhoneSeats`): `/help-wanted/stage/shipping`, `/help-wanted/stage/ideas`.
+ * `PhoneSeats`): `/help-wanted/stage/ideas`, `…/building`, `…/on-stage`,
+ * `…/in-production` (SC-2: the four stages).
  *
  * THE FILTER IS AN ADDRESS, for the reason the Products page's is: a page
  * that reads `?stage=` goes out `no-store`; each of these is one static
- * document, the same bytes for every visitor (I6, design.md §4). Both are
+ * document, the same bytes for every visitor (I6, design.md §4). All are
  * prerendered; a segment that is not a stage is a 404.
  */
 export const revalidate = 60;

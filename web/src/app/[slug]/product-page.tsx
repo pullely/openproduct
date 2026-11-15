@@ -100,7 +100,7 @@ import { ProductTile } from "../ui/product-tile";
 import { ReportControl } from "../ui/report-control";
 import { SaveControl } from "../ui/save-control";
 import { IDEA_MARK, IDEA_NEEDS_BUILDER, milestoneProgress } from "../ui/stage";
-import { StageMark } from "../ui/stage-mark";
+import { StageBadge } from "../ui/stage-badge";
 import { DelistedNote, ListingTombstone } from "../ui/tombstone";
 import { VoteBox } from "../ui/vote-box";
 
@@ -123,6 +123,8 @@ import { ObservedRow } from "./observed-row";
 import { SECTION_ATTRIBUTE, SECTION_CARD, SECTION_PROSE } from "./sections";
 import { ShareControl } from "./share-control";
 import { WORKSPACE_VIEW_LABEL, workspaceConsentPath } from "./workspace-view";
+import { liveAction, stageStartOf } from "./where-it-runs";
+import { WhereItRunsStrip } from "./where-it-runs-strip";
 import {
   PRODUCT_TABS_LABEL,
   PRODUCT_TAB_LABELS,
@@ -138,14 +140,16 @@ import { WouldUseButton } from "./would-use";
  * A product's page (openproduct-redesign OPR-3; boards `Product`,
  * `PhoneProduct`, `ProductIdea`, `PhoneProductIdea`).
  *
- * ONE ADDRESS, TWO PAGES. The public product document says whether the
- * product is `shipping` or an `idea`, and that alone picks the page
- * (`pageKindOf`). Both are public, cached, and the same bytes for every
- * visitor.
+ * ONE ADDRESS, TWO PAGES. The public product document says the product's
+ * stage, and that alone picks the page (`pageKindOf`): an `idea` draws the
+ * idea page, and building, on stage and in production (SC-2) draw the
+ * tabbed one. Both are public, cached, and the same bytes for every visitor.
+ * Under either header, for everyone: Where it runs (SC-2, design §1.5).
  *
  *   shipping  the header card — the cover, the logo, the name with its stage
- *             mark (`SHIPPING · 3 OF 4`), the one-line pitch, a line of
- *             facts, Follow / Take a seat / Try it — then the four tabs, each
+ *             badge (`ON STAGE · 3 OF 4`), the one-line pitch, a line of
+ *             facts, Follow / Take a seat / Try it (Open it, in production)
+ *             — then the four tabs, each
  *             a route of its own (`tabs.ts`): Updates (the product's posts),
  *             About (what it does, milestones, details), Crew (the people,
  *             the open seats), Talk (the discussion). Beside them: Crew,
@@ -378,6 +382,7 @@ async function ShippingPage({
   const thumbnail = thumbnailOf(profile.media);
   const seatsHref = `${productTabPath(slug, "crew")}#${SEATS_ANCHOR}`;
   const here = productTabPath(slug, tab);
+  const live = liveAction(profile);
 
   return (
     <main className={BOARD_PAGE}>
@@ -400,12 +405,11 @@ async function ShippingPage({
               <ProductTile slug={slug} thumbnail={thumbnail} size={76} phoneSize={52} className={HERO_TILE} />
               <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1.5 max-sm:flex-col max-sm:items-start max-sm:gap-0.5">
                 <h1 className={`${PAGE_TITLE} min-w-0 break-words`}>{slug}</h1>
-                {/* THE STAGE MARK, beside the name: an amber dot and
-                    `SHIPPING · 3 OF 4` — `SHIPPING` alone when the product
-                    has no milestones to count. */}
-                <span data-hero-stage className="inline-flex items-center gap-1.5">
-                  <span aria-hidden="true" className="h-2 w-2 shrink-0 rounded-full bg-amber max-sm:h-[7px] max-sm:w-[7px]" />
-                  <StageMark stage="shipping" counts={profile.milestoneCounts} />
+                {/* THE STAGE BADGE, beside the name (SC-2): the stage's own
+                    colour and `ON STAGE · 3 OF 4` — the stage alone when the
+                    product has no milestones to count. */}
+                <span data-hero-stage className="inline-flex items-center">
+                  <StageBadge stage={profile.stage} counts={profile.milestoneCounts} />
                 </span>
                 {marks.length > 0 || isNew ? (
                   <span className="flex flex-wrap items-center gap-1.5">
@@ -433,7 +437,7 @@ async function ShippingPage({
             </div>
             {/* The one-line pitch — and, for the crew, the form that edits
                 it in place. */}
-            <ProductPitch slug={slug} tagline={profile.tagline} tryUrl={profile.tryUrl} look="shipping" />
+            <ProductPitch slug={slug} tagline={profile.tagline} tryUrl={profile.tryUrl} start={stageStartOf(profile)} look="shipping" />
             {/* The line of facts: category · licence · hosting · followers ·
                 open seats. Each is what the data holds and is absent when it
                 holds nothing (TP0, CT1). */}
@@ -469,8 +473,9 @@ async function ShippingPage({
                 crew, on Manage: Edit details, Try it, New post — Follow and
                 Take a seat step aside (`VisitorOnly`), after load.
 
-                "TRY IT" ONLY WITH `tryUrl`: the address the crew gave for
-                the running product. No address, no button. */}
+                "TRY IT" ONLY WITH `tryUrl`: the stage link the crew gave.
+                In production it is "OPEN IT", to the production link
+                (SC-2, `liveAction`). No address, no button. */}
             <div
               data-hero-actions
               className="flex flex-wrap justify-end gap-2 max-sm:grid max-sm:grid-cols-2 max-sm:[&>*:last-child:nth-child(odd)]:col-span-2"
@@ -492,9 +497,9 @@ async function ShippingPage({
                 ) : null}
               </VisitorOnly>
               <MakerHeaderActions slug={slug} look="shipping" />
-              {profile.tryUrl ? (
-                <a href={profile.tryUrl} rel="noreferrer noopener" data-try-it className={BTN_INK}>
-                  Try it
+              {live ? (
+                <a href={live.href} rel="noreferrer noopener" data-try-it className={BTN_INK}>
+                  {live.label}
                   <Glyph d="M4.5 11.5 11.5 4.5M6 4.5h5.5V10" />
                 </a>
               ) : null}
@@ -531,6 +536,9 @@ async function ShippingPage({
           </ul>
         </nav>
       </section>
+
+      {/* ── where it runs (SC-2, board `Product`) ─────────────────────── */}
+      <WhereItRunsStrip profile={profile} />
 
       <MakerChrome slug={slug} />
 
@@ -758,8 +766,9 @@ function AboutTab({ profile, now }: { profile: PublicProfile; now: number }) {
 // ─── the idea page ─────────────────────────────────────────────────────────
 
 /** Where an idea stands (board `ProductIdea`): three steps, the first one
- *  current — an idea becomes a shipping product when its first milestone
- *  ships, and then this page is the other one. */
+ *  current — an idea becomes a product being built when its crew moves it to
+ *  Building (SC-2, with a repository and a first milestone), and then this
+ *  page is the other one. */
 export const IDEA_STEPS = ["Idea", "First builder", "First milestone"] as const;
 
 /** The idea post's three blocks, as the page's "The problem" reads them. */
@@ -818,7 +827,7 @@ async function IdeaPage({ read, profile }: { read: ListingRead; profile: PublicP
         </div>
         {/* The idea in one line, as the serif quote — and, for the crew, the
             form that edits it in place. */}
-        <ProductPitch slug={slug} tagline={profile.tagline} tryUrl={profile.tryUrl} look="idea" />
+        <ProductPitch slug={slug} tagline={profile.tagline} tryUrl={profile.tryUrl} start={stageStartOf(profile)} look="idea" />
         <HeroFacts tone="idea">
           {maker ? (
             <span>
@@ -891,6 +900,9 @@ async function IdeaPage({ read, profile }: { read: ListingRead; profile: PublicP
         <SecondaryActs profile={profile} upvote={null} />
       </section>
 
+      {/* ── where it runs (SC-2): an idea runs nowhere yet, and says so ── */}
+      <WhereItRunsStrip profile={profile} />
+
       <MakerChrome slug={slug} />
 
       <div className={BOARD_COLUMNS}>
@@ -898,8 +910,8 @@ async function IdeaPage({ read, profile }: { read: ListingRead; profile: PublicP
           <MakerSlot name="needs-you">
             <NeedsYou slug={slug} />
           </MakerSlot>
-          {/* The crew's way from an idea to a shipping product: add the
-              first milestone, and ship it. Crew only, after load. */}
+          {/* The idea's milestones, for its crew. Moving it on is Change
+              stage, inside Edit details (SC-2). Crew only, after load. */}
           <MakerSlot name="milestones">
             <MilestonesManager slug={slug} standalone />
           </MakerSlot>

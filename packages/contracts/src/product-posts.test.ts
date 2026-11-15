@@ -329,9 +329,12 @@ describe("the wire", () => {
     expect(milestoneCountsOf([])).toEqual({ shipped: 0, total: 0 });
   });
 
-  it("a stage is idea or shipping", () => {
+  it("a stage is idea, building, stage or production (SC-2); shipping is retired", () => {
     expect(isProductStage("idea")).toBe(true);
-    expect(isProductStage("shipping")).toBe(true);
+    expect(isProductStage("building")).toBe(true);
+    expect(isProductStage("stage")).toBe(true);
+    expect(isProductStage("production")).toBe(true);
+    expect(isProductStage("shipping")).toBe(false);
     expect(isProductStage("shipped")).toBe(false);
   });
 

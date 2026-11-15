@@ -2,6 +2,7 @@ import type { MediaFact, MediaThumbnail } from "./media.js";
 import type { Demand } from "./demand.js";
 import type { Change } from "./snapshots.js";
 import type { MilestoneCounts, ProductStage, PublicMilestone } from "./product-posts.js";
+import type { WhereItRuns } from "./stage-change.js";
 
 // The public plane's wire contracts (saas-openproduct OD0).
 //
@@ -112,8 +113,8 @@ export interface PublicProfileCard {
   metrics: PublicMetric[];
   /** MD3 — the hero for the row's tile, or `null` for the monogram. Never an ordering input (OPC-4). */
   thumbnail: MediaThumbnail | null;
-  /** OPR-3 — `idea` until the product's first milestone ships, then
-   *  `shipping`. On the card so a list can filter and label by it. */
+  /** OPR-3, SC-2 — idea, building, stage or production, as the crew set it.
+   *  On the card so a list can filter and label by it. */
   stage: ProductStage;
   /** OPR-3 — how many of the product's milestones have shipped, of how many,
    *  so a card draws "3 of 4" and its bars without a read per card. Zero of
@@ -274,10 +275,19 @@ export interface PublicProfile {
   pricing: string | null;
   repoUrl: string | null;
   liveUrl: string | null;
-  /** OPR-3 — `idea` until the first milestone ships, then `shipping`. */
+  /** OPR-3, SC-2 — idea, building, stage or production, set by the crew one
+   *  step at a time (`validateStageChange`). Milestones no longer move it. */
   stage: ProductStage;
-  /** OPR-3 — the address of the running product, shown as "Try it". */
+  /** OPR-3 — the stage link: the address people try the product at, shown
+   *  as "Try it" (SC-2: "Open it" goes to the production link instead). */
   tryUrl: string | null;
+  /**
+   * SC-2 — the strip under the header: the STAGE row and the PRODUCTION row,
+   * each with its address and who set it and when. Optional on the wire, like
+   * `launch`: a document cached before SC1 has no such key, and the page then
+   * says "Not on stage yet" and "Not in production yet".
+   */
+  whereItRuns?: WhereItRuns;
   /** OPR-3 — the product's milestones, in the crew's order. */
   milestones: PublicMilestone[];
   /** OPR-3 — "3 of 4": how many of them have shipped. */
@@ -461,7 +471,7 @@ export const PUBLIC_PROFILE_CARD_KEYS = [
   "slug",
   "stack",
   "stackCanonical",
-  // OPR-3 — idea or shipping, so a list can filter and label by it. This
+  // OPR-3, SC-2 — the stage, so a list can filter and label by it. This
   // literal edit is the reviewable act.
   "stage",
   "tagline",
@@ -525,11 +535,14 @@ export const PUBLIC_PROFILE_KEYS = [
   "slug",
   "stack",
   "stackCanonical",
-  // OPR-3 — idea or shipping; it follows the milestones.
+  // OPR-3, SC-2 — the four stages, set by the crew.
   "stage",
   "tagline",
   // OPR-3 — the address of the running product, shown as "Try it".
   "tryUrl",
+  // SC-2 — Where it runs: the stage and production rows. This literal edit is
+  // the reviewable act the exact-key-set test forces.
+  "whereItRuns",
   // OPR5 — the attested public workspace's console ref (seam S12). This
   // literal edit is the reviewable act the exact-key-set test forces.
   "workspaceRef",
@@ -612,11 +625,19 @@ export interface MaintainerProfile {
    * grant's grantedAt); null = pre-seam listing, publish refuses with
    * `workspace_link_required` until the link flow runs. */
   workspaceLinkedAt?: string | null;
-  /** OPR-3 — `idea` until the first milestone ships. Read-only: it follows
-   *  the milestones. */
+  /** OPR-3, SC-2 — the stage. Read-only here: it moves through
+   *  `PUT …/stage`, one step at a time. */
   stage?: ProductStage;
-  /** OPR-3 — the address of the running product. */
+  /** OPR-3 — the stage link. */
   tryUrl?: string | null;
+  /** SC-2 — what each step wrote, so the Change stage popup starts from the
+   *  crew's own words. */
+  stageNote?: string | null;
+  productionUrl?: string | null;
+  productionSince?: string | null;
+  productionVersion?: string | null;
+  productionAccess?: string | null;
+  stageChangedAt?: string | null;
 }
 
 export interface CreateProfileRequest {
@@ -1195,3 +1216,5 @@ export * from "./snapshots.js";
  */
 export * from "./product-posts.js";
 export * from "./product-post-blocks.js";
+/** SC-2 (openproduct-stages-crew) — one step at a time, and where it runs. */
+export * from "./stage-change.js";

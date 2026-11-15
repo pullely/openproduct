@@ -6,8 +6,11 @@ import { useRouter } from "next/navigation";
 import { BTN_INK, FOCUS } from "../../ui/design";
 import { AppLink } from "../../ui/link";
 
+import type { StageStart } from "../where-it-runs";
+
 import { crewWrite, fieldError } from "./act";
 import type { Look } from "./details";
+import { StageRow } from "./stage-row";
 import { TAGLINE_LIMIT, canSaveDetails, manageRoute, moreSettingsLinks, taglineCount } from "./model";
 import { rememberTagline, setEditing, useMaker } from "./use-maker";
 
@@ -19,7 +22,19 @@ import { rememberTagline, setEditing, useMaker } from "./use-maker";
  * (`details.tsx` imports it with `React.lazy`): a visitor's browser never
  * downloads a form it can never open.
  */
-export function DetailsForm({ slug, tagline, tryUrl, look }: { slug: string; tagline: string; tryUrl: string; look: Look }) {
+export function DetailsForm({
+  slug,
+  tagline,
+  tryUrl,
+  start,
+  look,
+}: {
+  slug: string;
+  tagline: string;
+  tryUrl: string;
+  start: StageStart;
+  look: Look;
+}) {
   const router = useRouter();
   const [pitch, setPitch] = React.useState(tagline);
   const [address, setAddress] = React.useState(tryUrl);
@@ -78,7 +93,7 @@ export function DetailsForm({ slug, tagline, tryUrl, look }: { slug: string; tag
         {pitchError ? <FieldError>{pitchError}</FieldError> : null}
       </label>
       <label className="flex flex-col gap-1.5">
-        <span className="text-[13px] font-semibold text-foreground">Try it address</span>
+        <span className="text-[13px] font-semibold text-foreground">Stage link</span>
         <input
           name="tryUrl"
           type="url"
@@ -90,6 +105,10 @@ export function DetailsForm({ slug, tagline, tryUrl, look }: { slug: string; tag
         />
         {addressError ? <FieldError>{addressError}</FieldError> : null}
       </label>
+      {/* SC-2 — the Stage row (board `Product`): the badge, what is next,
+          and Change stage, which opens the popup. Its own act: it moves the
+          stage at once, and Save below saves the fields above it. */}
+      <StageRow slug={slug} start={start} look={look} />
       {failed ? <FieldError>{failed}</FieldError> : null}
       <MoreSettings slug={slug} />
       <div className="flex flex-wrap items-center justify-end gap-2 max-sm:grid max-sm:grid-cols-2">

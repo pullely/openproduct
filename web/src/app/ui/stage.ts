@@ -1,10 +1,16 @@
-// A product's stage, in words (openproduct-redesign OPR-3, design §6.1).
+// A product's stage, in words (openproduct-redesign OPR-3; openproduct-stages-
+// crew SC-2, design §1).
 //
-// A product is an IDEA until its first milestone ships and SHIPPING from then
-// on. Lists say which: a word beside a name (the search rows), a mono mark
-// over a card (`SHIPPING · 3 OF 4`), a line under a profile's product
-// (`shipping, 3 of 4`). Every one of those strings is built here, so a list
-// cannot spell the stage its own way.
+// FOUR STAGES, set by the crew one step at a time: IDEA, BUILDING, ON STAGE,
+// IN PRODUCTION. Lists say which: a word beside a name (the search rows), a
+// mono mark over a card (`ON STAGE · 3 OF 4`), a line under a profile's
+// product (`on stage, 3 of 4`). Every one of those strings is built here, so
+// a list cannot spell the stage its own way.
+//
+// ONE COLOUR PER STAGE (design §1.1; no red unless it is danger): lavender
+// for an idea, amber for building, slate for on stage, green for in
+// production — `STAGE_TONE`, in `stage-tone.ts`, so the header search's
+// bundle (which reads this file) does not carry the class strings.
 //
 // PURE, AND NO JSX: the web test lane is module-level, and the header search's
 // row model (`shell/palette-rows.ts`) imports this from a module that must
@@ -17,7 +23,15 @@ import {
   type ProductStage,
 } from "@openproduct/contracts";
 
-/** `Shipping` / `Idea` — the word a row wears. */
+/** Whether the product has been built at all — every stage but an idea.
+ *  These draw progress bars and the tabbed product page. Spelt here rather
+ *  than imported: this module is in every page's bundle (the header search
+ *  reads it), so it carries only what a word needs. */
+export function isBuilt(stage: ProductStage): boolean {
+  return stage !== "idea";
+}
+
+/** `On stage` / `Idea` — the word a row wears. */
 export function stageWord(stage: ProductStage): string {
   return PRODUCT_STAGE_LABELS[stage];
 }
@@ -66,7 +80,7 @@ export function needsFirstBuilder(crewCount: number | null | undefined): boolean
 
 /**
  * The mono mark, in sentence case (the mark's class uppercases it):
- * `Shipping · 3 of 4`, `Shipping` when there is nothing to count,
+ * `On stage · 3 of 4`, `Building` when there is nothing to count,
  * `An idea, not built yet` — or `Idea` when `short`.
  */
 export function stageMarkText(
@@ -76,14 +90,14 @@ export function stageMarkText(
 ): string {
   if (stage === "idea") return options.short ? IDEA_MARK_SHORT : IDEA_MARK;
   const progress = milestoneProgress(counts);
-  return progress ? `${PRODUCT_STAGE_LABELS.shipping} · ${progress}` : PRODUCT_STAGE_LABELS.shipping;
+  return progress ? `${PRODUCT_STAGE_LABELS[stage]} · ${progress}` : PRODUCT_STAGE_LABELS[stage];
 }
 
-/** The lower-case line a profile's product row carries: `shipping, 3 of 4`,
- *  `shipping`, `idea`. */
+/** The lower-case line a profile's product row carries: `on stage, 3 of 4`,
+ *  `building`, `idea`. */
 export function stageLine(stage: ProductStage, counts?: MilestoneCounts | null): string {
   const word = PRODUCT_STAGE_LABELS[stage].toLowerCase();
-  const progress = stage === "shipping" ? milestoneProgress(counts) : null;
+  const progress = isBuilt(stage) ? milestoneProgress(counts) : null;
   return progress ? `${word}, ${progress}` : word;
 }
 

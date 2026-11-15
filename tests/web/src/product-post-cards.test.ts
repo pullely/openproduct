@@ -87,7 +87,7 @@ function part(name: string, file = CARD): string {
 const post = (kind: ProductPostKind, blocks: Array<[string, string]>, over: Partial<PublicProductPost> = {}): PublicProductPost => ({
   id: `ppo_${"0".repeat(31)}1`,
   kind,
-  product: { slug: "ackstack", name: "ackstack", stage: "shipping", logo: null, milestoneCounts: { shipped: 3, total: 4 } },
+  product: { slug: "ackstack", name: "ackstack", stage: "stage", logo: null, milestoneCounts: { shipped: 3, total: 4 } },
   author: { handle: "ada", displayName: "Ada Lovelace" },
   blocks: blocks.map(([block, value]) => ({ block, value })),
   publishedAt: "2026-05-30T10:00:00.000Z",
@@ -157,10 +157,12 @@ describe("one card per kind, and the kind is the card's shape", () => {
     expect(seat).toContain("SEAT_RING");
     expect(seat).toContain("Take the seat");
     expect(seat).toContain("seatHref ?? productSeatsPath(post.product.slug, post.product.stage)");
-    // The address the seats are AT, not one that forwards to it: a shipping
+    // The address the seats are AT, not one that forwards to it: a built
     // product's Crew tab, an idea's one page. With no stage to go by, the
     // Crew tab (an idea's page answers its tab addresses with itself).
-    expect(productSeatsPath("ackstack", "shipping")).toBe("/ackstack/crew#people-wanted");
+    expect(productSeatsPath("ackstack", "stage")).toBe("/ackstack/crew#people-wanted");
+    expect(productSeatsPath("ackstack", "building")).toBe("/ackstack/crew#people-wanted");
+    expect(productSeatsPath("ackstack", "production")).toBe("/ackstack/crew#people-wanted");
     expect(productSeatsPath("ackstack")).toBe("/ackstack/crew#people-wanted");
     expect(productSeatsPath("beacon24", "idea")).toBe("/beacon24#people-wanted");
     // The anchor it points at is on the product page.
@@ -522,21 +524,26 @@ describe("nothing personal is in a server render", () => {
 
 describe("the stage pieces lists share", () => {
   it("say the stage in the contract's words", () => {
-    expect(stageWord("shipping")).toBe("Shipping");
+    expect(stageWord("building")).toBe("Building");
+    expect(stageWord("stage")).toBe("On stage");
+    expect(stageWord("production")).toBe("In production");
     expect(stageWord("idea")).toBe("Idea");
-    expect(stageWordOf("shipping")).toBe("Shipping");
+    expect(stageWordOf("stage")).toBe("On stage");
+    // OPR-3's `shipping` is retired (SC-2): a value that says it is no stage.
+    expect(stageWordOf("shipping")).toBeNull();
     expect(stageWordOf(null)).toBeNull();
     expect(stageWordOf("beta")).toBeNull();
   });
 
-  it("write the mono mark: SHIPPING · 3 OF 4, or an idea, not built yet", () => {
+  it("write the mono mark: ON STAGE · 3 OF 4, or an idea, not built yet", () => {
     // Sentence case in the string; the mark's class uppercases it.
-    expect(stageMarkText("shipping", { shipped: 3, total: 4 })).toBe("Shipping · 3 of 4");
-    expect(stageMarkText("shipping", { shipped: 0, total: 0 })).toBe("Shipping");
-    expect(stageMarkText("shipping", null)).toBe("Shipping");
+    expect(stageMarkText("stage", { shipped: 3, total: 4 })).toBe("On stage · 3 of 4");
+    expect(stageMarkText("building", { shipped: 0, total: 0 })).toBe("Building");
+    expect(stageMarkText("production", null)).toBe("In production");
     expect(stageMarkText("idea", { shipped: 0, total: 2 })).toBe("An idea, not built yet");
     expect(stageMarkText("idea", null, { short: true })).toBe("Idea");
-    expect(stageLine("shipping", { shipped: 3, total: 4 })).toBe("shipping, 3 of 4");
+    expect(stageLine("stage", { shipped: 3, total: 4 })).toBe("on stage, 3 of 4");
+    expect(stageLine("production", { shipped: 4, total: 4 })).toBe("in production, 4 of 4");
     expect(stageLine("idea", { shipped: 0, total: 2 })).toBe("idea");
     expect(IDEA_NEEDS_BUILDER).toBe("Needs a first builder");
     const mark = read("ui/stage-mark.tsx");

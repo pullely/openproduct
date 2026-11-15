@@ -493,7 +493,7 @@ export const FORMULAS = {
   "product.stage": {
     id: "product.stage",
     sentence:
-      "Whether a product is an idea or is shipping. A product is an idea until its crew marks its first milestone shipped, and shipping for as long as at least one milestone is. It is read from the milestones and never set by hand, and it orders nothing.",
+      "Retired at SC1. Until then: whether a product was an idea or was shipping — an idea until its crew marked its first milestone shipped, and shipping for as long as at least one milestone was. Since SC1 a product's stage (idea, building, stage or production) is set by its crew by hand, one step at a time, and is published as authored rather than derived; this sentence stays at its address for every link that named it. It ordered nothing.",
     computedBy: "OPR2",
   },
   "product.milestones-shipped": {

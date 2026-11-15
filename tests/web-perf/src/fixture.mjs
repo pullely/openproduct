@@ -122,12 +122,40 @@ export function THUMBNAIL_FOR(slug) {
 
 // ─── OPR-3 — stage and milestones ────────────────────────────────────────
 //
-// A product is an idea until its first milestone ships. The corpus holds
-// both: index 1, 4, 7, … are ideas (no milestone shipped), the rest are
-// shipping. `product-00` — the sample, and the product the signed-in walker
-// is on the crew of — has shipped three of four.
+// SC-2 — the four stages, set by the crew. The corpus holds all of them:
+// index 1, 4, 7, … are ideas (no milestone shipped); 2, 5, 8, … are being
+// built; the rest are on stage, or in production when the index is odd.
+// `product-00` — the sample, and the product the signed-in walker is on the
+// crew of — is ON STAGE, with three of four milestones shipped; `product-03`
+// is the first in production.
 function stageOf(i) {
-  return i % 3 === 1 ? "idea" : "shipping";
+  if (i % 3 === 1) return "idea";
+  if (i % 3 === 2) return "building";
+  return i % 2 === 1 ? "production" : "stage";
+}
+
+/** Whether a stage has a stage link: on stage and in production. */
+const LIVE = (stage) => stage === "stage" || stage === "production";
+
+/** SC-2 — Where it runs, as core's projection writes it (contracts
+ *  `whereItRunsOf`): the stage row while on stage or in production, the
+ *  production row in production, who set it named through the roster. */
+function WHERE_IT_RUNS_FOR(c) {
+  const by = { kind: "crew", name: "Ada Lovelace", handle: SAMPLE_HANDLE };
+  return {
+    stage: LIVE(c.stage)
+      ? {
+          url: `https://example.com/${c.slug}`,
+          note: "Sign up, send a policy and collect a signature.",
+          setBy: c.stage === "stage" ? by : null,
+          at: c.stage === "stage" ? EARLIER : null,
+        }
+      : null,
+    production:
+      c.stage === "production"
+        ? { url: `https://${c.slug}.example.com/`, since: "2026-05-01", version: "1.0.0", access: "everyone", setBy: by, at: EARLIER }
+        : null,
+  };
 }
 
 const MILESTONE_ID = (n) => `pms_${String(n).padStart(32, "0")}`;
@@ -163,7 +191,7 @@ function MILESTONES_FOR(slug) {
   return CREW_MILESTONES_FOR(slug).map(({ code, title, summary, shippedAt }) => ({ code, title, summary, shippedAt }));
 }
 
-/** An idea's crew is only its maker; a shipping product has two people. */
+/** An idea's crew is only its maker; a built product has two people. */
 function CREW_COUNT_FOR(i) {
   return stageOf(i) === "idea" ? 1 : 2;
 }
@@ -179,8 +207,8 @@ function card(i) {
   const openings = i % 3 === 0 ? 2 : 0;
   return {
     slug: `product-${String(i).padStart(2, "0")}`,
-    // OPR-3 — every third product is still an idea (`product-01`, `-04`, …);
-    // the rest are shipping. See `stageOf` and `MILESTONES_FOR`.
+    // OPR-3, SC-2 — every third product is still an idea (`product-01`,
+    // `-04`, …); the rest are at the other three stages. See `stageOf`.
     stage: stageOf(i),
     // IN3 — ONE CARD BELOW THE FLOOR, so the walk covers a front page that
     // filters. `product-06` has no topic and is therefore not in the
@@ -388,9 +416,11 @@ function profile(slug) {
     // never launched carries no placement.)
     launches: [],
     // OPR-3 — the stage, where to try it, and the milestones with their
-    // counts. An idea has no address to try and nothing shipped.
+    // counts. Only a product on stage or in production has a stage link.
     stage: c.stage,
-    tryUrl: c.stage === "shipping" ? `https://example.com/${c.slug}` : null,
+    tryUrl: LIVE(c.stage) ? `https://example.com/${c.slug}` : null,
+    // SC-2 — Where it runs.
+    whereItRuns: WHERE_IT_RUNS_FOR(c),
     milestones: MILESTONES_FOR(c.slug),
     milestoneCounts: MILESTONE_COUNTS_FOR(c.slug),
   };
@@ -1218,7 +1248,7 @@ const TRANSPARENCY = {
 // ─── OPR-3 — product posts ───────────────────────────────────────────────
 //
 // What products say for themselves. One post of each AUTHORED kind across a
-// shipping product (`product-00`) and an idea (`product-01`), in the feed's
+// product on stage (`product-00`) and an idea (`product-01`), in the feed's
 // order (newest first); a second page behind a cursor; one post with a
 // comment thread. Every post here is PUBLISHED — a draft exists only behind
 // the crew routes below, never in a public read.
@@ -1239,7 +1269,7 @@ export const SAMPLE_POST = SAMPLE_POSTS.feature;
 export const SAMPLE_REACTED_POST = SAMPLE_POSTS.idea;
 /** The thread that holds its comments. */
 export const SAMPLE_POST_THREAD = "thr_000000000000000000000003";
-/** The idea product, and the shipping one (which is `SAMPLE_SLUG`). */
+/** The idea product, and the built one (which is `SAMPLE_SLUG`). */
 export const SAMPLE_IDEA_SLUG = CARDS[1].slug;
 /** The feed's second page: the cursor the first page hands out. */
 export const POSTS_PAGE_TWO_CURSOR = "posts-page-2";
@@ -1480,7 +1510,13 @@ function crewAnswer(rest, req) {
   const method = req.method ?? "GET";
   const body = req.body && typeof req.body === "object" ? req.body : {};
   const milestones = CREW_MILESTONES_FOR(CREW_SLUG);
-  const stage = "shipping";
+  const stage = CARDS[0].stage;
+  // SC-2 — Change stage. Answered as core would for a step it accepted;
+  // the rule itself is the contract's, held by the web and core suites.
+  if (rest === "/stage") {
+    if (method !== "PUT") return undefined;
+    return { stage: typeof body.to === "string" ? body.to : stage, milestone: null, posted: false };
+  }
   if (rest === "") {
     if (method === "PATCH") {
       return { profile: { id: CREW_PROFILE, slug: typeof body.slug === "string" ? body.slug : CREW_SLUG, tryUrl: body.tryUrl ?? `https://example.com/${CREW_SLUG}`, tagline: body.tagline ?? CARDS[0].tagline } };
@@ -1619,19 +1655,21 @@ export const ROUTES = [
   { path: "/products", name: "products", expect: SAMPLE_SLUG },
   // OPR-3 — the stage filter's addresses. Each is a path, so each is one
   // static, revalidated document like the sorts above: a `no-store` on any of
-  // them fails here. `product-00` is shipping and `product-01` is an idea, so
+  // them fails here. `product-00` is on stage and `product-01` is an idea, so
   // each filtered list names the one and the filter marks itself current.
-  { path: "/products/stage/shipping", name: "products · shipping", expect: SAMPLE_SLUG },
+  { path: "/products/stage/on-stage", name: "products · on stage", expect: SAMPLE_SLUG },
+  { path: "/products/stage/building", name: "products · building", expect: 'data-product-stage="building"' },
+  { path: "/products/stage/in-production", name: "products · in production", expect: 'data-product-stage="production"' },
   { path: "/products/stage/ideas", name: "products · ideas", expect: 'data-product-stage="idea"' },
   { path: "/products/stage/ideas/by/newest", name: "products · ideas, newest", expect: 'data-product-stage="idea"' },
-  { path: "/help-wanted/stage/shipping", name: "help wanted · on shipping products", expect: "data-seat-filters" },
+  { path: "/help-wanted/stage/on-stage", name: "help wanted · on stage", expect: "data-seat-filters" },
   { path: "/help-wanted/stage/ideas", name: "help wanted · on ideas", expect: "data-seat-filters" },
   // OPR-3 — a post's own page (the comment section's id proves the thread
   // drew: a 404 and a failure panel have none), and the feed's second page,
   // the document behind *Show more* (`expect` is a post only page two holds).
   { path: `/${SAMPLE_SLUG}/posts/${SAMPLE_POST}`, name: "post", expect: 'id="comments"' },
   { path: `/feed/${POSTS_PAGE_TWO_CURSOR}`, name: "feed (continued)", expect: CARDS[2].slug },
-  // OPR-3 — a shipping product's tabs are routes of their own, each a cached
+  // OPR-3 — a built product's tabs are routes of their own, each a cached
   // document (`/{slug}` itself, the Updates tab, is the archetype above); and
   // an idea product draws the other page at the same kind of address.
   // `expect` is a mark only that view draws: the milestones' "N of M
@@ -1786,7 +1824,8 @@ export const ABSENT = [
   { path: "/products/stage", why: "OPR-3 — the stem of the stage filter is not a cursor: refused by name" },
   { path: "/products/stage/zzz-not-a-stage", why: "OPR-3 — a stage that does not exist: no page, rather than the whole list under a second address" },
   { path: "/products/stage/idea", why: "OPR-3 — the ideas live at /products/stage/ideas and nowhere else" },
-  { path: "/help-wanted/stage/zzz-not-a-stage", why: "OPR-3 — Help wanted's filter has two stages; anything else is no page" },
+  { path: "/help-wanted/stage/zzz-not-a-stage", why: "OPR-3 — Help wanted's filter has its stages; anything else is no page" },
+  { path: "/products/stage/shipping", why: "SC-2 — the shipping stage is retired: its old address is no page" },
 ];
 
 /** The reads, keyed by the path the web app asks for. */

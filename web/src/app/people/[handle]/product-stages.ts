@@ -1,6 +1,6 @@
 // Where each of a person's products stands (openproduct-redesign OPR-3;
 // boards `Person`, `PhonePerson`): the line under a product's row —
-// `shipping, 3 of 4`, `idea`.
+// `on stage, 3 of 4`, `idea`.
 //
 // A PROFILE'S LISTING CARRIES NO STAGE (`PublicProfileListing` is a slug, a
 // tagline and a logo), so the line is read where the stage is published: the
@@ -8,7 +8,7 @@
 // One per product, in parallel, bounded — and a product whose document could
 // not be read simply has no line, never a guessed one.
 
-import type { PublicProfile } from "@openproduct/contracts";
+import { isProductStage, type PublicProfile } from "@openproduct/contracts";
 
 import { fetchPublicProfile } from "../../public-api";
 import { stageLine } from "../../ui/stage";
@@ -18,7 +18,7 @@ export const PERSON_STAGE_READ_LIMIT = 12;
 
 /** The line for one product's document, or null when it has no stage. */
 export function stageLineOf(profile: Pick<PublicProfile, "stage" | "milestoneCounts"> | null): string | null {
-  if (!profile || (profile.stage !== "idea" && profile.stage !== "shipping")) return null;
+  if (!profile || !isProductStage(profile.stage)) return null;
   return stageLine(profile.stage, profile.milestoneCounts ?? null);
 }
 

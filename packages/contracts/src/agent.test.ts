@@ -58,7 +58,7 @@ function card(over: {
     openingCommitments: authored([], "maintainer"),
     hasLiveUrl: authored(false, "maintainer"),
     indexable: observed(true, "linked_repo", AT),
-    stage: derived("idea", "product.stage", ["product_milestones"], AT),
+    stage: authored("idea", "maintainer"),
     milestoneCounts: derived({ shipped: 0, total: 0 }, "product.milestones-shipped", ["product_milestones"], AT),
     crewCount: derived(1, "product.crew-count", ["published_maintainers"], AT),
     // MD0 — present and empty. Every listing's array is `[]` until MD1 gives

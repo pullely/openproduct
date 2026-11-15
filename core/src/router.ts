@@ -231,6 +231,7 @@ import {
   handleRemoveProductPost,
   handleReorderMilestones,
   handleSetMilestoneShipped,
+  handleChangeStage,
   handleUpdateMilestone,
   handleUpdateProductPost,
   type ProductPostHandlerDeps,
@@ -279,6 +280,9 @@ const PROFILE_MILESTONE_RE =
   /^\/internal\/openproduct\/orgs\/([^/]+)\/profiles\/([^/]+)\/milestones\/([^/]+)$/;
 const PROFILE_MILESTONE_SHIPPED_RE =
   /^\/internal\/openproduct\/orgs\/([^/]+)\/profiles\/([^/]+)\/milestones\/([^/]+)\/shipped$/;
+// SC-2 — the stage, one step at a time. Beside the milestones: the same door.
+const PROFILE_STAGE_RE =
+  /^\/internal\/openproduct\/orgs\/([^/]+)\/profiles\/([^/]+)\/stage$/;
 const PROFILE_NEEDS_YOU_RE =
   /^\/internal\/openproduct\/orgs\/([^/]+)\/profiles\/([^/]+)\/needs-you$/;
 
@@ -1747,6 +1751,14 @@ async function maintainerRoutes(
       return handleReorderMilestones(env, request, requestId, actor, orgId, profileId, postDeps);
     }
     return methodNotAllowed(requestId);
+  }
+  const stageMember = PROFILE_STAGE_RE.exec(path);
+  if (stageMember) {
+    const orgId = parseOrgPublicId(stageMember[1]!);
+    const profileId = parseProfilePublicId(stageMember[2]!);
+    if (!orgId || !profileId) return notFound(requestId, path);
+    if (request.method !== "PUT") return methodNotAllowed(requestId);
+    return handleChangeStage(env, request, requestId, actor, orgId, profileId, postDeps);
   }
   const needsYou = PROFILE_NEEDS_YOU_RE.exec(path);
   if (needsYou) {

@@ -2,8 +2,9 @@
 //
 // A PRODUCT POST IS NOT A FORUM POST. `handlers/discussions.ts` owns threads
 // and the replies in them; this file owns what a product says for itself — a
-// post of one of five fixed shapes (design §2.1, §6.2) — and the milestones
-// its stage follows (§6.1).
+// post of one of five fixed shapes (design §2.1, §6.2) — its milestones
+// (§6.1), and its stage, which the crew moves by hand one step at a time
+// (openproduct-stages-crew SC-2, design §1).
 //
 // THREE DOORS, AND THEY DO NOT SHARE A READ.
 //
@@ -39,6 +40,7 @@ import {
   productPostsPageSize,
   publishedPostBlocks,
   validatePostBlocks,
+  validateStageChange,
   type CrewMilestone,
   type CrewNeedsYou,
   type CrewProductPost,
@@ -113,6 +115,9 @@ export interface ProductPostHandlerDeps {
     | "deleteProductMilestone"
     | "reorderProductMilestones"
     | "setProductMilestoneShipped"
+    // SC-2 — the stage, and what the step to Building writes beside it.
+    | "setProductStage"
+    | "updateProfile"
     | "listPendingApplicationsForProfile"
     // OPR-4 — the crew's private threads, through the signed-in read.
     | "listPrivateThreads"
@@ -941,8 +946,7 @@ export async function handleReorderMilestones(
   return successResponse({ milestones: milestones.map(crewMilestone), stage: crew.ctx.profile.stage }, requestId);
 }
 
-/** DELETE …/milestones/{id}. The stage follows: deleting the only shipped
- *  milestone makes the product an idea again. */
+/** DELETE …/milestones/{id}. The stage stays where the crew put it (SC-2). */
 export async function handleDeleteMilestone(
   env: Env,
   requestId: string,
@@ -972,8 +976,8 @@ export async function handleDeleteMilestone(
  * PUT    …/milestones/{id}/shipped   mark it shipped
  * DELETE …/milestones/{id}/shipped   mark it not shipped
  *
- * THE STAGE FOLLOWS, in the repository's own write: the product is `shipping`
- * from its first shipped milestone and an `idea` again when none is.
+ * THE STAGE DOES NOT FOLLOW (SC-2): it is the crew's to move, by hand, at
+ * `PUT …/stage`. The answer still says where the product is.
  *
  * A MILESTONE THAT WENT FROM NOT SHIPPED TO SHIPPED OFFERS A POST — a draft
  * Feature shipped post prefilled from it, unless the product already holds a
@@ -1023,6 +1027,130 @@ export async function handleSetMilestoneShipped(
       milestone: crewMilestone(result.milestone),
       stage: result.stage,
       offeredPost: offered ? crewProductPost(offered) : null,
+    },
+    requestId,
+  );
+}
+
+// ─── the stage (SC-2) ───────────────────────────────────────────────────────
+
+/** The code a first milestone gets when the step to Building writes it. */
+const FIRST_MILESTONE_CODE = "M1";
+
+/**
+ * PUT …/stage — `ChangeStageRequest`: one step forward or back (design §1).
+ *
+ * THE CONTRACT'S RULE, NOT A SECOND ONE. `validateStageChange` refuses a
+ * skipped step, a step to where the product already is, and a step whose
+ * required inputs are missing or invalid — each a 422 with the sentence under
+ * its field — and it is the same function the Change stage popup counts its
+ * "n of m required" by.
+ *
+ * WHO: the crew's write door (`crewOf`, `authorizeFor(…, "write")`), the same
+ * as the milestones beside it. SC-3 narrows it to Maintainers and Leads.
+ *
+ * THE WRITE IS GUARDED by the stage it leaves (`setProductStage`'s `WHERE
+ * stage = from`): a product that moved while the popup was open answers 409
+ * and nothing is written, so two Moves cannot take it two steps.
+ *
+ * → BUILDING also writes what it asked for where it belongs: the repository
+ * becomes the listing's `repo_url` (through `updateProfile`, so a changed
+ * address clears the old observation as every other write does), and the
+ * first milestone is appended unless the product already holds one with
+ * that title.
+ *
+ * NOT POSTED (a departure, said in the epic's status). "Post it to the feed"
+ * would need a post kind for a stage change, and the five kinds are a fixed
+ * catalogue (design §2.1 of openproduct-redesign); none of them is one. The
+ * request's `post` and `comment` are validated and kept in the audit entry,
+ * and the answer says `posted: false`.
+ */
+export async function handleChangeStage(
+  env: Env,
+  request: Request,
+  requestId: string,
+  actor: ActorContext,
+  orgId: Uuid,
+  profileId: Uuid,
+  deps: ProductPostHandlerDeps,
+): Promise<Response> {
+  const body = await jsonBody(request);
+  if (body === null) return errorResponse("bad_request", "Invalid JSON body", 400, requestId);
+  const crew = await crewOf(env, actor, orgId, profileId, deps, requestId);
+  if (!crew.ok) return crew.response;
+
+  const now = (deps.now ?? (() => new Date()))();
+  const result = validateStageChange(crew.ctx.profile.stage, body, now);
+  if (!result.ok) return validationError(requestId, result.fields);
+  const change = result.change;
+
+  const at = now.toISOString();
+  const moved = await deps.repo.setProductStage(profileId, {
+    from: change.from,
+    to: change.to,
+    ...(change.direction === "forward" && change.to === "stage"
+      ? { tryUrl: change.stageUrl, stageNote: change.tryWhat }
+      : {}),
+    ...(change.direction === "forward" && change.to === "production"
+      ? {
+          productionUrl: change.productionUrl,
+          productionSince: change.liveSince,
+          productionVersion: change.version,
+          productionAccess: change.access,
+        }
+      : {}),
+    // updated_by / stage_changed_by are TEXT and hold the public actor id by
+    // design, as every listing write does.
+    by: actor.subjectId,
+    at,
+  });
+  if (!moved) {
+    return errorResponse("conflict", "The stage changed while this was open. Reload and try again", 409, requestId);
+  }
+
+  let milestone: ProductMilestoneRecord | null = null;
+  if (change.direction === "forward" && change.to === "building") {
+    if (crew.ctx.profile.repoUrl !== change.repository) {
+      await deps.repo.updateProfile(orgId, profileId, {
+        repoUrl: change.repository,
+        // eslint-disable-next-line no-restricted-syntax
+        updatedBy: actor.subjectId,
+      });
+    }
+    const existing = await deps.repo.listProductMilestones(profileId);
+    const held = existing.some((m) => m.title.trim().toLowerCase() === change.firstMilestone.toLowerCase());
+    if (!held && existing.length < MILESTONE_MAX_PER_PRODUCT) {
+      milestone = await deps.repo.createProductMilestone({
+        id: (deps.generateId ?? generateId)(),
+        profileId,
+        code: existing.length === 0 ? FIRST_MILESTONE_CODE : `M${existing.length + 1}`,
+        title: change.firstMilestone,
+        summary: null,
+      });
+    }
+  }
+
+  await auditProductWrite(
+    deps,
+    crew.ctx,
+    "openproduct.profile.stage_changed",
+    `openproduct ${crew.ctx.profile.slug} moved ${change.direction === "back" ? "back " : ""}from ${change.from} to ${change.to}`,
+    {
+      from: change.from,
+      to: change.to,
+      direction: change.direction,
+      ...(change.direction === "back" ? { reason: change.reason } : {}),
+      ...(milestone ? { milestoneId: milestonePublicId(milestone.id) } : {}),
+      comment: change.comment,
+      post: change.post,
+    },
+  );
+  return successResponse(
+    {
+      stage: moved.stage,
+      milestone: milestone ? crewMilestone(milestone) : null,
+      // See the header: there is no post kind for a stage change yet.
+      posted: false,
     },
     requestId,
   );

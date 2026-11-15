@@ -276,8 +276,8 @@ describe("a seat is today's open role", () => {
     );
     // OPR-3 — the line opens with the stage of the seat's product (board
     // `Seats`), when the catalogue said it.
-    expect(seatSub({ commitment: "Part-time", demand: { kind: "none" }, product: { stage: "shipping" } })).toBe(
-      "Shipping · Part-time",
+    expect(seatSub({ commitment: "Part-time", demand: { kind: "none" }, product: { stage: "stage" } })).toBe(
+      "On stage · Part-time",
     );
     expect(seatSub({ commitment: null, demand: { kind: "none" }, product: { stage: "idea" } })).toBe("Idea");
     expect(seatSub({ commitment: null, demand: { kind: "none" }, product: { stage: null } })).toBe("");
@@ -395,26 +395,37 @@ describe("the seat card's three states", () => {
     expect(overlay).toContain("return isOpeningRequested(useOverlay(NONE, NONE, NONE, NONE, ids), openingId);");
   });
 
-  it("the filter is three addresses, each a static page, and the counts are the catalogue's", () => {
-    expect([...SEAT_STAGE_FILTERS]).toEqual(["all", "shipping", "idea"]);
-    expect(SEAT_STAGE_FILTER_LABEL).toEqual({ all: "All", shipping: "On shipping products", idea: "On ideas" });
+  it("the filter is five addresses — all, then the four stages — each a static page, and the counts are the catalogue's", () => {
+    expect([...SEAT_STAGE_FILTERS]).toEqual(["all", "idea", "building", "stage", "production"]);
+    expect(SEAT_STAGE_FILTER_LABEL).toEqual({
+      all: "All",
+      idea: "On ideas",
+      building: "Being built",
+      stage: "On stage",
+      production: "In production",
+    });
     expect(SEAT_STAGE_FILTERS.map((stage) => seatsPath(stage))).toEqual([
       "/help-wanted",
-      "/help-wanted/stage/shipping",
       "/help-wanted/stage/ideas",
+      "/help-wanted/stage/building",
+      "/help-wanted/stage/on-stage",
+      "/help-wanted/stage/in-production",
     ]);
     for (const stage of SEAT_STAGE_FILTERS) expect(seatsPath(stage)).not.toMatch(/[?=&#]/);
-    expect(seatStageOfSegment("shipping")).toBe("shipping");
+    expect(seatStageOfSegment("on-stage")).toBe("stage");
     expect(seatStageOfSegment("ideas")).toBe("idea");
-    for (const stray of ["idea", "all", "", "Shipping", undefined]) expect(seatStageOfSegment(stray)).toBeNull();
+    // OPR-3's `shipping` address is gone with the stage (SC-2).
+    for (const stray of ["idea", "all", "", "shipping", "Shipping", "stage", undefined]) expect(seatStageOfSegment(stray)).toBeNull();
     expect(
       seatStageCounts([
-        { roleOpeningCount: 2, stage: "shipping" },
+        { roleOpeningCount: 2, stage: "stage" },
         { roleOpeningCount: 1, stage: "idea" },
         { roleOpeningCount: 3, stage: "idea" },
+        { roleOpeningCount: 5, stage: "production" },
+        { roleOpeningCount: 1, stage: "shipping" },
         { roleOpeningCount: 1 },
       ]),
-    ).toEqual({ all: 7, shipping: 2, idea: 4 });
+    ).toEqual({ all: 13, idea: 4, building: 0, stage: 2, production: 5 });
     // The filtered page: static, revalidated, prerendered, no query string.
     const page = code("help-wanted/stage/[stage]/page.tsx");
     expect(page).toMatch(/^export const revalidate = 60;$/m);
@@ -428,7 +439,7 @@ describe("the seat card's three states", () => {
     expect(filter).toContain('aria-label="Seat filters"');
     expect(filter).toContain("href={seatsPath(stage)}");
     expect(filter).toContain('{ "aria-current": "page" as const }');
-    // One view draws all three, and filters by the card's own stage.
+    // One view draws all five, and filters by the card's own stage.
     const view = code("help-wanted/seats-view.tsx");
     expect(view).toContain("<SeatFilter current={stage} counts={counts} />");
     expect(view).toContain("everyHiring.filter((card) => card.stage === stage)");
@@ -438,19 +449,31 @@ describe("the seat card's three states", () => {
 });
 
 describe("OPR-3 — the stage filter is an address, and it composes with the sort", () => {
-  it("offers Everything, Shipping and Ideas, and every view has exactly one static address", () => {
-    expect([...PRODUCT_STAGE_FILTERS]).toEqual(["all", "shipping", "idea"]);
-    expect(PRODUCT_STAGE_FILTER_LABEL).toEqual({ all: "Everything", shipping: "Shipping", idea: "Ideas" });
+  it("offers Everything and the four stages, and every view has exactly one static address", () => {
+    expect([...PRODUCT_STAGE_FILTERS]).toEqual(["all", "idea", "building", "stage", "production"]);
+    expect(PRODUCT_STAGE_FILTER_LABEL).toEqual({
+      all: "Everything",
+      idea: "Ideas",
+      building: "Building",
+      stage: "On stage",
+      production: "In production",
+    });
     expect(productViews().map((view) => view.path)).toEqual([
       "/products",
       "/products/by/newest",
       "/products/by/upvoted",
-      "/products/stage/shipping",
-      "/products/stage/shipping/by/newest",
-      "/products/stage/shipping/by/upvoted",
       "/products/stage/ideas",
       "/products/stage/ideas/by/newest",
       "/products/stage/ideas/by/upvoted",
+      "/products/stage/building",
+      "/products/stage/building/by/newest",
+      "/products/stage/building/by/upvoted",
+      "/products/stage/on-stage",
+      "/products/stage/on-stage/by/newest",
+      "/products/stage/on-stage/by/upvoted",
+      "/products/stage/in-production",
+      "/products/stage/in-production/by/newest",
+      "/products/stage/in-production/by/upvoted",
     ]);
     const paths = productViews().map((view) => view.path);
     // One address per view, and never a query string: a page that reads
@@ -459,9 +482,12 @@ describe("OPR-3 — the stage filter is an address, and it composes with the sor
     for (const path of paths) expect(path).not.toMatch(/[?=&#]/);
     // The defaults are never spelt.
     expect(productsPath("most-active", "all")).toBe("/products");
-    expect(productStageOfSegment("shipping")).toBe("shipping");
+    expect(productStageOfSegment("in-production")).toBe("production");
     expect(productStageOfSegment("ideas")).toBe("idea");
-    for (const stray of ["idea", "all", "everything", "", "by", undefined]) expect(productStageOfSegment(stray)).toBeNull();
+    // OPR-3's `shipping` address is gone with the stage (SC-2).
+    for (const stray of ["idea", "all", "everything", "", "by", "shipping", "stage", undefined]) {
+      expect(productStageOfSegment(stray)).toBeNull();
+    }
   });
 
   it("`stage` is not a cursor, and the continuation page refuses it by name", () => {
@@ -505,15 +531,18 @@ describe("OPR-3 — the stage filter is an address, and it composes with the sor
     expect(view).not.toMatch(/searchParams|cookies\(|headers\(|readSession/);
   });
 
-  it("counts and filters by the card's own stage, and the count line says all three", () => {
-    const cards = [{ stage: "shipping" }, { stage: "idea" }, { stage: "idea" }, {}] as never[];
-    expect(productStageCounts(cards)).toEqual({ all: 4, shipping: 1, idea: 2 });
-    expect(filterByStage(cards, "all")).toHaveLength(4);
+  it("counts and filters by the card's own stage, and the count line says products, built and ideas", () => {
+    const cards = [{ stage: "stage" }, { stage: "building" }, { stage: "idea" }, { stage: "idea" }, { stage: "shipping" }, {}] as never[];
+    expect(productStageCounts(cards)).toEqual({ all: 6, idea: 2, building: 1, stage: 1, production: 0 });
+    expect(filterByStage(cards, "all")).toHaveLength(6);
     expect(filterByStage(cards, "idea")).toHaveLength(2);
-    expect(filterByStage(cards, "shipping")).toHaveLength(1);
-    expect(productsCountLine(30, 0, { all: 30, shipping: 9, idea: 21 })).toBe("30 products · 9 shipping · 21 ideas");
-    expect(productsCountLine(2, 3, { all: 2, shipping: 1, idea: 1 })).toBe(
-      "2 products · 1 shipping · 1 idea · 3 more below the floor",
+    expect(filterByStage(cards, "stage")).toHaveLength(1);
+    expect(filterByStage(cards, "production")).toHaveLength(0);
+    expect(productsCountLine(30, 0, { all: 30, idea: 21, building: 5, stage: 3, production: 1 })).toBe(
+      "30 products · 9 built · 21 ideas",
+    );
+    expect(productsCountLine(2, 3, { all: 2, idea: 1, building: 0, stage: 1, production: 0 })).toBe(
+      "2 products · 1 built · 1 idea · 3 more below the floor",
     );
     // Stages that could not be counted are left unsaid, not said as zero.
     expect(productsCountLine(30, 0, null)).toBe("30 products");
@@ -525,7 +554,7 @@ describe("OPR-3 — the stage filter is an address, and it composes with the sor
     expect(card).toContain("data-product-stage={card.stage}");
     expect(card).toContain('idea ? "rounded-[4px_16px_16px_16px] bg-idea-wash" : "rounded-[16px] bg-card"');
     // THE CARD CARRIES ITS OWN PROGRESS AND CREW COUNT (OPR-3), so a list
-    // draws both with no read per card: a shipping product's "3 OF 4" and
+    // draws both with no read per card: a built product's "3 OF 4" and
     // its bars, and "Needs a first builder" on an idea whose crew is only
     // its maker — from the count of the people its page lists, not from
     // whether a seat happens to be open.

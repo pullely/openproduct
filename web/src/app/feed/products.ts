@@ -75,10 +75,14 @@ export function productSortOfSegment(segment: unknown): ProductSort | null {
 
 /**
  * The stage filter (openproduct-redesign OPR-3; boards `Products`,
- * `PhoneProducts`): everything, the products that are shipping, the ideas.
- * `all` is no filter; the other two are the contract's own stages.
+ * `PhoneProducts`): everything, then each of the four stages in order
+ * (openproduct-stages-crew SC-2). `all` is no filter; the others are the
+ * contract's own stages.
  */
-export const PRODUCT_STAGE_FILTERS = ["all", "shipping", "idea"] as const satisfies readonly ("all" | ProductStage)[];
+export const PRODUCT_STAGE_FILTERS = ["all", "idea", "building", "stage", "production"] as const satisfies readonly (
+  | "all"
+  | ProductStage
+)[];
 export type ProductStageFilter = (typeof PRODUCT_STAGE_FILTERS)[number];
 
 /** No filter: the page as it was before there were stages. */
@@ -87,8 +91,10 @@ export const DEFAULT_PRODUCT_STAGE: ProductStageFilter = "all";
 /** The filter's words (board `Products`). */
 export const PRODUCT_STAGE_FILTER_LABEL: Record<ProductStageFilter, string> = {
   all: "Everything",
-  shipping: "Shipping",
   idea: "Ideas",
+  building: "Building",
+  stage: "On stage",
+  production: "In production",
 };
 
 /**
@@ -102,22 +108,26 @@ export const PRODUCT_STAGE_FILTER_LABEL: Record<ProductStageFilter, string> = {
  */
 export const PRODUCTS_STAGE_SEGMENT = "stage";
 
-/** A stage's word in an address: the filter's own label, lower-cased —
- *  `/products/stage/shipping`, `/products/stage/ideas`. */
+/** A stage's word in an address: the filter's own label, lower-cased and
+ *  hyphenated — `/products/stage/ideas`, `/products/stage/on-stage`. */
 export const PRODUCT_STAGE_SEGMENT: Record<Exclude<ProductStageFilter, "all">, string> = {
-  shipping: "shipping",
   idea: "ideas",
+  building: "building",
+  stage: "on-stage",
+  production: "in-production",
 };
 
-/** The stages that have an address under `/products/stage/`: both of them.
- *  Everything is `/products` and nowhere else. */
+/** The stages that have an address under `/products/stage/`: all four.
+ *  Everything is `/products` and nowhere else. (`/products/stage/shipping`,
+ *  OPR-3's, is no longer one: SC-2 retired the stage.) */
 export const PRODUCT_STAGE_SEGMENTS = Object.values(PRODUCT_STAGE_SEGMENT);
 
 /** The stage a `/products/stage/<segment>` address names, or null — and null
  *  is a 404, as an unpublished order is (`productSortOfSegment`). */
 export function productStageOfSegment(segment: unknown): Exclude<ProductStageFilter, "all"> | null {
-  if (segment === PRODUCT_STAGE_SEGMENT.shipping) return "shipping";
-  if (segment === PRODUCT_STAGE_SEGMENT.idea) return "idea";
+  for (const [stage, word] of Object.entries(PRODUCT_STAGE_SEGMENT)) {
+    if (segment === word) return stage as Exclude<ProductStageFilter, "all">;
+  }
   return null;
 }
 
@@ -154,19 +164,19 @@ export function productViews(): { sort: ProductSort; stage: ProductStageFilter; 
 }
 
 /** How many products are at each stage. */
-export interface ProductStageCounts {
-  readonly all: number;
-  readonly shipping: number;
-  readonly idea: number;
-}
+export type ProductStageCounts = Readonly<Record<ProductStageFilter, number>>;
 
 /** Count a list of cards by stage. A card with no stage (a gateway deployed
- *  before OPR-3) counts in `all` only: it is not guessed into either. */
+ *  before OPR-3), or one that says a stage there no longer is, counts in
+ *  `all` only: it is not guessed into any. */
 export function productStageCounts(cards: readonly Pick<PublicProfileCard, "stage">[]): ProductStageCounts {
+  const count = (stage: ProductStage) => cards.filter((card) => card.stage === stage).length;
   return {
     all: cards.length,
-    shipping: cards.filter((card) => card.stage === "shipping").length,
-    idea: cards.filter((card) => card.stage === "idea").length,
+    idea: count("idea"),
+    building: count("building"),
+    stage: count("stage"),
+    production: count("production"),
   };
 }
 
@@ -179,16 +189,18 @@ const plural = (count: number, one: string, many: string) => `${count.toLocaleSt
 
 /**
  * The line beside the title: how many products there are, and how many of
- * them are shipping and how many are ideas — the board's three parts
- * ("30 products · 9 shipping · 21 ideas"). The two stage parts are said when
- * the catalogue's stages were counted (`stages`), and left out when they
+ * them are built and how many are ideas — the board's three parts
+ * ("30 products · 9 built · 21 ideas"; SC-2: "built" is every stage past an
+ * idea, since the filter beside it names each). The two stage parts are said
+ * when the catalogue's stages were counted (`stages`), and left out when they
  * were not. What the floor is holding back is still confessed here (HB0,
  * WC-7): a count that hides a filter is the one thing this line may not be.
  */
 export function productsCountLine(count: number, belowFloor = 0, stages: ProductStageCounts | null = null): string {
   const parts = [plural(count, "product", "products")];
   if (stages !== null) {
-    parts.push(`${stages.shipping.toLocaleString("en-US")} shipping`, plural(stages.idea, "idea", "ideas"));
+    const built = stages.building + stages.stage + stages.production;
+    parts.push(`${built.toLocaleString("en-US")} built`, plural(stages.idea, "idea", "ideas"));
   }
   if (belowFloor > 0) parts.push(`${belowFloor.toLocaleString("en-US")} more below the floor`);
   return parts.join(" · ");

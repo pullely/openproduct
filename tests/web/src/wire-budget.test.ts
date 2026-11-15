@@ -26,8 +26,8 @@ const code = (file: string) =>
 describe("WC2-8's three numbers", () => {
   const wire = code(resolve(PERF, "wire.mjs"));
 
-  it("are 305 KB compressed, 31 requests, no third-party host", () => {
-    expect(wire).toContain("export const WIRE = { bytes: 305 * 1024, requests: 31, thirdPartyHosts: 0 };");
+  it("are 306 KB compressed, 31 requests, no third-party host", () => {
+    expect(wire).toContain("export const WIRE = { bytes: 306 * 1024, requests: 31, thirdPartyHosts: 0 };");
   });
 
   it("moved only by a recorded decision: the amendment is in WC2-8 itself", () => {
@@ -51,8 +51,15 @@ describe("WC2-8's three numbers", () => {
     expect(wc28.amendments.map((a) => [a.date, a.fromKB, a.toKB])).toEqual([
       ["2026-10-22", 250, 276],
       ["2026-11-15", 276, 305],
+      // 305 → 306 KB for the four stages (openproduct-stages-crew SC-2): the
+      // home was 217 bytes over with the stage colours already split out.
+      ["2026-11-15", 305, 306],
     ]);
-    expect(wc28.bytesKB).toBe(305);
+    expect(wc28.bytesKB).toBe(306);
+    const sc2 = wc28.amendments[2]!.why;
+    for (const measured of ["312,537", "312,077", "308,406", "294,411"]) {
+      expect([measured, sc2.includes(measured)]).toEqual([measured, true]);
+    }
     // The font file is one more request on every page, and the listing was
     // at the limit: 30 → 31 in the same amendment.
     expect(wc28.requests).toBe(31);
