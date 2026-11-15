@@ -95,7 +95,7 @@ export const MAKER_RESERVE_ATTRIBUTE = "data-maker-reserved";
 
 /** The slots that hold room, by name. A closed list: the boot script sets a
  *  custom property for these names and nothing else. */
-export const MAKER_SLOTS = ["needs-you", "post", "milestones"] as const;
+export const MAKER_SLOTS = ["needs-you", "post", "milestones", "orunbase"] as const;
 export type MakerSlotName = (typeof MAKER_SLOTS)[number];
 
 /** Where this product's heights are remembered. */

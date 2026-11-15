@@ -144,4 +144,11 @@ export type {
   CrewPersonRecord,
   CrewRoleChange,
   CrewSource,
+  // openproduct-stages-crew SC-4 — synced from Orunbase
+  CrewSyncChange,
+  DeployEnvironment,
+  OrunbaseAccess,
+  ProductDeployRecord,
+  ProductSyncRecord,
+  RosterMemberInput,
 } from "./types.js";

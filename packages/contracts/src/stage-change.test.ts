@@ -5,6 +5,9 @@ import {
   WHERE_IT_RUNS_KEYS,
   WHERE_IT_RUNS_PRODUCTION_KEYS,
   WHERE_IT_RUNS_STAGE_KEYS,
+  WHERE_IT_RUNS_STAGE_SOURCE_KEYS,
+  WHERE_IT_RUNS_PRODUCTION_SOURCE_KEYS,
+  effectiveValue,
   reachableStages,
   stageLinkOf,
   stageStepFields,
@@ -162,7 +165,14 @@ describe("whereItRunsOf (design §1.5)", () => {
       roster,
     );
     expect(where).toEqual({
-      stage: { url: "https://s.acme.app/", note: "Send a policy", setBy: { kind: "crew", name: "Ada", handle: "ada" }, at: "2026-11-15T10:00:00.000Z" },
+      stage: {
+        url: "https://s.acme.app/",
+        note: "Send a policy",
+        version: null,
+        source: { url: "crew" },
+        setBy: { kind: "crew", name: "Ada", handle: "ada" },
+        at: "2026-11-15T10:00:00.000Z",
+      },
       production: null,
     });
     expect(Object.keys(where).sort()).toEqual([...WHERE_IT_RUNS_KEYS]);
@@ -189,10 +199,88 @@ describe("whereItRunsOf (design §1.5)", () => {
       since: "2026-11-12",
       version: "1.0.0",
       access: "invite",
+      source: { url: "crew", since: "crew", version: "crew" },
       setBy: { kind: "crew", name: null, handle: null },
       at: "2026-11-15T10:00:00.000Z",
     });
     expect(Object.keys(where.production!).sort()).toEqual([...WHERE_IT_RUNS_PRODUCTION_KEYS]);
+  });
+
+  describe("SC3 — the crew's value ?? the synced one (design §3.3)", () => {
+    const deploys = {
+      stage: { url: "https://stage.acme.app/", version: "v1.5.0-rc1", deployedAt: "2026-11-15T08:00:00.000Z", firstDeployedAt: "2026-11-01T08:00:00.000Z" },
+      production: { url: "https://acme.app/", version: "v1.4.0", deployedAt: "2026-11-14T09:05:00.000Z", firstDeployedAt: "2026-11-02T09:05:00.000Z" },
+    };
+
+    it("with no crew values, the rows read the deploys, deployed by Orun, each field marked synced", () => {
+      const where = whereItRunsOf({ stage: "production", tryUrl: null, productionAccess: "everyone", stageChangedBy: "usr_ada", stageChangedAt: "2026-11-15T10:00:00.000Z", deploys }, roster);
+      expect(where.stage).toEqual({
+        url: "https://stage.acme.app/",
+        note: null,
+        version: "v1.5.0-rc1",
+        source: { url: "synced" },
+        setBy: { kind: "orun", name: null, handle: null },
+        at: "2026-11-15T08:00:00.000Z",
+      });
+      expect(where.production).toEqual({
+        url: "https://acme.app/",
+        since: "2026-11-02",
+        version: "v1.4.0",
+        access: "everyone",
+        source: { url: "synced", since: "synced", version: "synced" },
+        setBy: { kind: "orun", name: null, handle: null },
+        at: "2026-11-14T09:05:00.000Z",
+      });
+      expect(Object.keys(where.stage!.source)).toEqual([...WHERE_IT_RUNS_STAGE_SOURCE_KEYS]);
+      expect(Object.keys(where.production!.source).sort()).toEqual([...WHERE_IT_RUNS_PRODUCTION_SOURCE_KEYS]);
+    });
+
+    it("a crew value wins field by field, and the link set by a person names them", () => {
+      const where = whereItRunsOf(
+        {
+          stage: "production",
+          tryUrl: "https://try.acme.app/",
+          productionUrl: "https://www.acme.app/",
+          productionSince: null,
+          productionVersion: "1.0.0",
+          productionAccess: "invite",
+          stageChangedBy: "usr_ada",
+          stageChangedAt: "2026-11-15T10:00:00.000Z",
+          deploys,
+        },
+        roster,
+      );
+      expect(where.stage).toMatchObject({ url: "https://try.acme.app/", version: "v1.5.0-rc1", source: { url: "crew" }, setBy: null });
+      expect(where.production).toMatchObject({
+        url: "https://www.acme.app/",
+        since: "2026-11-02",
+        version: "1.0.0",
+        source: { url: "crew", since: "synced", version: "crew" },
+        setBy: { kind: "crew", name: "Ada", handle: "ada" },
+        at: "2026-11-15T10:00:00.000Z",
+      });
+    });
+
+    it("a crew value equal to the synced one reads as synced", () => {
+      expect(effectiveValue("https://acme.app/", "https://acme.app/")).toEqual({ value: "https://acme.app/", source: "synced" });
+      expect(effectiveValue("https://b.app/", "https://acme.app/")).toEqual({ value: "https://b.app/", source: "crew" });
+      expect(effectiveValue(null, null)).toEqual({ value: null, source: "crew" });
+    });
+
+    it("a deploy with no address (every deploy today) fills the version and the day, never a row of its own", () => {
+      const noUrl = { stage: { ...deploys.stage, url: null }, production: { ...deploys.production, url: null } };
+      const onStage = whereItRunsOf({ stage: "stage", tryUrl: null, deploys: noUrl }, roster);
+      expect(onStage).toEqual({ stage: null, production: null });
+      const live = whereItRunsOf(
+        { stage: "production", tryUrl: "https://try.acme.app/", productionUrl: "https://acme.app/", productionAccess: "everyone", deploys: noUrl },
+        roster,
+      );
+      expect(live.production).toMatchObject({ since: "2026-11-02", version: "v1.4.0", source: { url: "crew", since: "synced", version: "synced" } });
+    });
+
+    it("a deploy does not move the stage: an idea runs nowhere even with deploys", () => {
+      expect(whereItRunsOf({ stage: "idea", tryUrl: null, deploys }, roster)).toEqual({ stage: null, production: null });
+    });
   });
 
   it("an idea or a building product runs nowhere, whatever was stored", () => {

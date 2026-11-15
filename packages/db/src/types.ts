@@ -188,10 +188,12 @@ export interface UpdateProductMilestoneInput {
 export interface SetProductStageInput {
   from: ProductStageName;
   to: ProductStageName;
-  tryUrl?: string | undefined;
+  /** SC-4: `null` (here and below) stores no crew value — the page then
+   *  follows the synced deploy. Omitted leaves unchanged. */
+  tryUrl?: string | null | undefined;
   stageNote?: string | undefined;
-  productionUrl?: string | undefined;
-  productionSince?: string | undefined;
+  productionUrl?: string | null | undefined;
+  productionSince?: string | null | undefined;
   /** `null` clears; omitted leaves unchanged. */
   productionVersion?: string | null | undefined;
   productionAccess?: "everyone" | "waitlist" | "invite" | undefined;
@@ -1187,6 +1189,47 @@ export type CrewRoleChange =
   | { outcome: "unchanged"; from: ListingRole; to: ListingRole }
   | { outcome: "absent" | "locked" | "last_lead" };
 
+// ─── SC-4 (openproduct-stages-crew): synced from Orunbase (seam S14) ───
+
+/** Orunbase project access, as a `project.roster` names it (design §3.1). */
+export type OrunbaseAccess = "admin" | "builder" | "viewer";
+
+/** One person on a `project.roster` snapshot. */
+export interface RosterMemberInput {
+  subjectId: string;
+  displayName: string | null;
+  access: OrunbaseAccess;
+}
+
+/** What applying a roster did to one person on one crew. `relocked`: an
+ *  Orunbase admin made (or kept) a locked Lead from an unlocked row;
+ *  `unlocked`: a locked Lead who is no longer an admin, set to their access's
+ *  role. No row for a person whose role and lock stood. */
+export type CrewSyncChange =
+  | { change: "added"; subjectId: string; role: ListingRole; locked: boolean }
+  | { change: "removed"; subjectId: string; role: ListingRole }
+  | { change: "relocked" | "unlocked"; subjectId: string; from: ListingRole; role: ListingRole };
+
+/** The two environments a deploy is reported for. */
+export type DeployEnvironment = "stage" | "production";
+
+/** One environment's last successful deploy (2295 `product_deploys`). */
+export interface ProductDeployRecord {
+  environment: DeployEnvironment;
+  url: string | null;
+  version: string | null;
+  runRef: string;
+  deployedAt: string;
+  firstDeployedAt: string;
+}
+
+/** Per listing: the last applied roster and when anything last synced. */
+export interface ProductSyncRecord {
+  rosterIssuedAt: string | null;
+  rosterEventId: string | null;
+  syncedAt: string;
+}
+
 /** The platform's verified link attestation, stored whole (S4/S5, OX5). */
 export interface StoredLinkGrant {
   doorRef: string;
@@ -2072,6 +2115,34 @@ export interface OpenproductRepository {
    *  one statement — a private workspace with a live listing is exactly the
    *  drift the event exists to prevent. Returns the affected profile ids. */
   revokeWorkspaceEligibility(orgId: Uuid): Promise<string[]>;
+
+  // ---- synced from Orunbase (SC-4, seam S14) ----
+  /** The listings whose stored link grant names this workspace and project:
+   *  what a `project.*` event applies to. A listing with no grant gets
+   *  nothing. */
+  listProfilesLinkedToProject(orgId: Uuid, projectId: Uuid): Promise<Array<{ id: string; slug: string }>>;
+  /** The listing's sync bookkeeping, or null before anything synced. */
+  getProductSync(profileId: Uuid): Promise<ProductSyncRecord | null>;
+  /** Apply one full roster snapshot to a crew, in ONE statement: add the
+   *  missing at their access's role (`source` orunbase; an admin a locked
+   *  Lead), re-lock admins, unlock former admins to their access's role,
+   *  keep every other chosen role, and remove everybody not listed (any
+   *  source) with their consent-roster edge retired. Never call it with an
+   *  empty list. */
+  applyCrewRoster(profileId: Uuid, members: readonly RosterMemberInput[], at: string): Promise<CrewSyncChange[]>;
+  /** Record an applied roster. Forward only: an older `issuedAt` writes
+   *  nothing. True when it was recorded. */
+  recordRosterSync(profileId: Uuid, input: { issuedAt: string; eventId: string; at: string }): Promise<boolean>;
+  /** Upsert one environment's deploy: newer `deployedAt` wins, the earliest
+   *  ever seen is kept as `firstDeployedAt`, and the sync time moves. True
+   *  when this deploy is now the row's. */
+  upsertProductDeploy(
+    profileId: Uuid,
+    deploy: { environment: DeployEnvironment; url: string | null; version: string | null; runRef: string; deployedAt: string },
+    at: string,
+  ): Promise<boolean>;
+  /** The listing's synced deploys, stage then production. */
+  listProductDeploys(profileId: Uuid): Promise<ProductDeployRecord[]>;
 
   // ---- the local audit log (OX5c) ----
   appendAudit(input: AppendAuditInput): Promise<void>;

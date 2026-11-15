@@ -1,0 +1,15 @@
+{
+  "seam": "v1",
+  "eventId": "00000000-0000-4000-8000-000000000014",
+  "occurredAt": "2026-11-15T09:05:00.000Z",
+  "type": "project.deploy",
+  "data": {
+    "orgId": "org_11111111111141118111111111111111",
+    "projectId": "prj_33333333333343338333333333333333",
+    "environment": "production",
+    "url": null,
+    "version": "v1.4.0",
+    "runRef": "01JD0000000000000000000000",
+    "deployedAt": "2026-11-15T09:05:00.000Z"
+  }
+}

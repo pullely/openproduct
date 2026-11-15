@@ -122,6 +122,8 @@ function profile(overrides: Partial<ProfileRecord> = {}): ProfileRecord {
 
 interface Store {
   profile: ProfileRecord;
+  /** SC-4 — the synced deploys. */
+  deploys: Array<{ environment: "stage" | "production"; url: string | null; version: string | null; runRef: string; deployedAt: string; firstDeployedAt: string }>;
   crew: Set<string>;
   /** SC-3 — a role other than Lead, for the people who hold one. */
   roles: Map<string, "lead" | "maintainer" | "member">;
@@ -141,6 +143,7 @@ function harness(overrides: Partial<ProfileRecord> = {}) {
   const generateId = () => `0000000${(n += 1).toString(16)}-0000-4000-8000-000000000000`.slice(-36) as never;
   const store: Store = {
     profile: profile(overrides),
+    deploys: [],
     crew: new Set([ADA.subjectId]),
     roles: new Map(),
     milestones: [],
@@ -211,6 +214,9 @@ function harness(overrides: Partial<ProfileRecord> = {}) {
     async listProductMilestones() {
       return [...store.milestones].sort((a, b) => a.position - b.position);
     },
+    async listProductDeploys() {
+      return store.deploys;
+    },
     async listPublicProductMilestones() {
       return listed() ? [...store.milestones].sort((a, b) => a.position - b.position) : [];
     },
@@ -264,10 +270,10 @@ function harness(overrides: Partial<ProfileRecord> = {}) {
       input: {
         from: string;
         to: ProfileRecord["stage"];
-        tryUrl?: string;
+        tryUrl?: string | null;
         stageNote?: string;
-        productionUrl?: string;
-        productionSince?: string;
+        productionUrl?: string | null;
+        productionSince?: string | null;
         productionVersion?: string | null;
         productionAccess?: ProfileRecord["productionAccess"];
         by: string;
@@ -1610,6 +1616,93 @@ describe("PUT …/stage — one step at a time, each with its own inputs (SC-2, 
     expect(h.store.profile.stage).toBe("idea");
   });
 
+  describe("SC-4 — a value equal to the synced one is stored as \"follow the sync\" (Use synced)", () => {
+    const DEPLOYS: Store["deploys"] = [
+      { environment: "stage", url: "https://stage.acme.dev/", version: "v1.5.0-rc1", runRef: "run_s", deployedAt: NOW, firstDeployedAt: NOW },
+      { environment: "production", url: null, version: "v1.4.0", runRef: "run_p", deployedAt: NOW, firstDeployedAt: "2026-11-02T09:05:00.000Z" },
+    ];
+
+    it("→ stage with the synced link stores no crew link; a link the crew changed is theirs", async () => {
+      const h = harness({ stage: "building" });
+      h.store.deploys = DEPLOYS;
+      expect((await call(h, "PUT", STAGE, ADA, { to: "stage", stageUrl: "https://stage.acme.dev/", tryWhat: "Send a policy" })).status).toBe(200);
+      expect(h.store.profile).toMatchObject({ stage: "stage", tryUrl: null, stageNote: "Send a policy" });
+
+      const other = harness({ stage: "building" });
+      other.store.deploys = DEPLOYS;
+      await call(other, "PUT", STAGE, ADA, { to: "stage", stageUrl: "https://try.acme.dev/", tryWhat: "Send a policy" });
+      expect(other.store.profile).toMatchObject({ tryUrl: "https://try.acme.dev/" });
+    });
+
+    it("→ production: the synced day and version follow the deploys, the typed link (none synced) stays the crew's", async () => {
+      const h = harness({ stage: "stage", tryUrl: "https://stage.acme.dev/" });
+      h.store.deploys = DEPLOYS;
+      const live = await call(h, "PUT", STAGE, ADA, {
+        to: "production",
+        productionUrl: "https://acme.app",
+        liveSince: "2026-11-02",
+        version: "v1.4.0",
+        access: "everyone",
+      });
+      expect(live.status).toBe(200);
+      expect(h.store.profile).toMatchObject({ productionUrl: "https://acme.app/", productionSince: null, productionVersion: null });
+
+      const changed = harness({ stage: "stage", tryUrl: "https://stage.acme.dev/" });
+      changed.store.deploys = DEPLOYS;
+      await call(changed, "PUT", STAGE, ADA, { to: "production", productionUrl: "https://acme.app", liveSince: "2026-11-03", version: "1.0.0", access: "everyone" });
+      expect(changed.store.profile).toMatchObject({ productionSince: "2026-11-03", productionVersion: "1.0.0" });
+    });
+
+    it("the public document reads the crew's value ?? the synced one, deployed by Orun where the link is synced", async () => {
+      const h = harness({ stage: "production", tryUrl: null, productionUrl: "https://acme.app/", productionSince: null, productionVersion: null, productionAccess: "everyone", stageChangedAt: NOW, stageChangedBy: ADA.subjectId });
+      h.store.deploys = DEPLOYS;
+      Object.assign(h.deps.repo, {
+        async listPublicMaintainers() {
+          return [];
+        },
+        async listPublicRoleOpenings() {
+          return [];
+        },
+        async latestMetrics() {
+          return [];
+        },
+        async countOpeningDemand() {
+          return [];
+        },
+        async listLaunchesForProfile() {
+          return [];
+        },
+        async latestSnapshotBefore() {
+          return null;
+        },
+        async countFollowers() {
+          return new Map();
+        },
+        async listFeedLaunches() {
+          return [];
+        },
+        async listPublicMedia() {
+          return [];
+        },
+      });
+      const doc = (await call(h, "GET", `${PUBLIC}/projects/acme-thing`, null)).data.profile as Record<string, unknown>;
+      expect(doc.whereItRuns).toEqual({
+        stage: { url: "https://stage.acme.dev/", note: null, version: "v1.5.0-rc1", source: { url: "synced" }, setBy: { kind: "orun", name: null, handle: null }, at: NOW },
+        production: {
+          url: "https://acme.app/",
+          since: "2026-11-02",
+          version: "v1.4.0",
+          access: "everyone",
+          source: { url: "crew", since: "synced", version: "synced" },
+          setBy: { kind: "crew", name: null, handle: null },
+          at: NOW,
+        },
+      });
+      // The try link stays the crew's own word (null), as the catalogue says.
+      expect(doc.tryUrl).toBeNull();
+    });
+  });
+
   it("the public document says where it runs, naming who set it through the public roster only", async () => {
     const h = harness({
       stage: "production",
@@ -1653,12 +1746,13 @@ describe("PUT …/stage — one step at a time, each with its own inputs (SC-2, 
     });
     const doc = (await call(h, "GET", `${PUBLIC}/projects/acme-thing`, null)).data.profile as Record<string, unknown>;
     expect(doc.whereItRuns).toEqual({
-      stage: { url: "https://stage.acme.dev/", note: "Send a policy", setBy: null, at: null },
+      stage: { url: "https://stage.acme.dev/", note: "Send a policy", version: null, source: { url: "crew" }, setBy: null, at: null },
       production: {
         url: "https://acme.app/",
         since: "2026-11-12",
         version: null,
         access: "everyone",
+        source: { url: "crew", since: "crew", version: "crew" },
         setBy: { kind: "crew", name: "Ada Iyer", handle: "ada" },
         at: NOW,
       },

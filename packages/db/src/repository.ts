@@ -110,6 +110,9 @@ import type {
   SubjectExport,
   SweepLedgerPhase,
   SweepPhaseStateRecord,
+  CrewSyncChange,
+  DeployEnvironment,
+  ProductDeployRecord,
 } from "./types.js";
 
 /** EN0 — one endorsement row. */
@@ -2586,9 +2589,10 @@ export function createOpenproductRepository(sql: SqlExecutor): OpenproductReposi
       // THE CREW'S OWN LIST (SC-3), read by the crew and nobody else (core
       // checks the reader first). The name is what the person wrote about
       // themselves (`contributors`), else the crew's own word for them on the
-      // public roster (`published_maintainers`) — the same two sources every
-      // crew read already names people from; nothing is fetched from the
-      // platform. Their handle only while their public page resolves.
+      // public roster (`published_maintainers`), else the name Orunbase gave
+      // when the sync added them (SC-4, `synced_name` — crew-only, read by
+      // no public query); nothing is fetched from the platform at read time.
+      // Their handle only while their public page resolves.
       const limit = Math.min(Math.max(1, Math.trunc(query.limit) || 0), 100);
       const offset = Math.min(Math.max(0, Math.trunc(query.offset) || 0), 100_000);
       const needle = (query.q ?? "").trim().slice(0, 80);
@@ -2601,7 +2605,7 @@ export function createOpenproductRepository(sql: SqlExecutor): OpenproductReposi
           WHERE lm.profile_id = $1
             AND ($2::text IS NULL OR lm.role = $2)
             AND ($3::text IS NULL
-                 OR coalesce(cc.display_name, pm.display_name, '') ILIKE $3 ESCAPE '\\'
+                 OR coalesce(cc.display_name, pm.display_name, lm.synced_name, '') ILIKE $3 ESCAPE '\\'
                  OR coalesce(h.handle, '') ILIKE $3 ESCAPE '\\')`;
       const [page, total, counts] = await Promise.all([
         sql.execute<{
@@ -2614,12 +2618,12 @@ export function createOpenproductRepository(sql: SqlExecutor): OpenproductReposi
           added_at: string | Date;
         }>(
           `SELECT lm.subject_id, lm.role, lm.source, lm.locked,
-                  coalesce(cc.display_name, pm.display_name) AS display_name,
+                  coalesce(cc.display_name, pm.display_name, lm.synced_name) AS display_name,
                   h.handle, lm.added_at
              ${from}
             ORDER BY CASE lm.role WHEN 'lead' THEN 0 WHEN 'maintainer' THEN 1 ELSE 2 END,
-                     lower(coalesce(cc.display_name, pm.display_name, h.handle, '')) = '',
-                     lower(coalesce(cc.display_name, pm.display_name, h.handle, '')),
+                     lower(coalesce(cc.display_name, pm.display_name, lm.synced_name, h.handle, '')) = '',
+                     lower(coalesce(cc.display_name, pm.display_name, lm.synced_name, h.handle, '')),
                      lm.added_at, lm.subject_id
             LIMIT $4 OFFSET $5`,
           [profileId, query.role, pattern, limit, offset],
@@ -2732,6 +2736,215 @@ export function createOpenproductRepository(sql: SqlExecutor): OpenproductReposi
       return res.rows.map((row) => row.id);
     },
 
+
+    // ---- synced from Orunbase (SC-4, seam S14) ----
+
+    async listProfilesLinkedToProject(orgId, projectId) {
+      // THE STORED GRANT IS THE PROOF. A listing that never completed the
+      // link flow (or whose workspace went private, which clears the grant)
+      // names no project the platform can speak for, and gets nothing.
+      const res = await sql.execute<{ id: string; slug: string }>(
+        `SELECT id, slug FROM openproduct.profiles
+          WHERE org_id = $1 AND project_id = $2 AND link_grant IS NOT NULL
+          ORDER BY id`,
+        [orgId, projectId],
+      );
+      return res.rows.map((row) => ({ id: row.id, slug: row.slug }));
+    },
+
+    async getProductSync(profileId) {
+      const res = await sql.execute<{
+        roster_issued_at: string | Date | null;
+        roster_event_id: string | null;
+        synced_at: string | Date;
+      }>(
+        `SELECT roster_issued_at, roster_event_id, synced_at
+           FROM openproduct.product_syncs WHERE profile_id = $1`,
+        [profileId],
+      );
+      const row = res.rows[0];
+      return row
+        ? { rosterIssuedAt: iso(row.roster_issued_at), rosterEventId: row.roster_event_id, syncedAt: iso(row.synced_at)! }
+        : null;
+    },
+
+    async applyCrewRoster(profileId, members, at) {
+      // ONE STATEMENT, so a crew is never half-synced: every CTE reads the
+      // crew as it stood before the statement (`before`) and the writes land
+      // together or not at all. The roles (design §3.2):
+      //
+      //   absent             added at their access's role, `source` orunbase;
+      //                      an admin is a LOCKED Lead
+      //   present, admin     Lead and locked (re-locked when it was not)
+      //   present, locked,   unlocked, at their access's role — a Lead set
+      //   no longer admin    by Orunbase is changed only there, both ways
+      //   present otherwise  the role the crew chose stands
+      //   not listed         removed, whatever brought them (the crew is
+      //                      everyone with access on Orunbase), and their
+      //                      consent-roster edge retired, so the public page
+      //                      drops them; private threads close to them by
+      //                      the same decision table as ever
+      //
+      // The caller refuses an empty list before it gets here: an empty
+      // snapshot would remove everybody.
+      if (members.length === 0) return [];
+      const res = await sql.execute<{
+        change: string;
+        subject_id: string;
+        role: string;
+        from_role: string | null;
+        locked: boolean | null;
+      }>(
+        `WITH incoming AS (
+           SELECT DISTINCT ON (x.subject_id) x.subject_id, x.access, x.name,
+                  CASE x.access WHEN 'admin' THEN 'lead' WHEN 'builder' THEN 'maintainer' ELSE 'member' END AS role
+             FROM unnest($2::text[], $3::text[], $4::text[]) AS x(subject_id, access, name)
+         ),
+         before AS (
+           SELECT subject_id, role, locked FROM openproduct.listing_maintainers
+            WHERE profile_id = $1
+         ),
+         added AS (
+           INSERT INTO openproduct.listing_maintainers
+             (profile_id, subject_id, role, source, locked, added_by, synced_name, added_at)
+           SELECT $1, i.subject_id, i.role, 'orunbase', i.access = 'admin', 'orunbase', i.name, $5::timestamptz
+             FROM incoming i
+            WHERE NOT EXISTS (SELECT 1 FROM before b WHERE b.subject_id = i.subject_id)
+           ON CONFLICT (profile_id, subject_id) DO NOTHING
+           RETURNING subject_id, role, locked
+         ),
+         updated AS (
+           UPDATE openproduct.listing_maintainers lm
+              SET role = CASE
+                           WHEN i.access = 'admin' THEN 'lead'
+                           WHEN lm.locked THEN i.role
+                           ELSE lm.role
+                         END,
+                  locked = (i.access = 'admin'),
+                  synced_name = i.name
+             FROM incoming i
+            WHERE lm.profile_id = $1 AND lm.subject_id = i.subject_id
+           RETURNING lm.subject_id, lm.role, lm.locked
+         ),
+         removed AS (
+           DELETE FROM openproduct.listing_maintainers lm
+            WHERE lm.profile_id = $1
+              AND NOT EXISTS (SELECT 1 FROM incoming i WHERE i.subject_id = lm.subject_id)
+           RETURNING lm.subject_id, lm.role
+         ),
+         retired AS (
+           UPDATE openproduct.product_people pp
+              SET state = 'retired', retired_at = $5::timestamptz, retired_by = 'orunbase'
+            WHERE pp.profile_id = $1
+              AND pp.state IN ('pending', 'confirmed')
+              AND pp.subject_id IN (SELECT subject_id FROM removed)
+           RETURNING pp.subject_id
+         )
+         SELECT 'added' AS change, a.subject_id, a.role, NULL AS from_role, a.locked FROM added a
+         UNION ALL
+         SELECT 'removed', r.subject_id, r.role, NULL, NULL FROM removed r
+         UNION ALL
+         SELECT CASE WHEN u.locked THEN 'relocked' ELSE 'unlocked' END, u.subject_id, u.role, b.role, u.locked
+           FROM updated u JOIN before b ON b.subject_id = u.subject_id
+          WHERE b.locked <> u.locked
+         ORDER BY 1, 2`,
+        [
+          profileId,
+          members.map((m) => m.subjectId),
+          members.map((m) => m.access),
+          members.map((m) => m.displayName),
+          at,
+        ],
+      );
+      return res.rows.map((row): CrewSyncChange => {
+        const role = row.role as ListingRole;
+        if (row.change === "added") return { change: "added", subjectId: row.subject_id, role, locked: row.locked === true };
+        if (row.change === "removed") return { change: "removed", subjectId: row.subject_id, role };
+        return {
+          change: row.change === "relocked" ? "relocked" : "unlocked",
+          subjectId: row.subject_id,
+          from: row.from_role as ListingRole,
+          role,
+        };
+      });
+    },
+
+    async recordRosterSync(profileId, input) {
+      // FORWARD ONLY: a roster issued before the one recorded never replaces
+      // it, so two deliveries crossing in flight leave the newer one's mark.
+      const res = await sql.execute<{ profile_id: string }>(
+        `INSERT INTO openproduct.product_syncs (profile_id, roster_issued_at, roster_event_id, synced_at)
+         VALUES ($1, $2::timestamptz, $3, $4::timestamptz)
+         ON CONFLICT (profile_id) DO UPDATE
+           SET roster_issued_at = EXCLUDED.roster_issued_at,
+               roster_event_id  = EXCLUDED.roster_event_id,
+               synced_at        = GREATEST(openproduct.product_syncs.synced_at, EXCLUDED.synced_at)
+         WHERE openproduct.product_syncs.roster_issued_at IS NULL
+            OR openproduct.product_syncs.roster_issued_at <= EXCLUDED.roster_issued_at
+         RETURNING profile_id`,
+        [profileId, input.issuedAt, input.eventId, input.at],
+      );
+      return res.rows.length > 0;
+    },
+
+    async upsertProductDeploy(profileId, deploy, at) {
+      // NEWER WINS, column by column under one condition: a deploy reported
+      // late (an older `deployedAt`) changes nothing about the row except,
+      // possibly, how early the first deploy was. The same delivery twice
+      // writes the same values.
+      const res = await sql.execute<{ run_ref: string; deployed_at: string | Date }>(
+        `WITH up AS (
+           INSERT INTO openproduct.product_deploys
+             (profile_id, environment, url, version, run_ref, deployed_at, first_deployed_at, updated_at)
+           VALUES ($1, $2, $3, $4, $5, $6::timestamptz, $6::timestamptz, $7::timestamptz)
+           ON CONFLICT (profile_id, environment) DO UPDATE
+             SET url               = CASE WHEN EXCLUDED.deployed_at > openproduct.product_deploys.deployed_at THEN EXCLUDED.url ELSE openproduct.product_deploys.url END,
+                 version           = CASE WHEN EXCLUDED.deployed_at > openproduct.product_deploys.deployed_at THEN EXCLUDED.version ELSE openproduct.product_deploys.version END,
+                 run_ref           = CASE WHEN EXCLUDED.deployed_at > openproduct.product_deploys.deployed_at THEN EXCLUDED.run_ref ELSE openproduct.product_deploys.run_ref END,
+                 deployed_at       = GREATEST(openproduct.product_deploys.deployed_at, EXCLUDED.deployed_at),
+                 first_deployed_at = LEAST(openproduct.product_deploys.first_deployed_at, EXCLUDED.deployed_at),
+                 updated_at        = EXCLUDED.updated_at
+           RETURNING run_ref, deployed_at
+         ),
+         synced AS (
+           INSERT INTO openproduct.product_syncs (profile_id, synced_at)
+           VALUES ($1, $7::timestamptz)
+           ON CONFLICT (profile_id) DO UPDATE
+             SET synced_at = GREATEST(openproduct.product_syncs.synced_at, EXCLUDED.synced_at)
+           RETURNING profile_id
+         )
+         SELECT up.run_ref, up.deployed_at FROM up, synced`,
+        [profileId, deploy.environment, deploy.url, deploy.version, deploy.runRef, deploy.deployedAt, at],
+      );
+      const row = res.rows[0];
+      return !!row && row.run_ref === deploy.runRef && Date.parse(iso(row.deployed_at)!) === Date.parse(deploy.deployedAt);
+    },
+
+    async listProductDeploys(profileId) {
+      const res = await sql.execute<{
+        environment: string;
+        url: string | null;
+        version: string | null;
+        run_ref: string;
+        deployed_at: string | Date;
+        first_deployed_at: string | Date;
+      }>(
+        `SELECT environment, url, version, run_ref, deployed_at, first_deployed_at
+           FROM openproduct.product_deploys WHERE profile_id = $1
+          ORDER BY CASE environment WHEN 'stage' THEN 0 ELSE 1 END`,
+        [profileId],
+      );
+      return res.rows.map(
+        (row): ProductDeployRecord => ({
+          environment: row.environment as DeployEnvironment,
+          url: row.url,
+          version: row.version,
+          runRef: row.run_ref,
+          deployedAt: iso(row.deployed_at)!,
+          firstDeployedAt: iso(row.first_deployed_at)!,
+        }),
+      );
+    },
 
     // ---- trust and safety (openproduct-commons TS0) ----
 

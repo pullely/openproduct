@@ -53,15 +53,20 @@ export function shortDay(iso: string): string | null {
   return new Date(at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric", timeZone: "UTC" });
 }
 
+/** SC3 — what a row says when its link is the one a deploy reported. */
+export const DEPLOYED_BY_ORUN = "Deployed by Orun";
+
 /**
  * Who set a row and when: `Link set by Ada Iyer · Nov 15, 2026`, `Link set by
- * the crew` for somebody who is not on the public roster, nothing when nobody
- * is recorded. (SC3 adds "Deployed by Orun" for a value a deploy wrote.)
+ * the crew` for somebody who is not on the public roster, `Deployed by Orun ·
+ * Nov 15, 2026` when the row's link is the synced one (SC3), nothing when
+ * nobody is recorded.
  */
 export function setByLine(setBy: WhereItRunsBy | null, at: string | null): string | null {
   if (!setBy) return null;
-  const who = setBy.name?.trim() || (setBy.handle ? `@${setBy.handle}` : "the crew");
   const when = at ? shortDay(at) : null;
+  if (setBy.kind === "orun") return when ? `${DEPLOYED_BY_ORUN} · ${when}` : DEPLOYED_BY_ORUN;
+  const who = setBy.name?.trim() || (setBy.handle ? `@${setBy.handle}` : "the crew");
   return when ? `Link set by ${who} · ${when}` : `Link set by ${who}`;
 }
 
@@ -76,7 +81,11 @@ export function whereItRunsRows(where: WhereItRuns): readonly WhereItRunsRow[] {
           label: "STAGE",
           url: stage.url,
           shown: shownAddress(stage.url),
-          meta: [stage.note, setByLine(stage.setBy, stage.at)].filter((part): part is string => Boolean(part)).join(" · ") || "On stage",
+          // SC3 — the stage deploy's version, when Orunbase reported one.
+          meta:
+            [stage.version ?? null, stage.note, setByLine(stage.setBy, stage.at)]
+              .filter((part): part is string => Boolean(part))
+              .join(" · ") || "On stage",
         }
       : { env: "stage", label: "STAGE", url: null, shown: null, meta: NOT_ON_STAGE },
     production
@@ -102,14 +111,16 @@ export function whereItRunsRows(where: WhereItRuns): readonly WhereItRunsRow[] {
  * The header's ink button (board `Stage`: `tryLabel`): "Open it" to the
  * production link once the product is in production, else "Try it" to the
  * stage link — and nothing when there is neither. The stage link IS the try
- * link (design §1.7).
+ * link (design §1.7); with none of the crew's own, the stage deploy's (SC3).
  */
 export function liveAction(
   profile: Pick<PublicProfile, "stage" | "tryUrl" | "whereItRuns">,
 ): { label: "Try it" | "Open it"; href: string } | null {
-  const production = whereItRunsOfProfile(profile).production;
-  if (profile.stage === "production" && production) return { label: "Open it", href: production.url };
-  return profile.tryUrl ? { label: "Try it", href: profile.tryUrl } : null;
+  const where = whereItRunsOfProfile(profile);
+  if (profile.stage === "production" && where.production) return { label: "Open it", href: where.production.url };
+  // SC3 — the stage row's link is the crew's try link ?? the stage deploy's.
+  const tryHref = profile.tryUrl ?? where.stage?.url ?? null;
+  return tryHref ? { label: "Try it", href: tryHref } : null;
 }
 
 /**

@@ -86,28 +86,39 @@ runs, and the crew does not follow who has access to the project on Orunbase.
    pull would need openproduct to call the platform with a credential, which
    the seam forbids (`19-openproduct-seam.md` property 1).
 
-### 3.1 The seam edge S13 (both repos build to this)
+### 3.1 The seam edge S14 (both repos build to this)
 
 Same transport as S6: a signed webhook from membership-worker to
 `{LISTING_SEAM_URL}/seam/v1/project-events`, the canonical
 `X-Webhook-{Signature,Timestamp,ID}` scheme with `LISTING_SEAM_SECRET`, the
-`{seam, eventId, occurredAt, type, data}` envelope. Exact keys, pinned by
-fixtures on both sides (`seam-fixtures/project.roster.json`,
-`seam-fixtures/project.deploy.json`).
+`{seam, eventId, occurredAt, type, data}` envelope, where `eventId` is the
+delivery's `X-Webhook-ID`. Exact keys, pinned by fixtures on both sides
+(`seam-fixtures/project.roster.json`, `seam-fixtures/project.deploy.json`,
+copied byte for byte from the platform's). Numbered S14 as built: S13 was
+already the workspace picker.
 
 ```jsonc
 // type: "project.roster" — a full snapshot, never a delta
-{ "orgId": "<uuid>", "projectId": "<uuid>",
+{ "orgId": "org_…", "projectId": "prj_…",
   "members": [ { "subjectId": "usr_…", "displayName": "…" | null,
                  "access": "admin" | "builder" | "viewer" } ],
   "issuedAt": "<RFC3339>" }
 
 // type: "project.deploy" — one environment's last successful deploy
-{ "orgId": "<uuid>", "projectId": "<uuid>",
+{ "orgId": "org_…", "projectId": "prj_…",
   "environment": "stage" | "production",
   "url": "https://…" | null, "version": "…" | null,
   "runRef": "<run public id>", "deployedAt": "<RFC3339>" }
 ```
+
+- **Ids** are the PUBLIC forms (`org_…`, `prj_…`), as the S4 grant and the
+  workspace event carry them; the receiver parses them.
+- **As built on the platform** (sourceplane/orun-cloud#2405): a roster is a
+  full snapshot or nothing — the platform sends nothing when any read fails,
+  and nothing for a workspace that is not active. A deploy's `url` is always
+  `null` today (no run knows its environment's address); `version` is the
+  run's label or tag, or `null`; `deployedAt` falls back to the moment of
+  sending when the run has no finish time.
 
 - **Which projects**: those with a listed door (the S5 door minted with the
   link grant). Nothing is sent for any other project.
@@ -122,10 +133,18 @@ fixtures on both sides (`seam-fixtures/project.roster.json`,
   changed; a join request approved), on link-grant mint, and in a daily
   sweep; deploy when a run finishes successfully in an environment named
   `stage`/`staging` (→ stage) or `prod`/`production` (→ production).
-- **Receiver**: the gateway verifies, core applies. Roster: idempotent by
-  `eventId`, a roster older than the last applied one is ignored, adds the
-  missing, re-locks admins as Lead, removes the absent. Deploy: upsert per
-  environment, newer `deployedAt` wins.
+- **Receiver**: the gateway verifies, core applies, to every listing whose
+  stored link grant names the project. Roster: a repeated `eventId` or a
+  roster older than the last applied one is ignored, and so (said in the
+  log) is one that lists nobody or no admin — applying it would empty the
+  crew or leave it with no Lead; otherwise it adds the missing, re-locks
+  admins as Lead, unlocks former admins to their access's role, keeps every
+  other chosen role, and removes the absent (their consent-roster edge
+  retired). Deploy: upsert per environment, newer `deployedAt` wins, the
+  first deploy kept for "live since".
+- **Order**: the roster sent when the link grant is minted can arrive before
+  openproduct has stored the grant; it then finds no listing and is dropped.
+  The next change, or the daily sweep, heals it.
 - **Failure**: fail-soft and at-least-once, like S6: a missed delivery leaves
   openproduct stale but honest until the next change or the daily sweep.
 

@@ -55,6 +55,9 @@ function deps(pending: number, openedAt = OPENED): PublicHandlerDeps {
     },
     // MD2 — the media rows; none on these fixtures.
     // OPR-3 — the milestones; none on these fixtures.
+    async listProductDeploys() {
+      return [];
+    },
     async listPublicProductMilestones() {
       return [];
     },

@@ -7,6 +7,8 @@
 // S7 passes core's body through verbatim, because the platform's purge
 // orchestrator parses its context receipt from it.
 
+import { readFileSync } from "node:fs";
+
 import { route } from "@openproduct-gateway/router";
 import { verifySeamSignature } from "@openproduct-gateway/seam";
 import type { Env } from "@openproduct-gateway/env";
@@ -232,5 +234,91 @@ describe("the S7 receiver (/seam/v1/workspace-purge) is synchronous", () => {
       env(core),
     );
     expect(res.status).toBe(503);
+  });
+});
+
+describe("the S14 receiver (/seam/v1/project-events) — SC-4", () => {
+  // The platform's own fixtures, as the bytes it sends.
+  const FIXTURES = new URL("../../../seam-fixtures/", import.meta.url);
+  const ROSTER = readFileSync(new URL("project.roster.json", FIXTURES), "utf-8");
+  const DEPLOY = readFileSync(new URL("project.deploy.json", FIXTURES), "utf-8");
+  const idOf = (body: string) => (JSON.parse(body) as { eventId: string }).eventId;
+
+  function ctxStub() {
+    const purged: string[][] = [];
+    const waits: Promise<unknown>[] = [];
+    return {
+      purged,
+      waits,
+      ctx: {
+        waitUntil(promise: Promise<unknown>) {
+          waits.push(promise);
+        },
+        cache: {
+          async purge({ tags }: { tags: string[] }) {
+            purged.push(tags);
+            return { success: true };
+          },
+        },
+      },
+    };
+  }
+
+  async function signed(body: string, deliveryId: string | null, secret = SECRET) {
+    const ts = nowSeconds();
+    return seamPost("/seam/v1/project-events", body, {
+      "X-Webhook-Signature": await sign(body, ts, secret),
+      "X-Webhook-Timestamp": ts,
+      ...(deliveryId ? { "X-Webhook-ID": deliveryId } : {}),
+    });
+  }
+
+  it("verifies, then forwards the body verbatim to core's project-event receiver, and purges the listing and people pages after a roster", async () => {
+    const captured: Captured[] = [];
+    const core = coreStub(Response.json({ data: { recorded: true } }), captured);
+    const c = ctxStub();
+    const res = await route(await signed(ROSTER, idOf(ROSTER)), env(core), { ctx: c.ctx });
+    expect(res.status).toBe(200);
+    expect(captured).toHaveLength(1);
+    expect(captured[0]!.url).toContain("/internal/openproduct/seam/project-event");
+    expect(captured[0]!.body).toBe(ROSTER);
+    await Promise.all(c.waits);
+    expect(c.purged).toEqual([["op-listing", "op-people"]]);
+  });
+
+  it("a deploy purges the listing only", async () => {
+    const c = ctxStub();
+    const res = await route(await signed(DEPLOY, idOf(DEPLOY)), env(coreStub(Response.json({ data: { recorded: true } }))), { ctx: c.ctx });
+    expect(res.status).toBe(200);
+    await Promise.all(c.waits);
+    expect(c.purged).toEqual([["op-listing"]]);
+  });
+
+  it("401s a bad signature and never touches core", async () => {
+    const captured: Captured[] = [];
+    const res = await route(await signed(ROSTER, idOf(ROSTER), "wrong"), env(coreStub(Response.json({}), captured)));
+    expect(res.status).toBe(401);
+    expect(captured).toEqual([]);
+  });
+
+  it("400s a body whose eventId is not its delivery's X-Webhook-ID (or has none)", async () => {
+    const captured: Captured[] = [];
+    const core = coreStub(Response.json({}), captured);
+    expect((await route(await signed(ROSTER, "dlv_other"), env(core))).status).toBe(400);
+    expect((await route(await signed(ROSTER, null), env(core))).status).toBe(400);
+    expect(captured).toEqual([]);
+  });
+
+  it("purges nothing when core refused", async () => {
+    const c = ctxStub();
+    const core = coreStub(Response.json({ error: { code: "validation_error" } }, { status: 422 }));
+    const res = await route(await signed(ROSTER, idOf(ROSTER)), env(core), { ctx: c.ctx });
+    expect(res.status).toBe(422);
+    expect(c.waits).toEqual([]);
+  });
+
+  it("503s unconfigured and 405s anything but POST, like every seam path", async () => {
+    expect((await route(await seamPost("/seam/v1/project-events", ROSTER, {}), env(coreStub(Response.json({})), null))).status).toBe(503);
+    expect((await route(new Request("https://gw.test/seam/v1/project-events"), env(coreStub(Response.json({}))))).status).toBe(405);
   });
 });

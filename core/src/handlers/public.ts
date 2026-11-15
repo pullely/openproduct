@@ -49,13 +49,14 @@ import {
   milestoneCountsOf,
   whereItRunsOf,
 } from "@openproduct/contracts";
-import type { ProductStage } from "@openproduct/contracts";
+import type { ProductStage, WhereItRunsSource } from "@openproduct/contracts";
 import type {
   OpenproductRepository,
   ProfileRecord,
   PublicContributorRecord,
   ProductMediaRecord,
   ProductMilestoneRecord,
+  ProductDeployRecord,
 } from "@openproduct/db";
 
 import { orgPublicId, type Uuid } from "../ids.js";
@@ -90,6 +91,8 @@ export interface PublicHandlerDeps {
     | "getPublicContributor"
     // OPR-3 — the product page's milestones, and the count over them.
     | "listPublicProductMilestones"
+    // SC-4 — the synced deploys Where it runs falls back to.
+    | "listProductDeploys"
     // FL0 — the follower count on a profile, and the handle→subject
     // translation it needs. The count only; nothing lists followers.
     | "getSubjectsForHandles"
@@ -358,6 +361,16 @@ function daysSince(iso: string, now: number): number {
   return Number.isNaN(at) ? 0 : Math.floor((now - at) / 86_400_000);
 }
 
+/** SC-4 — the synced deploys as `whereItRunsOf` reads them. One function for
+ *  the page's projection and the catalogue's, so the two cannot disagree. */
+export function whereItRunsDeploysOf(deploys: readonly ProductDeployRecord[]): NonNullable<WhereItRunsSource["deploys"]> {
+  const of = (environment: "stage" | "production") => {
+    const row = deploys.find((d) => d.environment === environment);
+    return row ? { url: row.url, version: row.version, deployedAt: row.deployedAt, firstDeployedAt: row.firstDeployedAt } : null;
+  };
+  return { stage: of("stage"), production: of("production") };
+}
+
 function profileOf(
   profile: ProfileRecord,
   maintainers: Array<{
@@ -398,6 +411,8 @@ function profileOf(
   media: readonly ProductMediaRecord[],
   /** OPR-3 — the milestones, already in the crew's order. */
   milestones: readonly ProductMilestoneRecord[],
+  /** SC-4 — the synced deploys (`product_deploys`), at most one per environment. */
+  deploys: readonly ProductDeployRecord[] = [],
 ): PublicProfile {
   // OPR-3 — field by field, like everything else here: a milestone's id and
   // its position stay behind the crew's door.
@@ -449,7 +464,10 @@ function profileOf(
     // SC-2 — Where it runs. Who set a row is named THROUGH THE PUBLIC ROSTER
     // (the same rows `maintainers` below lists): a crew member who has not
     // agreed to be shown is "the crew", never a subject id.
-    whereItRuns: whereItRunsOf(profile, (subjectId) => {
+    //
+    // SC-4 — each link, version and day is the crew's ?? the synced
+    // deploy's (design §3.3); `tryUrl` above stays the crew's own word.
+    whereItRuns: whereItRunsOf({ ...profile, deploys: whereItRunsDeploysOf(deploys) }, (subjectId) => {
       const known = maintainers.find((m) => m.subjectId === subjectId);
       return known ? { name: known.displayName, handle: known.handle } : null;
     }),
@@ -615,7 +633,7 @@ export async function handlePublicProfile(
   }
 
   const at = (deps.now ?? (() => new Date()))();
-  const [maintainers, openings, metrics, demand, launch, baseline, followerCounts, launches, media, milestones] = await Promise.all([
+  const [maintainers, openings, metrics, demand, launch, baseline, followerCounts, launches, media, milestones, deploys] = await Promise.all([
     deps.repo.listPublicMaintainers(profile.id),
     deps.repo.listPublicRoleOpenings(profile.id),
     deps.repo.latestMetrics(profile.id),
@@ -639,6 +657,8 @@ export async function handlePublicProfile(
     deps.repo.listPublicMedia(profile.id),
     // OPR-3 — the milestones, in the same round: one indexed read.
     deps.repo.listPublicProductMilestones(profile.id),
+    // SC-4 — the synced deploys, in the same round: two rows at most.
+    deps.repo.listProductDeploys(profile.id as Uuid),
   ]);
   const now = at.getTime();
 
@@ -663,6 +683,7 @@ export async function handlePublicProfile(
         launches,
         media,
         milestones,
+        deploys,
       ),
       // A delisted listing renders in full AND says so. The key is absent
       // rather than null when there is nothing to say, so the visible case is

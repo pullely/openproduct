@@ -1,0 +1,18 @@
+{
+  "seam": "v1",
+  "eventId": "00000000-0000-4000-8000-000000000013",
+  "occurredAt": "2026-11-15T09:00:00.000Z",
+  "type": "project.roster",
+  "data": {
+    "orgId": "org_11111111111141118111111111111111",
+    "projectId": "prj_33333333333343338333333333333333",
+    "members": [
+      {
+        "subjectId": "usr_0123456789abcdef0123456789abcdef",
+        "displayName": "Ada Lovelace",
+        "access": "admin"
+      }
+    ],
+    "issuedAt": "2026-11-15T09:00:00.000Z"
+  }
+}

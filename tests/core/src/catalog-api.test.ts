@@ -162,6 +162,9 @@ function deps(
       // truthful default rather than a shortcut: MD1 (the store) is gated on
       // WC-C, so no listing has media today and every card's array is `[]`.
       // OPR-3 — the milestones; none on these fixtures.
+      async listProductDeploys() {
+        return [];
+      },
       async listPublicProductMilestones() {
         return [];
       },

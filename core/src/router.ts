@@ -210,8 +210,10 @@ import {
 } from "./handlers/me.js";
 import {
   handleSeamJoinRequestEvent,
+  handleSeamProjectEvent,
   handleSeamWorkspaceEvent,
   type SeamEventDeps,
+  type SeamProjectDeps,
   type SeamWorkspaceDeps,
 } from "./handlers/seam-events.js";
 import {
@@ -236,7 +238,13 @@ import {
   handleUpdateProductPost,
   type ProductPostHandlerDeps,
 } from "./handlers/product-posts.js";
-import { handleListCrew, handleSetCrewRole, handleSetCrewRoles, type CrewHandlerDeps } from "./handlers/crew.js";
+import {
+  handleListCrew,
+  handleOrunbaseSync,
+  handleSetCrewRole,
+  handleSetCrewRoles,
+  type CrewHandlerDeps,
+} from "./handlers/crew.js";
 import { errorResponse, methodNotAllowed, notFound, withTimings } from "./http.js";
 import { handleOpenproductWorkspacePurge } from "./handlers/workspace-purge.js";
 import {
@@ -286,6 +294,8 @@ const PROFILE_STAGE_RE =
   /^\/internal\/openproduct\/orgs\/([^/]+)\/profiles\/([^/]+)\/stage$/;
 // SC-3 — the crew's own list, and its roles. Beside the stage: the same door.
 const PROFILE_CREW_RE = /^\/internal\/openproduct\/orgs\/([^/]+)\/profiles\/([^/]+)\/crew$/;
+// SC-4 — the crew's Orunbase card: the sync, the crew count, the deploys.
+const PROFILE_ORUNBASE_RE = /^\/internal\/openproduct\/orgs\/([^/]+)\/profiles\/([^/]+)\/orunbase$/;
 const PROFILE_CREW_MEMBER_RE =
   /^\/internal\/openproduct\/orgs\/([^/]+)\/profiles\/([^/]+)\/crew\/([^/]+)$/;
 const PROFILE_NEEDS_YOU_RE =
@@ -393,6 +403,8 @@ const AUTH_SESSIONS_REVOKE_PATH = "/internal/openproduct/auth/sessions/revoke";
 const CREDENTIAL_READ_RE = /^\/internal\/openproduct\/credentials\/([^/]+)$/;
 const SEAM_JOIN_REQUEST_PATH = "/internal/openproduct/seam/join-request";
 const SEAM_WORKSPACE_EVENT_PATH = "/internal/openproduct/seam/workspace-event";
+/** SC-4 — seam S14: the linked project's roster and deploys. */
+const SEAM_PROJECT_EVENT_PATH = "/internal/openproduct/seam/project-event";
 
 /** CT2 — the documented catalog API. Same public branch, same guarantees;
  *  what it adds is provenance on every field (OPC-9). */
@@ -772,13 +784,18 @@ async function dispatch(
   // actor rides this path. The gateway verified the platform's webhook
   // signature before forwarding, so authenticity is settled upstream; what
   // remains here is the upsert.
-  if (url.pathname === SEAM_JOIN_REQUEST_PATH || url.pathname === SEAM_WORKSPACE_EVENT_PATH) {
+  if (
+    url.pathname === SEAM_JOIN_REQUEST_PATH ||
+    url.pathname === SEAM_WORKSPACE_EVENT_PATH ||
+    url.pathname === SEAM_PROJECT_EVENT_PATH
+  ) {
     if (request.method !== "POST") return methodNotAllowed(requestId);
     if (!env.PLATFORM_DB && !injected) {
       return errorResponse("internal_error", "Service unavailable", 503, requestId);
     }
-    const deps: SeamEventDeps & SeamWorkspaceDeps =
-      injected ?? { repo: repoFor(env, scope) };
+    const deps: SeamEventDeps & SeamWorkspaceDeps & SeamProjectDeps =
+      (injected as unknown as SeamEventDeps & SeamWorkspaceDeps & SeamProjectDeps) ?? { repo: repoFor(env, scope) };
+    if (url.pathname === SEAM_PROJECT_EVENT_PATH) return handleSeamProjectEvent(env, request, requestId, deps);
     return url.pathname === SEAM_JOIN_REQUEST_PATH
       ? handleSeamJoinRequestEvent(env, request, requestId, deps)
       : handleSeamWorkspaceEvent(env, request, requestId, deps);
@@ -1774,6 +1791,14 @@ async function maintainerRoutes(
     if (request.method === "GET") return handleListCrew(env, url, requestId, actor, orgId, profileId, crewDeps);
     if (request.method === "PUT") return handleSetCrewRoles(env, request, requestId, actor, orgId, profileId, crewDeps);
     return methodNotAllowed(requestId);
+  }
+  const orunbase = PROFILE_ORUNBASE_RE.exec(path);
+  if (orunbase) {
+    const orgId = parseOrgPublicId(orunbase[1]!);
+    const profileId = parseProfilePublicId(orunbase[2]!);
+    if (!orgId || !profileId) return notFound(requestId, path);
+    if (request.method !== "GET") return methodNotAllowed(requestId);
+    return handleOrunbaseSync(env, requestId, actor, orgId, profileId, deps as unknown as CrewHandlerDeps);
   }
   const crewMember = PROFILE_CREW_MEMBER_RE.exec(path);
   if (crewMember) {

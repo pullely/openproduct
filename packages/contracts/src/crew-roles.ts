@@ -253,4 +253,6 @@ export const CREW_API = {
   /** PUT `CrewRoleRequest`. */
   member: (org: string, profile: string, subjectId: string): string =>
     `/v1/organizations/${org}/openproduct/profiles/${profile}/crew/${encodeURIComponent(subjectId)}`,
+  /** SC-4 — GET the crew's Orunbase card (`OrunbaseSync`). */
+  orunbase: (org: string, profile: string): string => `/v1/organizations/${org}/openproduct/profiles/${profile}/orunbase`,
 } as const;

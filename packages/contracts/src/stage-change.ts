@@ -19,9 +19,9 @@
 // WHERE IT RUNS is the public half: the STAGE row (the stage link, what people
 // can try, who set it and when) and the PRODUCTION row (the production link,
 // live since, version, who can use it, who set it and when). SC3 fills both
-// from Orunbase deploys as well (design §3.3): the value a page shows is then
-// the crew's ?? the synced one, and `setBy` gains a `{kind: "orun"}` arm. Only
-// the crew's values exist in SC1, and nothing here pretends otherwise.
+// from Orunbase deploys as well (design §3.3): the value a page shows is the
+// crew's ?? the synced one, each row says which (`source`), and `setBy` has a
+// `{kind: "orun"}` arm for a link a deploy reported.
 //
 // PURE: no I/O. The clock is a parameter, so "not in the future" is testable.
 
@@ -367,30 +367,39 @@ export function validateStageChange(
 // ---------------------------------------------------------------------------
 
 /**
- * Who set a row. SC1 knows only the crew: a person on the public roster by
- * their name and handle, or `null` name and handle for one who is not on it
- * (they have not agreed to be shown) — the row then says "set by the crew".
- * SC3 adds `{kind: "orun", runRef}` for a value a deploy wrote.
+ * Who set a row: the crew — a person on the public roster by their name and
+ * handle, or `null` name and handle for one who is not on it (they have not
+ * agreed to be shown), and the row then says "set by the crew" — or Orun
+ * (SC3, `kind: "orun"`, name and handle always null) when the row's link is
+ * the one a deploy reported.
  */
 export interface WhereItRunsBy {
-  kind: "crew";
+  kind: "crew" | "orun";
   name: string | null;
   handle: string | null;
 }
 
 export const WHERE_IT_RUNS_BY_KEYS = ["handle", "kind", "name"] as const;
 
+/** Where a shown value came from (design §3.3): the crew's own, or the
+ *  value Orunbase synced, shown because the crew set none (or set the same). */
+export type WhereItRunsValueSource = "crew" | "synced";
+
 export interface WhereItRunsStage {
   url: string;
   /** What people can try. */
   note: string | null;
+  /** The last stage deploy's version, when Orunbase reported one. */
+  version: string | null;
+  source: { url: WhereItRunsValueSource };
   /** Null when the page does not know who put it on stage (the product has
    *  moved on since, or it was on stage before the four stages). */
   setBy: WhereItRunsBy | null;
   at: string | null;
 }
 
-export const WHERE_IT_RUNS_STAGE_KEYS = ["at", "note", "setBy", "url"] as const;
+export const WHERE_IT_RUNS_STAGE_KEYS = ["at", "note", "setBy", "source", "url", "version"] as const;
+export const WHERE_IT_RUNS_STAGE_SOURCE_KEYS = ["url"] as const;
 
 export interface WhereItRunsProduction {
   url: string;
@@ -398,11 +407,13 @@ export interface WhereItRunsProduction {
   since: string;
   version: string | null;
   access: ProductionAccess;
+  source: { url: WhereItRunsValueSource; since: WhereItRunsValueSource; version: WhereItRunsValueSource };
   setBy: WhereItRunsBy | null;
   at: string | null;
 }
 
-export const WHERE_IT_RUNS_PRODUCTION_KEYS = ["access", "at", "setBy", "since", "url", "version"] as const;
+export const WHERE_IT_RUNS_PRODUCTION_KEYS = ["access", "at", "setBy", "since", "source", "url", "version"] as const;
+export const WHERE_IT_RUNS_PRODUCTION_SOURCE_KEYS = ["since", "url", "version"] as const;
 
 /** The strip under a product's header, for everyone. Null rows are "Not on
  *  stage yet" and "Not in production yet". */
@@ -412,6 +423,14 @@ export interface WhereItRuns {
 }
 
 export const WHERE_IT_RUNS_KEYS = ["production", "stage"] as const;
+
+/** One environment's last deploy as Orunbase reported it (SC3, seam S14). */
+export interface WhereItRunsDeploy {
+  url: string | null;
+  version: string | null;
+  deployedAt: string;
+  firstDeployedAt: string;
+}
 
 /** What a stored product holds, as `whereItRunsOf` reads it. */
 export interface WhereItRunsSource {
@@ -424,13 +443,36 @@ export interface WhereItRunsSource {
   productionAccess?: string | null;
   stageChangedAt?: string | null;
   stageChangedBy?: string | null;
+  /** SC3 — the synced deploys, per environment. */
+  deploys?: { stage?: WhereItRunsDeploy | null; production?: WhereItRunsDeploy | null };
+}
+
+/**
+ * The crew's value ?? the synced one (design §3.3), and which it is. A crew
+ * value equal to the synced one reads as synced: the page then says what a
+ * deploy says, and the form shows the green line.
+ */
+export function effectiveValue(
+  crew: string | null | undefined,
+  synced: string | null | undefined,
+): { value: string | null; source: WhereItRunsValueSource } {
+  if (crew) return { value: crew, source: synced && synced === crew ? "synced" : "crew" };
+  if (synced) return { value: synced, source: "synced" };
+  return { value: null, source: "crew" };
 }
 
 /**
  * The projection, field by field. The STAGE row shows while the product is on
  * stage or in production and has a stage link; the PRODUCTION row while it is
- * in production. "Who set it and when" is the last stage change, so it belongs
- * to the row that change made: the STAGE row's while on stage, the
+ * in production. Each link, version and "live since" is the crew's ?? the
+ * synced deploy's: the stage link is the crew's try link ?? the stage
+ * deploy's address, the stage version the stage deploy's; production's link,
+ * version and day the crew's ?? the production deploy's (its first deploy's
+ * day for "live since").
+ *
+ * "Who set it and when": "Deployed by Orun" and the deploy's moment when the
+ * row's LINK is the synced one; otherwise the last stage change, so it
+ * belongs to the row that change made — the STAGE row's while on stage, the
  * PRODUCTION row's once in production. `nameOf` resolves the person through
  * the public roster; it answers null for somebody who is not on it.
  */
@@ -443,28 +485,42 @@ export function whereItRunsOf(
     const known = nameOf(source.stageChangedBy);
     return { kind: "crew", name: known?.name ?? null, handle: known?.handle ?? null };
   };
+  const orun: WhereItRunsBy = { kind: "orun", name: null, handle: null };
+  const stageDeploy = source.deploys?.stage ?? null;
+  const productionDeploy = source.deploys?.production ?? null;
   const live = source.stage === "stage" || source.stage === "production";
+
+  const stageUrl = effectiveValue(source.tryUrl, stageDeploy?.url);
+  const stageSynced = stageUrl.source === "synced";
   const stage: WhereItRunsStage | null =
-    live && source.tryUrl
+    live && stageUrl.value
       ? {
-          url: source.tryUrl,
+          url: stageUrl.value,
           note: source.stageNote ?? null,
-          setBy: source.stage === "stage" ? by() : null,
-          at: source.stage === "stage" ? (source.stageChangedAt ?? null) : null,
+          version: stageDeploy?.version ?? null,
+          source: { url: stageUrl.source },
+          setBy: stageSynced ? orun : source.stage === "stage" ? by() : null,
+          at: stageSynced ? stageDeploy!.deployedAt : source.stage === "stage" ? (source.stageChangedAt ?? null) : null,
         }
       : null;
+
+  const productionUrl = effectiveValue(source.productionUrl, productionDeploy?.url);
+  const since = effectiveValue(source.productionSince, productionDeploy ? productionDeploy.firstDeployedAt.slice(0, 10) : null);
+  const version = effectiveValue(source.productionVersion, productionDeploy?.version);
+  const productionSynced = productionUrl.source === "synced";
   const production: WhereItRunsProduction | null =
     source.stage === "production" &&
-    source.productionUrl &&
-    source.productionSince &&
+    productionUrl.value &&
+    since.value &&
     isProductionAccess(source.productionAccess)
       ? {
-          url: source.productionUrl,
-          since: source.productionSince,
-          version: source.productionVersion ?? null,
+          url: productionUrl.value,
+          since: since.value,
+          version: version.value,
           access: source.productionAccess,
-          setBy: by(),
-          at: source.stageChangedAt ?? null,
+          source: { url: productionUrl.source, since: since.source, version: version.source },
+          setBy: productionSynced ? orun : by(),
+          at: productionSynced ? productionDeploy!.deployedAt : (source.stageChangedAt ?? null),
         }
       : null;
   return { stage, production };

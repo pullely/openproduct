@@ -56,6 +56,8 @@ export const LOG_MESSAGES = {
   // ── media ──
   media_derivative_skipped: { level: "warn", means: "The zone answered a derivative request with something that was not a WebP.", fields: ["width", "status", "contentType", "requestId"] },
   media_derivative_failed: { level: "warn", means: "A derivative request threw.", fields: ["width", "reason", "requestId"] },
+  // ── the seam (SC-4, S14) ──
+  seam_roster_ignored: { level: "warn", means: "A project.roster was not applied because it listed nobody, or no admin: applying it would empty the crew or leave it with no Lead. The next roster heals it.", fields: ["reason", "eventId"] },
   // ── the cache ──
   cache_purge_failed: { level: "warn", means: "A tag purge was refused for some tags.", fields: ["tags", "errors"] },
   cache_purge_threw: { level: "warn", means: "A tag purge threw.", fields: ["tags", "error"] },

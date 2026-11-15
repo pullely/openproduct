@@ -40,7 +40,7 @@ import {
 
 import { observeRepo, parseGithubRepo, type RepoObservation } from "./github.js";
 import { readSweepState } from "./sweep.js";
-import { cacheTagHeader, purgeTags, purgeTagsForWrite } from "./tags.js";
+import { TAG_LISTING, TAG_PEOPLE, cacheTagHeader, purgeTags, purgeTagsForWrite } from "./tags.js";
 import {
   handleSignUp as handleAuthSignUp,
   handleVerify as handleAuthVerify,
@@ -277,11 +277,13 @@ const PUBLIC_PERSON_PRODUCT_POSTS_RE =
 const PUBLIC_DIRECTORY_PATH = "/v1/public/openproduct/projects";
 const PUBLIC_PROFILE_RE = /^\/v1\/public\/openproduct\/projects\/([^/]+)$/;
 
-// The seam receivers (OX5 — S6/S7). Signed by the platform, never by a
+// The seam receivers (OX5 — S6/S7; SC-4 — S14). Signed by the platform, never by a
 // browser: no CORS, no bearer, no subject — the HMAC is the whole identity.
 const SEAM_JOIN_REQUESTS_PATH = "/seam/v1/join-requests";
 const SEAM_WORKSPACE_EVENTS_PATH = "/seam/v1/workspace-events";
 const SEAM_WORKSPACE_PURGE_PATH = "/seam/v1/workspace-purge";
+// SC-4 — seam S14: the linked project's roster and deploys.
+const SEAM_PROJECT_EVENTS_PATH = "/seam/v1/project-events";
 
 /** 60s: the retraction SLA (OD-H), unchanged across the front-door swap. */
 const PUBLIC_CACHE_SECONDS = 60;
@@ -830,6 +832,7 @@ async function handleSeamDelivery(
   env: Env,
   requestId: string,
   pathname: string,
+  ctx?: WriteContext,
 ): Promise<Response> {
   if (request.method !== "POST") return methodNotAllowed(requestId);
   const secret = (env.LISTING_SEAM_SECRET ?? "").trim();
@@ -844,12 +847,33 @@ async function handleSeamDelivery(
     return errorResponse("unauthorized", "Invalid seam signature", 401, requestId);
   }
 
+  // S14 — the envelope's eventId IS the delivery's X-Webhook-ID (the
+  // platform mints one and sends it twice). A body that disagrees with its
+  // own signed delivery is refused before core sees it; the type rides out
+  // to choose what to purge once core has applied it.
+  let projectEventType: string | null = null;
+  if (pathname === SEAM_PROJECT_EVENTS_PATH) {
+    let envelope: { eventId?: unknown; type?: unknown } | null = null;
+    try {
+      envelope = JSON.parse(body) as { eventId?: unknown; type?: unknown };
+    } catch {
+      envelope = null;
+    }
+    const deliveryId = request.headers.get("x-webhook-id");
+    if (!envelope || typeof envelope.eventId !== "string" || envelope.eventId !== deliveryId) {
+      return errorResponse("bad_request", "The event id must be the delivery id", 400, requestId);
+    }
+    projectEventType = typeof envelope.type === "string" ? envelope.type : null;
+  }
+
   const target =
     pathname === SEAM_JOIN_REQUESTS_PATH
       ? "/internal/openproduct/seam/join-request"
       : pathname === SEAM_WORKSPACE_EVENTS_PATH
         ? "/internal/openproduct/seam/workspace-event"
-        : "/v1/internal/openproduct/workspace-purge";
+        : pathname === SEAM_PROJECT_EVENTS_PATH
+          ? "/internal/openproduct/seam/project-event"
+          : "/v1/internal/openproduct/workspace-purge";
   try {
     const downstream = await env.CORE.fetch(
       new URL(target, "https://openproduct.internal").toString(),
@@ -865,6 +889,13 @@ async function handleSeamDelivery(
     });
     response.headers.set("cache-control", "no-store");
     response.headers.set("x-request-id", requestId);
+    // S14 — what the sync changed is on the product page (Where it runs, the
+    // consent roster once somebody left) and, for a roster, on people's
+    // pages (what they maintain). Purged after the answer, like a crew
+    // write; a purge that fails leaves documents that expire in sixty seconds.
+    if (projectEventType && downstream.ok && ctx) {
+      ctx.waitUntil(purgeTags(ctx, projectEventType === "project.roster" ? [TAG_LISTING, TAG_PEOPLE] : [TAG_LISTING]));
+    }
     return response;
   } catch {
     return errorResponse("internal_error", "Openproduct service unavailable", 503, requestId);
@@ -1131,9 +1162,10 @@ export async function route(
   if (
     pathname === SEAM_JOIN_REQUESTS_PATH ||
     pathname === SEAM_WORKSPACE_EVENTS_PATH ||
-    pathname === SEAM_WORKSPACE_PURGE_PATH
+    pathname === SEAM_WORKSPACE_PURGE_PATH ||
+    pathname === SEAM_PROJECT_EVENTS_PATH
   ) {
-    return handleSeamDelivery(request, env, requestId, pathname);
+    return handleSeamDelivery(request, env, requestId, pathname, options?.ctx);
   }
 
   // AC1 — sign-up and verification. Before the public branch (these are writes

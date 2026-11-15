@@ -42,5 +42,5 @@ its decision file.
 - Where it runs and the stage form read crew value ?? synced value; Use
   synced clears the crew value.
 - Web: the Orunbase card in the right rail (crew only).
-- The seam spec gains S13 (the platform repo's copy is updated by the
+- The seam spec gains S14 (the platform repo's copy is updated by the
   orun-cloud task); the epic status reads complete.

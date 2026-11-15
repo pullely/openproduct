@@ -32,6 +32,7 @@ import {
   type CrewQuery,
   type CrewRoleChangeInput,
   type CrewRolesAnswer,
+  type OrunbaseSync,
   type AuthoredProductPostKind,
   type ChangeStageRequest,
   type CrewMilestone,
@@ -373,6 +374,11 @@ export function fetchCrewList(
   fetchImpl?: CrewFetch,
 ): Promise<CrewResult<CrewList>> {
   return crewRequest(token, `${CREW_API.crew(ids.org, ids.profile)}${crewQueryString(query)}`, { method: "GET" }, fetchImpl);
+}
+
+/** SC-4 — the crew's Orunbase card: the sync, the crew count, the deploys. */
+export function fetchOrunbaseSync(token: string, ids: CrewIds, fetchImpl?: CrewFetch): Promise<CrewResult<OrunbaseSync>> {
+  return crewRequest(token, CREW_API.orunbase(ids.org, ids.profile), { method: "GET" }, fetchImpl);
 }
 
 /** One save from Edit crew: several role changes, one request. */
