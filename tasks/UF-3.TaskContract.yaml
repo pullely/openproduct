@@ -1,0 +1,29 @@
+# UF-3: milestone UF3, calm tab switching and feed loading. A move between
+# Feed, Products and Help wanted never feels like a reload: no progress bar,
+# the bar and the ground hold still, only the content crossfades, and the
+# current section's underline glides. The feed's posts rise in on a fresh
+# load only. Reduced motion turns all of it off.
+# The file is the contract; the task itself lives in Orunbase.
+apiVersion: orun.io/v1
+kind: TaskContract
+metadata:
+  name: UF-3
+  title: "UF3: calm tab switching and feed loading"
+spec:
+  goal: Moving between the three sections swaps only the content with a short crossfade and a gliding underline, and the feed shows skeletons only while loading.
+  affects:
+    - web/src/**
+    - tests/web/**
+    - tests/web-perf/**
+    - specs/epics/openproduct-ui-fixes/**
+    - tasks/**
+  deps:
+    - UF-2
+  doneWhen:
+    - Navigating between Feed, Products and Help wanted keeps the bar and background still and crossfades only the content
+    - A 2px ink line under the current section moves to the new section on navigation; hover previews it
+    - No top-of-page progress bar runs on navigation
+    - Feed shows skeleton posts while posts load and a staggered entry once; not when content is already there
+    - prefers-reduced-motion disables every one of these animations
+    - Web tests and web-perf lanes pass in CI
+  gates: []

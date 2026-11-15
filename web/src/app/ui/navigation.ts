@@ -88,7 +88,45 @@ export function navigationStarted(href: string, current: string): void {
 }
 
 /** The route changed, or the wait was given up on. */
+/**
+ * THE SECTION SWITCH (openproduct-ui-fixes UF3, design §3). A move between
+ * Feed, Products and Help wanted runs inside a view transition: the bar and
+ * the page ground stay still, only `#content` crossfades, and the current
+ * section's underline glides to the new one (globals.css names the parts).
+ * The transition's update is the navigation itself, so it waits for the new
+ * route to settle — or for a short timeout, so a slow route never freezes a
+ * frame on screen. Where the browser has no view transitions, or the visitor
+ * asked for reduced motion, the navigation simply happens.
+ */
+const SWITCH_TIMEOUT_MS = 700;
+let switchSettles: (() => void) | null = null;
+
+export function switchSection(go: () => void): boolean {
+  if (typeof document === "undefined") return false;
+  const start = (document as Document & { startViewTransition?: (update: () => Promise<void>) => unknown })
+    .startViewTransition;
+  if (typeof start !== "function") return false;
+  if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return false;
+  switchSettles?.();
+  start.call(
+    document,
+    () =>
+      new Promise<void>((resolve) => {
+        const timer = setTimeout(done, SWITCH_TIMEOUT_MS);
+        function done() {
+          clearTimeout(timer);
+          if (switchSettles === done) switchSettles = null;
+          resolve();
+        }
+        switchSettles = done;
+        go();
+      }),
+  );
+  return true;
+}
+
 export function navigationSettled(): void {
+  switchSettles?.();
   if (!state.loading) return;
   publish({ loading: false, href: null, sequence: state.sequence });
 }

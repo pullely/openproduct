@@ -178,26 +178,55 @@ describe("viewport prefetch on the fixed set", () => {
   });
 });
 
-describe("the bar", () => {
+describe("the navigation's bookkeeping", () => {
   it("is mounted in the root layout, before the shell", () => {
     const layout = code("layout.tsx");
     expect(layout).toContain("<NavigationProgress />");
     expect(layout.indexOf("<NavigationProgress />")).toBeLessThan(layout.indexOf("<TopPanel />"));
   });
 
-  it("renders nothing until a click, is hidden from assistive tech, and is ink", () => {
+  // openproduct-ui-fixes UF3 (design §3 rule 1): NO BAR. The owner did not
+  // want a move between pages to feel like a reload; the component keeps the
+  // bookkeeping — a navigation settles when its route lands — and draws
+  // nothing a visitor sees.
+  it("draws no bar, and still settles every navigation", () => {
     const bar = code("shell/navigation-progress.tsx");
     expect(bar).toMatch(/^"use client";/m);
     expect(bar).toContain("idleNavigation");
-    expect(bar).toContain('aria-hidden="true"');
-    // XP-1: the accent colour means one thing on this site, and it is not "busy".
+    expect(bar).not.toContain("bg-foreground/70");
+    expect(bar).not.toMatch(/animate-nav-/);
     expect(bar).not.toMatch(/endorse|accent/);
-    expect(bar).toContain("bg-foreground/70");
     // Settled by the route's own arrival, and by a timeout when nothing arrives.
     expect(bar).toContain("usePathname");
     expect(bar).toContain("useSearchParams");
     expect(bar).toContain("NAVIGATION_TIMEOUT_MS");
     // `useSearchParams` on a static route needs its own boundary.
     expect(bar).toContain("<React.Suspense fallback={null}>");
+  });
+});
+
+describe("the section switch (openproduct-ui-fixes UF3)", () => {
+  it("runs the three sections through a view transition, and only them", () => {
+    const panel = code("shell/top-panel.tsx");
+    expect(panel).toContain('transition="section"');
+    expect((panel.match(/transition="section"/g) ?? []).length).toBe(1);
+    expect(panel).toContain('{current ? <span aria-hidden="true" className="section-line" /> : null}');
+    const link = code("ui/link.tsx");
+    expect(link).toContain('if (transition === "section" && switchSection(() => router.push(href))) event.preventDefault();');
+    const nav = code("ui/navigation.ts");
+    expect(nav).toContain("startViewTransition");
+    expect(nav).toContain('window.matchMedia("(prefers-reduced-motion: reduce)").matches');
+    // The transition ends when the route settles, or after a short timeout.
+    expect(nav).toMatch(/export function navigationSettled\(\): void \{\s*switchSettles\?\.\(\);/);
+  });
+
+  it("names the parts: the bar and the ground hold still, the content crossfades, the line glides", () => {
+    const css = readFileSync(resolve(__dirname, "../../../web/src/styles/globals.css"), "utf-8");
+    expect(css).toContain("view-transition-name: section-line;");
+    expect(css).toContain("view-transition-name: site-content;");
+    expect(css).toContain("view-transition-name: site-bar;");
+    expect(css).toMatch(/::view-transition-old\(site-content\) \{\s*animation: section-out 0\.14s/);
+    expect(css).toMatch(/::view-transition-new\(site-content\) \{\s*animation: section-in 0\.22s/);
+    expect(css).toMatch(/@media \(prefers-reduced-motion: reduce\) \{[\s\S]*?::view-transition-group\(\*\)/);
   });
 });

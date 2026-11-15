@@ -1958,6 +1958,90 @@
     display: block;
   }
 
+/* ── THE SECTION SWITCH (openproduct-ui-fixes UF3, design §3) ─────────────
+   A move between Feed, Products and Help wanted never feels like a reload:
+   the bar and the ground hold still, only the content crossfades, and the
+   current section's 2px line glides to the new one. `switchSection` in
+   ui/navigation.ts starts the transition; these name its parts. */
+.section-line {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 5px;
+  height: 2px;
+  border-radius: 2px;
+  background: oklch(var(--foreground));
+  view-transition-name: section-line;
+}
+.section-link:not([aria-current])::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 5px;
+  height: 2px;
+  border-radius: 2px;
+  background: oklch(var(--foreground) / 0.2);
+  transform: scaleX(0);
+  transition: transform 0.25s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.section-link:not([aria-current]):hover::after {
+  transform: scaleX(1);
+}
+header.bar-frost {
+  view-transition-name: site-bar;
+}
+#content {
+  view-transition-name: site-content;
+}
+::view-transition-old(root) {
+  display: none;
+}
+::view-transition-new(root),
+::view-transition-group(site-content) {
+  animation: none;
+}
+::view-transition-old(site-content) {
+  animation: section-out 0.14s ease-out both;
+}
+::view-transition-new(site-content) {
+  animation: section-in 0.22s ease-out 0.04s both;
+}
+::view-transition-group(section-line) {
+  animation-duration: 0.45s;
+  animation-timing-function: cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+@keyframes section-out {
+  to { opacity: 0; }
+}
+@keyframes section-in {
+  from { opacity: 0; }
+}
+
+/* The feed's first view (UF3 rule 3): on a fresh load the first posts rise
+   12px into place one after another, at full opacity throughout. Never after a soft navigation (`data-navigated`,
+   set by AppLink), so coming back to the feed shows it at once. */
+html:not([data-navigated]) [data-feed-posts] > li {
+  animation: feed-rise 0.55s cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
+}
+html:not([data-navigated]) [data-feed-posts] > li:nth-child(2) { animation-delay: 80ms; }
+html:not([data-navigated]) [data-feed-posts] > li:nth-child(3) { animation-delay: 160ms; }
+html:not([data-navigated]) [data-feed-posts] > li:nth-child(4) { animation-delay: 240ms; }
+html:not([data-navigated]) [data-feed-posts] > li:nth-child(n + 5) { animation-delay: 320ms; }
+/* Movement only, never a fade: a post is readable at full contrast from its
+   first frame (an accessibility audit at load caught text mid-fade). */
+@keyframes feed-rise {
+  from { translate: 0 12px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .section-link::after { transition: none; }
+  html:not([data-navigated]) [data-feed-posts] > li { animation: none; }
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) { animation: none !important; }
+}
+
   /* THE ACCOUNT CONTROL'S TWO BRANCHES, AND CSS PICKS ONE.
 
      Both are in the document, always, for everybody — which is exactly what
