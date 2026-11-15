@@ -40,11 +40,11 @@ import {
  * document cannot be read contributes no ticket rather than failing the
  * page, and the title's count still counts its seats.
  *
- * THE FILTER (OPR-3). A seat is on a product that is shipping or on an
- * idea, and the board's filter (All / On shipping products / On ideas — a
- * left column, a row of pills on a phone) narrows the tickets to one of the
- * two. Each filtered list is an ADDRESS (`seatsPath(stage)`:
- * `/help-wanted/stage/shipping`, `/help-wanted/stage/ideas`), so the filter
+ * THE FILTER (OPR-3, SC-2). A seat is on a product at one of the four
+ * stages, and the board's filter (All, then each stage — a left column, a
+ * row of pills on a phone) narrows the tickets to one of them. Each filtered
+ * list is an ADDRESS (`seatsPath(stage)`: `/help-wanted/stage/ideas`,
+ * `/help-wanted/stage/on-stage`, …), so the filter
  * is links and every view is one static document; each ticket says the stage
  * of its product in its quiet line.
  *

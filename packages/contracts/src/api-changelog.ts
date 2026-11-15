@@ -85,6 +85,13 @@ const added = (shape: ApiShape, milestone: string, key: string, sentence: string
  */
 export const API_CHANGELOG: readonly ApiRelease[] = [
   {
+    version: "1.5.0",
+    date: "2026-11-15",
+    entries: [
+      added("product", "SC1", "whereItRuns", "Where the product runs: the stage row (the stage link, what people can try, who set it and when) and the production row (the production link, live since, version, who can use it, who set it and when); each null until the product is there."),
+    ],
+  },
+  {
     version: "1.4.0",
     date: "2026-11-14",
     entries: [

@@ -22,6 +22,7 @@ import { FOCUS, SIDE_CARD, SIDE_TITLE } from "../ui/design";
 import { PersonIcon } from "../ui/icons";
 import { AppLink } from "../ui/link";
 import { ProductTile } from "../ui/product-tile";
+import { isBuilt } from "../ui/stage";
 import { MilestoneSegments, StageMark } from "../ui/stage-mark";
 import { useOverlay } from "../ui/use-overlay";
 import { hintedSignedIn } from "../ui/use-toggle";
@@ -142,7 +143,7 @@ export function FeedYou() {
                       <StageMark stage={product.stage} counts={product.milestoneCounts} short />
                     </span>
                   </span>
-                  {product.stage === "shipping" ? <MilestoneSegments counts={product.milestoneCounts} /> : null}
+                  {isBuilt(product.stage) ? <MilestoneSegments counts={product.milestoneCounts} /> : null}
                   {product.openSeats > 0 ? (
                     <span className="text-[13px] text-seat-ink">{openSeatsLine(product.openSeats)}</span>
                   ) : null}

@@ -32,6 +32,7 @@ import {
 import { sanitizeReturnTo } from "../auth/auth";
 
 import {
+  changeCrewStage,
   createCrewMilestone,
   createCrewPost,
   createCrewSeat,
@@ -58,6 +59,7 @@ import {
   readPostAct,
   readProfilePatch,
   readSeatAct,
+  readStageChange,
   type Fields,
   type FormError,
   type MilestoneAct,
@@ -103,6 +105,7 @@ export const CREW_NOTICES = {
   shipped: "Marked as shipped",
   unshipped: "Marked as not shipped",
   "profile-saved": "Saved",
+  "stage-moved": "Stage changed",
   "seat-added": "Seat added",
   "seat-saved": "Seat saved",
   "seat-removed": "Seat removed",
@@ -432,6 +435,27 @@ export async function handleProfileWrite(call: CrewCall): Promise<CrewAnswer> {
   // it would land on a 404, so the rename goes to the new page instead.
   const to = slug !== call.slug ? `/${slug}` : back;
   return { kind: "redirect", to: withQuery(to, { notice: "profile-saved" }) };
+}
+
+/**
+ * `POST /{slug}/manage/stage` — move the product one stage (SC-2). The step's
+ * rule is core's (the contract's `validateStageChange`); a refusal comes
+ * back with its field errors, which the Change stage popup draws under each
+ * field. A form returns (303) to `return_to`, else the product's page, with
+ * `notice=stage-moved`; an enhanced caller gets core's own data
+ * (`{stage, milestone, posted}`).
+ */
+export async function handleStageWrite(call: CrewCall): Promise<CrewAnswer> {
+  const back = returnTarget(call.fields, `/${call.slug}`);
+  if (!call.token) return { kind: "signin", returnTo: back };
+  const change = readStageChange(call.fields);
+  if ("kind" in change) return failure(call, back, change);
+  const crew = await crewFor(call, back);
+  if (!crew.ok) return crew.answer;
+  const result = await changeCrewStage(crew.token, crew.ids, change, call.fetchImpl);
+  if (result.kind !== "ok") return notOk(call, back, result);
+  if (call.json) return json(200, { data: result.data });
+  return { kind: "redirect", to: withQuery(back, { notice: "stage-moved" }) };
 }
 
 /** `GET /{slug}/manage/needs-you` — pending seat requests and drafts. */

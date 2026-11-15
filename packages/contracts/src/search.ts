@@ -60,7 +60,8 @@ export interface SearchResult {
    */
   readonly thumbnail: MediaThumbnail | null;
   /**
-   * A product hit's stage (OPR-3) — `idea` or `shipping` — so a row can say
+   * A product hit's stage (OPR-3, SC-2) — idea, building, stage or
+   * production — so a row can say
    * which; `null` for every non-product hit and for a product the batched
    * read no longer finds. Read after the rank, like the logo: NEVER AN
    * ORDERING INPUT.

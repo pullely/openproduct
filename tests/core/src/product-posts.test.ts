@@ -5,7 +5,7 @@
 // everybody else with one 404, that a post is held to its template at the
 // right strictness (a draft less one line, a publish to the whole rule), that
 // a reaction is one per person and none on your own post, that the stage
-// follows the milestones, that the three "posts that write themselves" are
+// moves only by hand, one step at a time (SC-2), that the three "posts that write themselves" are
 // written as the design says, and that every write is audited.
 //
 // The repository is faked at its interface, with state: a small in-memory
@@ -182,9 +182,6 @@ function harness(overrides: Partial<ProfileRecord> = {}) {
           .filter((p) => p.state === "published")
           .sort((a, b) => (a.publishedAt! < b.publishedAt! ? 1 : -1))
       : [];
-  const syncStage = () => {
-    store.profile = { ...store.profile, stage: store.milestones.some((m) => m.shippedAt !== null) ? "shipping" : "idea" };
-  };
 
   const repo = {
     async getListingRole(_profileId: string, subjectId: string) {
@@ -240,7 +237,6 @@ function harness(overrides: Partial<ProfileRecord> = {}) {
     async deleteProductMilestone(_p: string, id: string) {
       const before = store.milestones.length;
       store.milestones = store.milestones.filter((m) => m.id !== id);
-      syncStage();
       return store.milestones.length < before;
     },
     async reorderProductMilestones(_p: string, ids: readonly string[]) {
@@ -256,8 +252,31 @@ function harness(overrides: Partial<ProfileRecord> = {}) {
       if (!row) return null;
       const was = row.shippedAt;
       row.shippedAt = at === null ? null : (row.shippedAt ?? at);
-      syncStage();
       return { milestone: row, stage: store.profile.stage, changed: (was === null) !== (row.shippedAt === null) };
+    },
+    // SC-2 — the guarded step, as the SQL keeps it: only from the stage the
+    // caller validated against, each input written only when given.
+    async setProductStage(
+      _p: string,
+      input: {
+        from: string;
+        to: ProfileRecord["stage"];
+        tryUrl?: string;
+        stageNote?: string;
+        productionUrl?: string;
+        productionSince?: string;
+        productionVersion?: string | null;
+        productionAccess?: ProfileRecord["productionAccess"];
+        by: string;
+        at: string;
+      },
+    ) {
+      store.calls.push(`setProductStage:${input.from}->${input.to}`);
+      if (store.profile.stage !== input.from) return null;
+      const { to, by, at, ...written } = input;
+      const defined = Object.fromEntries(Object.entries(written).filter(([key, value]) => key !== "from" && value !== undefined));
+      store.profile = { ...store.profile, ...defined, stage: to, stageChangedAt: at, stageChangedBy: by };
+      return store.profile;
     },
 
     // ── product posts ──
@@ -401,7 +420,7 @@ function harness(overrides: Partial<ProfileRecord> = {}) {
     async listFollowing(subjectId: string, limit: number) {
       store.calls.push(`following:${subjectId}:${limit}`);
       return {
-        products: [{ slug: "acme-thing", tagline: "A thing, built in the open", stage: "shipping" as const }],
+        products: [{ slug: "acme-thing", tagline: "A thing, built in the open", stage: "stage" as const }],
         people: [{ handle: "ada", displayName: "Ada Iyer" }],
       };
     },
@@ -457,10 +476,17 @@ function harness(overrides: Partial<ProfileRecord> = {}) {
       store.profile = { ...store.profile, visibility: "public", publishedAt: store.profile.publishedAt ?? NOW };
       return store.profile;
     },
-    async updateProfile(_o: string, _p: string, input: { tryUrl?: string | null; tagline?: string | null; slug?: string }) {
-      store.calls.push(`updateProfile:${JSON.stringify({ tryUrl: input.tryUrl, tagline: input.tagline, slug: input.slug })}`);
+    async updateProfile(
+      _o: string,
+      _p: string,
+      input: { tryUrl?: string | null; tagline?: string | null; slug?: string; repoUrl?: string | null },
+    ) {
+      store.calls.push(
+        `updateProfile:${JSON.stringify({ tryUrl: input.tryUrl, tagline: input.tagline, slug: input.slug, repoUrl: input.repoUrl })}`,
+      );
       store.profile = {
         ...store.profile,
+        ...(input.repoUrl !== undefined ? { repoUrl: input.repoUrl } : {}),
         ...(input.tryUrl !== undefined ? { tryUrl: input.tryUrl } : {}),
         ...(input.tagline !== undefined ? { tagline: input.tagline } : {}),
         ...(input.slug !== undefined ? { slug: input.slug } : {}),
@@ -740,7 +766,8 @@ describe("the public product document says its stage, its milestones and where t
     const res = await call(h, "GET", `${PUBLIC}/projects/acme-thing`, null);
     expect(res.status).toBe(200);
     const doc = res.data.profile as Record<string, unknown>;
-    expect(doc.stage).toBe("shipping");
+    // SC-2 — a shipped milestone no longer moves the stage.
+    expect(doc.stage).toBe("idea");
     expect(doc.tryUrl).toBe("https://try.example.com/");
     expect(doc.milestones).toEqual([
       { code: "AS1", title: "Sign in", summary: "Accounts.", shippedAt: NOW },
@@ -817,7 +844,7 @@ describe("GET what I follow", () => {
     expect(following.products[0]).toEqual({
       slug: "acme-thing",
       name: "acme-thing",
-      stage: "shipping",
+      stage: "stage",
       tagline: "A thing, built in the open",
       logo: null,
     });
@@ -1136,7 +1163,7 @@ describe("Post — the whole rule, a thread, a moment, and the person who presse
   });
 });
 
-describe("milestones, and the stage that follows them", () => {
+describe("milestones (SC-2: they no longer move the stage)", () => {
   async function milestone(h: H, body: unknown = { code: "AS1", title: "Sign in", summary: "Accounts." }) {
     const res = await call(h, "POST", `${BASE}/milestones`, ADA, body);
     expect(res.status).toBe(201);
@@ -1193,25 +1220,26 @@ describe("milestones, and the stage that follows them", () => {
     }
   });
 
-  it("the first shipped milestone makes the product shipping; taking it back makes it an idea again", async () => {
-    const h = harness();
+  it("shipping a milestone and taking it back leave the stage where the crew put it", async () => {
+    const h = harness({ stage: "building" });
     const a = await milestone(h);
     const shipped = await call(h, "PUT", `${BASE}/milestones/${a.id}/shipped`, ADA);
     expect(shipped.status).toBe(200);
-    expect(shipped.data).toMatchObject({ stage: "shipping", milestone: { shippedAt: NOW } });
+    expect(shipped.data).toMatchObject({ stage: "building", milestone: { shippedAt: NOW } });
     expect(h.store.audits.map((x) => x.type)).toContain("openproduct.milestone.shipped");
 
     const back = await call(h, "DELETE", `${BASE}/milestones/${a.id}/shipped`, ADA);
-    expect(back.data).toMatchObject({ stage: "idea", milestone: { shippedAt: null }, offeredPost: null });
+    expect(back.data).toMatchObject({ stage: "building", milestone: { shippedAt: null }, offeredPost: null });
+    expect(h.store.calls.some((c) => c.startsWith("setProductStage:"))).toBe(false);
     expect(h.store.audits.at(-1)!.type).toBe("openproduct.milestone.unshipped");
   });
 
-  it("deleting the only shipped milestone makes the product an idea again, and says so", async () => {
-    const h = harness();
+  it("deleting the only shipped milestone leaves the stage, and says where it is", async () => {
+    const h = harness({ stage: "stage" });
     const a = await milestone(h);
     await call(h, "PUT", `${BASE}/milestones/${a.id}/shipped`, ADA);
     const res = await call(h, "DELETE", `${BASE}/milestones/${a.id}`, ADA);
-    expect(res.data).toEqual({ deleted: true, stage: "idea" });
+    expect(res.data).toEqual({ deleted: true, stage: "stage" });
     expect(h.store.audits.at(-1)!.type).toBe("openproduct.milestone.deleted");
     expect((await call(h, "DELETE", `${BASE}/milestones/${a.id}`, ADA)).status).toBe(404);
   });
@@ -1282,7 +1310,7 @@ describe("posts that write themselves (design §6.2)", () => {
     };
     const res = await call(h, "PUT", `${BASE}/milestones/${(created.data.milestone as { id: string }).id}/shipped`, ADA);
     expect(res.status).toBe(200);
-    expect(res.data).toMatchObject({ stage: "shipping", offeredPost: null });
+    expect(res.data).toMatchObject({ stage: "idea", offeredPost: null });
   });
 
   it("opening a seat offers a DRAFT Help wanted post, prefilled and cut to the template's limits", async () => {
@@ -1424,11 +1452,180 @@ describe("the profile PATCH takes the Try it address, and still the name and the
     expect(h.store.calls).toContain('updateProfile:{"tagline":"A better line","slug":"acme-renamed"}');
   });
 
-  it("the stage is not the crew's to set by hand", async () => {
+  it("the PATCH does not move the stage — that is PUT …/stage, one step at a time (SC-2)", async () => {
     const h = harness();
-    const res = await call(h, "PATCH", BASE, ADA, { stage: "shipping" });
+    const res = await call(h, "PATCH", BASE, ADA, { stage: "production" });
     expect(res.status).toBe(200);
     expect((res.data.profile as { stage: string }).stage).toBe("idea");
+  });
+});
+
+describe("PUT …/stage — one step at a time, each with its own inputs (SC-2, design §1)", () => {
+  const STAGE = `${BASE}/stage`;
+
+  it("→ building writes the repository and the first milestone, and audits the step", async () => {
+    const h = harness();
+    const res = await call(h, "PUT", STAGE, ADA, {
+      to: "building",
+      repository: "https://github.com/acme/thing",
+      firstMilestone: "The policy register",
+      comment: "Code is up",
+    });
+    expect(res.status).toBe(200);
+    expect(res.data).toMatchObject({ stage: "building", posted: false, milestone: { code: "M1", title: "The policy register" } });
+    expect(keysOf(res.data.milestone)).toEqual([...CREW_MILESTONE_KEYS]);
+    expect(h.store.profile).toMatchObject({ stage: "building", repoUrl: "https://github.com/acme/thing", stageChangedBy: ADA.subjectId, stageChangedAt: NOW });
+    expect(h.store.milestones.map((m) => m.title)).toEqual(["The policy register"]);
+    expect(h.store.audits.at(-1)).toMatchObject({
+      type: "openproduct.profile.stage_changed",
+      actorId: ADA.subjectId,
+      payload: { from: "idea", to: "building", direction: "forward", comment: "Code is up", post: true },
+    });
+  });
+
+  it("→ building does not write a second milestone of the same title, nor a repository already held", async () => {
+    const h = harness({ repoUrl: "https://github.com/acme/thing" });
+    await call(h, "POST", `${BASE}/milestones`, ADA, { code: "AS1", title: "The policy register" });
+    const res = await call(h, "PUT", STAGE, ADA, { to: "building", repository: "https://github.com/acme/thing", firstMilestone: "the policy register" });
+    expect(res.status).toBe(200);
+    expect(res.data.milestone).toBeNull();
+    expect(h.store.milestones).toHaveLength(1);
+    expect(h.store.calls.some((c) => c.startsWith("updateProfile:"))).toBe(false);
+  });
+
+  it("→ stage writes the stage link and what people can try; → production its four facts", async () => {
+    const h = harness({ stage: "building" });
+    const onStage = await call(h, "PUT", STAGE, ADA, { to: "stage", stageUrl: "https://stage.acme.dev", tryWhat: "Send a policy" });
+    expect(onStage.status).toBe(200);
+    expect(h.store.profile).toMatchObject({ stage: "stage", tryUrl: "https://stage.acme.dev/", stageNote: "Send a policy" });
+
+    const live = await call(h, "PUT", STAGE, ADA, {
+      to: "production",
+      productionUrl: "https://acme.app",
+      liveSince: "2026-11-12",
+      access: "waitlist",
+      version: "1.0.0",
+      post: false,
+    });
+    expect(live.status).toBe(200);
+    expect(h.store.profile).toMatchObject({
+      stage: "production",
+      productionUrl: "https://acme.app/",
+      productionSince: "2026-11-12",
+      productionAccess: "waitlist",
+      productionVersion: "1.0.0",
+    });
+    expect(h.store.audits.at(-1)!.payload).toMatchObject({ from: "stage", to: "production", post: false });
+  });
+
+  it("← back one step needs a reason and keeps what the forward steps wrote", async () => {
+    const h = harness({ stage: "production", tryUrl: "https://stage.acme.dev/", productionUrl: "https://acme.app/" });
+    expect((await call(h, "PUT", STAGE, ADA, { to: "stage" })).fields).toEqual({ reason: ["Required"] });
+    const res = await call(h, "PUT", STAGE, ADA, { to: "stage", reason: "rebuilding" });
+    expect(res.status).toBe(200);
+    expect(h.store.profile).toMatchObject({ stage: "stage", tryUrl: "https://stage.acme.dev/", productionUrl: "https://acme.app/" });
+    expect(h.store.audits.at(-1)!.payload).toMatchObject({ direction: "back", reason: "rebuilding" });
+  });
+
+  it("refuses a skipped step and a step whose required inputs are missing or invalid, writing nothing", async () => {
+    const h = harness();
+    const skipped = await call(h, "PUT", STAGE, ADA, { to: "production", productionUrl: "https://acme.app", liveSince: "2026-11-12", access: "everyone" });
+    expect(skipped.status).toBe(422);
+    expect(Object.keys(skipped.fields)).toEqual(["to"]);
+    const missing = await call(h, "PUT", STAGE, ADA, { to: "building", repository: "http://github.com/acme/thing" });
+    expect(missing.status).toBe(422);
+    expect(Object.keys(missing.fields).sort()).toEqual(["firstMilestone", "repository"]);
+    const future = await call(harness({ stage: "stage" }), "PUT", STAGE, ADA, {
+      to: "production",
+      productionUrl: "https://acme.app",
+      liveSince: "2026-11-15",
+      access: "everyone",
+    });
+    expect(future.fields).toEqual({ liveSince: ["A date, today or earlier"] });
+    expect(h.store.calls.some((c) => c.startsWith("setProductStage:"))).toBe(false);
+    expect(h.store.audits).toEqual([]);
+  });
+
+  it("a product that moved while the popup was open answers 409, and nothing is written", async () => {
+    const h = harness({ stage: "building" });
+    // Somebody else moved it on between the read and the guarded write.
+    const repo = h.deps.repo as unknown as { getProfileForOrg: (o: string, p: string) => Promise<ProfileRecord | null> };
+    const read = repo.getProfileForOrg.bind(repo);
+    repo.getProfileForOrg = async (o, p) => {
+      const found = await read(o, p);
+      h.store.profile = { ...h.store.profile, stage: "stage" };
+      return found;
+    };
+    const res = await call(h, "PUT", STAGE, ADA, { to: "stage", stageUrl: "https://stage.acme.dev", tryWhat: "Try it" });
+    expect(res.status).toBe(409);
+    expect(h.store.audits).toEqual([]);
+  });
+
+  it("is the crew's door: anybody else, an anonymous caller and another method are refused", async () => {
+    const h = harness();
+    const body = { to: "building", repository: "https://github.com/acme/thing", firstMilestone: "First" };
+    expect((await call(h, "PUT", STAGE, BOB, body)).status).toBe(404);
+    expect((await call(h, "PUT", STAGE, null, body)).status).toBe(401);
+    expect((await call(h, "POST", STAGE, ADA, body)).status).toBe(405);
+    expect((await call(h, "PUT", STAGE.replace(PROFILE, "opp_nope"), ADA, body)).status).toBe(404);
+    expect(h.store.profile.stage).toBe("idea");
+  });
+
+  it("the public document says where it runs, naming who set it through the public roster only", async () => {
+    const h = harness({
+      stage: "production",
+      tryUrl: "https://stage.acme.dev/",
+      stageNote: "Send a policy",
+      productionUrl: "https://acme.app/",
+      productionSince: "2026-11-12",
+      productionVersion: null,
+      productionAccess: "everyone",
+      stageChangedAt: NOW,
+      stageChangedBy: ADA.subjectId,
+    });
+    Object.assign(h.deps.repo, {
+      async listPublicMaintainers() {
+        return [{ subjectId: ADA.subjectId, displayName: "Ada Iyer", roleLabel: "Maker", handle: "ada" }];
+      },
+      async listPublicRoleOpenings() {
+        return [];
+      },
+      async latestMetrics() {
+        return [];
+      },
+      async countOpeningDemand() {
+        return [];
+      },
+      async listLaunchesForProfile() {
+        return [];
+      },
+      async latestSnapshotBefore() {
+        return null;
+      },
+      async countFollowers() {
+        return new Map();
+      },
+      async listFeedLaunches() {
+        return [];
+      },
+      async listPublicMedia() {
+        return [];
+      },
+    });
+    const doc = (await call(h, "GET", `${PUBLIC}/projects/acme-thing`, null)).data.profile as Record<string, unknown>;
+    expect(doc.whereItRuns).toEqual({
+      stage: { url: "https://stage.acme.dev/", note: "Send a policy", setBy: null, at: null },
+      production: {
+        url: "https://acme.app/",
+        since: "2026-11-12",
+        version: null,
+        access: "everyone",
+        setBy: { kind: "crew", name: "Ada Iyer", handle: "ada" },
+        at: NOW,
+      },
+    });
+    // A subject id never reaches the strip.
+    expect(JSON.stringify(doc.whereItRuns)).not.toContain("usr_");
   });
 });
 
@@ -1450,11 +1647,11 @@ describe("search says a product's stage and what a person makes", () => {
       },
       async listStagesForSlugs(slugs: readonly string[]) {
         calls.push(`stages:${slugs.join("|")}`);
-        return new Map([["kettleworks", "shipping" as const]]);
+        return new Map([["kettleworks", "stage" as const]]);
       },
       async listProductsForHandles(handles: readonly string[], perPerson: number) {
         calls.push(`products:${handles.join("|")}:${perPerson}`);
-        return new Map([["kettle-ada", [{ slug: "kettleworks", tagline: "A job queue", stage: "shipping" as const }]]]);
+        return new Map([["kettle-ada", [{ slug: "kettleworks", tagline: "A job queue", stage: "stage" as const }]]]);
       },
     } as unknown as OpenproductRepository;
     return { calls, deps: { repo } as unknown as ProfileHandlerDeps };
@@ -1475,7 +1672,7 @@ describe("search says a product's stage and what a person makes", () => {
     const body = await search(h.deps);
     expect(keysOf(body.data.results[0])).toEqual([...SEARCH_RESULT_KEYS]);
     expect(Object.fromEntries(body.data.results.map((r) => [r.entityId, r.stage]))).toEqual({
-      kettleworks: "shipping",
+      kettleworks: "stage",
       "kettle-notes": null,
     });
     // ONE read, for every ranked product hit at once.
@@ -1488,7 +1685,7 @@ describe("search says a product's stage and what a person makes", () => {
     const h = searchHarness();
     const body = await search(h.deps);
     expect(keysOf(body.data.makers[0])).toEqual([...SEARCH_PERSON_KEYS]);
-    expect(body.data.makers[0]!.products).toEqual([{ slug: "kettleworks", name: "kettleworks", stage: "shipping" }]);
+    expect(body.data.makers[0]!.products).toEqual([{ slug: "kettleworks", name: "kettleworks", stage: "stage" }]);
     expect(keysOf(body.data.makers[0]!.products[0])).toEqual([...PRODUCT_REF_KEYS]);
     expect(h.calls).toContain("products:kettle-ada:6");
   });

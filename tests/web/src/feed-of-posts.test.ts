@@ -56,7 +56,7 @@ const post = (n: number, over: Record<string, unknown> = {}): PublicProductPost 
   ({
     id: `ppo_${String(n).padStart(32, "0")}`,
     kind: "feature",
-    product: { slug: `product-${n}`, name: `product-${n}`, stage: "shipping", logo: null },
+    product: { slug: `product-${n}`, name: `product-${n}`, stage: "stage", logo: null },
     author: null,
     blocks: [{ block: "feature", value: "Something" }],
     publishedAt: "2026-05-30T10:00:00.000Z",
@@ -75,7 +75,7 @@ const card = (slug: string, over: Record<string, unknown> = {}): PublicProfileCa
     publishedAt: "2026-09-01T00:00:00.000Z",
     roleOpeningCount: 0,
     thumbnail: null,
-    stage: "shipping",
+    stage: "stage",
     ...over,
   }) as unknown as PublicProfileCard;
 
@@ -257,12 +257,12 @@ describe("nothing personal is in the feed's server render (I6)", () => {
     const parsed = parseFeedMine({
       data: {
         products: [
-          { slug: "ackstack", stage: "shipping", milestoneCounts: { shipped: 3, total: 4 }, logo: null, openSeats: 2 },
+          { slug: "ackstack", stage: "stage", milestoneCounts: { shipped: 3, total: 4 }, logo: null, openSeats: 2 },
           { slug: "nostage" },
           { slug: "idea-one", stage: "idea", milestoneCounts: { shipped: 0, total: 0 }, openSeats: -1 },
         ],
         following: {
-          products: [{ slug: "meterwise", name: "meterwise", stage: "shipping", tagline: null, logo: null }, { name: "no slug" }],
+          products: [{ slug: "meterwise", name: "meterwise", stage: "production", tagline: null, logo: null }, { name: "no slug" }],
           people: [{ handle: "ada", displayName: "Ada Lovelace" }, { displayName: "nobody" }],
         },
       },

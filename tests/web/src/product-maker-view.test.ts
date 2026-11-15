@@ -122,6 +122,10 @@ describe("no maker element is in any server render", () => {
       // The seat form and the crew's seats card, fetched for the crew.
       "seat-form.tsx",
       "seats.tsx",
+      // SC-2 — the Change stage popup and the Stage row inside Edit
+      // details, both fetched only once the form is open.
+      "stage-dialog.tsx",
+      "stage-row.tsx",
       "view-switch.tsx",
     ]);
   });
@@ -349,7 +353,7 @@ describe("no maker element is in any server render", () => {
     ]);
     expect(page).toContain("<EditPostLink slug={slug} postId={post.id} />");
     expect(page).toContain(
-      '<ProductPitch slug={slug} tagline={profile.tagline} tryUrl={profile.tryUrl} look="shipping" />',
+      '<ProductPitch slug={slug} tagline={profile.tagline} tryUrl={profile.tryUrl} start={stageStartOf(profile)} look="shipping" />',
     );
     // The one wrapper that does take children wraps what a VISITOR sees
     // (Follow, Take a seat) and only hides it for the crew.
@@ -371,7 +375,7 @@ describe("no maker element is in any server render", () => {
     // Editing: the form, fetched when it is opened — and the pitch stays
     // where it is until the form has arrived.
     expect(pitch).toContain("<React.Suspense fallback={pitch}>");
-    expect(pitch).toContain('<DetailsForm slug={slug} tagline={shown ?? ""} tryUrl={tryUrl ?? ""} look={look} />');
+    expect(pitch).toContain('<DetailsForm slug={slug} tagline={shown ?? ""} tryUrl={tryUrl ?? ""} start={start} look={look} />');
     expect(code(`${MAKER_DIR}/use-maker.ts`)).toContain("savedTagline: crew === null ? undefined : savedTaglines.get(slug),");
   });
 });

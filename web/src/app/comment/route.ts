@@ -47,7 +47,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     return json ? refused(422, COMMENT_INVALID_MESSAGE) : NextResponse.redirect(new URL("/", request.url), 303);
   }
 
-  // WHERE THE CONVERSATION IS (openproduct-redesign OPR-3). A shipping
+  // WHERE THE CONVERSATION IS (openproduct-redesign OPR-3). A built
   // product's is on its Talk tab, so the form comes back to that tab's own
   // address rather than to the bare page and a forward from it. An idea has
   // one page and no tabs; its form says so (`at=page`). One of two fixed

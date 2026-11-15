@@ -12,6 +12,7 @@
 // that product, and core checks each belongs to it.
 
 import {
+  CHANGE_STAGE_FIELDS,
   MILESTONE_ID_RE,
   ME_OVERLAY_OPENING_ID_RE,
   POST_BLOCK_CATALOGUE,
@@ -19,8 +20,10 @@ import {
   ROLE_OPENING_STATUSES,
   isAuthoredProductPostKind,
   isProductPostKind,
+  isProductStage,
   parsePostBlocks,
   type AuthoredProductPostKind,
+  type ChangeStageRequest,
   type MilestoneRequest,
   type ProductPostBlock,
   type ProductPostKind,
@@ -283,6 +286,32 @@ export function readSeatAct(fields: Fields): SeatAct | FormError {
   if (intent === "delete") return { intent: "delete", openingId };
   const body = seatBody(fields);
   return "kind" in body ? body : { intent: "update", openingId, body };
+}
+
+// ─── the stage (SC-2) ──────────────────────────────────────────────────────
+
+/**
+ * Fields: `to` (idea | building | stage | production), then whichever of the
+ * step's own inputs it sent (`repository`, `firstMilestone`, `stageUrl`,
+ * `tryWhat`, `productionUrl`, `liveSince`, `access`, `version`, `reason`,
+ * `comment`) and `post`. Only those names pass, and only as strings (`post`
+ * as a boolean, or a form's `"true"`/`"false"`): the rule for what a step
+ * needs is the contract's `validateStageChange`, which core runs and whose
+ * field errors come back verbatim.
+ */
+export function readStageChange(fields: Fields): ChangeStageRequest | FormError {
+  const to = text(fields, "to");
+  if (!isProductStage(to)) return invalid("to", "Pick a stage");
+  const body: Record<string, unknown> = { to };
+  for (const name of CHANGE_STAGE_FIELDS) {
+    const value = text(fields, name);
+    if (value !== null) body[name] = value;
+  }
+  const post = fields.post;
+  if (typeof post === "boolean") body.post = post;
+  else if (post === "true" || post === "on") body.post = true;
+  else if (post === "false") body.post = false;
+  return body as unknown as ChangeStageRequest;
 }
 
 // ─── the listing's own fields ──────────────────────────────────────────────

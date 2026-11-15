@@ -1,4 +1,4 @@
-import { TOPIC_FACET, labelOf, type PublicProfileCard } from "@openproduct/contracts";
+import { TOPIC_FACET, isProductStage, labelOf, type PublicProfileCard } from "@openproduct/contracts";
 
 import { FollowProduct } from "./follow-product";
 import { openSeatsLabel } from "./products";
@@ -22,15 +22,16 @@ import { MilestoneSegments, StageMark } from "../ui/stage-mark";
  * that link, so no control is nested in another.
  *
  * THE STAGE IS ON THE CARD (OPR-3). Under the name sits the stage mark —
- * `SHIPPING` in the amber ink, `IDEA` in the lavender — and an idea is drawn
+ * `ON STAGE` in its slate, `IDEA` in the lavender (SC-2: each of the four
+ * stages in its own colour) — and an idea is drawn
  * as the idea's own card: the lavender wash with one square corner, the
  * shape an idea has everywhere on the site.
  *
  * WHAT THE CARD DRAWS, AND FROM WHAT:
  *
- *   progress  a shipping product's `SHIPPING · 3 OF 4` and its milestone
+ *   progress  a built product's `ON STAGE · 3 OF 4` and its milestone
  *             bars, from the card's own `milestoneCounts`. A product with no
- *             milestones says `SHIPPING` and draws no bar.
+ *             milestones says `ON STAGE` and draws no bar.
  *   builder   "Needs a first builder" is said of an idea whose crew is only
  *             its maker — the card's `crewCount`, the same people the
  *             product's page lists, at most one. A count nobody made (`null`
@@ -48,7 +49,9 @@ import { MilestoneSegments, StageMark } from "../ui/stage-mark";
 export function ProductCard({ card, returnTo = "/products" }: { card: PublicProfileCard; returnTo?: string }) {
   const category = card.category ? (labelOf(TOPIC_FACET, card.category) ?? card.category) : null;
   const idea = card.stage === "idea";
-  const staged = card.stage === "idea" || card.stage === "shipping";
+  // A card that says a stage there is (SC-2: one of four). One from a
+  // catalogue row that predates the stages says nothing rather than guess.
+  const staged = isProductStage(card.stage);
   return (
     <li
       data-keyrow

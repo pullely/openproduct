@@ -33,10 +33,10 @@ const EMPTY: Values = { code: "", title: "", summary: "" };
  *            Feature shipped post core prepared: "Draft post ready", with a
  *            link to continue it in the builder
  *
- * A product's stage follows its milestones (shipping the first one makes an
- * idea a shipping product), so every act refreshes the page. That is also
- * why an idea's page carries this (`standalone`): it is where the crew adds
- * and ships the first milestone.
+ * Every act refreshes the page, so the counts and bars catch up. SC-2: the
+ * stage no longer follows the milestones — it moves through Change stage,
+ * inside Edit details. An idea's page carries this too (`standalone`): the
+ * crew can keep an idea's milestones before it is being built.
  */
 export function MilestonesManager({ slug, standalone = false }: { slug: string; standalone?: boolean }) {
   const { managing } = useMaker(slug);

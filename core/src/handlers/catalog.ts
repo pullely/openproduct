@@ -27,6 +27,7 @@ import {
   diffSnapshots,
   metricState,
   milestoneCountsOf,
+  whereItRunsOf,
   observed,
   observedScreenshot,
   openingsFacetValues,
@@ -39,6 +40,7 @@ import {
   type MediaFact,
   type MetricName,
 } from "@openproduct/contracts";
+import type { ProductStage } from "@openproduct/contracts";
 import type {
   CataloguePage,
   MetricRecord,
@@ -203,7 +205,7 @@ function cardOf(
     hasLiveUrl: boolean;
     indexable: boolean;
     /** OPR-3 — idea or shipping. */
-    stage: "idea" | "shipping";
+    stage: ProductStage;
     /** OPR-3 — shipped of total, and the crew counted (null when uncounted). */
     milestoneCounts: { shipped: number; total: number };
     crewCount: number | null;
@@ -263,10 +265,10 @@ function cardOf(
     // TS1 — the ladder decided it, so it resolves to published prose rather
     // than to "we did something". Neither authored nor observed.
     indexable: derived(row.indexable, "listing.indexable", ["trust_levels", "reviewed_at"], computedAt),
-    // OPR-3 — DERIVED, and the formula says from what: the product is
-    // shipping while a milestone is. Nobody typed this word and nothing
-    // measured it.
-    stage: derived(row.stage, "product.stage", ["product_milestones"], computedAt),
+    // SC-2 — AUTHORED since SC1: the crew sets the stage by hand, one step
+    // at a time. Until then it was derived from the milestones under
+    // `product.stage`, whose sentence now says it is retired.
+    stage: authored(row.stage, BY_MAINTAINER),
     // OPR-3 — two counts, each derived by a published rule. Field by field:
     // the record's object is never passed through.
     milestoneCounts: derived(
@@ -492,6 +494,16 @@ export async function handleCatalogProduct(
     // OPR-3 — the crew's own list, in their order. `shippedAt` is the moment
     // they marked it, which is authored too: nothing observed a release.
     milestones: authored(milestones, BY_MAINTAINER),
+    // SC-2 — Where it runs, the website's own projection: authored, since
+    // the crew said where it runs and nothing here checked that it answers.
+    // Who set a row is named through the public roster, as on the page.
+    whereItRuns: authored(
+      whereItRunsOf(profile, (subjectId) => {
+        const known = maintainers.find((m) => m.subjectId === subjectId);
+        return known ? { name: known.displayName, handle: known.handle } : null;
+      }),
+      BY_MAINTAINER,
+    ),
     // OPR5 (seam S12) — the console ref of the attested public workspace,
     // exactly as the website's projection carries it; null without a grant.
     workspaceRef: profile.linkGrant ? orgPublicId(profile.orgId) : null,

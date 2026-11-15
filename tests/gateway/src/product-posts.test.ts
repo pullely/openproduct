@@ -211,6 +211,8 @@ describe("the signed-in and crew routes are on the authenticated plane", () => {
       `/internal/openproduct/orgs/${ORG}/profiles/${PROFILE}/milestones/${MILESTONE}/shipped`,
     ],
     [PRODUCT_POST_API.crewNeedsYou(ORG, PROFILE), `/internal/openproduct/orgs/${ORG}/profiles/${PROFILE}/needs-you`],
+    // SC-2 — the stage, one step at a time.
+    [PRODUCT_POST_API.crewStage(ORG, PROFILE), `/internal/openproduct/orgs/${ORG}/profiles/${PROFILE}/stage`],
   ];
 
   it.each(paths)("%s is dispatched, mapped to %s, and asks for a bearer", async (path, target) => {
@@ -239,6 +241,7 @@ describe("the signed-in and crew routes are on the authenticated plane", () => {
       [`${crew}/milestones`, "PUT"],
       [`${crew}/milestones/${MILESTONE}`, "PATCH"],
       [`${crew}/milestones/${MILESTONE}/shipped`, "PUT"],
+      [`${crew}/stage`, "PUT"],
     ] as const) {
       expect([path, method, classifyWrite(path, method)]).toEqual([path, method, { action: "listing-write", target: null }]);
     }
@@ -268,6 +271,10 @@ describe("a write purges the public documents it changed, and no others", () => 
     expect(purgeTagsForWrite(`${crew}/milestones`, "listing-write")).toEqual([TAG_LISTING]);
     expect(purgeTagsForWrite(`${crew}/milestones/${MILESTONE}`, "listing-write")).toEqual([TAG_LISTING]);
     expect(purgeTagsForWrite(`${crew}/milestones/${MILESTONE}/shipped`, "listing-write")).toEqual([TAG_LISTING, TAG_POSTS]);
+  });
+
+  it("moving the stage purges the product page and the feed, whose cards carry the stage (SC-2)", () => {
+    expect(purgeTagsForWrite(`${crew}/stage`, "listing-write")).toEqual([TAG_LISTING, TAG_POSTS]);
   });
 
   it("patching the listing — its name, its tagline, its Try it address — purges the product page", () => {

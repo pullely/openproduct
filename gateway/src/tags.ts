@@ -222,10 +222,12 @@ const CREW_PROFILE = "^/v1/organizations/[^/]+/openproduct/profiles/[^/]+";
  * not take. By path, because this layer never reads a body:
  *
  *   a product post published, edited or removed   the feed and the post
- *   a milestone written, shipped or reordered     the product page — and,
- *                                                 since a post's card carries
- *                                                 its product's stage, the
- *                                                 feed when shipping changed
+ *   a milestone written, shipped or reordered     the product page (and the
+ *                                                 feed for a ship: a post's
+ *                                                 card draws the progress)
+ *   the stage moved (SC-2)                        the product page, and the
+ *                                                 feed: a post's card carries
+ *                                                 its product's stage
  *   the listing itself patched (name, tagline,    the product page
  *   the Try it address)
  *
@@ -242,6 +244,7 @@ function purgeTagsForCrewWrite(pathname: string): string[] {
   if (new RegExp(`${CREW_PROFILE}/product-posts/[^/]+(?:/publish)?$`).test(pathname)) return [TAG_POSTS];
   if (new RegExp(`${CREW_PROFILE}/milestones/[^/]+/shipped$`).test(pathname)) return [TAG_LISTING, TAG_POSTS];
   if (new RegExp(`${CREW_PROFILE}/milestones(?:/[^/]+)?$`).test(pathname)) return [TAG_LISTING];
+  if (new RegExp(`${CREW_PROFILE}/stage$`).test(pathname)) return [TAG_LISTING, TAG_POSTS];
   if (new RegExp(`${CREW_PROFILE}$`).test(pathname)) return [TAG_LISTING];
   return [];
 }

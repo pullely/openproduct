@@ -137,4 +137,6 @@ export type {
   PublicProductPostRecord,
   PublishProductPostInput,
   UpdateProductMilestoneInput,
+  // openproduct-stages-crew SC-2 — the four stages
+  SetProductStageInput,
 } from "./types.js";

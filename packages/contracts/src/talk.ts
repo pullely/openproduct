@@ -199,7 +199,7 @@ export function publicThreadPath(threadId: string): string {
   return `/threads/${threadId}`;
 }
 
-/** Where Talk is: a shipping product's tab; an idea's section of its page. */
-export function talkPath(slug: string, stage: "idea" | "shipping" | null | undefined): string {
+/** Where Talk is: a built product's tab; an idea's section of its page. */
+export function talkPath(slug: string, stage: string | null | undefined): string {
   return stage === "idea" ? `/${slug}#talk` : `/${slug}/talk`;
 }

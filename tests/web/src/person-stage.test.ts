@@ -1,5 +1,6 @@
 // A person's products say where they stand (openproduct-redesign OPR-3;
-// boards `Person`, `PhonePerson`): `shipping, 3 of 4` / `idea` under a row.
+// boards `Person`, `PhonePerson`): `on stage, 3 of 4` / `idea` under a row
+// (SC-2: the four stages).
 
 import { readFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
@@ -21,8 +22,11 @@ const code = (file: string) =>
 
 describe("the stage line under a person's product", () => {
   it("is the board's line, from the product's own document, and nothing when there is no stage", () => {
-    expect(stageLineOf({ stage: "shipping", milestoneCounts: { shipped: 3, total: 4 } })).toBe("shipping, 3 of 4");
-    expect(stageLineOf({ stage: "shipping", milestoneCounts: { shipped: 0, total: 0 } })).toBe("shipping");
+    expect(stageLineOf({ stage: "stage", milestoneCounts: { shipped: 3, total: 4 } })).toBe("on stage, 3 of 4");
+    expect(stageLineOf({ stage: "building", milestoneCounts: { shipped: 0, total: 0 } })).toBe("building");
+    expect(stageLineOf({ stage: "production", milestoneCounts: { shipped: 4, total: 4 } })).toBe("in production, 4 of 4");
+    // A stage there no longer is (OPR-3's `shipping`) draws no line.
+    expect(stageLineOf({ stage: "shipping" as never, milestoneCounts: { shipped: 1, total: 1 } })).toBeNull();
     expect(stageLineOf({ stage: "idea", milestoneCounts: { shipped: 0, total: 2 } })).toBe("idea");
     expect(stageLineOf(null)).toBeNull();
     expect(stageLineOf({ stage: undefined, milestoneCounts: undefined } as never)).toBeNull();
@@ -34,10 +38,10 @@ describe("the stage line under a person's product", () => {
       seen.push(slug);
       if (slug === "b") return null;
       if (slug === "c") throw new Error("down");
-      return { stage: "shipping", milestoneCounts: { shipped: 1, total: 2 } };
+      return { stage: "stage" as const, milestoneCounts: { shipped: 1, total: 2 } };
     });
     expect(seen).toEqual(["a", "b", "c"]);
-    expect(lines).toEqual({ a: "shipping, 1 of 2" });
+    expect(lines).toEqual({ a: "on stage, 1 of 2" });
     const many = Array.from({ length: PERSON_STAGE_READ_LIMIT + 5 }, (_, index) => `p${index}`);
     let reads = 0;
     await readStageLines(many, async () => {

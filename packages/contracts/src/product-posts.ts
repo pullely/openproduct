@@ -21,14 +21,56 @@ import type { CrewPrivateThreadNotice } from "./talk.js";
 // Stage and milestones (§6.1)
 // ---------------------------------------------------------------------------
 
-/** A product is an idea until its first milestone ships. */
-export const PRODUCT_STAGES = ["idea", "shipping"] as const;
+/**
+ * SC-2 (openproduct-stages-crew, design §1) — the four stages, in order. Set
+ * by the crew by hand, one step at a time (`validateStageChange` in
+ * `stage-change.ts`); milestones no longer move it. OPR-3's two stages
+ * (`idea`, `shipping`) are gone: migration 2285 made every `shipping` row
+ * `stage` when it had a try link and `building` when it did not.
+ */
+export const PRODUCT_STAGES = ["idea", "building", "stage", "production"] as const;
 export type ProductStage = (typeof PRODUCT_STAGES)[number];
 
+/** The stage as a word, in sentence case: `Idea`, `On stage`. */
 export const PRODUCT_STAGE_LABELS: Record<ProductStage, string> = {
   idea: "Idea",
-  shipping: "Shipping",
+  building: "Building",
+  stage: "On stage",
+  production: "In production",
 };
+
+/** The stage as its mono mark says it (boards `Product`, `Stage`). */
+export const PRODUCT_STAGE_MARKS: Record<ProductStage, string> = {
+  idea: "IDEA",
+  building: "BUILDING",
+  stage: "ON STAGE",
+  production: "IN PRODUCTION",
+};
+
+/** The line under each stage in the Change stage popup (board `Stage`). */
+export const PRODUCT_STAGE_SUBS: Record<ProductStage, string> = {
+  idea: "A problem worth building for",
+  building: "Code and a first milestone",
+  stage: "People can try it",
+  production: "Real people use it",
+};
+
+/** The stage after this one, or null at the last. */
+export function nextStage(stage: ProductStage): ProductStage | null {
+  return PRODUCT_STAGES[PRODUCT_STAGES.indexOf(stage) + 1] ?? null;
+}
+
+/** The stage before this one, or null at the first. */
+export function previousStage(stage: ProductStage): ProductStage | null {
+  const index = PRODUCT_STAGES.indexOf(stage);
+  return index > 0 ? PRODUCT_STAGES[index - 1]! : null;
+}
+
+/** Whether a product at this stage has been built at all: everything but an
+ *  idea. The product page draws the tabbed page for these. */
+export function isBuiltStage(stage: ProductStage): boolean {
+  return stage !== "idea";
+}
 
 export function isProductStage(value: unknown): value is ProductStage {
   return typeof value === "string" && (PRODUCT_STAGES as readonly string[]).includes(value);
@@ -462,6 +504,9 @@ export const PRODUCT_POST_API = {
   /** PUT marks shipped; DELETE marks not shipped. */
   crewMilestoneShipped: (org: string, profile: string, milestoneId: string): string =>
     `/v1/organizations/${org}/openproduct/profiles/${profile}/milestones/${milestoneId}/shipped`,
+  /** SC-2 — PUT `ChangeStageRequest`: one step forward or back. */
+  crewStage: (org: string, profile: string): string =>
+    `/v1/organizations/${org}/openproduct/profiles/${profile}/stage`,
   /** GET — pending requests to join and the product's drafts. */
   crewNeedsYou: (org: string, profile: string): string =>
     `/v1/organizations/${org}/openproduct/profiles/${profile}/needs-you`,

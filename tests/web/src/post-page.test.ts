@@ -51,7 +51,7 @@ const post = (over: Record<string, unknown> = {}): PublicProductPost =>
   ({
     id: ID,
     kind: "feature",
-    product: { slug: "ackstack", name: "ackstack", stage: "shipping", logo: null },
+    product: { slug: "ackstack", name: "ackstack", stage: "stage", logo: null },
     author: null,
     blocks: [
       { block: "feature", value: "The state re-collection calendar" },

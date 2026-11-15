@@ -478,15 +478,20 @@ describe("OPR-3 — your products say where they stand, and your drafts are list
 
   it("reads a product's standing from its public document, and says only what is true", () => {
     expect(standingOf(null)).toBeNull();
-    const shipping = standingOf({
-      stage: "shipping",
+    const onStage = standingOf({
+      stage: "stage",
       milestoneCounts: { shipped: 3, total: 4 },
       roleOpenings: [{ status: "open" }, { status: "open" }, { status: "closed" }],
     } as never);
-    expect(shipping).toEqual({ stage: "shipping", milestoneCounts: { shipped: 3, total: 4 }, openSeats: 2 });
-    expect(standingLine(shipping!)).toBe("Shipping · 3 of 4 milestones · 2 open seats");
+    expect(onStage).toEqual({ stage: "stage", milestoneCounts: { shipped: 3, total: 4 }, openSeats: 2 });
+    expect(standingLine(onStage!)).toBe("On stage · 3 of 4 milestones · 2 open seats");
     // No milestones to count and no seat open: neither is said.
-    expect(standingLine({ stage: "shipping", milestoneCounts: { shipped: 0, total: 0 }, openSeats: 0 })).toBe("Shipping");
+    expect(standingLine({ stage: "building", milestoneCounts: { shipped: 0, total: 0 }, openSeats: 0 })).toBe("Building");
+    expect(standingLine({ stage: "production", milestoneCounts: { shipped: 2, total: 2 }, openSeats: 0 })).toBe(
+      "In production · 2 of 2 milestones",
+    );
+    // A document that says a stage there no longer is has no standing.
+    expect(standingOf({ stage: "shipping", milestoneCounts: null, roleOpenings: [] } as never)).toBeNull();
     expect(standingLine({ stage: "idea", milestoneCounts: null, openSeats: 1 })).toBe("Idea · 1 open seat");
     const sections = markupOf("me/sections.tsx");
     expect(sections).toContain("<MilestoneSegments counts={standing.milestoneCounts}");

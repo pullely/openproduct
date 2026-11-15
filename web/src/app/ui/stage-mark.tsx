@@ -1,8 +1,10 @@
-import type { MilestoneCounts, ProductStage } from "@openproduct/contracts";
+import { PRODUCT_STAGE_MARKS, type MilestoneCounts, type ProductStage } from "@openproduct/contracts";
 
 import {
   IDEA_NEEDS_BUILDER,
   PROGRESS_SEGMENT_LIMIT,
+  STAGE_TONE,
+  isBuilt,
   milestoneProgress,
   progressSegments,
   stageMarkText,
@@ -63,14 +65,14 @@ export function MilestoneSegments({
 
 /**
  * The stage mark (boards `Products`, `Feed`): the mono label a card or a
- * post wears to say where the product is.
+ * post wears to say where the product is, in its stage's ink (SC-2).
  *
- *   shipping  `SHIPPING · 3 OF 4` in the amber ink (`SHIPPING` with no
- *             milestones to count)
+ *   built     `BUILDING · 3 OF 4`, `ON STAGE · 3 OF 4`, `IN PRODUCTION`
+ *             (the stage alone with no milestones to count)
  *   idea      `AN IDEA, NOT BUILT YET` in the lavender — `IDEA` when `short`
  *
- * `bars` draws the progress segments under a shipping mark, and under an
- * idea's the dashed ring and `Needs a first builder` (board `Products`).
+ * `bars` draws the progress segments under a built product's mark, and under
+ * an idea's the dashed ring and `Needs a first builder` (board `Products`).
  */
 export function StageMark({
   stage,
@@ -88,7 +90,7 @@ export function StageMark({
   const mark = (
     <span
       data-stage-mark={stage}
-      className={`font-mono text-mono-label uppercase ${stage === "idea" ? "text-idea" : "text-amber-ink"} ${bars ? "" : className}`}
+      className={`font-mono text-mono-label uppercase ${STAGE_TONE[stage].ink} ${bars ? "" : className}`}
     >
       {stageMarkText(stage, counts, { short })}
     </span>
@@ -97,7 +99,7 @@ export function StageMark({
   return (
     <div className={`flex flex-col gap-1.5 ${className}`}>
       {mark}
-      {stage === "shipping" ? (
+      {isBuilt(stage) ? (
         <MilestoneSegments counts={counts} />
       ) : (
         <span className="flex items-center gap-1.5 text-[13px] text-idea">
@@ -111,18 +113,45 @@ export function StageMark({
 
 /**
  * The stage as a word beside a name (boards `Search`, the header card): a
- * 7px dot and `Shipping` in the success green, or `Idea` in the lavender.
+ * 7px dot and `On stage`, in the stage's own colour.
  */
 export function StageWord({ stage, className = "" }: { stage: ProductStage; className?: string }) {
+  const tone = STAGE_TONE[stage];
   return (
     <span
       data-stage-word={stage}
-      className={`inline-flex shrink-0 items-center gap-[5px] text-[13px] font-medium ${
-        stage === "idea" ? "text-idea" : "text-success"
-      } ${className}`}
+      className={`inline-flex shrink-0 items-center gap-[5px] text-[13px] font-medium ${tone.ink} ${className}`}
     >
-      <span aria-hidden="true" className={`h-[7px] w-[7px] rounded-full ${stage === "idea" ? "bg-idea" : "bg-success"}`} />
+      <span aria-hidden="true" className={`h-[7px] w-[7px] rounded-full ${tone.dot}`} />
       {stageWord(stage)}
+    </span>
+  );
+}
+
+/**
+ * The stage badge (boards `Product`, `Stage`; SC-2): a 26px pill on the
+ * stage's soft ground, an 8px dot and the mono word — `ON STAGE`, with
+ * `· 3 OF 4` when `counts` has milestones to count. Beside the product's name
+ * in the header, and in the Stage row inside Edit details.
+ */
+export function StageBadge({
+  stage,
+  counts = null,
+  className = "",
+}: {
+  stage: ProductStage;
+  counts?: MilestoneCounts | null;
+  className?: string;
+}) {
+  const tone = STAGE_TONE[stage];
+  const progress = isBuilt(stage) ? milestoneProgress(counts) : null;
+  return (
+    <span
+      data-stage-badge={stage}
+      className={`inline-flex h-[26px] shrink-0 items-center gap-1.5 rounded-full px-2.5 font-mono text-mono-label uppercase ${tone.soft} ${tone.ink} ${className}`}
+    >
+      <span aria-hidden="true" className={`h-2 w-2 shrink-0 rounded-full ${tone.dot}`} />
+      {progress ? `${PRODUCT_STAGE_MARKS[stage]} · ${progress}` : PRODUCT_STAGE_MARKS[stage]}
     </span>
   );
 }

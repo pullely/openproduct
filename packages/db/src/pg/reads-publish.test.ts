@@ -447,7 +447,7 @@ describe("eraseSubject — the subject's own exit, by the registry (OX5c; CS2)",
    */
   async function seedEverything() {
     await seedPublished();
-    await sql.execute(`UPDATE openproduct.profiles SET updated_by = $1, reviewed_by = $1 WHERE id = $2`, [ACTOR, PROFILE]);
+    await sql.execute(`UPDATE openproduct.profiles SET updated_by = $1, reviewed_by = $1, stage_changed_by = $1 WHERE id = $2`, [ACTOR, PROFILE]);
     await repo.upsertContributor({ subjectId: ACTOR, displayName: "Ada", bio: "Leaving." });
     await repo.claimHandle("ada-leaves", ACTOR, NOW);
     await repo.upsertRoleOpening({ id: OPENING, profileId: PROFILE, title: "Design lead" });

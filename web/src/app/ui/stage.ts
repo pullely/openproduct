@@ -1,10 +1,15 @@
-// A product's stage, in words (openproduct-redesign OPR-3, design §6.1).
+// A product's stage, in words (openproduct-redesign OPR-3; openproduct-stages-
+// crew SC-2, design §1).
 //
-// A product is an IDEA until its first milestone ships and SHIPPING from then
-// on. Lists say which: a word beside a name (the search rows), a mono mark
-// over a card (`SHIPPING · 3 OF 4`), a line under a profile's product
-// (`shipping, 3 of 4`). Every one of those strings is built here, so a list
-// cannot spell the stage its own way.
+// FOUR STAGES, set by the crew one step at a time: IDEA, BUILDING, ON STAGE,
+// IN PRODUCTION. Lists say which: a word beside a name (the search rows), a
+// mono mark over a card (`ON STAGE · 3 OF 4`), a line under a profile's
+// product (`on stage, 3 of 4`). Every one of those strings is built here, so
+// a list cannot spell the stage its own way.
+//
+// ONE COLOUR PER STAGE (design §1.1; no red unless it is danger): lavender
+// for an idea, amber for building, slate for on stage, green for in
+// production — `STAGE_TONE`.
 //
 // PURE, AND NO JSX: the web test lane is module-level, and the header search's
 // row model (`shell/palette-rows.ts`) imports this from a module that must
@@ -12,12 +17,42 @@
 
 import {
   PRODUCT_STAGE_LABELS,
+  isBuiltStage,
   isProductStage,
+  nextStage,
   type MilestoneCounts,
   type ProductStage,
 } from "@openproduct/contracts";
 
-/** `Shipping` / `Idea` — the word a row wears. */
+/** The classes a stage is drawn in: its ink (text), its dot (a fill) and its
+ *  soft ground (a pill's background). */
+export interface StageTone {
+  readonly ink: string;
+  readonly dot: string;
+  readonly soft: string;
+}
+
+export const STAGE_TONE: Readonly<Record<ProductStage, StageTone>> = {
+  idea: { ink: "text-idea", dot: "bg-idea", soft: "bg-idea-soft" },
+  building: { ink: "text-amber-ink", dot: "bg-amber", soft: "bg-amber-soft" },
+  stage: { ink: "text-version", dot: "bg-version", soft: "bg-version-soft" },
+  production: { ink: "text-success", dot: "bg-success", soft: "bg-success-soft" },
+};
+
+/** Whether the product has been built at all — every stage but an idea.
+ *  These draw progress bars and the tabbed product page. */
+export function isBuilt(stage: ProductStage): boolean {
+  return isBuiltStage(stage);
+}
+
+/** `Next: in production`, or null at the last stage (board `Product`, the
+ *  Stage row inside Edit details). */
+export function nextStageLine(stage: ProductStage): string | null {
+  const next = nextStage(stage);
+  return next ? `Next: ${PRODUCT_STAGE_LABELS[next].toLowerCase()}` : null;
+}
+
+/** `On stage` / `Idea` — the word a row wears. */
 export function stageWord(stage: ProductStage): string {
   return PRODUCT_STAGE_LABELS[stage];
 }
@@ -66,7 +101,7 @@ export function needsFirstBuilder(crewCount: number | null | undefined): boolean
 
 /**
  * The mono mark, in sentence case (the mark's class uppercases it):
- * `Shipping · 3 of 4`, `Shipping` when there is nothing to count,
+ * `On stage · 3 of 4`, `Building` when there is nothing to count,
  * `An idea, not built yet` — or `Idea` when `short`.
  */
 export function stageMarkText(
@@ -76,14 +111,14 @@ export function stageMarkText(
 ): string {
   if (stage === "idea") return options.short ? IDEA_MARK_SHORT : IDEA_MARK;
   const progress = milestoneProgress(counts);
-  return progress ? `${PRODUCT_STAGE_LABELS.shipping} · ${progress}` : PRODUCT_STAGE_LABELS.shipping;
+  return progress ? `${PRODUCT_STAGE_LABELS[stage]} · ${progress}` : PRODUCT_STAGE_LABELS[stage];
 }
 
-/** The lower-case line a profile's product row carries: `shipping, 3 of 4`,
- *  `shipping`, `idea`. */
+/** The lower-case line a profile's product row carries: `on stage, 3 of 4`,
+ *  `building`, `idea`. */
 export function stageLine(stage: ProductStage, counts?: MilestoneCounts | null): string {
   const word = PRODUCT_STAGE_LABELS[stage].toLowerCase();
-  const progress = stage === "shipping" ? milestoneProgress(counts) : null;
+  const progress = isBuilt(stage) ? milestoneProgress(counts) : null;
   return progress ? `${word}, ${progress}` : word;
 }
 

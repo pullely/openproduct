@@ -9,7 +9,7 @@ import { ProductTile } from "../ui/product-tile";
 import { absoluteOf } from "../ui/time";
 import { LINK_WORKSPACE_LABEL } from "../ui/workspace-picker";
 import { MilestoneSegments } from "../ui/stage-mark";
-import { stageWord } from "../ui/stage";
+import { isBuilt, stageWord } from "../ui/stage";
 
 import { GLYPH_CLOCK, GLYPH_EDIT, GLYPH_SAVED, Glyph } from "./glyph";
 import type { MyListing } from "./listings";
@@ -138,7 +138,7 @@ export function ProductsSection({
                 <span className="font-mono text-mono-label uppercase text-amber-ink">Maker</span>
               </div>
               <span className={`${META} line-clamp-2`}>{meta}</span>
-              {standing?.stage === "shipping" ? (
+              {standing && isBuilt(standing.stage) ? (
                 <MilestoneSegments counts={standing.milestoneCounts} className="max-w-[240px] pt-1.5" />
               ) : null}
             </div>

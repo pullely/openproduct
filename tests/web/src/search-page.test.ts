@@ -238,14 +238,16 @@ describe("a product row", () => {
   });
 
   it("prints the stage the read carries, through the shared mark, and types neither word itself", () => {
-    // OPR-3 — the result carries `stage`, so the board's Shipping / Idea is
+    // OPR-3, SC-2 — the result carries `stage`, so the board's stage word is
     // real data now. The word is the contract's (`ui/stage.ts`), drawn by the
     // one shared component; the page spells neither, and a hit with no stage
     // draws nothing.
     const page = markupOf("search/page.tsx");
     expect(page).toContain("{isProductStage(hit.stage) ? <StageWord stage={hit.stage} /> : null}");
-    expect(page).not.toMatch(/Shipping|>Idea</);
-    expect(stageWord("shipping")).toBe("Shipping");
+    expect(page).not.toMatch(/Shipping|On stage|In production|>Building<|>Idea</);
+    expect(stageWord("stage")).toBe("On stage");
+    expect(stageWord("production")).toBe("In production");
+    expect(stageWord("building")).toBe("Building");
     expect(stageWord("idea")).toBe("Idea");
     expect(stageWordOf(undefined)).toBeNull();
     expect(stageWordOf("launched")).toBeNull();
@@ -291,7 +293,7 @@ describe("a person row, and the chevron rule", () => {
     const withProducts: SearchPerson = {
       ...ada,
       products: [
-        { slug: "kettleworks", name: "kettleworks", stage: "shipping" },
+        { slug: "kettleworks", name: "kettleworks", stage: "stage" },
         { slug: "ackstack", name: "ackstack", stage: "idea" },
       ],
     };

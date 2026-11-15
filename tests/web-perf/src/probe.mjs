@@ -333,7 +333,7 @@ const SURFACES = [
   ["Discover", "/topics/developer-tools", "One topic"],
   ["Discover", "/products/by/upvoted", "Products (upvoted)"],
   ["Discover", "/products/by/newest", "Products (newest)"],
-  ["Discover", "/products/stage/shipping", "Products (shipping)"],
+  ["Discover", "/products/stage/on-stage", "Products (on stage)"],
   ["Discover", "/products/stage/ideas", "Products (ideas)"],
   ["Discover", "/launches/2026-05-20", "One day's board"],
   ["Discover", "/collections", "Collections index"],

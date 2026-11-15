@@ -469,7 +469,7 @@ describe("what a write answers with", () => {
 
   it("shipping a milestone tells the form which draft core prepared", async () => {
     const offered = crewPost({ id: `ppo_${"0".repeat(31)}7`, milestoneId: PMS });
-    const data = { milestone: { id: PMS, position: 0, code: "AS1", title: "First", summary: null, shippedAt: "2026-06-01T00:00:00.000Z" }, stage: "shipping", offeredPost: offered };
+    const data = { milestone: { id: PMS, position: 0, code: "AS1", title: "First", summary: null, shippedAt: "2026-06-01T00:00:00.000Z" }, stage: "building", offeredPost: offered };
     const g = gateway({
       [`PUT ${A.crewMilestoneShipped("org_9", "opp_9", PMS)}`]: { body: { data } },
       [`DELETE ${A.crewMilestoneShipped("org_9", "opp_9", PMS)}`]: { body: { data: { ...data, offeredPost: null } } },
@@ -692,7 +692,8 @@ describe("seats — a seat is a role opening, written by slug like every other c
 });
 
 describe("the route files are adapters", () => {
-  const ROUTES = ["posts", "milestones", "profile", "needs-you", "seats"].map((name) => `[slug]/manage/${name}/route.ts`);
+  // SC-2 — `stage`: Change stage, one step at a time.
+  const ROUTES = ["posts", "milestones", "profile", "needs-you", "seats", "stage"].map((name) => `[slug]/manage/${name}/route.ts`);
 
   it("exist, one per crew surface, each beside no page", () => {
     for (const file of ROUTES) {
@@ -718,6 +719,8 @@ describe("the route files are adapters", () => {
     expect(code("[slug]/manage/needs-you/route.ts")).not.toContain("export async function POST");
     // Seats are written here; they are read from the product's public page.
     expect(code("[slug]/manage/seats/route.ts")).not.toContain("export async function GET");
+    // The stage is written here; it is read from the product's public page.
+    expect(code("[slug]/manage/stage/route.ts")).not.toContain("export async function GET");
   });
 
   it("the one adapter takes the token from the session and answers sign-in through the one place that builds it", () => {

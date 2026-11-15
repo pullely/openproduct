@@ -30,8 +30,8 @@ import { SeatButton } from "./seat-button";
  * THIS visitor already asked for the seat — is the button's own island
  * (`seat-button.tsx`), lit from the overlay after paint.
  *
- * THE QUIET LINE opens with the stage of the seat's product ("Shipping",
- * "Idea"; OPR-3), and an opening's age is said only where the contract
+ * THE QUIET LINE opens with the stage of the seat's product ("On stage",
+ * "Idea"; OPR-3, SC-2), and an opening's age is said only where the contract
  * publishes it (`seatSub`).
  */
 export function SeatCard({ seat, action }: { seat: Seat; action: SeatAction }) {

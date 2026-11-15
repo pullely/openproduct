@@ -2321,9 +2321,10 @@ describe("CB3 — the header's action follows the door", () => {
     // door that is not there wastes the action. Take a seat needs an open
     // seat; Try it needs the listing's own address for the running product.
     const page = code("[slug]/product-page.tsx");
-    // OPR-3 — the address for the running product is `tryUrl`.
+    // OPR-3 — the address for the running product is `tryUrl`; SC-2 — in
+    // production, the production link (`liveAction`, null when neither).
     expect(page).toMatch(/\{openRoles\.length > 0 \? \(\s*<AppLink href=\{seatsHref\} className=\{BTN_SOFT\}>/);
-    expect(page).toMatch(/\{profile\.tryUrl \? \(\s*<a href=\{profile\.tryUrl\}/);
+    expect(page).toMatch(/\{live \? \(\s*<a href=\{live\.href\}/);
     // The old single button, and its two-way branch, are gone with it.
     expect(page).not.toContain("primaryAction(");
     expect(page).not.toContain("primary.kind");

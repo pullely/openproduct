@@ -11,7 +11,8 @@ export type ProfileVisibility = "private" | "public";
 export type RepoVisibility = "private" | "public";
 export type RoleOpeningStatus = "open" | "filled" | "closed";
 /** OPR-3 — idea until the first milestone ships, then shipping. */
-export type ProductStageName = "idea" | "shipping";
+/** SC-2 — the four stages (contracts `PRODUCT_STAGES`). */
+export type ProductStageName = "idea" | "building" | "stage" | "production";
 /** OPR-3 — a PRODUCT post's template. Never a forum post (`PostRecord`). */
 export type ProductPostKindName = "feature" | "version" | "demo" | "idea" | "seat";
 export type ProductPostStateName = "draft" | "published" | "removed";
@@ -56,10 +57,25 @@ export interface ProfileRecord {
   pitchDigest: string | null;
   repoUrl: string | null;
   liveUrl: string | null;
-  /** OPR-3 — idea or shipping. Follows the milestones; never set by hand. */
+  /** OPR-3, SC-2 — idea, building, stage or production. Set by the crew one
+   *  step at a time (`setProductStage`); milestones no longer move it. */
   stage: ProductStageName;
-  /** OPR-3 — the address of the running product ("Try it"). Authored. */
+  /** OPR-3 — the stage link, shown as "Try it". Authored. */
   tryUrl: string | null;
+  /**
+   * SC-2 — what each step wrote (migration 2285). Optional, because a row
+   * read against a database that has not applied 2285 has none of them: no
+   * step taken, which is what every listing held before the four stages.
+   */
+  stageNote?: string | null;
+  productionUrl?: string | null;
+  /** `YYYY-MM-DD`. */
+  productionSince?: string | null;
+  productionVersion?: string | null;
+  productionAccess?: "everyone" | "waitlist" | "invite" | null;
+  stageChangedAt?: string | null;
+  /** A subject id, never a name. */
+  stageChangedBy?: string | null;
   /** The maintainer's own words. Untouched by canonicalisation — an entry we
    *  do not recognise stays exactly as written (CT-1). */
   stack: string[];
@@ -160,6 +176,28 @@ export interface UpdateProductMilestoneInput {
   title?: string | undefined;
   /** `null` clears; omitted leaves unchanged. */
   summary?: string | null | undefined;
+}
+
+/**
+ * SC-2 — one step of a product's stage, already validated by the contract's
+ * `validateStageChange`. The write is guarded by `from`: it lands only while
+ * the product is still at that stage, so two crew members pressing Move at
+ * once cannot take it two steps. Each field is written only when given; a
+ * step back writes none of them and the crew's words stay for next time.
+ */
+export interface SetProductStageInput {
+  from: ProductStageName;
+  to: ProductStageName;
+  tryUrl?: string | undefined;
+  stageNote?: string | undefined;
+  productionUrl?: string | undefined;
+  productionSince?: string | undefined;
+  /** `null` clears; omitted leaves unchanged. */
+  productionVersion?: string | null | undefined;
+  productionAccess?: "everyone" | "waitlist" | "invite" | undefined;
+  /** A subject id. */
+  by: string;
+  at: string;
 }
 
 /** One block of a product post: which block of its kind, and what it says. */
@@ -3178,7 +3216,7 @@ export interface OpenproductRepository {
     id: Uuid,
     input: UpdateProductMilestoneInput,
   ): Promise<ProductMilestoneRecord | null>;
-  /** Deletes the milestone and re-derives the product's stage. */
+  /** Deletes the milestone. The stage is not touched (SC-2). */
   deleteProductMilestone(profileId: Uuid, id: Uuid): Promise<boolean>;
   /**
    * Rewrite the crew's order. `ids` must be every milestone of the product,
@@ -3186,16 +3224,22 @@ export interface OpenproductRepository {
    */
   reorderProductMilestones(profileId: Uuid, ids: readonly Uuid[]): Promise<ProductMilestoneRecord[] | null>;
   /**
-   * Mark a milestone shipped (`at`) or not shipped (`null`), and move the
-   * product's stage with it: `shipping` while any milestone is shipped,
-   * `idea` when none is. Marking a shipped milestone shipped again keeps its
-   * first moment. Null when the milestone is not this product's.
+   * Mark a milestone shipped (`at`) or not shipped (`null`). Marking a
+   * shipped milestone shipped again keeps its first moment. Null when the
+   * milestone is not this product's. `stage` is the product's stage as it
+   * stands: since SC-2 a milestone no longer moves it.
    */
   setProductMilestoneShipped(
     profileId: Uuid,
     id: Uuid,
     at: string | null,
   ): Promise<{ milestone: ProductMilestoneRecord; stage: ProductStageName; changed: boolean } | null>;
+  /**
+   * SC-2 — move the product one stage, and write what the step asked for.
+   * Null when the product is not at `input.from` any more (or is not there):
+   * nothing was written.
+   */
+  setProductStage(profileId: Uuid, input: SetProductStageInput): Promise<ProfileRecord | null>;
 
   /**
    * Create a draft. Null when `unless` named a post the product already

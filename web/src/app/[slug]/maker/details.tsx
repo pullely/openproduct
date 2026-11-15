@@ -7,6 +7,7 @@ import { composePostPagePath } from "@openproduct/contracts";
 import { BTN_INK, BTN_SOFT, FOCUS } from "../../ui/design";
 import { PlusIcon } from "../../ui/icons";
 import { AppLink } from "../../ui/link";
+import type { StageStart } from "../where-it-runs";
 
 import { setEditing, useMaker } from "./use-maker";
 
@@ -31,7 +32,8 @@ const PITCH_CLASS: Record<Look, string> = {
  * overlay has said who they are and they have pressed "Edit details".
  *
  * WHAT IS EDITED HERE: the one-line pitch (the listing's `tagline`, with its
- * counter and limit) and the "Try it" address. NOT THE NAME. A product's name
+ * counter and limit), the stage link ("Try it"), and — through the Stage row
+ * and its Change stage popup (SC-2) — the stage itself. NOT THE NAME. A product's name
  * is its slug, so renaming changes its address and breaks every link to it;
  * that is a deliberate act with its own flow, and this form does not send
  * `slug` at all.
@@ -45,11 +47,14 @@ export function ProductPitch({
   slug,
   tagline,
   tryUrl,
+  start,
   look,
 }: {
   slug: string;
   tagline: string | null;
   tryUrl: string | null;
+  /** SC-2 — where the product is, for the Stage row and Change stage. */
+  start: StageStart;
   look: Look;
 }) {
   const { editing, savedTagline } = useMaker(slug);
@@ -65,7 +70,7 @@ export function ProductPitch({
     // The pitch stays where it is until the form has arrived.
     return (
       <React.Suspense fallback={pitch}>
-        <DetailsForm slug={slug} tagline={shown ?? ""} tryUrl={tryUrl ?? ""} look={look} />
+        <DetailsForm slug={slug} tagline={shown ?? ""} tryUrl={tryUrl ?? ""} start={start} look={look} />
       </React.Suspense>
     );
   }

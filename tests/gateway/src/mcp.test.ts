@@ -47,7 +47,7 @@ function card(slug: string, over: Partial<{ category: string; licence: string; o
     hasLiveUrl: authored(false, "maintainer"),
     indexable: observed(true, "linked_repo", AT),
     // OPR-3 — idea or shipping, derived from the milestones.
-    stage: derived("idea", "product.stage", ["product_milestones"], AT),
+    stage: authored("idea", "maintainer"),
     milestoneCounts: derived({ shipped: 0, total: 0 }, "product.milestones-shipped", ["product_milestones"], AT),
     crewCount: derived(1, "product.crew-count", ["published_maintainers"], AT),
     // MD0 — the media plane on the wire. Empty on every listing until MD1

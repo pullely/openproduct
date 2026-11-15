@@ -2,16 +2,18 @@
 // product posts and their reactions (openproduct-redesign OPR-3).
 //
 // What is pinned here is what the SQL is trusted for: that a product's stage
-// follows its milestones, that a draft or a removed post is in no public
+// moves only by hand, one guarded step at a time (SC-2), that a draft or a removed post is in no public
 // read, that the feed pages newest first by position, that a person holds one
 // reaction per post and an author none on their own, and that the whole of it
 // leaves with the listing and with the subject.
+
+import { readFileSync } from "node:fs";
 
 import { describe, expect, it } from "vitest";
 
 import { asUuid } from "../ids.js";
 import { purgeContext } from "../purge.js";
-import { sql, repo, ORG, PROJECT_TWO, PROFILE, PROFILE_TWO, OPENING, ACTOR, NOW, seedDraft, seedPublished, usePgEngine } from "./harness.js";
+import { db, sql, repo, ORG, PROJECT_TWO, PROFILE, PROFILE_TWO, OPENING, ACTOR, NOW, MIGRATIONS, seedDraft, seedPublished, usePgEngine } from "./harness.js";
 
 usePgEngine();
 
@@ -133,7 +135,7 @@ describe("OPR-3 — the schema (2265, 2270)", () => {
   });
 });
 
-describe("OPR-3 — milestones, and the stage that follows them", () => {
+describe("OPR-3 — milestones (SC-2: they no longer move the stage)", () => {
   it("appends in order, edits in place, and reads back in the crew's order", async () => {
     await seedDraft();
     const a = await repo.createProductMilestone({ id: M1, profileId: PROFILE, code: "AS1", title: "Sign in", summary: "Accounts." });
@@ -174,49 +176,111 @@ describe("OPR-3 — milestones, and the stage that follows them", () => {
     expect(await repo.reorderProductMilestones(PROFILE_TWO, [])).toEqual([]);
   });
 
-  it("the product is shipping from its first shipped milestone, and an idea again when none is", async () => {
+  it("shipping a milestone marks it and leaves the stage where the crew put it (SC-2)", async () => {
     await seedPublished();
     await repo.createProductMilestone({ id: M1, profileId: PROFILE, code: "AS1", title: "Sign in", summary: null });
     await repo.createProductMilestone({ id: M2, profileId: PROFILE, code: "AS2", title: "Billing", summary: null });
     expect((await repo.getPublicProfile("acme-thing"))?.stage).toBe("idea");
 
     const first = await repo.setProductMilestoneShipped(PROFILE, M1, NOW);
-    expect(first).toMatchObject({ stage: "shipping", changed: true });
+    expect(first).toMatchObject({ stage: "idea", changed: true });
     expect(first?.milestone.shippedAt).toBe(new Date(NOW).toISOString());
-    expect((await repo.getPublicProfile("acme-thing"))?.stage).toBe("shipping");
+    expect((await repo.getPublicProfile("acme-thing"))?.stage).toBe("idea");
 
     // A second press is not a second ship: the first moment stands.
     const again = await repo.setProductMilestoneShipped(PROFILE, M1, "2026-09-01T00:00:00.000Z");
-    expect(again).toMatchObject({ stage: "shipping", changed: false });
+    expect(again).toMatchObject({ stage: "idea", changed: false });
     expect(again?.milestone.shippedAt).toBe(first?.milestone.shippedAt);
 
-    await repo.setProductMilestoneShipped(PROFILE, M2, NOW);
-    const backOne = await repo.setProductMilestoneShipped(PROFILE, M1, null);
-    expect(backOne).toMatchObject({ stage: "shipping", changed: true });
-    expect(backOne?.milestone.shippedAt).toBeNull();
-
-    const backBoth = await repo.setProductMilestoneShipped(PROFILE, M2, null);
-    expect(backBoth).toMatchObject({ stage: "idea", changed: true });
-    expect((await repo.getPublicProfile("acme-thing"))?.stage).toBe("idea");
-  });
-
-  it("deleting the only shipped milestone makes the product an idea again", async () => {
-    await seedPublished();
-    await repo.createProductMilestone({ id: M1, profileId: PROFILE, code: "AS1", title: "Sign in", summary: null });
-    await repo.setProductMilestoneShipped(PROFILE, M1, NOW);
+    // The answer says where the product IS: moved by hand, then a milestone
+    // taken back, and the stage holds.
+    await repo.setProductStage(PROFILE, { from: "idea", to: "building", by: ADA, at: NOW });
+    const back = await repo.setProductMilestoneShipped(PROFILE, M1, null);
+    expect(back).toMatchObject({ stage: "building", changed: true });
+    expect(back?.milestone.shippedAt).toBeNull();
     expect(await repo.deleteProductMilestone(PROFILE, M1)).toBe(true);
-    expect((await repo.getPublicProfile("acme-thing"))?.stage).toBe("idea");
+    expect((await repo.getPublicProfile("acme-thing"))?.stage).toBe("building");
     expect(await repo.deleteProductMilestone(PROFILE, M1)).toBe(false);
   });
 
   it("the stage reaches the directory card and the materialised catalogue", async () => {
     await seedPublished();
-    await repo.createProductMilestone({ id: M1, profileId: PROFILE, code: "AS1", title: "Sign in", summary: null });
     expect((await repo.listPublicCards(10))[0]?.stage).toBe("idea");
-    await repo.setProductMilestoneShipped(PROFILE, M1, NOW);
-    expect((await repo.listPublicCards(10))[0]?.stage).toBe("shipping");
+    await repo.setProductStage(PROFILE, { from: "idea", to: "building", by: ADA, at: NOW });
+    expect((await repo.listPublicCards(10))[0]?.stage).toBe("building");
     await repo.rebuildCatalogue({ now: NOW, mergesSince: NOW, endorsementsSince: NOW });
-    expect((await repo.listCataloguePage({ cursor: null, limit: 10 })).cards[0]?.stage).toBe("shipping");
+    expect((await repo.listCataloguePage({ cursor: null, limit: 10 })).cards[0]?.stage).toBe("building");
+  });
+});
+
+describe("SC-2 — the four stages (2285)", () => {
+  it("the schema holds four stages and the bounds of each step's inputs", async () => {
+    await seedDraft();
+    for (const stage of ["building", "stage", "production", "idea"]) {
+      await sql.execute(`UPDATE openproduct.profiles SET stage = $2 WHERE id = $1`, [PROFILE, stage]);
+    }
+    await expect(sql.execute(`UPDATE openproduct.profiles SET stage = 'shipping' WHERE id = $1`, [PROFILE])).rejects.toThrow();
+    await expect(sql.execute(`UPDATE openproduct.profiles SET stage_note = $2 WHERE id = $1`, [PROFILE, "x".repeat(281)])).rejects.toThrow();
+    await expect(sql.execute(`UPDATE openproduct.profiles SET production_version = $2 WHERE id = $1`, [PROFILE, "x".repeat(41)])).rejects.toThrow();
+    await expect(sql.execute(`UPDATE openproduct.profiles SET production_access = 'friends' WHERE id = $1`, [PROFILE])).rejects.toThrow();
+  });
+
+  it("the backfill: shipping becomes stage with a try link, else building, and a second run changes nothing", async () => {
+    await seedDraft();
+    await seedDraft(PROFILE_TWO, PROJECT_TWO, "second-thing");
+    // The world before 2285: two shipping products, one with somewhere to try it.
+    await sql.execute(`ALTER TABLE openproduct.profiles DROP CONSTRAINT profiles_stage_check`);
+    await sql.execute(`UPDATE openproduct.profiles SET stage = 'shipping', try_url = 'https://try.acme.dev/' WHERE id = $1`, [PROFILE]);
+    await sql.execute(`UPDATE openproduct.profiles SET stage = 'shipping' WHERE id = $1`, [PROFILE_TWO]);
+    const up = readFileSync(MIGRATIONS.find((file) => file.includes("2285_openproduct_four_stages"))!, "utf-8");
+    await db.exec(up);
+    await db.exec(up);
+    const rows = await sql.execute<{ id: string; stage: string }>(`SELECT id, stage FROM openproduct.profiles ORDER BY slug`);
+    expect(rows.rows.map((r) => [r.id, r.stage])).toEqual([
+      [PROFILE, "stage"],
+      [PROFILE_TWO, "building"],
+    ]);
+  });
+
+  it("a step is written once, guarded by the stage it leaves, and a step back keeps what was written", async () => {
+    await seedPublished();
+    const building = await repo.setProductStage(PROFILE, { from: "idea", to: "building", by: ADA, at: NOW });
+    expect(building).toMatchObject({ stage: "building", stageChangedBy: ADA, stageChangedAt: new Date(NOW).toISOString() });
+    // A second Move pressed against the same stage finds the product gone on.
+    expect(await repo.setProductStage(PROFILE, { from: "idea", to: "building", by: BOB, at: NOW })).toBeNull();
+
+    const onStage = await repo.setProductStage(PROFILE, {
+      from: "building",
+      to: "stage",
+      tryUrl: "https://stage.acme.dev/",
+      stageNote: "Send a policy and collect a signature",
+      by: ADA,
+      at: NOW,
+    });
+    expect(onStage).toMatchObject({ stage: "stage", tryUrl: "https://stage.acme.dev/", stageNote: "Send a policy and collect a signature" });
+
+    const live = await repo.setProductStage(PROFILE, {
+      from: "stage",
+      to: "production",
+      productionUrl: "https://acme.app/",
+      productionSince: "2026-11-12",
+      productionVersion: "1.0.0",
+      productionAccess: "waitlist",
+      by: BOB,
+      at: NOW,
+    });
+    expect(live).toMatchObject({
+      stage: "production",
+      productionUrl: "https://acme.app/",
+      productionSince: "2026-11-12",
+      productionVersion: "1.0.0",
+      productionAccess: "waitlist",
+      stageChangedBy: BOB,
+    });
+
+    const back = await repo.setProductStage(PROFILE, { from: "production", to: "stage", by: ADA, at: NOW });
+    expect(back).toMatchObject({ stage: "stage", productionUrl: "https://acme.app/", tryUrl: "https://stage.acme.dev/" });
+    expect((await repo.getPublicProfile("acme-thing"))?.stage).toBe("stage");
   });
 
   it("the card counts the milestones and the crew, live and in the materialised catalogue", async () => {
@@ -450,6 +514,7 @@ describe("OPR-3 — the public reads never hold a draft, a removed post or an un
     await seedPublished();
     await repo.createProductMilestone({ id: M1, profileId: PROFILE, code: "AS1", title: "Sign in", summary: null });
     await repo.setProductMilestoneShipped(PROFILE, M1, NOW);
+    await repo.setProductStage(PROFILE, { from: "idea", to: "building", by: ADA, at: NOW });
     await published(P1, T1, NOW);
     expect(await repo.getPublicProductPost(P1)).toEqual({
       id: P1,
@@ -462,7 +527,7 @@ describe("OPR-3 — the public reads never hold a draft, a removed post or an un
       authorHandle: null,
       authorName: null,
       slug: "acme-thing",
-      stage: "shipping",
+      stage: "building",
       // The product's progress rides on the post, so a feature card in the
       // feed draws its bars without a read per card.
       milestoneCounts: { shipped: 1, total: 1 },
@@ -750,8 +815,9 @@ describe("OPR-3 — the overlay's crew and seat questions, Needs you, Following,
     await seedDraft(PROFILE_TWO, PROJECT_TWO, "second-thing");
     await repo.createProductMilestone({ id: M1, profileId: PROFILE, code: "AS1", title: "Sign in", summary: null });
     await repo.setProductMilestoneShipped(PROFILE, M1, NOW);
+    await repo.setProductStage(PROFILE, { from: "idea", to: "building", by: ADA, at: NOW });
     const stages = await repo.listStagesForSlugs(["Acme-Thing", "second-thing", "nope"]);
-    expect([...stages.entries()]).toEqual([["acme-thing", "shipping"]]);
+    expect([...stages.entries()]).toEqual([["acme-thing", "building"]]);
     expect((await repo.listStagesForSlugs([])).size).toBe(0);
   });
 

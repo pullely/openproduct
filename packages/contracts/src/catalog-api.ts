@@ -20,6 +20,7 @@ import type { MediaFact } from "./media.js";
 import type { Fact } from "./provenance.js";
 import type { Change } from "./snapshots.js";
 import type { MilestoneCounts, ProductStage, PublicMilestone } from "./product-posts.js";
+import type { WhereItRuns } from "./stage-change.js";
 
 /** One row of the catalog, as a machine reads it. */
 export interface CatalogCard {
@@ -68,8 +69,9 @@ export interface CatalogCard {
    * not indexed" is a question with an answer rather than a support ticket.
    */
   indexable: Fact<boolean>;
-  /** OPR-3 — `idea` until the product's first milestone ships, then
-   *  `shipping`. Derived from the milestones (`product.stage`). */
+  /** OPR-3, SC-2 — idea, building, stage or production. Authored: the crew
+   *  sets it by hand, one step at a time (it was derived from the milestones
+   *  until SC1). */
   stage: Fact<ProductStage>;
   /** OPR-3 — how many milestones have shipped, of how many
    *  (`product.milestones-shipped`). On the card, so a list draws progress
@@ -161,6 +163,9 @@ export interface CatalogProduct extends CatalogCard {
   liveUrl: Fact<string | null>;
   /** OPR-3 — the address of the running product, as the crew declared it. */
   tryUrl: Fact<string | null>;
+  /** SC-2 — Where it runs: the stage and production rows, as the crew set
+   *  them. I8: the product page shows it. */
+  whereItRuns: Fact<WhereItRuns>;
   /** OPR-3 — the product's milestones in the crew's order: a code, a title,
    *  a summary, and the moment each shipped (null until it has). */
   milestones: Fact<PublicMilestone[]>;
@@ -236,7 +241,7 @@ export interface CatalogFacetGroup {
 // CS0 — bumped with the changelog: `api-changelog.ts` is the record of what
 // changed under which version, and a test holds this literal to its newest
 // release. `1.1.0` is everything the worldclass epic added to `1.0.0`.
-export const CATALOG_API_VERSION = "1.4.0";
+export const CATALOG_API_VERSION = "1.5.0";
 
 /**
  * The keys `/v1/products` and `/v1/products/{slug}` serialize.
@@ -276,7 +281,7 @@ export const CATALOG_CARD_KEYS = [
   "slug",
   "stack",
   "stackCanonical",
-  // OPR-3 — idea or shipping; I8, the lists label by it.
+  // OPR-3, SC-2 — the stage; I8, the lists label by it.
   "stage",
   "tagline",
 ] as const;
@@ -314,6 +319,8 @@ export const CATALOG_PRODUCT_KEYS = [
   // the card, so it arrives through `CATALOG_CARD_KEYS` above.)
   "tryUrl",
   "milestones",
+  // SC-2 — Where it runs; I8, the product page shows it.
+  "whereItRuns",
 ]
   .slice()
   .sort() as readonly string[];
