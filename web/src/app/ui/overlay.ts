@@ -31,7 +31,6 @@
 // the most-exercised branch in the module rather than the least.
 
 import {
-  isCrewRole,
   isProductPostReaction,
   type MeOverlay,
   type OverlayCrew,
@@ -170,7 +169,8 @@ function readCrew(raw: unknown): OverlayCrew[] {
     if (typeof slug === "string" && typeof org === "string" && typeof profile === "string") {
       // SC-3 — a role this page does not know is the narrowest one: the page
       // offers nothing core would refuse (core decides every act anyway).
-      out.push({ slug, org, profile, role: isCrewRole(role) ? role : "member" });
+      // Written out rather than imported: this file is in every page's bundle.
+      out.push({ slug, org, profile, role: role === "lead" || role === "maintainer" ? role : "member" });
     }
   }
   return out;
