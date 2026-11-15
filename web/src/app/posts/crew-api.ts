@@ -24,7 +24,14 @@
 // controls laid over it after load.
 
 import {
+  CREW_API,
   PRODUCT_POST_API,
+  crewQueryString,
+  isCrewRole,
+  type CrewList,
+  type CrewQuery,
+  type CrewRoleChangeInput,
+  type CrewRolesAnswer,
   type AuthoredProductPostKind,
   type ChangeStageRequest,
   type CrewMilestone,
@@ -121,7 +128,11 @@ export async function resolveCrew(token: string, slug: string, fetchImpl?: CrewF
           candidate?.slug === slug && typeof candidate.org === "string" && typeof candidate.profile === "string",
       )
     : undefined;
-  return entry ? { kind: "ok", crew: { slug, org: entry.org, profile: entry.profile } } : { kind: "not-crew" };
+  // SC-3 — a role this page does not know is the narrowest one: core decides
+  // every act regardless, and the page offers no write it would refuse.
+  return entry
+    ? { kind: "ok", crew: { slug, org: entry.org, profile: entry.profile, role: isCrewRole(entry.role) ? entry.role : "member" } }
+    : { kind: "not-crew" };
 }
 
 // ─── posts ─────────────────────────────────────────────────────────────────
@@ -350,6 +361,28 @@ export function changeCrewStage(
   fetchImpl?: CrewFetch,
 ): Promise<CrewResult<StageAnswer>> {
   return crewRequest(token, PRODUCT_POST_API.crewStage(ids.org, ids.profile), { method: "PUT", body }, fetchImpl);
+}
+
+// ─── the crew and its roles (SC-3) ─────────────────────────────────────────
+
+/** The crew's own list: a page of 30, the counts, searched and filtered. */
+export function fetchCrewList(
+  token: string,
+  ids: CrewIds,
+  query: Pick<CrewQuery, "q" | "role"> & { cursor: string | null },
+  fetchImpl?: CrewFetch,
+): Promise<CrewResult<CrewList>> {
+  return crewRequest(token, `${CREW_API.crew(ids.org, ids.profile)}${crewQueryString(query)}`, { method: "GET" }, fetchImpl);
+}
+
+/** One save from Edit crew: several role changes, one request. */
+export function saveCrewRoles(
+  token: string,
+  ids: CrewIds,
+  changes: CrewRoleChangeInput[],
+  fetchImpl?: CrewFetch,
+): Promise<CrewResult<CrewRolesAnswer>> {
+  return crewRequest(token, CREW_API.crew(ids.org, ids.profile), { method: "PUT", body: { changes } }, fetchImpl);
 }
 
 // ─── needs you, and the listing's own fields ───────────────────────────────

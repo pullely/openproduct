@@ -457,7 +457,7 @@ describe("the privacy rule — who reads a private thread (design §7)", () => {
     await seedPrivate();
     await seedPublished(PROFILE_TWO, PROJECT_TWO, "other-thing");
     await sql.execute(`DELETE FROM openproduct.listing_maintainers WHERE profile_id = $1`, [PROFILE_TWO]);
-    await repo.addListingMaintainer(PROFILE_TWO, THIRD, "owner", ADMIN);
+    await repo.addListingMaintainer(PROFILE_TWO, THIRD, "lead", ADMIN);
     expect(await repo.getPrivateThread(THREAD, THIRD)).toBeNull();
     expect(await repo.listPrivateThreads(PROFILE, THIRD)).toEqual([]);
     expect(await repo.listPrivateThreads(PROFILE_TWO, THIRD)).toEqual([]);
@@ -740,7 +740,7 @@ describe("the privacy rule — what the schema holds (2280)", () => {
     expect(row.rows[0]?.profile_id).toBe(PROFILE);
     // The other product's crew still reads nothing.
     await sql.execute(`DELETE FROM openproduct.listing_maintainers WHERE profile_id = $1`, [PROFILE_TWO]);
-    await repo.addListingMaintainer(PROFILE_TWO, THIRD, "owner", ADMIN);
+    await repo.addListingMaintainer(PROFILE_TWO, THIRD, "lead", ADMIN);
     expect(await repo.getPrivateThread(THREAD, THIRD)).toBeNull();
     // The rule is about private threads: the schema does not pin a public one.
     await sql.execute(`UPDATE openproduct.threads SET profile_id = $2 WHERE id = $1`, [PUBLIC_THREAD, PROFILE_TWO]);

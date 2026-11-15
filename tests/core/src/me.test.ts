@@ -10,7 +10,7 @@
 // filter, the one-row-per-opening upsert, the cascade) is pinned against a
 // live engine in packages/db/src/openproduct/repository-pg.test.ts.
 
-import { ME_OVERLAY_KEYS, ME_OVERLAY_MAX_IDS, OVERLAY_CREW_KEYS, PRODUCT_POST_REACTIONS } from "@openproduct/contracts";
+import { CREW_ROLES, ME_OVERLAY_KEYS, ME_OVERLAY_MAX_IDS, OVERLAY_CREW_KEYS, PRODUCT_POST_REACTIONS } from "@openproduct/contracts";
 import type { OpenproductRepository } from "@openproduct/db";
 import { route } from "@openproduct-worker/router";
 import type { Env } from "@openproduct-worker/env";
@@ -188,6 +188,11 @@ function harness(): Harness {
     async appendActivity(input: { kind: string; actorSubjectId: string | null }) {
       activity.push({ kind: input.kind, actorSubjectId: input.actorSubjectId });
     },
+    // SC-3 — an approved seat joins the crew as a Member.
+    async addSeatMember(profileId: string, subjectId: string, addedBy: string) {
+      calls.push(`addSeatMember:${profileId}:${subjectId}:${addedBy}`);
+      return true;
+    },
     async setApplicationStatusByRequestRef(ref: string, status: string) {
       calls.push(`setStatus:${ref}:${status}`);
       return 1;
@@ -236,7 +241,7 @@ function harness(): Harness {
       calls.push(`crewOf:${slugs.join("|")}`);
       return slugs
         .filter((slug) => slug === "acme-thing")
-        .map((slug) => ({ slug, orgId: ORG_UUID, profileId: PROFILE_UUID }));
+        .map((slug) => ({ slug, orgId: ORG_UUID, profileId: PROFILE_UUID, role: "maintainer" as const }));
     },
     async listPendingApplicationOpenings(_subjectId: string, openingIds: readonly string[]) {
       calls.push(`requested:${openingIds.join("|")}`);
@@ -442,6 +447,8 @@ describe("the seam event receiver (S6)", () => {
     );
     expect(res.status).toBe(200);
     expect(h.calls).toContain("setStatus:jrq_1:approved");
+    // SC-3 — and the person the application names joins the crew as a Member.
+    expect(h.calls).toContain(`addSeatMember:55555555-5555-4555-8555-555555555555:usr_0123456789abcdef0123456789abcdef:seam:jrq_1`);
   });
 
   it("records the application on a submitted event — the sole record path since OX5", async () => {
@@ -660,8 +667,8 @@ describe("the personalisation overlay (openproduct-commons XP2)", () => {
       // nothing else, which is what stops it becoming a second rendering path.
       //
       // OPR-3 adds three, and each is still ids and closed words: `crew` is a
-      // list of `{slug, org, profile}` (public ids, pinned by
-      // `OVERLAY_CREW_KEYS`), `reactions` maps a product post's id to one of
+      // list of `{slug, org, profile, role}` (public ids and, since SC-3, one
+      // of the three roles; pinned by `OVERLAY_CREW_KEYS`), `reactions` maps a product post's id to one of
       // the four reaction names, and `requestedOpenings` is a list of seat ids.
       const strings = (v: unknown) => Array.isArray(v) && v.every((x) => typeof x === "string");
       const ok =
@@ -676,7 +683,8 @@ describe("the personalisation overlay (openproduct-commons XP2)", () => {
                 value.every(
                   (entry) =>
                     JSON.stringify(Object.keys(entry as object).sort()) === JSON.stringify([...OVERLAY_CREW_KEYS]) &&
-                    Object.values(entry as object).every((x) => typeof x === "string"),
+                    Object.values(entry as object).every((x) => typeof x === "string") &&
+                    (CREW_ROLES as readonly string[]).includes((entry as { role: string }).role),
                 )
               : key === "reactions"
                 ? typeof value === "object" &&
@@ -729,6 +737,7 @@ describe("the personalisation overlay (openproduct-commons XP2)", () => {
         slug: "acme-thing",
         org: `org_${ORG_UUID.replace(/-/g, "")}`,
         profile: `opp_${PROFILE_UUID.replace(/-/g, "")}`,
+        role: "maintainer",
       },
     ]);
     expect(h.calls).toContain("crewOf:acme-thing|other-thing");

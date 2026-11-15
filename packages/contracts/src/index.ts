@@ -1218,3 +1218,5 @@ export * from "./product-posts.js";
 export * from "./product-post-blocks.js";
 /** SC-2 (openproduct-stages-crew) — one step at a time, and where it runs. */
 export * from "./stage-change.js";
+/** SC-3 (openproduct-stages-crew) — crew roles, and the crew's own list. */
+export * from "./crew-roles.js";

@@ -14,6 +14,9 @@
 //   join_request.decided    → overwrite the status snapshot by request ref.
 //                             The projection has no state machine — JR is the
 //                             source of truth, and whatever it says, we store.
+//                             An APPROVAL also puts the person on the
+//                             product's crew as a Member (SC-3, design §2.4);
+//                             denied, withdrawn and expired touch no crew.
 //
 // Fail-soft mirrors the sender: an event that resolves to nothing (a door
 // with no live opening, a ref we never saw) answers 200 {recorded:false} —
@@ -37,6 +40,8 @@ export interface SeamEventDeps {
     // CB3 — the decision trail.
     | "getApplicationByRequestRef"
     | "appendActivity"
+    // SC-3 — an approved seat request joins the crew as a Member.
+    | "addSeatMember"
   >;
   generateId?: () => string;
   now?: () => Date;
@@ -135,6 +140,16 @@ export async function handleSeamJoinRequestEvent(
   if (data.status === "approved") {
     const application = await deps.repo.getApplicationByRequestRef(jrRequestRef);
     if (application) {
+      // SC-3 — THE SEAT JOINS THE CREW, as a Member. The application row is
+      // the proof of a listed door for THIS listing: it is written only by
+      // `join_request.submitted` through the public-listing filter above, so
+      // a decision for a request we never recorded (a door whose listing was
+      // not public) finds no row here and adds nobody. Idempotent and never
+      // a demotion (the repository's ON CONFLICT DO NOTHING): a redelivered
+      // approval, or a Lead who asked for a seat on their own product,
+      // changes nobody's role. SC-4's roster sync will reconcile the crew
+      // with the Orunbase project from there.
+      await deps.repo.addSeatMember(application.profileId as never, application.subjectId, `seam:${jrRequestRef}`);
       const publication = decisionPublication({
         decision: "approved",
         applicantSubjectId: application.subjectId,

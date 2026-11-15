@@ -22,14 +22,15 @@ import { setViewMode, useMaker } from "./use-maker";
  * who is not on this product's crew.
  */
 export function ViewSwitch({ slug }: { slug: string }) {
-  const { crew, mode } = useMaker(slug);
+  const { writes, mode } = useMaker(slug);
   const [slot, setSlot] = React.useState<HTMLElement | null>(null);
 
   React.useEffect(() => {
     setSlot(document.getElementById(VIEW_SWITCH_SLOT_ID));
   }, []);
 
-  if (crew === null || slot === null) return null;
+  // SC-3 — a Member has nothing to manage: no switch.
+  if (!writes || slot === null) return null;
 
   return createPortal(
     <div

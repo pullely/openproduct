@@ -236,6 +236,7 @@ import {
   handleUpdateProductPost,
   type ProductPostHandlerDeps,
 } from "./handlers/product-posts.js";
+import { handleListCrew, handleSetCrewRole, handleSetCrewRoles, type CrewHandlerDeps } from "./handlers/crew.js";
 import { errorResponse, methodNotAllowed, notFound, withTimings } from "./http.js";
 import { handleOpenproductWorkspacePurge } from "./handlers/workspace-purge.js";
 import {
@@ -283,6 +284,10 @@ const PROFILE_MILESTONE_SHIPPED_RE =
 // SC-2 — the stage, one step at a time. Beside the milestones: the same door.
 const PROFILE_STAGE_RE =
   /^\/internal\/openproduct\/orgs\/([^/]+)\/profiles\/([^/]+)\/stage$/;
+// SC-3 — the crew's own list, and its roles. Beside the stage: the same door.
+const PROFILE_CREW_RE = /^\/internal\/openproduct\/orgs\/([^/]+)\/profiles\/([^/]+)\/crew$/;
+const PROFILE_CREW_MEMBER_RE =
+  /^\/internal\/openproduct\/orgs\/([^/]+)\/profiles\/([^/]+)\/crew\/([^/]+)$/;
 const PROFILE_NEEDS_YOU_RE =
   /^\/internal\/openproduct\/orgs\/([^/]+)\/profiles\/([^/]+)\/needs-you$/;
 
@@ -1759,6 +1764,30 @@ async function maintainerRoutes(
     if (!orgId || !profileId) return notFound(requestId, path);
     if (request.method !== "PUT") return methodNotAllowed(requestId);
     return handleChangeStage(env, request, requestId, actor, orgId, profileId, postDeps);
+  }
+  const crewList = PROFILE_CREW_RE.exec(path);
+  if (crewList) {
+    const orgId = parseOrgPublicId(crewList[1]!);
+    const profileId = parseProfilePublicId(crewList[2]!);
+    if (!orgId || !profileId) return notFound(requestId, path);
+    const crewDeps = deps as unknown as CrewHandlerDeps;
+    if (request.method === "GET") return handleListCrew(env, url, requestId, actor, orgId, profileId, crewDeps);
+    if (request.method === "PUT") return handleSetCrewRoles(env, request, requestId, actor, orgId, profileId, crewDeps);
+    return methodNotAllowed(requestId);
+  }
+  const crewMember = PROFILE_CREW_MEMBER_RE.exec(path);
+  if (crewMember) {
+    const orgId = parseOrgPublicId(crewMember[1]!);
+    const profileId = parseProfilePublicId(crewMember[2]!);
+    if (!orgId || !profileId) return notFound(requestId, path);
+    if (request.method !== "PUT") return methodNotAllowed(requestId);
+    let subjectId: string;
+    try {
+      subjectId = decodeURIComponent(crewMember[3]!);
+    } catch {
+      return notFound(requestId, path);
+    }
+    return handleSetCrewRole(env, request, requestId, actor, orgId, profileId, subjectId, deps as unknown as CrewHandlerDeps);
   }
   const needsYou = PROFILE_NEEDS_YOU_RE.exec(path);
   if (needsYou) {

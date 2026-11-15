@@ -21,6 +21,9 @@
 // on a product its sender is already on the crew of.
 
 import {
+  crewCursor,
+  readCrewChanges,
+  readCrewQuery,
   composePostPagePath,
   productPostPagePath,
   type CrewMilestone,
@@ -38,7 +41,9 @@ import {
   createCrewSeat,
   deleteCrewMilestone,
   deleteCrewSeat,
+  fetchCrewList,
   fetchNeedsYou,
+  saveCrewRoles,
   listCrewMilestones,
   listCrewPosts,
   publishCrewPost,
@@ -85,6 +90,8 @@ export interface CrewCall {
   fields: Fields;
   /** `accept: application/json` — the enhanced caller. */
   json: boolean;
+  /** The request's own query (`?q=&role=&cursor=`), for a read that pages. */
+  search?: string;
   fetchImpl?: CrewFetch;
 }
 
@@ -456,6 +463,39 @@ export async function handleStageWrite(call: CrewCall): Promise<CrewAnswer> {
   if (result.kind !== "ok") return notOk(call, back, result);
   if (call.json) return json(200, { data: result.data });
   return { kind: "redirect", to: withQuery(back, { notice: "stage-moved" }) };
+}
+
+/**
+ * `GET /{slug}/manage/crew?q=&role=&cursor=` — the crew's own list (SC-3):
+ * 30 people, the counts per role, searched and filtered. Anybody on the crew
+ * reads it; core answers 404 to everybody else.
+ */
+export async function handleCrewRead(call: CrewCall): Promise<CrewAnswer> {
+  const query = readCrewQuery(new URLSearchParams(call.search ?? ""));
+  const cursor = query.offset > 0 ? crewCursor(query.offset) : null;
+  return crewRead(call, (token, ids) => fetchCrewList(token, ids, { q: query.q, role: query.role, cursor }, call.fetchImpl));
+}
+
+/**
+ * `POST /{slug}/manage/crew` `{changes: [{subjectId, role}]}` — one save from
+ * Edit crew (SC-3), sent to core as ONE request: a Lead sorting fifty people
+ * is one listing write, not fifty against the gateway's 20-a-minute bound.
+ * A change core refused comes back keyed `changes.<subjectId>`, so the popup
+ * draws it beside its row; the others stood. JSON only — the popup is the
+ * one caller, and there is no form to come back to.
+ */
+export async function handleCrewSave(call: CrewCall): Promise<CrewAnswer> {
+  const back = `/${call.slug}/crew`;
+  const asJson: CrewCall = { ...call, json: true };
+  if (!call.token) return json(401, null);
+  const read = readCrewChanges(call.fields.changes);
+  if (!read.ok) return failure(asJson, back, { kind: "invalid", fields: read.fields });
+  const crew = await crewFor(asJson, back);
+  if (!crew.ok) return crew.answer.kind === "signin" ? json(401, null) : crew.answer;
+  const result = await saveCrewRoles(crew.token, crew.ids, read.changes, call.fetchImpl);
+  if (result.kind === "unauthorized") return json(401, null);
+  if (result.kind !== "ok") return failure(asJson, back, result);
+  return json(200, { data: result.data });
 }
 
 /** `GET /{slug}/manage/needs-you` — pending seat requests and drafts. */

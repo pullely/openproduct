@@ -54,6 +54,7 @@ export async function crewCall(
     token: session ? session.accessToken : null,
     fields: options.body ? await readFields(request) : {},
     json: wantsJson(request),
+    search: request.nextUrl.search,
   };
 }
 

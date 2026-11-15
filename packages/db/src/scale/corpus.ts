@@ -306,7 +306,7 @@ export async function loadCorpus(sql: SqlExecutor, shape: CorpusShape): Promise<
   await step(
     "listing_maintainers",
     `INSERT INTO openproduct.listing_maintainers (profile_id, subject_id, role, added_by)
-     SELECT md5('p' || n)::uuid, 'usr_' || md5('c' || (1 + n % ${shape.contributors})), 'owner', 'usr_maker'
+     SELECT md5('p' || n)::uuid, 'usr_' || md5('c' || (1 + n % ${shape.contributors})), 'lead', 'usr_maker'
        FROM generate_series(1, ${N}) AS n`,
   );
   await step(

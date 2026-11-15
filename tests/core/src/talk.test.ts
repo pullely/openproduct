@@ -84,6 +84,8 @@ function harness() {
   const threads: StoredThread[] = [];
   const posts: StoredPost[] = [];
   const crew = new Set([CREW, CREW_TWO]);
+  // SC-3 — a role other than Maintainer, for the crew members who hold one.
+  const roles = new Map<string, "lead" | "maintainer" | "member">();
   const handles = new Map([[AUTHOR, "ada"], [CREW, "grace"]]);
   const notifications: Array<Record<string, unknown>> = [];
   const outbox: Array<Record<string, unknown>> = [];
@@ -133,7 +135,7 @@ function harness() {
       return handle ? { handle, subjectId } : null;
     },
     async getListingRole(_profileId: string, subjectId: string) {
-      return crew.has(subjectId) ? "maintainer" : null;
+      return crew.has(subjectId) ? (roles.get(subjectId) ?? "maintainer") : null;
     },
     async listMaintainerSubjects() {
       return [...crew];
@@ -246,7 +248,7 @@ function harness() {
   } as unknown as OpenproductRepository;
 
   const deps = { repo, generateId: nextId, now: () => new Date(NOW) } as unknown as ProfileHandlerDeps;
-  return { deps, threads, posts, crew, notifications, outbox, calls, repo };
+  return { deps, threads, posts, crew, roles, notifications, outbox, calls, repo };
 }
 
 type H = ReturnType<typeof harness>;
@@ -439,16 +441,21 @@ describe("reading private threads — the one signed-in path", () => {
 //     registry), and their access ends with it;
 //   - deleting the listing or purging its workspace deletes the threads too.
 //
-// And nothing else. No route adds or removes a maintainer; the platform
-// sends no event saying a person left a workspace (the seam carries join
-// requests, `workspace.visibility_narrowed` and the purge); no request reads
-// workspace membership; retiring somebody from the public roster
-// (`product_people`) is a different fact and does not touch the crew. So a
-// person who leaves the WORKSPACE on the platform, and keeps their account,
-// keeps their place on the crew here — and keeps reading its private threads
-// — until an operator removes the row by hand. That is the listing's whole
-// authority model since OX4, not something private threads added, and it is
-// written down here so nobody reads §7.4 as more than it is.
+// And nothing else. SC-3 added two acts that WRITE the crew list, and
+// neither removes anybody: an approved seat request ADDS its person as a
+// Member (the seam's `join_request.decided`), and a Lead CHANGES a role (the
+// crew routes) — which can move a person down to Member, where they still
+// read private threads, but never off the crew. The platform sends no event
+// saying a person left a workspace (the seam carries join requests,
+// `workspace.visibility_narrowed` and the purge; SC-4's roster sync is the
+// act that will); no request reads workspace membership; retiring somebody
+// from the public roster (`product_people`) is a different fact and does not
+// touch the crew. So a person who leaves the WORKSPACE on the platform, and
+// keeps their account, keeps their place on the crew here — and keeps
+// reading its private threads — until an operator removes the row by hand.
+// That is the listing's whole authority model since OX4, not something
+// private threads added, and it is written down here so nobody reads §7.4 as
+// more than it is.
 describe("leaving the crew — the acts that exist, and the one that does not", () => {
   const CORE = resolve(dirname(fileURLToPath(import.meta.url)), "../../../core/src");
   const strip = (text: string) => text.replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "");
@@ -491,13 +498,21 @@ describe("leaving the crew — the acts that exist, and the one that does not", 
     expect(of("posts", "author_subject_id")).toBe("anonymise");
   });
 
-  it("NO OTHER ACT REMOVES SOMEBODY FROM A CREW: no route writes the crew list, and no event says a person left", () => {
+  it("NO OTHER ACT REMOVES SOMEBODY FROM A CREW: the two crew writers add and re-role, and no event says a person left", () => {
     const all = files(CORE).map((file) => ({ file, text: strip(readFileSync(file, "utf-8")) }));
-    // Nothing in the worker adds or removes a maintainer. (Creating a listing
-    // makes its creator the owner, inside the repository's `createProfile`.)
-    const writers = all.filter(({ text }) => /\b(addListingMaintainer|removeListingMaintainer|removeMaintainer|setListingRole)\b/.test(text));
-    expect(writers.map(({ file }) => file)).toEqual([]);
+    const rel = (file: string) => file.slice(CORE.length + 1);
+    // Nothing in the worker removes a maintainer. (Creating a listing makes
+    // its creator the Lead, inside the repository's `createProfile`.)
+    const removers = all.filter(({ text }) => /\b(removeListingMaintainer|removeMaintainer|removeCrewMember|deleteCrew\w*)\b/.test(text));
+    expect(removers.map(({ file }) => file)).toEqual([]);
     expect(all.filter(({ text }) => /listing_maintainers/.test(text) && /\b(DELETE|INSERT|UPDATE)\b/.test(text)).map(({ file }) => file)).toEqual([]);
+    // SC-3's two writers, exactly where they are: an approved seat ADDS a
+    // Member (never a demotion: the repository's ON CONFLICT DO NOTHING), and
+    // a Lead CHANGES a role through the crew routes. Neither takes anybody off.
+    const writers = (name: string) => all.filter(({ text }) => new RegExp(`\\brepo\\.${name}\\(`).test(text)).map(({ file }) => rel(file));
+    expect(writers("addSeatMember")).toEqual(["handlers/seam-events.ts"]);
+    expect(writers("setCrewRole")).toEqual(["handlers/crew.ts"]);
+    expect(writers("addListingMaintainer")).toEqual([]);
 
     // The platform's deliveries, in full: join requests, one workspace event.
     const seam = strip(readFileSync(resolve(CORE, "handlers/seam-events.ts"), "utf-8"));
@@ -506,7 +521,8 @@ describe("leaving the crew — the acts that exist, and the one that does not", 
       '"join_request.submitted"',
       '"workspace.visibility_narrowed"',
     ]);
-    // None of them, and no roster act, reaches the crew list.
+    // No roster act reaches the crew list, and the seam's one crew write is
+    // the seat's Member (pinned above), never a removal.
     for (const file of ["handlers/seam-events.ts", "handlers/roster.ts"]) {
       const source = strip(readFileSync(resolve(CORE, file), "utf-8"));
       expect([file, /ListingMaintainer|listing_maintainers|eraseSubject/.test(source)]).toEqual([file, false]);
@@ -669,6 +685,34 @@ describe("the crew marks an issue resolved", () => {
     expect((await route(req("PUT", `${BASE}/${id}/resolved`, READER), env(), h.deps)).status).toBe(404);
     expect((await route(req("PUT", `${BASE}/${id}/resolved`, CREW), env(), h.deps)).status).toBe(200);
     expect(h.threads[0]?.resolvedAt).toBe(NOW);
+  });
+});
+
+describe("SC-3 — a Member reads the private threads and resolves nothing", () => {
+  it("a Member lists and reads every private thread, as the crew; Needs you names them too", async () => {
+    const h = harness();
+    h.roles.set(CREW_TWO, "member");
+    const mine = await privateThread(h, READER);
+    const list = (await (await route(req("GET", `${BASE}/private?slug=acme-thing`, CREW_TWO), env(), h.deps)).json()) as {
+      data: { crew: boolean; threads: Array<{ id: string }> };
+    };
+    expect(list.data.crew).toBe(true);
+    expect(list.data.threads.map((t) => t.id)).toEqual([mine]);
+    expect((await route(req("GET", `${BASE}/private/${mine}`, CREW_TWO), env(), h.deps)).status).toBe(200);
+    expect(await privateThreadNotices({ repo: h.repo }, PROFILE, { subjectId: CREW_TWO, subjectType: "user" })).toHaveLength(1);
+  });
+
+  it("marking an issue resolved is a write: a Member is answered as anybody else, a Lead is not", async () => {
+    const h = harness();
+    h.roles.set(CREW_TWO, "member");
+    h.roles.set(CREW, "lead");
+    const id = (await start(h, AUTHOR, { title: "It crashes", kind: "issue" })).id;
+    const member = await route(req("PUT", `${BASE}/${id}/resolved`, CREW_TWO), env(), h.deps);
+    const stranger = await route(req("PUT", `${BASE}/${id}/resolved`, THIRD), env(), h.deps);
+    expect([member.status, stranger.status]).toEqual([404, 404]);
+    expect(await text(member)).toBe(await text(stranger));
+    expect(h.threads[0]?.resolvedAt).toBeNull();
+    expect((await route(req("PUT", `${BASE}/${id}/resolved`, CREW), env(), h.deps)).status).toBe(200);
   });
 });
 

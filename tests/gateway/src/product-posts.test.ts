@@ -15,7 +15,7 @@ import { resetSubjectCache } from "@openproduct-gateway/subject";
 import { resetBuckets } from "@openproduct-gateway/ratelimit";
 import { resetVelocity } from "@openproduct-gateway/velocity";
 import { ALL_TAGS, TAG_LISTING, TAG_POSTS, publicCacheTags, purgeTagsForWrite } from "@openproduct-gateway/tags";
-import { DEFAULT_VELOCITY_RULES, PRODUCT_POST_API } from "@openproduct/contracts";
+import { CREW_API, DEFAULT_VELOCITY_RULES, PRODUCT_POST_API } from "@openproduct/contracts";
 
 const POST = "ppo_0d5e1f2a111142228333444455556666";
 const MILESTONE = "pms_1d5e1f2a111142228333444455556666";
@@ -213,6 +213,9 @@ describe("the signed-in and crew routes are on the authenticated plane", () => {
     [PRODUCT_POST_API.crewNeedsYou(ORG, PROFILE), `/internal/openproduct/orgs/${ORG}/profiles/${PROFILE}/needs-you`],
     // SC-2 — the stage, one step at a time.
     [PRODUCT_POST_API.crewStage(ORG, PROFILE), `/internal/openproduct/orgs/${ORG}/profiles/${PROFILE}/stage`],
+    // SC-3 — the crew's own list and its roles.
+    [CREW_API.crew(ORG, PROFILE), `/internal/openproduct/orgs/${ORG}/profiles/${PROFILE}/crew`],
+    [CREW_API.member(ORG, PROFILE, SUBJECT), `/internal/openproduct/orgs/${ORG}/profiles/${PROFILE}/crew/${SUBJECT}`],
   ];
 
   it.each(paths)("%s is dispatched, mapped to %s, and asks for a bearer", async (path, target) => {
@@ -224,7 +227,7 @@ describe("the signed-in and crew routes are on the authenticated plane", () => {
 
   it("a signed-in read of them is never cacheable — drafts and my follows are not public documents", async () => {
     stubIdentity(SUBJECT);
-    for (const path of [PRODUCT_POST_API.following(), PRODUCT_POST_API.crewPosts(ORG, PROFILE), PRODUCT_POST_API.crewNeedsYou(ORG, PROFILE)]) {
+    for (const path of [PRODUCT_POST_API.following(), PRODUCT_POST_API.crewPosts(ORG, PROFILE), PRODUCT_POST_API.crewNeedsYou(ORG, PROFILE), CREW_API.crew(ORG, PROFILE)]) {
       resetSubjectCache();
       const res = await route(signed(path, "GET"), envWith(coreStub(() => Response.json({ data: {} }))));
       expect([path, res.status, res.headers.get("cache-control"), res.headers.get("cache-tag")]).toEqual([path, 200, "no-store", null]);
@@ -242,6 +245,10 @@ describe("the signed-in and crew routes are on the authenticated plane", () => {
       [`${crew}/milestones/${MILESTONE}`, "PATCH"],
       [`${crew}/milestones/${MILESTONE}/shipped`, "PUT"],
       [`${crew}/stage`, "PUT"],
+      // SC-3 — one save from Edit crew is ONE listing write, however many
+      // roles it changes.
+      [`${crew}/crew`, "PUT"],
+      [`${crew}/crew/${SUBJECT}`, "PUT"],
     ] as const) {
       expect([path, method, classifyWrite(path, method)]).toEqual([path, method, { action: "listing-write", target: null }]);
     }
@@ -275,6 +282,11 @@ describe("a write purges the public documents it changed, and no others", () => 
 
   it("moving the stage purges the product page and the feed, whose cards carry the stage (SC-2)", () => {
     expect(purgeTagsForWrite(`${crew}/stage`, "listing-write")).toEqual([TAG_LISTING, TAG_POSTS]);
+  });
+
+  it("changing a crew role purges nothing: no public document carries a role (SC-3)", () => {
+    expect(purgeTagsForWrite(`${crew}/crew`, "listing-write")).toEqual([]);
+    expect(purgeTagsForWrite(`${crew}/crew/${SUBJECT}`, "listing-write")).toEqual([]);
   });
 
   it("patching the listing — its name, its tagline, its Try it address — purges the product page", () => {

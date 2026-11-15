@@ -875,7 +875,7 @@ export async function handlePublishProfile(
   const existing = await deps.repo.getProfileForOrg(orgId, profileId);
   if (!existing) return errorResponse("not_found", "Not found", 404, requestId);
 
-  const auth = await authorizeFor(env, actor, "publish", profileId, deps, requestId);
+  const auth = await authorizeFor(env, actor, "write", profileId, deps, requestId);
   if (!auth.ok) return auth.response;
 
   // Named blockers rather than a bare 409: the OD6 dialog states the remedy
@@ -960,7 +960,7 @@ export async function handleUnpublishProfile(
 
   // Unpublishing is a `publish` permission, not a `write` one: taking a page
   // down is the same authority as putting it up.
-  const auth = await authorizeFor(env, actor, "publish", profileId, deps, requestId);
+  const auth = await authorizeFor(env, actor, "write", profileId, deps, requestId);
   if (!auth.ok) return auth.response;
 
   const unpublished = await deps.repo.unpublishProfile(orgId, profileId, actor.subjectId);

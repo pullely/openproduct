@@ -139,4 +139,9 @@ export type {
   UpdateProductMilestoneInput,
   // openproduct-stages-crew SC-2 — the four stages
   SetProductStageInput,
+  // openproduct-stages-crew SC-3 — crew roles
+  CrewPageRecord,
+  CrewPersonRecord,
+  CrewRoleChange,
+  CrewSource,
 } from "./types.js";

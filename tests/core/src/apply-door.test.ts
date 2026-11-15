@@ -98,7 +98,7 @@ function harness(stored: ProfileRecord, existingOpening?: Partial<RoleOpeningRec
   const repo = {
     // OX4 — authority is listing-local: the harness actor owns the listing.
     async getListingRole() {
-      return "owner";
+      return "lead";
     },
     async getProfileForOrg() {
       return stored;

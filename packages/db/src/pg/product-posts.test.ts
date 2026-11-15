@@ -213,6 +213,127 @@ describe("OPR-3 — milestones (SC-2: they no longer move the stage)", () => {
   });
 });
 
+describe("SC-3 — crew roles (2290)", () => {
+  const CY = "usr_00000000000000000000000000000c10";
+
+  it("the backfill: owner becomes lead, maintainer stays, every row is creator and unlocked; a second run changes nothing", async () => {
+    await seedDraft();
+    await seedDraft(PROFILE_TWO, PROJECT_TWO, "second-thing");
+    // The world before 2290: OX4's two roles and none of the new columns.
+    await sql.execute(`ALTER TABLE openproduct.listing_maintainers DROP CONSTRAINT listing_maintainers_role_check`);
+    await sql.execute(`ALTER TABLE openproduct.listing_maintainers DROP CONSTRAINT listing_maintainers_locked_lead_check`);
+    await sql.execute(`ALTER TABLE openproduct.listing_maintainers DROP CONSTRAINT listing_maintainers_source_check`);
+    await sql.execute(`ALTER TABLE openproduct.listing_maintainers DROP COLUMN source`);
+    await sql.execute(`ALTER TABLE openproduct.listing_maintainers DROP COLUMN locked`);
+    await sql.execute(`UPDATE openproduct.listing_maintainers SET role = 'owner'`);
+    await sql.execute(
+      `INSERT INTO openproduct.listing_maintainers (profile_id, subject_id, role, added_by) VALUES ($1, $2, 'maintainer', $3)`,
+      [PROFILE, ADA, ACTOR],
+    );
+    const up = readFileSync(MIGRATIONS.find((file) => file.includes("2290_openproduct_crew_roles"))!, "utf-8");
+    await db.exec(up);
+    await db.exec(up);
+    const rows = await sql.execute<{ profile_id: string; subject_id: string; role: string; source: string; locked: boolean }>(
+      `SELECT profile_id, subject_id, role, source, locked FROM openproduct.listing_maintainers ORDER BY profile_id, role, subject_id`,
+    );
+    expect(rows.rows.map((r) => [r.profile_id, r.subject_id, r.role, r.source, r.locked])).toEqual([
+      [PROFILE, ACTOR, "lead", "creator", false],
+      [PROFILE, ADA, "maintainer", "creator", false],
+      [PROFILE_TWO, ACTOR, "lead", "creator", false],
+    ]);
+  });
+
+  it("the schema holds three roles, three sources, and a lock only on a Lead", async () => {
+    await seedDraft();
+    const insert = (role: string, source: string, locked: boolean) =>
+      sql.execute(
+        `INSERT INTO openproduct.listing_maintainers (profile_id, subject_id, role, source, locked, added_by) VALUES ($1, $2, $3, $4, $5, $2)`,
+        [PROFILE, CY, role, source, locked],
+      );
+    await expect(insert("owner", "creator", false)).rejects.toThrow();
+    await expect(insert("member", "invited", false)).rejects.toThrow();
+    await expect(insert("maintainer", "orunbase", true)).rejects.toThrow();
+    await insert("lead", "orunbase", true);
+    expect(await repo.getListingRole(PROFILE, CY)).toBe("lead");
+  });
+
+  it("an approved seat adds a Member once, and never demotes anybody already on the crew", async () => {
+    await seedDraft();
+    expect(await repo.addSeatMember(PROFILE, ADA, "seam:jr_1")).toBe(true);
+    expect(await repo.addSeatMember(PROFILE, ADA, "seam:jr_1")).toBe(false);
+    expect(await repo.getListingRole(PROFILE, ADA)).toBe("member");
+    // The creator asking for a seat on their own product stays its Lead.
+    expect(await repo.addSeatMember(PROFILE, ACTOR, "seam:jr_2")).toBe(false);
+    expect(await repo.getListingRole(PROFILE, ACTOR)).toBe("lead");
+    const row = await sql.execute<{ source: string; added_by: string }>(
+      `SELECT source, added_by FROM openproduct.listing_maintainers WHERE profile_id = $1 AND subject_id = $2`,
+      [PROFILE, ADA],
+    );
+    expect(row.rows[0]).toEqual({ source: "seat", added_by: "seam:jr_1" });
+  });
+
+  it("changes a role, and refuses an absent person, a locked Lead and the last Lead", async () => {
+    await seedDraft();
+    await repo.addListingMaintainer(PROFILE, ADA, "member", ACTOR);
+    expect(await repo.setCrewRole(PROFILE, ADA, "maintainer")).toEqual({ outcome: "changed", from: "member", to: "maintainer" });
+    expect(await repo.getListingRole(PROFILE, ADA)).toBe("maintainer");
+    expect(await repo.setCrewRole(PROFILE, ADA, "maintainer")).toEqual({ outcome: "unchanged", from: "maintainer", to: "maintainer" });
+    expect(await repo.setCrewRole(PROFILE, BOB, "member")).toEqual({ outcome: "absent" });
+
+    // ACTOR is the only Lead: they cannot step down until somebody else leads.
+    expect(await repo.setCrewRole(PROFILE, ACTOR, "member")).toEqual({ outcome: "last_lead" });
+    expect(await repo.getListingRole(PROFILE, ACTOR)).toBe("lead");
+    expect(await repo.setCrewRole(PROFILE, ADA, "lead")).toMatchObject({ outcome: "changed" });
+    expect(await repo.setCrewRole(PROFILE, ACTOR, "member")).toEqual({ outcome: "changed", from: "lead", to: "member" });
+    // And now ADA is the last one.
+    expect(await repo.setCrewRole(PROFILE, ADA, "maintainer")).toEqual({ outcome: "last_lead" });
+
+    // A locked Lead (an Orunbase admin, SC-4) is changed only on Orunbase.
+    await sql.execute(
+      `INSERT INTO openproduct.listing_maintainers (profile_id, subject_id, role, source, locked, added_by) VALUES ($1, $2, 'lead', 'orunbase', true, $2)`,
+      [PROFILE, CY],
+    );
+    expect(await repo.setCrewRole(PROFILE, CY, "member")).toEqual({ outcome: "locked" });
+    expect(await repo.getListingRole(PROFILE, CY)).toBe("lead");
+    // With CY leading too, ADA may now step down.
+    expect(await repo.setCrewRole(PROFILE, ADA, "maintainer")).toMatchObject({ outcome: "changed" });
+  });
+
+  it("lists the crew Leads first, by name, a page at a time, searched and filtered, with the whole crew's counts", async () => {
+    await seedDraft();
+    // Names from the two sources a crew read uses: their own, and the roster's.
+    await sql.execute(`INSERT INTO openproduct.contributors (subject_id, display_name) VALUES ($1, 'Ada Lovelace')`, [ADA]);
+    await repo.addListingMaintainer(PROFILE, ADA, "maintainer", ACTOR);
+    await repo.addListingMaintainer(PROFILE, BOB, "member", ACTOR);
+    await repo.setMaintainers(PROFILE, [{ subjectId: BOB, displayName: "Bob Babbage", roleLabel: null, sortOrder: 0 }]);
+    for (let i = 0; i < 33; i += 1) {
+      await repo.addSeatMember(PROFILE, `usr_${String(i).padStart(32, "0")}`, "seam:x");
+    }
+    const first = await repo.listCrew(PROFILE, { q: null, role: null, offset: 0, limit: 30 });
+    expect(first.counts).toEqual({ lead: 1, maintainer: 1, member: 34 });
+    expect(first.matching).toBe(36);
+    expect(first.people).toHaveLength(30);
+    expect(first.nextOffset).toBe(30);
+    expect(first.people.slice(0, 3).map((p) => [p.subjectId, p.role, p.displayName])).toEqual([
+      [ACTOR, "lead", null],
+      [ADA, "maintainer", "Ada Lovelace"],
+      [BOB, "member", "Bob Babbage"],
+    ]);
+    const second = await repo.listCrew(PROFILE, { q: null, role: null, offset: 30, limit: 30 });
+    expect(second.people).toHaveLength(6);
+    expect(second.nextOffset).toBeNull();
+
+    const members = await repo.listCrew(PROFILE, { q: null, role: "member", offset: 0, limit: 30 });
+    expect(members.matching).toBe(34);
+    expect(members.counts).toEqual(first.counts);
+    const found = await repo.listCrew(PROFILE, { q: "lovel", role: null, offset: 0, limit: 30 });
+    expect(found.people.map((p) => p.subjectId)).toEqual([ADA]);
+    expect((await repo.listCrew(PROFILE, { q: "babb", role: "lead", offset: 0, limit: 30 })).people).toEqual([]);
+    // A pattern character is a character, not a wildcard.
+    expect((await repo.listCrew(PROFILE, { q: "%", role: null, offset: 0, limit: 30 })).matching).toBe(0);
+  });
+});
+
 describe("SC-2 — the four stages (2285)", () => {
   it("the schema holds four stages and the bounds of each step's inputs", async () => {
     await seedDraft();
@@ -742,10 +863,14 @@ describe("OPR-3 — the overlay's crew and seat questions, Needs you, Following,
     await seedPublished();
     await seedDraft(PROFILE_TWO, PROJECT_TWO, "second-thing");
     expect(await repo.listCrewOf(ACTOR, ["ACME-thing", "second-thing", "nope"])).toEqual([
-      { slug: "acme-thing", orgId: ORG, profileId: PROFILE },
-      { slug: "second-thing", orgId: ORG, profileId: PROFILE_TWO },
+      { slug: "acme-thing", orgId: ORG, profileId: PROFILE, role: "lead" },
+      { slug: "second-thing", orgId: ORG, profileId: PROFILE_TWO, role: "lead" },
     ]);
     expect(await repo.listCrewOf(ACTOR, ["acme-thing"])).toHaveLength(1);
+    // SC-3 — the role rides along, so the page can tell a Member from a writer.
+    await repo.addListingMaintainer(PROFILE, ADA, "member", ACTOR);
+    expect(await repo.listCrewOf(ADA, ["acme-thing"])).toEqual([{ slug: "acme-thing", orgId: ORG, profileId: PROFILE, role: "member" }]);
+    await sql.execute(`DELETE FROM openproduct.listing_maintainers WHERE subject_id = $1`, [ADA]);
     expect(await repo.listCrewOf(ADA, ["acme-thing", "second-thing"])).toEqual([]);
     expect(await repo.listCrewOf(ACTOR, [])).toEqual([]);
   });

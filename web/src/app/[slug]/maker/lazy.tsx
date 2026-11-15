@@ -25,14 +25,17 @@ const ViewSwitchBody = React.lazy(() => import("./view-switch").then((module) =>
 const NeedsYouBody = React.lazy(() => import("./needs-you").then((module) => ({ default: module.NeedsYou })));
 const NewPostRowBody = React.lazy(() => import("./new-post").then((module) => ({ default: module.NewPostRow })));
 const EditPostLinkBody = React.lazy(() => import("./new-post").then((module) => ({ default: module.EditPostLink })));
+// SC-3 — the crew tab's roles card (and, inside it, Edit crew).
+const CrewRolesBody = React.lazy(() => import("./crew-roles").then((module) => ({ default: module.CrewRoles })));
 const MilestonesManagerBody = React.lazy(() =>
   import("./milestones").then((module) => ({ default: module.MilestonesManager })),
 );
 
-/** The Manage / Visitor switch: for the crew, on either setting. */
+/** The Manage / Visitor switch: for the crew who write (a Lead or a
+ *  Maintainer, SC-3), on either setting. A Member has nothing to manage. */
 export function ViewSwitch({ slug }: { slug: string }) {
-  const { crew } = useMaker(slug);
-  if (crew === null) return null;
+  const { writes } = useMaker(slug);
+  if (!writes) return null;
   return (
     <React.Suspense fallback={null}>
       <ViewSwitchBody slug={slug} />
@@ -80,6 +83,19 @@ export function MilestonesManager({ slug, standalone = false }: { slug: string; 
   return (
     <React.Suspense fallback={null}>
       <MilestonesManagerBody slug={slug} standalone={standalone} />
+    </React.Suspense>
+  );
+}
+
+/** The crew tab's roles: everybody on the crew (a Member read-only), on
+ *  Manage. Never in the cached page — who holds which role is the crew's. */
+export function CrewRoles({ slug }: { slug: string }) {
+  const { crew, mode } = useMaker(slug);
+  if (crew === null) return null;
+  if (mode !== "manage") return null;
+  return (
+    <React.Suspense fallback={null}>
+      <CrewRolesBody slug={slug} />
     </React.Suspense>
   );
 }

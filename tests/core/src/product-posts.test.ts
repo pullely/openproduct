@@ -123,6 +123,8 @@ function profile(overrides: Partial<ProfileRecord> = {}): ProfileRecord {
 interface Store {
   profile: ProfileRecord;
   crew: Set<string>;
+  /** SC-3 — a role other than Lead, for the people who hold one. */
+  roles: Map<string, "lead" | "maintainer" | "member">;
   milestones: ProductMilestoneRecord[];
   posts: ProductPostRecord[];
   reactions: Map<string, string>;
@@ -140,6 +142,7 @@ function harness(overrides: Partial<ProfileRecord> = {}) {
   const store: Store = {
     profile: profile(overrides),
     crew: new Set([ADA.subjectId]),
+    roles: new Map(),
     milestones: [],
     posts: [],
     reactions: new Map(),
@@ -185,7 +188,7 @@ function harness(overrides: Partial<ProfileRecord> = {}) {
 
   const repo = {
     async getListingRole(_profileId: string, subjectId: string) {
-      return store.crew.has(subjectId) ? "owner" : null;
+      return store.crew.has(subjectId) ? (store.roles.get(subjectId) ?? "lead") : null;
     },
     async getProfileForOrg(orgId: string, profileId: string) {
       return orgId === store.profile.orgId && profileId === store.profile.id ? store.profile : null;
@@ -1457,6 +1460,42 @@ describe("the profile PATCH takes the Try it address, and still the name and the
     const res = await call(h, "PATCH", BASE, ADA, { stage: "production" });
     expect(res.status).toBe(200);
     expect((res.data.profile as { stage: string }).stage).toBe("idea");
+  });
+});
+
+describe("SC-3 — the crew's write door asks the role: Maintainers and Leads write, a Member does not", () => {
+  const writes = (h: H) =>
+    [
+      () => call(h, "PUT", `${BASE}/stage`, BOB, { to: "building", repository: "https://github.com/acme/thing", firstMilestone: "One" }),
+      () => call(h, "POST", `${BASE}/product-posts`, BOB, { kind: "feature", blocks: [] }),
+      () => call(h, "POST", `${BASE}/milestones`, BOB, { code: "AS1", title: "Sign in" }),
+      () => call(h, "POST", `${BASE}/role-openings`, BOB, { title: "Designer" }),
+    ] as const;
+
+  it("a Maintainer keeps every write a crew had before", async () => {
+    const h = harness();
+    h.store.crew.add(BOB.subjectId);
+    h.store.roles.set(BOB.subjectId, "maintainer");
+    const statuses = [];
+    for (const write of writes(h)) statuses.push((await write()).status);
+    expect(statuses.every((status) => status === 200 || status === 201)).toBe(true);
+  });
+
+  it("a Member is answered 404 on every write, exactly as somebody off the crew is, and nothing is written", async () => {
+    const member = harness();
+    member.store.crew.add(BOB.subjectId);
+    member.store.roles.set(BOB.subjectId, "member");
+    const stranger = harness();
+    for (const [i, write] of writes(member).entries()) {
+      const asMember = await write();
+      const asStranger = await writes(stranger)[i]!();
+      expect([i, asMember.status, asStranger.status]).toEqual([i, 404, 404]);
+    }
+    expect(member.store.posts).toEqual([]);
+    expect(member.store.milestones).toEqual([]);
+    expect(member.store.openings).toEqual([]);
+    expect(member.store.profile.stage).toBe("idea");
+    expect(member.store.audits).toEqual([]);
   });
 });
 

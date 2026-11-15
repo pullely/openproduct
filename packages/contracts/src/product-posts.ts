@@ -15,6 +15,7 @@
 import type { MediaThumbnail } from "./media.js";
 
 import type { ProductPostBlock } from "./product-post-blocks.js";
+import type { CrewRole } from "./crew-roles.js";
 import type { CrewPrivateThreadNotice } from "./talk.js";
 
 // ---------------------------------------------------------------------------
@@ -442,9 +443,11 @@ export interface OverlayCrew {
   org: string;
   /** The listing, as the crew routes address it (`opp_…`). */
   profile: string;
+  /** SC-3 — my role on that crew: what the page offers me (core decides). */
+  role: CrewRole;
 }
 
-export const OVERLAY_CREW_KEYS = ["org", "profile", "slug"] as const;
+export const OVERLAY_CREW_KEYS = ["org", "profile", "role", "slug"] as const;
 
 // ---------------------------------------------------------------------------
 // The comment thread

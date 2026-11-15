@@ -31,6 +31,7 @@
 // the most-exercised branch in the module rather than the least.
 
 import {
+  isCrewRole,
   isProductPostReaction,
   type MeOverlay,
   type OverlayCrew,
@@ -165,9 +166,11 @@ function readCrew(raw: unknown): OverlayCrew[] {
   const out: OverlayCrew[] = [];
   for (const entry of raw) {
     if (typeof entry !== "object" || entry === null) continue;
-    const { slug, org, profile } = entry as Record<string, unknown>;
+    const { slug, org, profile, role } = entry as Record<string, unknown>;
     if (typeof slug === "string" && typeof org === "string" && typeof profile === "string") {
-      out.push({ slug, org, profile });
+      // SC-3 — a role this page does not know is the narrowest one: the page
+      // offers nothing core would refuse (core decides every act anyway).
+      out.push({ slug, org, profile, role: isCrewRole(role) ? role : "member" });
     }
   }
   return out;

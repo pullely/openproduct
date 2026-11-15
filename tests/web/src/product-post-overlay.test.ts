@@ -148,7 +148,9 @@ describe("the answer is read member by member", () => {
         overlay: {
           ...base(),
           crew: [
-            { slug: "ackstack", org: "org_1", profile: "opp_1", tagline: "leaked" },
+            { slug: "ackstack", org: "org_1", profile: "opp_1", role: "maintainer", tagline: "leaked" },
+            { slug: "no-role", org: "org_3", profile: "opp_3" },
+            { slug: "owner", org: "org_4", profile: "opp_4", role: "owner" },
             { slug: "half", org: "org_2" },
             "ackstack",
             null,
@@ -156,8 +158,13 @@ describe("the answer is read member by member", () => {
         },
       },
     })!;
-    // The extra member is dropped: ids only, nothing a page could render.
-    expect(overlay.crew).toEqual([{ slug: "ackstack", org: "org_1", profile: "opp_1" }]);
+    // The extra member is dropped: ids and the role only, nothing a page
+    // could render. A role the page does not know (SC-3) is the narrowest.
+    expect(overlay.crew).toEqual([
+      { slug: "ackstack", org: "org_1", profile: "opp_1", role: "maintainer" },
+      { slug: "no-role", org: "org_3", profile: "opp_3", role: "member" },
+      { slug: "owner", org: "org_4", profile: "opp_4", role: "member" },
+    ]);
   });
 
   it("keeps a requested seat only when it is a string, and an older body is still an overlay", () => {
@@ -195,13 +202,13 @@ describe("the readers say nothing until the overlay has answered", () => {
   it("answers once it is ready, for what was asked and nothing else", async () => {
     await ready({
       reactions: { [PPO_A]: "curious" },
-      crew: [{ slug: "ackstack", org: "org_1", profile: "opp_1" }],
+      crew: [{ slug: "ackstack", org: "org_1", profile: "opp_1", role: "lead" }],
       requestedOpenings: [OPR],
     });
     const state = overlayState();
     expect(reactionOn(state, PPO_A)).toBe("curious");
     expect(reactionOn(state, PPO_B)).toBeNull();
-    expect(crewOf(state, "ackstack")).toEqual({ slug: "ackstack", org: "org_1", profile: "opp_1" });
+    expect(crewOf(state, "ackstack")).toEqual({ slug: "ackstack", org: "org_1", profile: "opp_1", role: "lead" });
     expect(crewOf(state, "someone-elses")).toBeNull();
     expect(isOpeningRequested(state, OPR)).toBe(true);
     expect(isOpeningRequested(state, `opr_${"0".repeat(31)}2`)).toBe(false);

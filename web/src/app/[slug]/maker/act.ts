@@ -36,7 +36,7 @@ async function answerOf<T>(res: Response): Promise<CrewActResult<T>> {
 /** `POST /{slug}/manage/{route}` with these fields. */
 export async function crewWrite<T>(
   slug: string,
-  route: "profile" | "milestones" | "posts" | "seats" | "stage",
+  route: "profile" | "milestones" | "posts" | "seats" | "stage" | "crew",
   fields: Readonly<Record<string, unknown>>,
   fetchImpl: typeof fetch = fetch,
 ): Promise<CrewActResult<T>> {
@@ -54,14 +54,16 @@ export async function crewWrite<T>(
   }
 }
 
-/** `GET /{slug}/manage/{route}` — crew only, never cached. */
+/** `GET /{slug}/manage/{route}` — crew only, never cached. `query` is the
+ *  read's own search params (`?q=&role=&cursor=` for the crew list). */
 export async function crewRead<T>(
   slug: string,
-  route: "milestones" | "needs-you" | "posts",
+  route: "milestones" | "needs-you" | "posts" | "crew",
   fetchImpl: typeof fetch = fetch,
+  query = "",
 ): Promise<CrewActResult<T>> {
   try {
-    const res = await fetchImpl(manageRoute(slug, route), {
+    const res = await fetchImpl(`${manageRoute(slug, route)}${query}`, {
       headers: { accept: "application/json" },
       credentials: "same-origin",
       cache: "no-store",

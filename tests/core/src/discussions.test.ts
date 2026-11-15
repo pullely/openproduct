@@ -94,7 +94,7 @@ function harness(
     },
     async getListingRole(_profileId: string, subjectId: string) {
       if (over.role === null) return null;
-      return subjectId === MAINTAINER ? "owner" : null;
+      return subjectId === MAINTAINER ? "lead" : null;
     },
     async getThread(id: string) {
       if (id !== THREAD) return null;

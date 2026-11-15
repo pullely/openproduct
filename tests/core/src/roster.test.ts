@@ -61,7 +61,7 @@ function harness(): Harness {
     },
     // OX4's authority table: the owner maintains, nobody else does.
     async getListingRole(_profileId: string, subjectId: string) {
-      return subjectId === OWNER ? "owner" : null;
+      return subjectId === OWNER ? "lead" : null;
     },
     async getRosterEdge(_profileId: string, subjectId: string) {
       const edge = edges.get(subjectId);

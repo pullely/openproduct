@@ -2,7 +2,7 @@
 
 import * as React from "react";
 
-import type { OverlayCrew } from "@openproduct/contracts";
+import { crewRoleLeads, crewRoleWrites, type OverlayCrew } from "@openproduct/contracts";
 
 import { useCrewOf } from "../../ui/use-overlay";
 
@@ -107,6 +107,11 @@ export function rememberTagline(slug: string, tagline: string | null): void {
 export interface MakerView {
   /** The crew entry when the visitor is on this product's crew, else null. */
   crew: OverlayCrew | null;
+  /** SC-3 — on the crew in a role that writes (a Lead or a Maintainer): the
+   *  Manage / Visitor switch and every maker control are theirs. */
+  writes: boolean;
+  /** SC-3 — the crew's Lead: Edit crew is theirs. */
+  leads: boolean;
   mode: ViewMode;
   /** On the crew AND on Manage: the maker's controls draw. */
   managing: boolean;
@@ -125,10 +130,13 @@ export function useMaker(slug: string): MakerView {
   // The stored mode is read only once the overlay has said "crew": before
   // that — on the server, during hydration, for everybody else — nothing
   // here touches the browser and the answer is the visitor's page.
-  const mode: ViewMode = crew === null ? "manage" : storedMode(slug);
+  // A Member has no switch (SC-3), so for them it is always Manage.
+  const mode: ViewMode = crew === null || !crewRoleWrites(crew.role) ? "manage" : storedMode(slug);
   const managing = isManaging(crew, mode);
   return {
     crew,
+    writes: crewRoleWrites(crew?.role),
+    leads: crewRoleLeads(crew?.role),
     mode,
     managing,
     editing: managing && editing.has(slug),

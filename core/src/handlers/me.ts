@@ -602,6 +602,8 @@ export async function handleGetOverlay(
       slug: entry.slug,
       org: orgPublicId(entry.orgId as Uuid),
       profile: profilePublicId(entry.profileId as Uuid),
+      // SC-3 — the role, so the page offers a Member no write it would refuse.
+      role: entry.role,
     })),
     requestedOpenings: requested.map((id) => roleOpeningPublicId(id)),
   };

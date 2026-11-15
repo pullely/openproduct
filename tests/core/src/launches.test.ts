@@ -79,7 +79,7 @@ function harness(seed: Row[] = []): Harness {
     async getListingRole(_profileId: string, subjectId: string) {
       // OX4's authority table, faked: exactly one person maintains exactly one
       // listing, so "a maintainer of A acting on B" is expressible.
-      return subjectId === OWNER ? "owner" : null;
+      return subjectId === OWNER ? "lead" : null;
     },
     async launchEligibility(profileId: string) {
       const mine = [...rows.values()].filter((r) => r.profileId === profileId);

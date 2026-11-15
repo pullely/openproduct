@@ -1504,11 +1504,77 @@ function crewMaintainerProfile() {
   };
 }
 
-/** The crew routes of `CREW_SLUG`, answered for the signed-in walker. Writes
- *  are answered with what core would send back; nothing here is stored. */
-function crewAnswer(rest, req) {
+// ─── SC-3 — the crew and its roles ─────────────────────────────────────────
+//
+// The board's crew (`Crew`): 128 people — the walker (Ada) and an Orunbase
+// admin lead it (the admin LOCKED: changed only on Orunbase), twelve
+// maintainers, and members after them, many from seats. Enough for Show more
+// to page twice and the counts to read like the board's.
+const CREW_ROLE_RANK = { lead: 0, maintainer: 1, member: 2 };
+export const CREW_PEOPLE = [
+  { subjectId: "sub_000000000000000000000001", role: "lead", locked: false, source: "creator", name: "Ada Lovelace", handle: SAMPLE_HANDLE },
+  { subjectId: "sub_000000000000000000000a01", role: "lead", locked: true, source: "orunbase", name: "Orunbase admin", handle: null },
+  ...Array.from({ length: 12 }, (_, i) => ({
+    subjectId: `sub_0000000000000000000${String(i + 100).padStart(5, "0")}`,
+    role: "maintainer",
+    locked: false,
+    source: "creator",
+    name: i === 0 ? "Grace Hopper" : `Maintainer ${String(i).padStart(2, "0")}`,
+    handle: null,
+  })),
+  ...Array.from({ length: 114 }, (_, i) => ({
+    subjectId: `sub_0000000000000000000${String(i + 200).padStart(5, "0")}`,
+    role: "member",
+    locked: false,
+    source: i % 3 === 0 ? "seat" : "creator",
+    name: `Member ${String(i + 1).padStart(3, "0")}`,
+    handle: null,
+  })),
+];
+
+/** `GET …/crew?q=&role=&cursor=` and the two role writes, as core answers. */
+function crewRolesAnswer(rest, req, search) {
   const method = req.method ?? "GET";
   const body = req.body && typeof req.body === "object" ? req.body : {};
+  const counts = { lead: 0, maintainer: 0, member: 0 };
+  for (const person of CREW_PEOPLE) counts[person.role] += 1;
+  if (rest === "/crew" && method === "GET") {
+    const query = new URLSearchParams(search ?? "");
+    const q = (query.get("q") ?? "").trim().toLowerCase();
+    const role = query.get("role");
+    const offset = Number(/^o(\d{1,6})$/.exec(query.get("cursor") ?? "")?.[1] ?? 0);
+    const matching = CREW_PEOPLE.filter(
+      (p) => (!q || p.name.toLowerCase().includes(q)) && (!(role in CREW_ROLE_RANK) || p.role === role),
+    ).sort((a, b) => CREW_ROLE_RANK[a.role] - CREW_ROLE_RANK[b.role]);
+    const page = matching.slice(offset, offset + 30);
+    return {
+      people: page,
+      counts,
+      total: CREW_PEOPLE.length,
+      matching: matching.length,
+      next: offset + page.length < matching.length ? `o${offset + page.length}` : null,
+    };
+  }
+  if (method !== "PUT") return undefined;
+  const changes = rest === "/crew" ? (Array.isArray(body.changes) ? body.changes : []) : [{ subjectId: decodeURIComponent(rest.slice("/crew/".length)), role: body.role }];
+  const changed = [];
+  const refused = {};
+  for (const change of changes) {
+    const person = CREW_PEOPLE.find((p) => p.subjectId === change.subjectId);
+    if (!person) refused[`changes.${change.subjectId}`] = ["They are no longer on the crew"];
+    else if (person.locked) refused[`changes.${change.subjectId}`] = ["Changed only on Orunbase"];
+    else if (person.role !== change.role) changed.push({ subjectId: person.subjectId, from: person.role, to: change.role });
+  }
+  // Answered as core would; nothing is stored, so a walk can save twice.
+  return { changed, counts, refused };
+}
+
+/** The crew routes of `CREW_SLUG`, answered for the signed-in walker. Writes
+ *  are answered with what core would send back; nothing here is stored. */
+function crewAnswer(rest, req, search) {
+  const method = req.method ?? "GET";
+  const body = req.body && typeof req.body === "object" ? req.body : {};
+  if (rest === "/crew" || rest.startsWith("/crew/")) return crewRolesAnswer(rest, req, search);
   const milestones = CREW_MILESTONES_FOR(CREW_SLUG);
   const stage = CARDS[0].stage;
   // SC-2 — Change stage. Answered as core would for a step it accepted;
@@ -1986,7 +2052,8 @@ function overlayExtras(search, token) {
   const onCrew = token !== READER_TOKEN && token !== THIRD_TOKEN;
   return {
     reactions: asked("productPosts").includes(SAMPLE_REACTED_POST) ? { [SAMPLE_REACTED_POST]: "curious" } : {},
-    crew: onCrew && asked("ids").includes(CREW_SLUG) ? [{ slug: CREW_SLUG, org: CREW_ORG, profile: CREW_PROFILE }] : [],
+    // SC-3 — Ada is the crew's Lead: the Edit crew lane is hers.
+    crew: onCrew && asked("ids").includes(CREW_SLUG) ? [{ slug: CREW_SLUG, org: CREW_ORG, profile: CREW_PROFILE, role: "lead" }] : [],
     requestedOpenings: asked("openings").filter((id) => id === SAMPLE_REQUESTED_OPENING),
   };
 }
@@ -2284,7 +2351,7 @@ function answer(pathname, search, req = { method: "GET", body: undefined }) {
   if (pathname === crewRoot || pathname.startsWith(`${crewRoot}/`)) {
     // OPR-4 — the crew's door answers 404 to a walker who is not the crew.
     if (req.token === READER_TOKEN || req.token === THIRD_TOKEN) return null;
-    return crewAnswer(pathname.slice(crewRoot.length), req);
+    return crewAnswer(pathname.slice(crewRoot.length), req, search);
   }
   // OPR-4 — the signed-in Talk routes: private threads by the bearer, a new
   // thread, and the crew's resolve.
