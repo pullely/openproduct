@@ -8,23 +8,23 @@
   "sectionBar": null,
   "main": {
     "top": 60,
-    "left": 45,
-    "width": 1180
+    "left": 0,
+    "width": 1270
   },
   "h1": {
-    "top": 85,
-    "left": 66,
+    "top": 66,
+    "left": 20,
     "width": 163,
     "height": 44
   },
   "firstRow": {
-    "left": 341,
-    "width": 276,
+    "left": 275,
+    "width": 313,
     "height": 230
   },
   "footer": {
-    "left": 45,
-    "width": 1180,
+    "left": 0,
+    "width": 1270,
     "height": 130
   },
   "themeControl": {
