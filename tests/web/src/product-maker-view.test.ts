@@ -154,10 +154,7 @@ describe("no maker element is in any server render", () => {
     expect(gates).toContain("if (!writes) return null;");
     expect(gates).toContain("if (crew === null) return null;");
     expect(gates).toContain('if (mode !== "manage") return null;');
-    // SC-4 — the roles card and the Orunbase card share one gate.
-    expect(gates.match(/<React\.Suspense fallback=\{null\}>/g)).toHaveLength(6);
-    expect(gates).toContain("<CrewOnly slug={slug} Body={CrewRolesBody} />");
-    expect(gates).toContain("<CrewOnly slug={slug} Body={OrunbaseCardBody} />");
+    expect(gates.match(/<React\.Suspense fallback=\{null\}>/g)).toHaveLength(7);
     // Edit crew's popup is fetched from inside the roles card, when pressed.
     expect(code(`${MAKER_DIR}/crew-roles.tsx`)).toContain('React.lazy(() => import("./crew-dialog")');
     // The two files that draw something for a visitor as well (the pitch,

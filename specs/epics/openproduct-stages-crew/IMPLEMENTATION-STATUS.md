@@ -77,6 +77,14 @@ What landed:
   maker slot (`orunbase`), so a crew member's later visits do not move the
   rail when it arrives.
 
+Budgets, said plainly: the product page's JS limit moves 178,628 → 178,695.
+CI measured 178,629 B for Updates, About and Crew (the Orunbase card's gate,
+the fourth maker slot, "Deployed by Orun"; the card is a chunk fetched for the
+crew only) — one byte over. One gate shared with the roles card measured
+178,650, so the gates stay separate; the new limit is the measurement plus
+the 66 bytes of room SC-3 left, recorded in `tests/web-perf/src/budgets.mjs`.
+No document, snapshot or wire budget moved.
+
 Departures from the design, said plainly:
 
 - **Two more safety nets on the roster**: one that lists nobody, or no

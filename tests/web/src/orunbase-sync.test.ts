@@ -86,9 +86,7 @@ describe("the card on the page: the crew's own, after load, at the top of the ri
   it("is the first thing in each right rail, inside a reserved slot, and nothing of it is in the server render", () => {
     expect(page.match(/<aside className=\{BOARD_STACK\}>\s*(?:\{\}\s*)?<MakerSlot name="orunbase">\s*<OrunbaseCard slug=\{slug\} \/>\s*<\/MakerSlot>/g)).toHaveLength(2);
     // The gate asks useMaker before anything is fetched.
-    const gates = code("[slug]/maker/lazy.tsx");
-    expect(gates).toMatch(/function CrewOnly[\s\S]*?if \(crew === null\) return null;[\s\S]*?if \(mode !== "manage"\) return null;/);
-    expect(gates).toContain("export const OrunbaseCard = ({ slug }: { slug: string }) => <CrewOnly slug={slug} Body={OrunbaseCardBody} />;");
+    expect(code("[slug]/maker/lazy.tsx")).toMatch(/export function OrunbaseCard[\s\S]*?if \(crew === null\) return null;[\s\S]*?if \(mode !== "manage"\) return null;/);
     expect(page).not.toMatch(/In sync|Manage on Orunbase|No deploy yet/);
   });
 });

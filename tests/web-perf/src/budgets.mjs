@@ -533,7 +533,17 @@ const BUDGETS = {
   // Crew 178,562 B of JS (was 177,734 against 177,800: 66 bytes of room).
   // The new limit is that plus the same 66. The documents did not move
   // past their limits (the Crew tab's heading gained " · N").
-  [`/${SAMPLE_SLUG}`]: { js: 178_628, doc: 25_650, cls: 0.02, lcp: 2000, reads: 3, images: 400_000 },
+  //
+  // SC-4 (openproduct-stages-crew, 2026-11-16) — RE-MEASURED, WITH THE
+  // NUMBERS NAMED. Synced from Orunbase: the Orunbase card's gate (the card
+  // itself is a chunk fetched for the crew only), a fourth maker slot
+  // (`orunbase`) and "Deployed by Orun" in Where it runs. Measured by this
+  // lane in CI: Updates, About and Crew 178,629 B of JS — one byte over
+  // 178,628. Sharing one gate between the roles card and this one measured
+  // 178,650, so the two gates stay separate. The new limit is the
+  // measurement plus the same 66 bytes of room. The documents did not move
+  // past their limits.
+  [`/${SAMPLE_SLUG}`]: { js: 178_695, doc: 25_650, cls: 0.02, lcp: 2000, reads: 3, images: 400_000 },
   // OPR-3 — THE PRODUCT PAGE'S OTHER THREE TABS, each an address of its own
   // (design §5), budgeted the day they were added (2026-11-15).
   //
@@ -552,8 +562,8 @@ const BUDGETS = {
   // READS: the listing and the directory on every tab; Updates adds the
   // product's posts and Talk the discussion, so About and Crew read twice
   // and Talk three times — concurrently, as the note above says of Updates.
-  [`/${SAMPLE_SLUG}/about`]: { js: 178_628, doc: 25_650, cls: 0.02, lcp: 2000, reads: 2, images: 400_000 },
-  [`/${SAMPLE_SLUG}/crew`]: { js: 178_628, doc: 22_350, cls: 0.02, lcp: 2000, reads: 2, images: 400_000 },
+  [`/${SAMPLE_SLUG}/about`]: { js: 178_695, doc: 25_650, cls: 0.02, lcp: 2000, reads: 2, images: 400_000 },
+  [`/${SAMPLE_SLUG}/crew`]: { js: 178_695, doc: 22_350, cls: 0.02, lcp: 2000, reads: 2, images: 400_000 },
   //
   // OPR-4 — TALK RE-MEASURED, AND ONLY TALK, WITH THE NUMBERS NAMED
   // (2026-11-15). Talk gained its composer (a field, the thread's kind, the
