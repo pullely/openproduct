@@ -154,7 +154,7 @@ function harness(
   // OX4: authority is listing-local. The default harness makes the ACTOR the
   // stored listing's OWNER — the common case — and a test that wants a
   // stranger or a maintainer passes its own map.
-  roles: Record<string, "owner" | "maintainer"> = { [ACTOR.subjectId]: "owner" },
+  roles: Record<string, "lead" | "maintainer" | "member"> = { [ACTOR.subjectId]: "lead" },
   // TS1 — the ladder's inputs. `established` is the default because it is the
   // common case once earned, and because these tests are about the LISTING's
   // gates: a test that wants to exercise the ladder itself says so.

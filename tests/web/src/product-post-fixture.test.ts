@@ -297,7 +297,7 @@ describe("the signed-in lanes", () => {
     expect(keys(asked.data.overlay)).toEqual([...ME_OVERLAY_KEYS].sort());
     const overlay = parseOverlay({ data: asked.data })!;
     expect(overlay.reactions).toEqual({ [fixture.SAMPLE_REACTED_POST]: "curious" });
-    expect(overlay.crew).toEqual([{ slug: fixture.CREW_SLUG, org: fixture.CREW_ORG, profile: fixture.CREW_PROFILE }]);
+    expect(overlay.crew).toEqual([{ slug: fixture.CREW_SLUG, org: fixture.CREW_ORG, profile: fixture.CREW_PROFILE, role: "lead" }]);
     expect(keys(overlay.crew[0]!)).toEqual([...OVERLAY_CREW_KEYS]);
     expect(overlay.requestedOpenings).toEqual([fixture.SAMPLE_REQUESTED_OPENING]);
     expect(fixture.SAMPLE_REQUESTED_OPENING).toMatch(ME_OVERLAY_OPENING_ID_RE);

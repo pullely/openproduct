@@ -522,7 +522,18 @@ const BUDGETS = {
   // 177,314: seven bytes of room); documents Updates 25,256 B (was 24,626),
   // About 25,281 (24,561), Crew 22,050 (21,410), Talk 26,418 (25,744). The
   // new limits are those plus the room each had.
-  [`/${SAMPLE_SLUG}`]: { js: 177_800, doc: 25_650, cls: 0.02, lcp: 2000, reads: 3, images: 400_000 },
+  //
+  // SC-3 (openproduct-stages-crew, 2026-11-15) — RE-MEASURED, WITH THE
+  // NUMBERS NAMED. Crew roles: the overlay's crew entry carries a role, the
+  // maker view's gate asks it (a Member has no Manage switch and no maker
+  // controls), and the Crew tab gains the roles card's gate. The card and
+  // the Edit crew popup are chunks of their own, fetched for the crew only;
+  // what a visitor's bundle gained is the gate and the two chunks' names in
+  // the runtime's manifest. Measured by this lane in CI: Updates, About and
+  // Crew 178,562 B of JS (was 177,734 against 177,800: 66 bytes of room).
+  // The new limit is that plus the same 66. The documents did not move
+  // past their limits (the Crew tab's heading gained " · N").
+  [`/${SAMPLE_SLUG}`]: { js: 178_628, doc: 25_650, cls: 0.02, lcp: 2000, reads: 3, images: 400_000 },
   // OPR-3 — THE PRODUCT PAGE'S OTHER THREE TABS, each an address of its own
   // (design §5), budgeted the day they were added (2026-11-15).
   //
@@ -541,8 +552,8 @@ const BUDGETS = {
   // READS: the listing and the directory on every tab; Updates adds the
   // product's posts and Talk the discussion, so About and Crew read twice
   // and Talk three times — concurrently, as the note above says of Updates.
-  [`/${SAMPLE_SLUG}/about`]: { js: 177_800, doc: 25_650, cls: 0.02, lcp: 2000, reads: 2, images: 400_000 },
-  [`/${SAMPLE_SLUG}/crew`]: { js: 177_800, doc: 22_350, cls: 0.02, lcp: 2000, reads: 2, images: 400_000 },
+  [`/${SAMPLE_SLUG}/about`]: { js: 178_628, doc: 25_650, cls: 0.02, lcp: 2000, reads: 2, images: 400_000 },
+  [`/${SAMPLE_SLUG}/crew`]: { js: 178_628, doc: 22_350, cls: 0.02, lcp: 2000, reads: 2, images: 400_000 },
   //
   // OPR-4 — TALK RE-MEASURED, AND ONLY TALK, WITH THE NUMBERS NAMED
   // (2026-11-15). Talk gained its composer (a field, the thread's kind, the

@@ -266,7 +266,7 @@ export function moreSettingsLinks(crew: Pick<OverlayCrew, "org" | "profile">): R
 /** The crew's own handlers under the product's address. */
 export function manageRoute(
   slug: string,
-  route: "profile" | "milestones" | "posts" | "needs-you" | "seats" | "stage",
+  route: "profile" | "milestones" | "posts" | "needs-you" | "seats" | "stage" | "crew",
 ): string {
   return `/${slug}/manage/${route}`;
 }

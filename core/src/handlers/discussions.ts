@@ -58,7 +58,7 @@ import {
 } from "@openproduct/contracts";
 import type { OpenproductRepository, PostRecord, ThreadRecord } from "@openproduct/db";
 
-import type { ActorContext } from "../authorize.js";
+import { listingActionAllowed, type ActorContext } from "../authorize.js";
 import type { Env } from "../env.js";
 import { errorResponse, successResponse, validationError } from "../http.js";
 import { fanOut, type InboxWriter } from "./inbox.js";
@@ -1067,8 +1067,11 @@ export async function handleMaintainThread(
   const thread = await deps.repo.getThread(threadId);
   if (!thread?.profileId) return errorResponse("not_found", "Not found", 404, requestId);
 
+  // Moderating a product's discussion is running it: a `write` (SC-3).
   const role = await deps.repo.getListingRole(thread.profileId as Uuid, actor.subjectId);
-  if (!role) return errorResponse("forbidden", "This discussion is not yours to manage", 403, requestId);
+  if (!listingActionAllowed("write", role, false)) {
+    return errorResponse("forbidden", "This discussion is not yours to manage", 403, requestId);
+  }
 
   let body: MaintainBody;
   try {
@@ -1165,7 +1168,7 @@ export async function handleListProfileThreads(
   orgId: Uuid,
 ): Promise<Response> {
   const role = await deps.repo.getListingRole(profileId, actor.subjectId);
-  if (!role) return errorResponse("forbidden", "That listing is not yours", 403, requestId);
+  if (!listingActionAllowed("read", role, false)) return errorResponse("forbidden", "That listing is not yours", 403, requestId);
 
   const [threads, profile] = await Promise.all([
     deps.repo.listThreads(profileId, null, 100),

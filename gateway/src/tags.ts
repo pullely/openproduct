@@ -230,6 +230,11 @@ const CREW_PROFILE = "^/v1/organizations/[^/]+/openproduct/profiles/[^/]+";
  *                                                 its product's stage
  *   the listing itself patched (name, tagline,    the product page
  *   the Try it address)
+ *   a crew role changed (SC-3)                    nothing: no public document
+ *                                                 carries a role. The public
+ *                                                 crew is the consent roster,
+ *                                                 and a role change neither
+ *                                                 adds nor removes anybody
  *
  * CREATING a draft purges nothing: `POST …/product-posts` writes a row no
  * public read returns. Editing one does purge, because a draft and a
@@ -245,6 +250,7 @@ function purgeTagsForCrewWrite(pathname: string): string[] {
   if (new RegExp(`${CREW_PROFILE}/milestones/[^/]+/shipped$`).test(pathname)) return [TAG_LISTING, TAG_POSTS];
   if (new RegExp(`${CREW_PROFILE}/milestones(?:/[^/]+)?$`).test(pathname)) return [TAG_LISTING];
   if (new RegExp(`${CREW_PROFILE}/stage$`).test(pathname)) return [TAG_LISTING, TAG_POSTS];
+  if (new RegExp(`${CREW_PROFILE}/crew(?:/[^/]+)?$`).test(pathname)) return [];
   if (new RegExp(`${CREW_PROFILE}$`).test(pathname)) return [TAG_LISTING];
   return [];
 }

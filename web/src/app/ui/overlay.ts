@@ -165,9 +165,12 @@ function readCrew(raw: unknown): OverlayCrew[] {
   const out: OverlayCrew[] = [];
   for (const entry of raw) {
     if (typeof entry !== "object" || entry === null) continue;
-    const { slug, org, profile } = entry as Record<string, unknown>;
+    const { slug, org, profile, role } = entry as Record<string, unknown>;
     if (typeof slug === "string" && typeof org === "string" && typeof profile === "string") {
-      out.push({ slug, org, profile });
+      // SC-3 — a role this page does not know is the narrowest one: the page
+      // offers nothing core would refuse (core decides every act anyway).
+      // Written out rather than imported: this file is in every page's bundle.
+      out.push({ slug, org, profile, role: role === "lead" || role === "maintainer" ? role : "member" });
     }
   }
   return out;

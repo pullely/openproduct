@@ -112,7 +112,7 @@ import { TalkSection } from "../talk/talk-section";
 import { InstallLine } from "./install-line";
 import { LaunchHealth } from "./launch-health";
 import { MakerHeaderActions, ProductPitch, VisitorOnly } from "./maker/details";
-import { EditPostLink, MilestonesManager, NeedsYou, NewPostRow, ViewSwitch } from "./maker/lazy";
+import { CrewRoles, EditPostLink, MilestonesManager, NeedsYou, NewPostRow, ViewSwitch } from "./maker/lazy";
 import { makerSlotProperty, type MakerSlotName } from "./maker/gate";
 import { CrewNoticeLine } from "./maker/notice";
 import { MakerReserve } from "./maker/reserve";
@@ -556,11 +556,16 @@ async function ShippingPage({
             <>
               {profile.maintainers.length > 0 ? (
                 <section id="crew" aria-labelledby="crew-heading" className={TAB_CARD} {...{ [SECTION_ATTRIBUTE]: true }}>
-                  <CardHead id="crew-heading" title="On the crew" />
+                  <CardHead id="crew-heading" title={`On the crew · ${profile.maintainers.length}`} />
                   <CrewPeople maintainers={profile.maintainers} size={44} />
                 </section>
               ) : null}
               <OpenSeatsCard slug={slug} openRoles={openRoles} always />
+              {/* SC-3 — the roles (the counts, the leads, Edit crew): the
+                  crew's own, after load, and last in the column so nothing
+                  under it moves when it arrives. The card above is the
+                  consent roster, the same for everybody (design §2.6). */}
+              <CrewRoles slug={slug} />
             </>
           ) : null}
           {tab === "talk" ? <TalkCards slug={slug} discussion={discussion} /> : null}

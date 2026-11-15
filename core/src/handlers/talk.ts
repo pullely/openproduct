@@ -39,7 +39,7 @@ import {
 } from "@openproduct/contracts";
 import type { OpenproductRepository, PostRecord, PrivateThreadRecord, ThreadRecord } from "@openproduct/db";
 
-import type { ActorContext } from "../authorize.js";
+import { listingActionAllowed, type ActorContext } from "../authorize.js";
 import type { Env } from "../env.js";
 import { errorResponse, successResponse, validationError } from "../http.js";
 import { generateId, type Uuid } from "../ids.js";
@@ -139,7 +139,8 @@ export async function handleListPrivateThreads(
     deps.repo.getListingRole(profileId as Uuid, actor.subjectId),
   ]);
   const list: PrivateThreadList = {
-    crew: role !== null,
+    // Every role reads the crew's private threads (SC-3: `read_private`).
+    crew: listingActionAllowed("read_private", role, false),
     threads: rows.map((row: PrivateThreadRecord) => privateThread(row, actor.subjectId, row.awaitingCrew)),
   };
   return successResponse(list, requestId);
@@ -277,8 +278,11 @@ export async function handleResolveThread(
     (await deps.repo.getThread(threadId)) ?? (await deps.repo.getPrivateThread(threadId, actor.subjectId));
   if (!thread?.profileId) return notFound(requestId);
 
+  // Resolving is the crew acting for the product: a Lead or a Maintainer
+  // (SC-3: `write`). A Member reads the thread and is answered as anybody
+  // else would be.
   const role = await deps.repo.getListingRole(thread.profileId as Uuid, actor.subjectId);
-  if (!role) return notFound(requestId);
+  if (!listingActionAllowed("write", role, false)) return notFound(requestId);
 
   if (thread.kind !== "issue" || thread.state === "removed") {
     return errorResponse("conflict", "Only an issue can be marked resolved", 409, requestId);
@@ -305,7 +309,7 @@ export async function privateThreadNotices(
   actor: ActorContext,
 ): Promise<CrewPrivateThreadNotice[]> {
   const role = await deps.repo.getListingRole(profileId as Uuid, actor.subjectId);
-  if (!role) return [];
+  if (!listingActionAllowed("read_private", role, false)) return [];
   const rows = await deps.repo.listPrivateThreads(profileId, actor.subjectId, 100);
   return rows
     .filter((row) => row.awaitingCrew && row.state === "open" && row.resolvedAt === null && row.authorSubjectId !== actor.subjectId)

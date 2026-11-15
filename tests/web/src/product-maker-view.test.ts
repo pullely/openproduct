@@ -103,11 +103,15 @@ const SERVER_FILES = [
   "[slug]/updates/[cursor]/page.tsx",
 ];
 
-const CREW: OverlayCrew = { slug: "ackstack", org: "org_1", profile: "opp_1" };
+const CREW: OverlayCrew = { slug: "ackstack", org: "org_1", profile: "opp_1", role: "lead" };
 
 describe("no maker element is in any server render", () => {
   it("finds the maker components, so an empty folder cannot read as a pass", () => {
     expect(COMPONENTS.sort()).toEqual([
+      // SC-3 — the Edit crew popup and the crew tab's roles card, fetched
+      // for the crew only.
+      "crew-dialog.tsx",
+      "crew-roles.tsx",
       // The form "Edit details" opens, fetched when it is opened.
       "details-form.tsx",
       "details.tsx",
@@ -133,17 +137,23 @@ describe("no maker element is in any server render", () => {
   it("a visitor's bundle carries the gates and never the pieces: each crew-only piece is fetched for the crew", () => {
     const page = code(PAGE);
     // The page takes the crew-only pieces through the gates…
-    expect(page).toContain('import { EditPostLink, MilestonesManager, NeedsYou, NewPostRow, ViewSwitch } from "./maker/lazy";');
-    for (const file of ["view-switch", "needs-you", "new-post", "milestones", "details-form", "seat-form", "model", "act"]) {
+    expect(page).toContain('import { CrewRoles, EditPostLink, MilestonesManager, NeedsYou, NewPostRow, ViewSwitch } from "./maker/lazy";');
+    for (const file of ["view-switch", "needs-you", "new-post", "milestones", "details-form", "seat-form", "crew-roles", "crew-dialog", "crew-model", "model", "act"]) {
       expect([file, new RegExp(`from "\\./maker/${file}"`).test(page)]).toEqual([file, false]);
     }
     // …and each gate asks `useMaker` before it fetches anything.
     const gates = code(`${MAKER_DIR}/lazy.tsx`);
-    expect(gates.match(/React\.lazy\(\(\) =>\s*import\("\.\/(view-switch|needs-you|new-post|milestones)"\)/g)).toHaveLength(5);
-    expect(gates).not.toMatch(/^import .* from "\.\/(view-switch|needs-you|new-post|milestones|model|act)";$/m);
+    expect(gates.match(/React\.lazy\(\(\) =>\s*import\("\.\/(view-switch|needs-you|new-post|milestones|crew-roles)"\)/g)).toHaveLength(6);
+    expect(gates).not.toMatch(/^import .* from "\.\/(view-switch|needs-you|new-post|milestones|crew-roles|crew-dialog|crew-model|model|act)";$/m);
     expect(gates.match(/if \(!managing\) return null;/g)).toHaveLength(4);
+    // SC-3 — the switch is for the crew who write; the roles card for the
+    // whole crew (a Member read-only), on Manage.
+    expect(gates).toContain("if (!writes) return null;");
     expect(gates).toContain("if (crew === null) return null;");
-    expect(gates.match(/<React\.Suspense fallback=\{null\}>/g)).toHaveLength(5);
+    expect(gates).toContain('if (mode !== "manage") return null;');
+    expect(gates.match(/<React\.Suspense fallback=\{null\}>/g)).toHaveLength(6);
+    // Edit crew's popup is fetched from inside the roles card, when pressed.
+    expect(code(`${MAKER_DIR}/crew-roles.tsx`)).toContain('React.lazy(() => import("./crew-dialog")');
     // The two files that draw something for a visitor as well (the pitch,
     // "Take the seat") fetch their crew-only halves the same way.
     expect(code(`${MAKER_DIR}/details.tsx`)).toContain('React.lazy(() => import("./details-form")');
@@ -244,7 +254,8 @@ describe("no maker element is in any server render", () => {
     expect(gate).toContain("const managing = isManaging(crew, mode);");
     // Nothing touches the browser's storage until the overlay has said
     // "crew": the server and everybody else get the visitor's answer.
-    expect(gate).toContain('const mode: ViewMode = crew === null ? "manage" : storedMode(slug);');
+    // A Member has no switch (SC-3): always Manage for them, too.
+    expect(gate).toContain('const mode: ViewMode = crew === null || !crewRoleWrites(crew.role) ? "manage" : storedMode(slug);');
     for (const file of COMPONENTS) {
       expect([file, code(`${MAKER_DIR}/${file}`).includes("useCrewOf(")]).toEqual([file, false]);
     }
@@ -257,7 +268,11 @@ describe("no maker element is in any server render", () => {
 
   it("draws each maker element only when managing — and nothing otherwise", () => {
     const gates: Record<string, string[]> = {
-      "view-switch.tsx": ["if (crew === null || slot === null) return null;"],
+      // SC-3 — the switch is for the crew who write: a Member has none.
+      "view-switch.tsx": ["if (!writes || slot === null) return null;"],
+      // The roles card: the whole crew, on Manage; Edit crew a Lead's.
+      "crew-roles.tsx": ["if (!visible || list === null) return null;", "{leads ? ("],
+      "crew-dialog.tsx": ["if (!leads) return null;"],
       "needs-you.tsx": ["if (!managing || needsYouEmpty(needsYou)) return null;"],
       "new-post.tsx": ["if (!managing) return null;"],
       "milestones.tsx": ["if (!managing || milestones === null) return null;"],

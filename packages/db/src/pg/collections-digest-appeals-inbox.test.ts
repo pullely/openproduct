@@ -1040,7 +1040,7 @@ describe("openproduct — the inbox (openproduct-launch NF0)", () => {
       // The same edge a maker page's `maintains` reads, so "whose launch is
       // this" and "whose page does it appear on" are one answer.
       await seedPublished();
-      await repo.addListingMaintainer(PROFILE, ADA, "owner", ADA);
+      await repo.addListingMaintainer(PROFILE, ADA, "lead", ADA);
       await repo.addListingMaintainer(PROFILE, BOB, "maintainer", ADA);
       await repo.addListingMaintainer(PROFILE, BOB, "maintainer", ADA);
       // ACTOR is here because `createProfile` wrote the first edge: whoever

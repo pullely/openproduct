@@ -3,9 +3,96 @@
 | Milestone | Task | State | PR |
 |---|---|---|---|
 | SC0 — the spec | SC-1 | Done | #23 |
-| SC1 — four stages and where it runs | SC-2 | In review | this PR |
-| SC2 — crew roles | SC-3 | Not started | |
+| SC1 — four stages and where it runs | SC-2 | Done | #24 |
+| SC2 — crew roles | SC-3 | In review | this PR |
 | SC3 — synced from Orunbase | SC-4 | Not started | |
+
+## From SC2
+
+What landed:
+
+- Migration 2290: `listing_maintainers.role` holds `lead`, `maintainer` or
+  `member`; every OX4 `owner` became `lead` (the old check dropped before
+  the backfill, the three-role one added after it). Two new columns:
+  `source` (`creator` · `seat` · `orunbase`, NOT NULL, default `creator`)
+  and `locked` (NOT NULL, default false; a check allows it on a Lead only).
+  Every row that existed is `creator`: until now the only ways onto a crew
+  were creating the listing and an operator's hand-added row, both the
+  listing's own side — no seat added anybody and nothing synced. Neither
+  column holds a subject id, so the subject registry is unchanged.
+- `authorize.ts` is one decision table: `read` (any role, or an operator),
+  `write` (Lead, Maintainer — details, stage, posts, milestones, seats,
+  media, launches, publish/unpublish, the link grant, the published roster,
+  discussion moderation, resolving an issue), `read_crew` (any role),
+  `manage_crew` (Lead), `read_private` (any role), `review` (the operator).
+  Deny by default. Every call site moved onto it — `authorizeFor` (so
+  `crewOf`, media and the profile routes), `mayLaunch`, the roster's actor
+  roles, Talk's private list, notices and resolve, discussion moderation —
+  and the 404s that hid a listing still hide it (a Member's write is the
+  same 404 a stranger gets). OX4's separate `publish` action is folded into
+  `write`: they always had the same answer.
+- Core: `GET …/profiles/{id}/crew?q=&role=&cursor=` (30 a page, Leads then
+  Maintainers then Members by name; the search runs over the crew's own
+  names — `contributors.display_name`, else the public roster's
+  `published_maintainers.display_name` — and handles; counts per role of
+  the whole crew), `PUT …/crew/{subjectId}` `{role}` and `PUT …/crew`
+  `{changes}` (≤100; Lead only). The repository's one statement refuses a
+  locked row and the change that would leave no Lead, with every Lead row
+  locked `FOR UPDATE` so two Leads stepping down at once cannot both win.
+  Each change is audited as `openproduct.crew.role_changed` with the two
+  roles and no subject id. The overlay's crew entries carry the role.
+- Seats: an approved `join_request.decided` whose application the seam
+  recorded (so through a listed door of this listing) adds the person as a
+  Member, `source` seat, `ON CONFLICT DO NOTHING` — idempotent and never a
+  demotion — beside the existing activity row. Denied, withdrawn and
+  expired touch no crew.
+- Gateway: the crew routes forward like the other crew routes; a save is
+  one listing write; nothing is purged (no public document carries a role).
+- Web: `GET`/`POST /{slug}/manage/crew`. The Crew tab's public card is
+  "On the crew · N" (the consent roster, as before); after load the crew
+  gets the roles card — the avatar stack, "N on the crew", "x leads · y
+  maintainers · z members", the leads, and Edit crew for a Lead. The Edit
+  crew popup: a dialog (focus trapped and returned; Escape, ✕, Cancel,
+  scrim), search, All / Leads / Maintainers / Members with the whole crew's
+  counts, 30 at a time with "Show more · n left", a role picker per row, a
+  lock and "Lead" for a locked row, the changed rows highlighted, "Save n
+  changes", core's refusals beside their rows; full screen on a phone, where
+  a row opens a chooser of the three roles with what each can do. A Member
+  has no Manage switch and no maker controls; a Member reads the private
+  threads.
+
+Budgets, said plainly: the product page's JS limit moves 177,800 →
+178,628 (CI measured 178,562 for Updates, About and Crew: the role on the
+overlay's crew entry, the gate that reads it and the roles card's gate; the
+card and the popup are chunks fetched for the crew only), the measurement
+plus the 66 bytes of room it had, recorded in `tests/web-perf/src/budgets.mjs`.
+The first build put the home 100 bytes over the 306 KB wire budget; reading
+the role inline in `ui/overlay.ts` (in every page's bundle) instead of
+importing the contracts' helper brought it back under, so the wire budget
+did not move. No snapshot moved.
+
+Departures from the design, said plainly:
+
+- **The roles are the crew's, not the public page's.** The board draws the
+  counts, the leads and the avatar stack on the crew tab; here they are the
+  crew's own card, read after load, and visitors see the consent roster as
+  before ("On the crew · N"). Who holds which role includes people who have
+  not agreed to be shown (design §2.6), so the cached page cannot carry it.
+  The card is last in the column, under the seats, so nothing moves when it
+  arrives.
+- **One save is one request** (`PUT …/crew` with every change), beside the
+  one-person `PUT …/crew/{subjectId}`. Batched PUTs would spend the
+  gateway's listing-write bound (20 a minute) on a Lead sorting a big crew;
+  each change is still its own guarded statement and audit entry, promotions
+  to Lead first so a Lead can hand over in one save.
+- **A Member may reply in a private thread** as well as read it: the
+  privacy rule ("the author or the crew") governs both, as before. Resolving
+  an issue is a write.
+- **The operator does not read the crew list or the private threads**:
+  `read_crew` and `read_private` are the crew's. The operator still reads
+  the listing to review it.
+- The audit entry names the two roles and not the person (a subject id in
+  a payload is one the registry could not erase).
 
 ## From SC1
 

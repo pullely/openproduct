@@ -28,7 +28,7 @@ import {
 } from "@openproduct/contracts";
 import type { OpenproductRepository } from "@openproduct/db";
 
-import type { ActorContext } from "../authorize.js";
+import { listingActionAllowed, type ActorContext } from "../authorize.js";
 import type { Env } from "../env.js";
 import { errorResponse, successResponse, validationError } from "../http.js";
 import type { Uuid } from "../ids.js";
@@ -71,10 +71,11 @@ async function actorRoles(
   subjectId: string,
 ): Promise<RosterActor[]> {
   const roles: RosterActor[] = [];
-  // OX4's authority table — the same one every other maintainer door asks.
-  // Owner and maintainer both count; a listing's roster is part of running it.
+  // The crew's decision table (SC-3) — the same one every other crew door
+  // asks. A Lead or a Maintainer acts for the listing here; a Member does
+  // not, since a listing's roster is part of running it (a `write`).
   const role = await deps.repo.getListingRole(profileId, actor.subjectId);
-  if (role === "owner" || role === "maintainer") roles.push("maintainer");
+  if (listingActionAllowed("write", role, false)) roles.push("maintainer");
   // `subject` means "the person this edge is ABOUT", which is only ever true
   // when the actor IS that person. Never inferred from anything else.
   if (actor.subjectId === subjectId) roles.push("subject");

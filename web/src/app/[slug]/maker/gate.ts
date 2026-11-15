@@ -11,7 +11,7 @@
 //
 // PURE, AND NO JSX: the web test lane is module-level.
 
-import { composePostPagePath, type OverlayCrew } from "@openproduct/contracts";
+import { composePostPagePath, crewRoleWrites, type OverlayCrew } from "@openproduct/contracts";
 
 // ─── the Manage / Visitor switch ───────────────────────────────────────────
 
@@ -43,11 +43,13 @@ export function viewModeOf(stored: string | null | undefined): ViewMode {
 
 /**
  * Whether the maker's controls draw. Both halves are required: the overlay
- * said this visitor is on the crew, and the switch is on Manage. "Visitor"
- * hides every maker element, so the crew sees the public page.
+ * said this visitor is on the crew IN A ROLE THAT WRITES (a Lead or a
+ * Maintainer — SC-3; a Member reads the page as it is, and core would refuse
+ * every control anyway), and the switch is on Manage. "Visitor" hides every
+ * maker element, so the crew sees the public page.
  */
 export function isManaging(crew: OverlayCrew | null, mode: ViewMode): boolean {
-  return crew !== null && mode === "manage";
+  return crew !== null && crewRoleWrites(crew.role) && mode === "manage";
 }
 
 /** The builder, opened on a post the crew already has (a draft to continue,

@@ -70,6 +70,9 @@ function seamHarness(): SeamHarness {
     async appendActivity(input: { kind: string; actorSubjectId: string | null }) {
       activity.push({ kind: input.kind, actorSubjectId: input.actorSubjectId });
     },
+    async addSeatMember() {
+      return true;
+    },
     async setApplicationStatusByRequestRef(ref: string, status: string) {
       statusWrites.push({ ref, status });
       return 1;
@@ -226,6 +229,7 @@ describe("CB3 — the decision trail, and its asymmetry", () => {
   /** A seam receiver whose activity writes are observable. */
   function trailHarness(status: "approved" | "denied") {
     const activity: Array<{ kind: string; actorSubjectId: string | null; summary: string }> = [];
+    const members: Array<{ profileId: string; subjectId: string; addedBy: string }> = [];
     const repo = {
       async setApplicationStatusByRequestRef() {
         return 1;
@@ -241,6 +245,10 @@ describe("CB3 — the decision trail, and its asymmetry", () => {
       async appendActivity(input: { kind: string; actorSubjectId: string | null; summary: string }) {
         activity.push(input);
       },
+      async addSeatMember(profileId: string, subjectId: string, addedBy: string) {
+        members.push({ profileId, subjectId, addedBy });
+        return members.length === 1;
+      },
       async recordApplication() {
         return null;
       },
@@ -248,7 +256,7 @@ describe("CB3 — the decision trail, and its asymmetry", () => {
         return null;
       },
     };
-    return { deps: { repo } as never, activity };
+    return { deps: { repo } as never, activity, members };
   }
 
   function decided(status: string): Request {
@@ -303,5 +311,76 @@ describe("CB3 — the decision trail, and its asymmetry", () => {
     const h = trailHarness("denied");
     await route(decided("denied"), { ENVIRONMENT: "test" } as never, h.deps);
     expect(h.activity).toEqual([]);
+  });
+});
+
+describe("SC-3 — an approved seat request adds the person as a Member", () => {
+  function harness(status: string, known = true) {
+    const members: Array<{ profileId: string; subjectId: string; addedBy: string }> = [];
+    const activity: string[] = [];
+    const repo = {
+      async setApplicationStatusByRequestRef() {
+        return known ? 1 : 0;
+      },
+      async getApplicationByRequestRef() {
+        return known
+          ? { subjectId: "usr_0123456789abcdef0123456789abcdef", profileId: "55555555-5555-4555-8555-555555555555", status, openingTitle: "Tests" }
+          : null;
+      },
+      async appendActivity(input: { kind: string }) {
+        activity.push(input.kind);
+      },
+      async addSeatMember(profileId: string, subjectId: string, addedBy: string) {
+        // The repository's ON CONFLICT DO NOTHING: the second delivery writes nothing.
+        const first = !members.some((m) => m.profileId === profileId && m.subjectId === subjectId);
+        members.push({ profileId, subjectId, addedBy });
+        return first;
+      },
+      async recordApplication() {
+        return null;
+      },
+      async getRoleOpeningByJoinLinkRef() {
+        return null;
+      },
+    };
+    return { deps: { repo } as never, members, activity };
+  }
+  const decided = (status: string) =>
+    new Request("https://openproduct.internal/internal/openproduct/seam/join-request", {
+      method: "POST",
+      headers: { "content-type": "application/json", "x-request-id": "req_sc3" },
+      body: JSON.stringify({ seam: "v1", type: "join_request.decided", data: { jrRequestRef: "jr_sc3", status } }),
+    });
+
+  it("an approval over a recorded (listed) door adds the person the application names, with the activity row", async () => {
+    const h = harness("approved");
+    expect((await route(decided("approved"), { ENVIRONMENT: "test" } as never, h.deps)).status).toBe(200);
+    expect(h.members).toEqual([
+      { profileId: "55555555-5555-4555-8555-555555555555", subjectId: "usr_0123456789abcdef0123456789abcdef", addedBy: "seam:jr_sc3" },
+    ]);
+    expect(h.activity).toEqual(["joined"]);
+  });
+
+  it("a redelivered approval asks again and the repository writes nothing twice", async () => {
+    const h = harness("approved");
+    await route(decided("approved"), { ENVIRONMENT: "test" } as never, h.deps);
+    await route(decided("approved"), { ENVIRONMENT: "test" } as never, h.deps);
+    expect(h.members).toHaveLength(2);
+    expect(new Set(h.members.map((m) => m.subjectId)).size).toBe(1);
+  });
+
+  it("denied, withdrawn, expired and pending touch no crew", async () => {
+    for (const status of ["denied", "withdrawn", "expired", "pending"]) {
+      const h = harness(status);
+      expect((await route(decided(status), { ENVIRONMENT: "test" } as never, h.deps)).status).toBe(200);
+      expect([status, h.members]).toEqual([status, []]);
+    }
+  });
+
+  it("an approval for a request no listed door recorded adds nobody", async () => {
+    const h = harness("approved", false);
+    const res = await route(decided("approved"), { ENVIRONMENT: "test" } as never, h.deps);
+    expect(await res.json()).toMatchObject({ data: { recorded: false } });
+    expect(h.members).toEqual([]);
   });
 });

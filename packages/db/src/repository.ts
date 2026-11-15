@@ -69,6 +69,10 @@ import type {
   AuditEntryRecord,
   ContributorRecord,
   ListingRole,
+  CrewPageRecord,
+  CrewPersonRecord,
+  CrewRoleChange,
+  CrewSource,
   StoredLinkGrant,
   CreateProfileInput,
   MaintainerInput,
@@ -2514,13 +2518,14 @@ export function createOpenproductRepository(sql: SqlExecutor): OpenproductReposi
       );
       // INSERT ... RETURNING always yields a row or throws.
       //
-      // OX4: the creator is the listing's first OWNER. Two statements rather
-      // than one transaction (the per-request executor is non-transactional);
-      // the failure window leaves an ownerless listing an operator can
-      // repair, which the 1290 backfill's posture already accepts.
+      // OX4: the creator is the listing's first Lead (SC-3; OX4's `owner`).
+      // Two statements rather than one transaction (the per-request executor
+      // is non-transactional); the failure window leaves a listing with no
+      // Lead that an operator can repair, which the 1290 backfill's posture
+      // already accepts.
       await sql.execute(
-        `INSERT INTO openproduct.listing_maintainers (profile_id, subject_id, role, added_by)
-         VALUES ($1, $2, 'owner', $2)
+        `INSERT INTO openproduct.listing_maintainers (profile_id, subject_id, role, source, added_by)
+         VALUES ($1, $2, 'lead', 'creator', $2)
          ON CONFLICT (profile_id, subject_id) DO NOTHING`,
         [input.id, input.createdBy],
       );
@@ -2534,7 +2539,8 @@ export function createOpenproductRepository(sql: SqlExecutor): OpenproductReposi
         [profileId, subjectId],
       );
       const role = res.rows[0]?.role;
-      return role === "owner" || role === "maintainer" ? role : null;
+      // Deny by default: a value outside the three roles is no role at all.
+      return role === "lead" || role === "maintainer" || role === "member" ? role : null;
     },
 
     async listMaintainedProfileIds(orgId: Uuid, subjectId: string): Promise<string[]> {
@@ -2560,6 +2566,135 @@ export function createOpenproductRepository(sql: SqlExecutor): OpenproductReposi
          ON CONFLICT (profile_id, subject_id) DO UPDATE SET role = EXCLUDED.role`,
         [profileId, subjectId, role, addedBy],
       );
+    },
+
+    async addSeatMember(profileId: Uuid, subjectId: string, addedBy: string): Promise<boolean> {
+      // ON CONFLICT DO NOTHING is the whole of "never a demotion": a Lead who
+      // also asked for a seat stays a Lead, and a redelivered approval writes
+      // nothing the second time.
+      const res = await sql.execute<{ subject_id: string }>(
+        `INSERT INTO openproduct.listing_maintainers (profile_id, subject_id, role, source, added_by)
+         VALUES ($1, $2, 'member', 'seat', $3)
+         ON CONFLICT (profile_id, subject_id) DO NOTHING
+         RETURNING subject_id`,
+        [profileId, subjectId, addedBy],
+      );
+      return res.rows.length > 0;
+    },
+
+    async listCrew(profileId, query): Promise<CrewPageRecord> {
+      // THE CREW'S OWN LIST (SC-3), read by the crew and nobody else (core
+      // checks the reader first). The name is what the person wrote about
+      // themselves (`contributors`), else the crew's own word for them on the
+      // public roster (`published_maintainers`) — the same two sources every
+      // crew read already names people from; nothing is fetched from the
+      // platform. Their handle only while their public page resolves.
+      const limit = Math.min(Math.max(1, Math.trunc(query.limit) || 0), 100);
+      const offset = Math.min(Math.max(0, Math.trunc(query.offset) || 0), 100_000);
+      const needle = (query.q ?? "").trim().slice(0, 80);
+      const pattern = needle ? `%${needle.replace(/[\\%_]/g, (m) => `\\${m}`)}%` : null;
+      const from = `FROM openproduct.listing_maintainers lm
+           LEFT JOIN openproduct.contributors cc ON cc.subject_id = lm.subject_id
+           LEFT JOIN openproduct.published_maintainers pm
+             ON pm.profile_id = lm.profile_id AND pm.subject_id = lm.subject_id
+           ${handleJoinFor("lm.subject_id")}
+          WHERE lm.profile_id = $1
+            AND ($2::text IS NULL OR lm.role = $2)
+            AND ($3::text IS NULL
+                 OR coalesce(cc.display_name, pm.display_name, '') ILIKE $3 ESCAPE '\\'
+                 OR coalesce(h.handle, '') ILIKE $3 ESCAPE '\\')`;
+      const [page, total, counts] = await Promise.all([
+        sql.execute<{
+          subject_id: string;
+          role: string;
+          source: string;
+          locked: boolean;
+          display_name: string | null;
+          handle: string | null;
+          added_at: string | Date;
+        }>(
+          `SELECT lm.subject_id, lm.role, lm.source, lm.locked,
+                  coalesce(cc.display_name, pm.display_name) AS display_name,
+                  h.handle, lm.added_at
+             ${from}
+            ORDER BY CASE lm.role WHEN 'lead' THEN 0 WHEN 'maintainer' THEN 1 ELSE 2 END,
+                     lower(coalesce(cc.display_name, pm.display_name, h.handle, '')) = '',
+                     lower(coalesce(cc.display_name, pm.display_name, h.handle, '')),
+                     lm.added_at, lm.subject_id
+            LIMIT $4 OFFSET $5`,
+          [profileId, query.role, pattern, limit, offset],
+        ),
+        sql.execute<{ n: string | number }>(`SELECT count(*) AS n ${from}`, [profileId, query.role, pattern]),
+        sql.execute<{ role: string; n: string | number }>(
+          `SELECT role, count(*) AS n FROM openproduct.listing_maintainers
+            WHERE profile_id = $1 GROUP BY role`,
+          [profileId],
+        ),
+      ]);
+      const byRole: Record<ListingRole, number> = { lead: 0, maintainer: 0, member: 0 };
+      for (const row of counts.rows) {
+        if (row.role === "lead" || row.role === "maintainer" || row.role === "member") byRole[row.role] = Number(row.n);
+      }
+      const matching = Number(total.rows[0]?.n ?? 0);
+      const people: CrewPersonRecord[] = page.rows.map((row) => ({
+        subjectId: row.subject_id,
+        role: row.role as ListingRole,
+        source: row.source as CrewSource,
+        locked: row.locked === true,
+        displayName: row.display_name,
+        handle: row.handle,
+        addedAt: iso(row.added_at)!,
+      }));
+      return { people, counts: byRole, matching, nextOffset: offset + people.length < matching ? offset + people.length : null };
+    },
+
+    async setCrewRole(profileId: Uuid, subjectId: string, role: ListingRole): Promise<CrewRoleChange> {
+      // ONE STATEMENT, so the two refusals and the write cannot drift apart.
+      //
+      //   locked     the row is changed only on Orunbase (SC-4)
+      //   last_lead  taking a Lead's role away when no other Lead is left
+      //
+      // `leads` locks every Lead row of the product first (FOR UPDATE), so two
+      // Leads demoting each other at once are serialised: the second waits,
+      // re-reads, finds itself the last, and is refused — the product is
+      // never left with nobody who can change roles.
+      const res = await sql.execute<{ outcome: string; from_role: string | null }>(
+        `WITH leads AS (
+           SELECT subject_id FROM openproduct.listing_maintainers
+            WHERE profile_id = $1 AND role = 'lead'
+            FOR UPDATE
+         ),
+         target AS (
+           SELECT role, locked FROM openproduct.listing_maintainers
+            WHERE profile_id = $1 AND subject_id = $2
+         ),
+         changed AS (
+           UPDATE openproduct.listing_maintainers lm
+              SET role = $3
+             FROM target t
+            WHERE lm.profile_id = $1 AND lm.subject_id = $2
+              AND NOT t.locked
+              AND t.role <> $3
+              AND (t.role <> 'lead' OR EXISTS (SELECT 1 FROM leads WHERE subject_id <> $2))
+           RETURNING lm.subject_id
+         )
+         SELECT CASE
+                  WHEN t.role IS NULL THEN 'absent'
+                  WHEN EXISTS (SELECT 1 FROM changed) THEN 'changed'
+                  WHEN t.role = $3 THEN 'unchanged'
+                  WHEN t.locked THEN 'locked'
+                  ELSE 'last_lead'
+                END AS outcome,
+                t.role AS from_role
+           FROM (SELECT 1) one
+           LEFT JOIN target t ON true`,
+        [profileId, subjectId, role],
+      );
+      const row = res.rows[0];
+      const outcome = row?.outcome ?? "absent";
+      if (outcome === "changed") return { outcome, from: row!.from_role as ListingRole, to: role };
+      if (outcome === "unchanged") return { outcome, from: row!.from_role as ListingRole, to: role };
+      return { outcome: outcome as "absent" | "locked" | "last_lead" };
     },
 
     async listProfilesMaintainedBy(subjectId: string): Promise<ProfileRecord[]> {
@@ -8530,8 +8665,8 @@ export function createOpenproductRepository(sql: SqlExecutor): OpenproductReposi
       // asked about. Not `listed()`-gated: a maker's own draft is theirs.
       const wanted = [...new Set(slugs.map((slug) => slug.toLowerCase()))];
       if (wanted.length === 0) return [];
-      const res = await sql.execute<{ slug: string; org_id: string; id: string }>(
-        `SELECT p.slug, p.org_id, p.id
+      const res = await sql.execute<{ slug: string; org_id: string; id: string; role: string }>(
+        `SELECT p.slug, p.org_id, p.id, lm.role
            FROM openproduct.listing_maintainers lm
            JOIN openproduct.profiles p ON p.id = lm.profile_id
           WHERE lm.subject_id = $1
@@ -8539,7 +8674,7 @@ export function createOpenproductRepository(sql: SqlExecutor): OpenproductReposi
           ORDER BY p.slug`,
         [subjectId, wanted],
       );
-      return res.rows.map((row) => ({ slug: row.slug, orgId: row.org_id, profileId: row.id }));
+      return res.rows.map((row) => ({ slug: row.slug, orgId: row.org_id, profileId: row.id, role: row.role as ListingRole }));
     },
 
     async listPendingApplicationOpenings(subjectId, openingIds) {

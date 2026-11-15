@@ -20,8 +20,22 @@
 
 import type { ListingRole } from "@openproduct/db";
 
-/** The listing-local actions (OX4). `review` is the operator's alone. */
-export type ListingAction = "read" | "write" | "publish" | "review";
+/**
+ * The listing-local actions (OX4; SC-3 gave them three roles).
+ *
+ *   read          the crew's own reads of the listing: its manage view, its
+ *                 settings pages, its crew list
+ *   write         every change to the product: details, the stage, posts,
+ *                 milestones, seats, media, launches, publish/unpublish, the
+ *                 link grant, the published roster, discussion moderation
+ *   read_crew     the crew's own list of itself (names, roles, counts)
+ *   manage_crew   changing who does what — the role routes
+ *   read_private  the product's private threads and their notices
+ *   review        the curation gate, the operator's alone
+ */
+export type ListingAction = "read" | "write" | "read_crew" | "manage_crew" | "read_private" | "review";
+
+export const LISTING_ACTIONS: readonly ListingAction[] = ["read", "write", "read_crew", "manage_crew", "read_private", "review"];
 
 /** Parse the OPENPRODUCT_OPERATORS env var (comma-separated subject ids). */
 export function parseOperators(raw: string | undefined): Set<string> {
@@ -34,31 +48,46 @@ export function parseOperators(raw: string | undefined): Set<string> {
 }
 
 /**
- * The whole decision table, small enough to read:
+ * THE WHOLE DECISION TABLE (design §2.3), small enough to read. A row names
+ * who may take the action: which roles, and whether the operator allowlist
+ * does on its own.
  *
- *   read     owner · maintainer · operator
- *   write    owner · maintainer
- *   publish  owner · maintainer
- *   review   operator only — a maintainer must never wave their own listing
- *            through, which is the property OD's admin review carried and
- *            this table keeps.
+ *                  lead  maintainer  member  operator
+ *   read            ✓        ✓         ✓        ✓
+ *   write           ✓        ✓
+ *   read_crew       ✓        ✓         ✓
+ *   manage_crew     ✓
+ *   read_private    ✓        ✓         ✓
+ *   review                                      ✓
+ *
+ * `review` stays the operator's alone — a crew must never wave its own
+ * listing through, which is the property OD's admin review carried. An
+ * operator reads a listing (to review it) and writes nothing on it, and is
+ * not let into its private threads (the author's and the crew's) or its
+ * crew list (who is on a crew who has not published themselves is the
+ * crew's to know).
+ *
+ * DENY BY DEFAULT: no role (`null`), a role outside the three, an action
+ * outside the table and an unset operator list all refuse.
  */
+export const LISTING_DECISIONS: Readonly<Record<ListingAction, { roles: readonly ListingRole[]; operator: boolean }>> = {
+  read: { roles: ["lead", "maintainer", "member"], operator: true },
+  write: { roles: ["lead", "maintainer"], operator: false },
+  read_crew: { roles: ["lead", "maintainer", "member"], operator: false },
+  manage_crew: { roles: ["lead"], operator: false },
+  read_private: { roles: ["lead", "maintainer", "member"], operator: false },
+  review: { roles: [], operator: true },
+};
+
 export function listingActionAllowed(
   action: ListingAction,
   role: ListingRole | null,
   isOperator: boolean,
 ): boolean {
-  switch (action) {
-    case "read":
-      return role !== null || isOperator;
-    case "write":
-    case "publish":
-      return role !== null;
-    case "review":
-      return isOperator;
-    default:
-      return false;
-  }
+  const row = Object.prototype.hasOwnProperty.call(LISTING_DECISIONS, action) ? LISTING_DECISIONS[action] : undefined;
+  if (!row) return false;
+  if (row.operator && isOperator) return true;
+  return role !== null && row.roles.includes(role);
 }
 
 export interface ActorContext {

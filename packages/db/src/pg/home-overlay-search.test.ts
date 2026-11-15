@@ -173,9 +173,14 @@ describe("openproduct contributor home (OH0)", () => {
   // ─── openproduct-independence (OX4): the authorization list ───
 
   describe("listing maintainers — the authority handover's data half", () => {
-    it("createProfile records the creator as the listing's first owner", async () => {
+    it("createProfile records the creator as the listing's first Lead (OX4's owner, SC-3)", async () => {
       await seedDraft();
-      expect(await repo.getListingRole(PROFILE, ACTOR)).toBe("owner");
+      expect(await repo.getListingRole(PROFILE, ACTOR)).toBe("lead");
+      const row = await sql.execute<{ source: string; locked: boolean }>(
+        `SELECT source, locked FROM openproduct.listing_maintainers WHERE profile_id = $1 AND subject_id = $2`,
+        [PROFILE, ACTOR],
+      );
+      expect(row.rows[0]).toEqual({ source: "creator", locked: false });
       expect(await repo.getListingRole(PROFILE, ADMIN)).toBeNull();
     });
 
@@ -184,8 +189,8 @@ describe("openproduct contributor home (OH0)", () => {
       await repo.addListingMaintainer(PROFILE, ADMIN, "maintainer", ACTOR);
       expect(await repo.getListingRole(PROFILE, ADMIN)).toBe("maintainer");
       // Upsert: a re-grant with a different role changes it rather than duping.
-      await repo.addListingMaintainer(PROFILE, ADMIN, "owner", ACTOR);
-      expect(await repo.getListingRole(PROFILE, ADMIN)).toBe("owner");
+      await repo.addListingMaintainer(PROFILE, ADMIN, "lead", ACTOR);
+      expect(await repo.getListingRole(PROFILE, ADMIN)).toBe("lead");
       // The teardown unit holds: deleting the profile deletes the grants.
       await repo.deleteProfile(ORG, PROFILE);
       expect(await repo.getListingRole(PROFILE, ADMIN)).toBeNull();
@@ -200,30 +205,32 @@ describe("openproduct contributor home (OH0)", () => {
       expect(await repo.listMaintainedProfileIds(ORG_OTHER, ACTOR)).toEqual([]);
     });
 
-    it("the 1290 backfill made every existing creator an owner (proven by the migration having run)", async () => {
+    it("the 1290 backfill made every existing creator an owner, and 2290 made them Leads (proven by the migrations having run)", async () => {
       // The suite applies the real migrations including 1290; a profile
       // created THROUGH the repository exercises the code path, and the
       // migration's INSERT…SELECT is idempotent over it (ON CONFLICT).
       await seedDraft();
       const again = await sql.execute(
         `INSERT INTO openproduct.listing_maintainers (profile_id, subject_id, role, added_by)
-         SELECT p.id, p.created_by, 'owner', 'migration:1290' FROM openproduct.profiles p
+         SELECT p.id, p.created_by, 'lead', 'migration:1290' FROM openproduct.profiles p
          WHERE (p.created_by LIKE 'usr_%' OR p.created_by LIKE 'sp_%')
          ON CONFLICT (profile_id, subject_id) DO NOTHING`,
       );
       expect(again.rowCount).toBe(0);
-      expect(await repo.getListingRole(PROFILE, ACTOR)).toBe("owner");
+      expect(await repo.getListingRole(PROFILE, ACTOR)).toBe("lead");
     });
 
-    it("refuses a role outside the CHECK", async () => {
+    it("refuses a role outside the CHECK — OX4's owner included, now that it is lead", async () => {
       await seedDraft();
-      await expect(
-        sql.execute(
-          `INSERT INTO openproduct.listing_maintainers (profile_id, subject_id, role, added_by)
-           VALUES ($1, $2, 'admin', $2)`,
-          [PROFILE, ADMIN],
-        ),
-      ).rejects.toThrow();
+      for (const role of ["admin", "owner"]) {
+        await expect(
+          sql.execute(
+            `INSERT INTO openproduct.listing_maintainers (profile_id, subject_id, role, added_by)
+             VALUES ($1, $2, $3, $2)`,
+            [PROFILE, ADMIN, role],
+          ),
+        ).rejects.toThrow();
+      }
     });
   });
 });

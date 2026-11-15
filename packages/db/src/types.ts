@@ -302,6 +302,8 @@ export interface CrewOfRecord {
   slug: string;
   orgId: string;
   profileId: string;
+  /** SC-3 — their role on that crew. */
+  role: ListingRole;
 }
 
 /** OPR-3 — one pending request to join, as the product's crew reads it. */
@@ -1145,7 +1147,45 @@ export interface RecordApplicationInput {
 // list — what a visitor sees): who may edit and who is shown were never the
 // same fact.
 
-export type ListingRole = "owner" | "maintainer";
+// SC-3 (openproduct-stages-crew) — one role per person on the crew. OX4's
+// `owner` became `lead` (migration 2290); what each may do is the decision
+// table in core/src/authorize.ts.
+export type ListingRole = "lead" | "maintainer" | "member";
+
+/** How somebody came onto the crew (2290). */
+export type CrewSource = "creator" | "seat" | "orunbase";
+
+/** SC-3 — one person on a crew, as the crew's own list reads it. The name is
+ *  their own (`contributors`) or the crew's word for them on the public
+ *  roster (`published_maintainers`), never anything from the platform; the
+ *  handle only while their public page resolves. */
+export interface CrewPersonRecord {
+  subjectId: string;
+  role: ListingRole;
+  source: CrewSource;
+  locked: boolean;
+  displayName: string | null;
+  handle: string | null;
+  addedAt: string;
+}
+
+/** SC-3 — the crew list's page and the counts per role (of the whole crew,
+ *  never of the page or the search). */
+export interface CrewPageRecord {
+  people: CrewPersonRecord[];
+  counts: Record<ListingRole, number>;
+  /** People matching the search and filter, across every page. */
+  matching: number;
+  /** The offset of the next page, or null after the last. */
+  nextOffset: number | null;
+}
+
+/** SC-3 — what one role change did. `absent`: not on this crew. `locked`:
+ *  changed only on Orunbase. `last_lead`: it would leave no Lead. */
+export type CrewRoleChange =
+  | { outcome: "changed"; from: ListingRole; to: ListingRole }
+  | { outcome: "unchanged"; from: ListingRole; to: ListingRole }
+  | { outcome: "absent" | "locked" | "last_lead" };
 
 /** The platform's verified link attestation, stored whole (S4/S5, OX5). */
 export interface StoredLinkGrant {
@@ -1159,6 +1199,8 @@ export interface ListingMaintainerRecord {
   profileId: string;
   subjectId: string;
   role: ListingRole;
+  source: CrewSource;
+  locked: boolean;
   addedAt: string;
   addedBy: string;
 }
@@ -2006,6 +2048,20 @@ export interface OpenproductRepository {
    *  what else the workspace has drafted. */
   listMaintainedProfileIds(orgId: Uuid, subjectId: string): Promise<string[]>;
   addListingMaintainer(profileId: Uuid, subjectId: string, role: ListingRole, addedBy: string): Promise<void>;
+  /** SC-3 — an approved seat request puts its person on the crew as a
+   *  Member (`source` seat). Idempotent, and never a demotion: somebody
+   *  already on the crew keeps their role. True when a row was written. */
+  addSeatMember(profileId: Uuid, subjectId: string, addedBy: string): Promise<boolean>;
+  /** SC-3 — the crew's own list: Leads, then Maintainers, then Members, by
+   *  name; searched over names and handles, filtered by role, a page at a
+   *  time. The counts are the whole crew's. */
+  listCrew(
+    profileId: Uuid,
+    query: { q: string | null; role: ListingRole | null; offset: number; limit: number },
+  ): Promise<CrewPageRecord>;
+  /** SC-3 — change one person's role. Refuses a locked row and the change
+   *  that would leave the product with no Lead, in the same statement. */
+  setCrewRole(profileId: Uuid, subjectId: string, role: ListingRole): Promise<CrewRoleChange>;
   /** Everything this subject maintains, across every org — the studio's
    *  home read (OX5). */
   listProfilesMaintainedBy(subjectId: string): Promise<ProfileRecord[]>;

@@ -58,8 +58,8 @@ export interface LaunchHandlerDeps {
 }
 
 /**
- * A launch is a `publish`-class act: owner or maintainer, never an operator
- * acting alone.
+ * A launch is a `write`: a Lead or a Maintainer (SC-3), never a Member and
+ * never an operator acting alone.
  *
  * REUSING OX4'S TABLE RATHER THAN WRITING A FOURTH RULE. An operator can
  * review a listing — that is the curation gate — and reviewing is not
@@ -75,7 +75,7 @@ async function mayLaunch(
 ): Promise<boolean> {
   const operator = parseOperators(env.OPENPRODUCT_OPERATORS).has(actor.subjectId);
   const role = await deps.repo.getListingRole(profileId, actor.subjectId);
-  return listingActionAllowed("publish", role, operator);
+  return listingActionAllowed("write", role, operator);
 }
 
 /**

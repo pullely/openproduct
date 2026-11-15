@@ -354,11 +354,16 @@ describe("who is on the crew is asked of core, with the caller's token", () => {
   const overlay = (crew: unknown) => ({ body: { data: { overlay: { crew } } } });
 
   it("asks the overlay about exactly this slug and returns its ids", async () => {
-    const f = recordingFetch(() => overlay([{ slug: "ackstack", org: "org_9", profile: "opp_9" }]));
+    const f = recordingFetch(() => overlay([{ slug: "ackstack", org: "org_9", profile: "opp_9", role: "lead" }]));
     expect(await resolveCrew("tok", "ackstack", f.fetchImpl)).toEqual({
       kind: "ok",
-      crew: { slug: "ackstack", org: "org_9", profile: "opp_9" },
+      crew: { slug: "ackstack", org: "org_9", profile: "opp_9", role: "lead" },
     });
+    // SC-3 — a role the page does not know is the narrowest one.
+    for (const role of [undefined, "owner", 7]) {
+      const g = recordingFetch(() => overlay([{ slug: "ackstack", org: "org_9", profile: "opp_9", role }]));
+      expect(await resolveCrew("tok", "ackstack", g.fetchImpl)).toMatchObject({ kind: "ok", crew: { role: "member" } });
+    }
     expect(pathOf(f.calls[0]!)).toBe("/v1/openproduct/me/overlay?ids=ackstack");
     expect(f.calls[0]!.headers.authorization).toBe("Bearer tok");
   });

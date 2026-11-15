@@ -539,5 +539,14 @@ export const manifest: MigrationManifest = {
       description:
         "openproduct: profiles.stage widened to idea, building, stage or production (shipping backfilled to stage with a try link, else building), set by hand; stage_note, production_url, production_since, production_version, production_access, stage_changed_at and stage_changed_by (openproduct-stages-crew SC-2)",
     },
+    {
+      id: "2290_openproduct_crew_roles",
+      context: "openproduct",
+      path: "2290_openproduct_crew_roles/up.sql",
+      checksum:
+        "228ea3e21117f82df5c751022d421f9e13cf4403150e4b2d6e27555b025582be",
+      description:
+        "openproduct: listing_maintainers.role widened to lead, maintainer or member (owner backfilled to lead); source (creator, seat or orunbase; every existing row creator) and locked (only a lead, set by SC-4 for Orunbase admins) (openproduct-stages-crew SC-3)",
+    },
   ],
 };
