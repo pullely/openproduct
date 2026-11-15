@@ -118,14 +118,18 @@ export function TopPanel() {
                     // The hover warm in `AppLink` keeps the switch instant for
                     // the person who reaches for it.
                     prefetch={false}
+                    transition="section"
                     aria-current={current ? "page" : undefined}
-                    className={`relative flex h-[44px] shrink-0 items-center whitespace-nowrap rounded-[6px] text-[16px] tracking-[-0.005em] no-underline transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring ${
+                    className={`section-link relative flex h-[44px] shrink-0 items-center whitespace-nowrap rounded-[6px] text-[16px] tracking-[-0.005em] no-underline transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring ${
                       current
                         ? "font-medium text-foreground"
                         : "font-normal text-muted-foreground hover:text-foreground"
                     }`}
                   >
                     {section.label}
+                    {/* The current section's line (UF3): one named element,
+                        so a switch glides it from the old section to the new. */}
+                    {current ? <span aria-hidden="true" className="section-line" /> : null}
                   </AppLink>
                 );
               })}

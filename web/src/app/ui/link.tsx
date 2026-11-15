@@ -63,7 +63,7 @@ import { useRouter } from "next/navigation";
 import { PrefetchKind } from "next/dist/client/components/router-reducer/router-reducer-types";
 import type { ComponentPropsWithoutRef } from "react";
 
-import { navigationStarted } from "./navigation";
+import { navigationStarted, switchSection } from "./navigation";
 import { warmable } from "./warmable";
 
 // Derived from `next/link`'s own props rather than from `"a"`. Under
@@ -100,12 +100,19 @@ export interface AppLinkProps extends Omit<NextLinkProps, "href" | "prefetch"> {
    * never one per tab on screen — which is the line OPP0 drew against `true`.
    */
   warm?: "intent";
+  /**
+   * `"section"`: one of the three sections in the bar (openproduct-ui-fixes
+   * UF3). The move runs inside a view transition — content crossfades, the
+   * underline glides — instead of a plain swap. See `switchSection`.
+   */
+  transition?: "section";
 }
 
 export function AppLink({
   href,
   prefetch = false,
   warm: warmPolicy,
+  transition,
   onMouseEnter,
   onTouchStart,
   onNavigate,
@@ -130,7 +137,11 @@ export function AppLink({
       }}
       onNavigate={(event) => {
         onNavigate?.(event);
+        // After the first soft navigation the page is never "loading" again:
+        // the feed's first-view rise (globals.css) is for a fresh load only.
+        document.documentElement.dataset.navigated = "";
         navigationStarted(href, window.location.pathname + window.location.search);
+        if (transition === "section" && switchSection(() => router.push(href))) event.preventDefault();
       }}
       {...rest}
     />

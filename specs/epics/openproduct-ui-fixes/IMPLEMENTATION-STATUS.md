@@ -3,8 +3,8 @@
 | Milestone | Task | State | PR |
 |---|---|---|---|
 | UF1 — one layout on every page | UF-1 | Done | #20 |
-| UF2 — frosted centred navbar | UF-2 | In review | this PR |
-| UF3 — calm tab switching and feed loading | UF-3 | Not started | — |
+| UF2 — frosted centred navbar | UF-2 | Done | #21 |
+| UF3 — calm tab switching and feed loading | UF-3 | In review | this PR |
 
 ## From UF1
 
@@ -68,3 +68,31 @@ Departures from the design:
   not a plain icon; the signed-out one is a plain icon.
 - `--page-dot` stays defined (and its dark alias) with nothing drawing it,
   so the dark-ramp pairs keep their shape; removing it is a follow-up.
+
+## From UF3
+
+What landed:
+
+- No progress bar. `NavigationProgress` keeps the bookkeeping (a navigation
+  settles when its route lands, or on its timeout) and draws nothing.
+- The section switch: the three section links carry `transition="section"`;
+  `AppLink` runs the move through `switchSection` (ui/navigation.ts), a view
+  transition whose update is the navigation and which ends when the route
+  settles or after 700ms. The bar (`site-bar`) and the ground hold still,
+  `#content` (`site-content`) crossfades — 0.14s out, 0.22s in — and the
+  current section's 2px line (`section-line`) glides to the new one. Hovering
+  another section previews its line.
+- The feed's first view: on a fresh load its first posts rise in, 80ms apart;
+  after any soft navigation (`data-navigated` on `<html>`) they do not.
+- Reduced motion, or a browser without view transitions: the move simply
+  happens, with no animation.
+
+Departures from the design:
+
+- **No feed skeleton.** The feed is drawn on the server and arrives with
+  its posts; there is no moment in which they are loading, so a skeleton
+  would be a fake wait. A root `loading.tsx`, which would add one, is
+  forbidden here (it would make `/[slug]` stream and serve its 404s as 200).
+  The first-view rise stands in for the canvas's skeleton-then-rise.
+- The view transition is started from the section links only; other links
+  navigate as before.

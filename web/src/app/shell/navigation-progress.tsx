@@ -80,15 +80,12 @@ export function NavigationProgress() {
       <React.Suspense fallback={null}>
         <SearchSettles />
       </React.Suspense>
-      {nav.loading || finishing ? (
-        <div
-          aria-hidden="true"
-          data-navigation={nav.loading ? "loading" : "done"}
-          className={`pointer-events-none fixed inset-x-0 top-0 z-[60] h-[2px] origin-left bg-foreground/70 ${
-            nav.loading ? "animate-nav-progress" : "animate-nav-done"
-          }`}
-        />
-      ) : null}
+      {/* NO BAR (openproduct-ui-fixes UF3, design §3 rule 1): the owner did
+          not want a move between pages to feel like a reload, and a bar
+          racing across the top is the reload's own signal. What stays is the
+          bookkeeping: a navigation settles when its route lands, which is
+          also what ends a section switch's view transition. */}
+      {nav.loading || finishing ? <span hidden data-navigation={nav.loading ? "loading" : "done"} /> : null}
     </>
   );
 }
