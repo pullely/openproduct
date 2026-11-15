@@ -2,7 +2,7 @@
   "$comment": "Decision WC2-8 (openproduct-worldclass-v2, recorded in sourceplane/orun-cloud specs/epics/openproduct-worldclass-v2/README.md): the performance budget is the number measured on 9 September 2026, held in CI, on the wire. Its numbers moved here at the repository cut (openproduct-standalone OPN1), so wire-budget.test.ts reads nothing outside this repository. They move only by a recorded decision: append an amendment here and change WIRE in tests/web-perf/src/wire.mjs in the same commit.",
   "decision": "WC2-8",
   "bytesKB": 305,
-  "requests": 30,
+  "requests": 31,
   "thirdPartyHosts": 0,
   "amendments": [
     {
@@ -15,7 +15,9 @@
       "date": "2026-11-15",
       "fromKB": 276,
       "toKB": 305,
-      "why": "The top bar's face (openproduct-ui-fixes UF2). The owner chose Geist for the top bar on the design canvas; the bar is on every page, so every page fetches one more font file: geist-latin-wght.woff2, 29,288 bytes, the unmodified latin subset the site shipped before OPR1. 305 is 276 plus that file rounded up to the kilobyte, so every archetype keeps the margin it had. Requests are unchanged at 30: the most any walked page made after OPR2 was 27."
+      "why": "The top bar's face (openproduct-ui-fixes UF2). The owner chose Geist for the top bar on the design canvas; the bar is on every page, so every page fetches one more font file: geist-latin-wght.woff2, 29,288 bytes, the unmodified latin subset the site shipped before OPR1. 305 is 276 plus that file rounded up to the kilobyte, so every archetype keeps the margin it had. The file is also one more request on every page; the listing was at the 30-request limit (OPR1) and measured 31 with Geist, so the request limit moves by exactly that one, 30 → 31.",
+      "fromRequests": 30,
+      "toRequests": 31
     }
   ],
   "notes": [

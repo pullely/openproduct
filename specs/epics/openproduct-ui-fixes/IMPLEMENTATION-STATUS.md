@@ -57,8 +57,9 @@ What landed:
 - Feed card density (design §1 rule 7, moved from UF1): post head and body
   16px in from the card's edge, 10px between posts.
 
-Budgets, said plainly: the wire budget is amended 276 → 305 KB (one more
-font file on every page, 29,288 bytes); the font budget is five files
+Budgets, said plainly: the wire budget is amended 276 → 305 KB and 30 → 31
+requests (one more font file on every page, 29,288 bytes; the listing was at
+the request limit and measured 31); the font budget is five files
 (105,212 bytes, +6,076 headroom) and six with Lora's italic.
 
 Departures from the design:

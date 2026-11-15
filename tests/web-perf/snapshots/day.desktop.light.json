@@ -3,16 +3,16 @@
     "top": 0,
     "left": 0,
     "width": 1270,
-    "height": 60
+    "height": 56
   },
   "sectionBar": null,
   "main": {
-    "top": 60,
+    "top": 56,
     "left": 135,
     "width": 1000
   },
   "h1": {
-    "top": 174,
+    "top": 170,
     "left": 179,
     "width": 912,
     "height": 44
@@ -34,7 +34,7 @@
   "colours": {
     "body": "oklch(0.967 0.0082 91.48)",
     "text": "oklch(0.1908 0.002 106.59)",
-    "header": "oklch(1 0 0 / 0.62)",
+    "header": "rgba(0, 0, 0, 0)",
     "h1": "oklch(0.1908 0.002 106.59)"
   }
 }
