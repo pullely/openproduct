@@ -48,6 +48,15 @@ What landed:
   directory and Help wanted filter by each of them. "Try it" is the stage
   link; in production the button is "Open it", to the production link.
 
+Budgets, said plainly: the wire budget is amended 305 → 306 KB (the home
+measured 312,537 B, 217 over, with the stage colours and badge already split
+out of the shared bundle; recorded in `tests/web/src/wire-budget.decision.json`).
+The product page's JS limit moves 177,314 → 177,800 (measured 177,734; it had
+seven bytes of room) and its documents gain Where it runs (Updates 25,256 B,
+About 25,281, Crew 22,050, Talk 26,418), each limit moved by the same room it
+had, with the numbers beside them in `tests/web-perf/src/budgets.mjs`. The
+listing's phone snapshot moved 12px (the stage badge's pill), taken from CI.
+
 Departures from the design, said plainly:
 
 - **No post to the feed, so no comment box and no "Post it to the feed".**

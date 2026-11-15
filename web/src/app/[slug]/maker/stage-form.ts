@@ -187,6 +187,13 @@ export function moveLabel(from: ProductStage, to: ProductStage | null): string {
   return stageDirection(from, to) === "back" ? `Move back to ${word}` : `Move to ${word}`;
 }
 
+/** `Next: in production`, or null at the last stage (board `Product`, the
+ *  Stage row inside Edit details). */
+export function nextStageLine(stage: ProductStage): string | null {
+  const next = nextStage(stage);
+  return next ? `Next: ${PRODUCT_STAGE_LABELS[next].toLowerCase()}` : null;
+}
+
 /** `Moved to on stage.` — said in the Stage row once the step landed. */
 export function movedLine(to: ProductStage): string {
   return `Moved to ${PRODUCT_STAGE_LABELS[to].toLowerCase()}. The page catches up in a minute.`;

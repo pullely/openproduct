@@ -6,12 +6,11 @@ import { useRouter } from "next/navigation";
 import type { ProductStage } from "@openproduct/contracts";
 
 import { FOCUS } from "../../ui/design";
-import { nextStageLine } from "../../ui/stage";
-import { StageBadge } from "../../ui/stage-mark";
+import { StageBadge } from "../../ui/stage-badge";
 import type { StageStart } from "../where-it-runs";
 
 import type { Look } from "./details";
-import { CHANGE_STAGE_TITLE, movedLine } from "./stage-form";
+import { CHANGE_STAGE_TITLE, movedLine, nextStageLine } from "./stage-form";
 import { useMaker } from "./use-maker";
 
 /** The popup, fetched when Change stage is pressed: the crew only. */

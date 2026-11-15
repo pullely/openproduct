@@ -132,8 +132,17 @@ import { CARDS, SAMPLE_SLUG } from "./fixture.mjs";
  * 30-request limit (OPR1, above): measured with Geist it makes 31, so the
  * request limit moves by exactly that one, 30 → 31. Recorded in
  * tests/web/src/wire-budget.decision.json.
+ *
+ * openproduct-stages-crew SC-2 (2026-11-15) — AN AMENDMENT, 305 → 306 KB.
+ * The four stages' words and colours are read on every page (the header
+ * search says a product's stage, the feed's cards wear it): measured, the
+ * home went from 312,077 B to 312,537 B with the colours and the badge
+ * already moved out of the shared module — 217 bytes over 305 KB, where it
+ * had 243 to spare. 306 is the next kilobyte; the listing (308,406 B) and
+ * Products by upvotes (294,411 B) were under before and are under now.
+ * Recorded in tests/web/src/wire-budget.decision.json.
  */
-export const WIRE = { bytes: 305 * 1024, requests: 31, thirdPartyHosts: 0 };
+export const WIRE = { bytes: 306 * 1024, requests: 31, thirdPartyHosts: 0 };
 
 /** The audit's two viewports (audit-reference.md). */
 const VIEWPORTS = [

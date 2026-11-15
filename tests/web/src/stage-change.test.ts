@@ -23,6 +23,7 @@ import {
   initialStageValues,
   liveFieldError,
   moveLabel,
+  nextStageLine,
   requiredProgress,
   stageFormFields,
   stageOptions,
@@ -39,7 +40,7 @@ import {
 } from "@openproduct-web/app/[slug]/where-it-runs";
 import { readStageChange } from "@openproduct-web/app/posts/crew-forms";
 import { CREW_NOTICES, handleStageWrite, type CrewCall } from "@openproduct-web/app/posts/crew-handler";
-import { STAGE_TONE, nextStageLine } from "@openproduct-web/app/ui/stage";
+import { STAGE_TONE } from "@openproduct-web/app/ui/stage-tone";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const APP = resolve(__dirname, "../../../web/src/app");

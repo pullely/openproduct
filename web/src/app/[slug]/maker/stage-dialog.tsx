@@ -6,7 +6,7 @@ import { createPortal } from "react-dom";
 import type { ProductStage } from "@openproduct/contracts";
 
 import { BTN_INK, FOCUS } from "../../ui/design";
-import { STAGE_TONE } from "../../ui/stage";
+import { STAGE_TONE } from "../../ui/stage-tone";
 import type { StageStart } from "../where-it-runs";
 
 import { crewWrite, fieldError } from "./act";

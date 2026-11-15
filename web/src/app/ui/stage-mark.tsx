@@ -1,9 +1,8 @@
-import { PRODUCT_STAGE_MARKS, type MilestoneCounts, type ProductStage } from "@openproduct/contracts";
+import type { MilestoneCounts, ProductStage } from "@openproduct/contracts";
 
 import {
   IDEA_NEEDS_BUILDER,
   PROGRESS_SEGMENT_LIMIT,
-  STAGE_TONE,
   isBuilt,
   milestoneProgress,
   progressSegments,
@@ -11,6 +10,7 @@ import {
   stageWord,
   usableCounts,
 } from "./stage";
+import { STAGE_TONE } from "./stage-tone";
 
 /**
  * The milestone progress segments (openproduct-redesign OPR-3; boards `Feed`,
@@ -124,34 +124,6 @@ export function StageWord({ stage, className = "" }: { stage: ProductStage; clas
     >
       <span aria-hidden="true" className={`h-[7px] w-[7px] rounded-full ${tone.dot}`} />
       {stageWord(stage)}
-    </span>
-  );
-}
-
-/**
- * The stage badge (boards `Product`, `Stage`; SC-2): a 26px pill on the
- * stage's soft ground, an 8px dot and the mono word — `ON STAGE`, with
- * `· 3 OF 4` when `counts` has milestones to count. Beside the product's name
- * in the header, and in the Stage row inside Edit details.
- */
-export function StageBadge({
-  stage,
-  counts = null,
-  className = "",
-}: {
-  stage: ProductStage;
-  counts?: MilestoneCounts | null;
-  className?: string;
-}) {
-  const tone = STAGE_TONE[stage];
-  const progress = isBuilt(stage) ? milestoneProgress(counts) : null;
-  return (
-    <span
-      data-stage-badge={stage}
-      className={`inline-flex h-[26px] shrink-0 items-center gap-1.5 rounded-full px-2.5 font-mono text-mono-label uppercase ${tone.soft} ${tone.ink} ${className}`}
-    >
-      <span aria-hidden="true" className={`h-2 w-2 shrink-0 rounded-full ${tone.dot}`} />
-      {progress ? `${PRODUCT_STAGE_MARKS[stage]} · ${progress}` : PRODUCT_STAGE_MARKS[stage]}
     </span>
   );
 }

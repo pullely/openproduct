@@ -1,7 +1,7 @@
 import type { PublicProfile } from "@openproduct/contracts";
 
 import { CARD, FOCUS } from "../ui/design";
-import { STAGE_TONE } from "../ui/stage";
+import { STAGE_TONE } from "../ui/stage-tone";
 
 import { WHERE_IT_RUNS_LABEL, whereItRunsOfProfile, whereItRunsRows } from "./where-it-runs";
 

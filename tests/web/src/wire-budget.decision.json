@@ -1,7 +1,7 @@
 {
   "$comment": "Decision WC2-8 (openproduct-worldclass-v2, recorded in sourceplane/orun-cloud specs/epics/openproduct-worldclass-v2/README.md): the performance budget is the number measured on 9 September 2026, held in CI, on the wire. Its numbers moved here at the repository cut (openproduct-standalone OPN1), so wire-budget.test.ts reads nothing outside this repository. They move only by a recorded decision: append an amendment here and change WIRE in tests/web-perf/src/wire.mjs in the same commit.",
   "decision": "WC2-8",
-  "bytesKB": 305,
+  "bytesKB": 306,
   "requests": 31,
   "thirdPartyHosts": 0,
   "amendments": [
@@ -18,6 +18,12 @@
       "why": "The top bar's face (openproduct-ui-fixes UF2). The owner chose Geist for the top bar on the design canvas; the bar is on every page, so every page fetches one more font file: geist-latin-wght.woff2, 29,288 bytes, the unmodified latin subset the site shipped before OPR1. 305 is 276 plus that file rounded up to the kilobyte, so every archetype keeps the margin it had. The file is also one more request on every page; the listing was at the 30-request limit (OPR1) and measured 31 with Geist, so the request limit moves by exactly that one, 30 → 31.",
       "fromRequests": 30,
       "toRequests": 31
+    },
+    {
+      "date": "2026-11-15",
+      "fromKB": 305,
+      "toKB": 306,
+      "why": "The four stages (openproduct-stages-crew SC-2). Every page reads a product's stage through the header search and the feed's cards wear it, so the stage vocabulary grew from two words to four with their colours. With the colours and the stage badge moved into modules of their own (only the pages that draw them fetch them), the home measured 312,537 bytes (was 312,077): 217 bytes over 305 KB, where it had 243 to spare. 306 is the next kilobyte. The listing measured 308,406 bytes and Products by upvotes 294,411, both under before and after. Requests did not move."
     }
   ],
   "notes": [

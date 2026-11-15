@@ -176,8 +176,7 @@ describe("the header card is the board's", () => {
     expect(mark).toContain("<StageBadge stage={profile.stage} counts={profile.milestoneCounts} />");
     // The words are the shared stage module's, so no page spells its own.
     expect(page).not.toMatch(/SHIPPING ·|ON STAGE|IN PRODUCTION|\bOF \$\{/);
-    const marks = code("ui/stage-mark.tsx");
-    const badge = marks.slice(marks.indexOf("export function StageBadge("));
+    const badge = code("ui/stage-badge.tsx");
     expect(badge).toContain("PRODUCT_STAGE_MARKS[stage]");
     expect(badge).toContain("isBuilt(stage) ? milestoneProgress(counts) : null");
     expect(badge).toContain("${tone.soft} ${tone.ink}");

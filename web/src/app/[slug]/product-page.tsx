@@ -100,7 +100,7 @@ import { ProductTile } from "../ui/product-tile";
 import { ReportControl } from "../ui/report-control";
 import { SaveControl } from "../ui/save-control";
 import { IDEA_MARK, IDEA_NEEDS_BUILDER, milestoneProgress } from "../ui/stage";
-import { StageBadge } from "../ui/stage-mark";
+import { StageBadge } from "../ui/stage-badge";
 import { DelistedNote, ListingTombstone } from "../ui/tombstone";
 import { VoteBox } from "../ui/vote-box";
 

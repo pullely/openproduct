@@ -9,7 +9,8 @@
 //
 // ONE COLOUR PER STAGE (design §1.1; no red unless it is danger): lavender
 // for an idea, amber for building, slate for on stage, green for in
-// production — `STAGE_TONE`.
+// production — `STAGE_TONE`, in `stage-tone.ts`, so the header search's
+// bundle (which reads this file) does not carry the class strings.
 //
 // PURE, AND NO JSX: the web test lane is module-level, and the header search's
 // row model (`shell/palette-rows.ts`) imports this from a module that must
@@ -17,39 +18,17 @@
 
 import {
   PRODUCT_STAGE_LABELS,
-  isBuiltStage,
   isProductStage,
-  nextStage,
   type MilestoneCounts,
   type ProductStage,
 } from "@openproduct/contracts";
 
-/** The classes a stage is drawn in: its ink (text), its dot (a fill) and its
- *  soft ground (a pill's background). */
-export interface StageTone {
-  readonly ink: string;
-  readonly dot: string;
-  readonly soft: string;
-}
-
-export const STAGE_TONE: Readonly<Record<ProductStage, StageTone>> = {
-  idea: { ink: "text-idea", dot: "bg-idea", soft: "bg-idea-soft" },
-  building: { ink: "text-amber-ink", dot: "bg-amber", soft: "bg-amber-soft" },
-  stage: { ink: "text-version", dot: "bg-version", soft: "bg-version-soft" },
-  production: { ink: "text-success", dot: "bg-success", soft: "bg-success-soft" },
-};
-
 /** Whether the product has been built at all — every stage but an idea.
- *  These draw progress bars and the tabbed product page. */
+ *  These draw progress bars and the tabbed product page. Spelt here rather
+ *  than imported: this module is in every page's bundle (the header search
+ *  reads it), so it carries only what a word needs. */
 export function isBuilt(stage: ProductStage): boolean {
-  return isBuiltStage(stage);
-}
-
-/** `Next: in production`, or null at the last stage (board `Product`, the
- *  Stage row inside Edit details). */
-export function nextStageLine(stage: ProductStage): string | null {
-  const next = nextStage(stage);
-  return next ? `Next: ${PRODUCT_STAGE_LABELS[next].toLowerCase()}` : null;
+  return stage !== "idea";
 }
 
 /** `On stage` / `Idea` — the word a row wears. */
