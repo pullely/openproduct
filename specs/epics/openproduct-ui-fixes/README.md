@@ -3,7 +3,7 @@
 | | |
 |---|---|
 | Epic | `openproduct-ui-fixes` (EP-4) |
-| Status | In progress |
+| Status | Done when this PR (UF3, the last milestone) lands: UF1 #20, UF2 #21, UF3 |
 | Came from | Owner requests on 2026-11-15, after `openproduct-redesign` closed at OPR3 |
 | Design | `design.md`; boards in `boards/` (the canvas at version 89) |
 
