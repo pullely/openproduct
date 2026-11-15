@@ -25,11 +25,18 @@
 
 import type { OpenproductRepository } from "@openproduct/db";
 
-import { decisionPublication } from "@openproduct/contracts";
+import {
+  decisionPublication,
+  isProjectEventType,
+  readProjectDeploy,
+  readProjectRoster,
+  type ProjectDeploy,
+  type ProjectRoster,
+} from "@openproduct/contracts";
 
 import type { Env } from "../env.js";
 import { errorResponse, successResponse, validationError } from "../http.js";
-import { parseOrgPublicId } from "../ids.js";
+import { generateId, parseOrgPublicId, parseProjectPublicId, type Uuid } from "../ids.js";
 
 export interface SeamEventDeps {
   repo: Pick<
@@ -229,4 +236,167 @@ export async function handleSeamWorkspaceEvent(
     });
   }
   return successResponse({ revoked: revoked.length }, requestId, 200);
+}
+
+// ── the project events (SC-4, seam S14) ────────────────────────────────────
+
+export interface SeamProjectDeps {
+  repo: Pick<
+    OpenproductRepository,
+    | "listProfilesLinkedToProject"
+    | "getProductSync"
+    | "applyCrewRoster"
+    | "recordRosterSync"
+    | "upsertProductDeploy"
+    | "appendAudit"
+  >;
+  generateId?: () => string;
+  now?: () => Date;
+  /** Where an ignored roster is said. The default is the worker's log. */
+  log?: (entry: { reason: "empty" | "no_admin"; eventId: string }) => void;
+}
+
+/** Why a roster was not applied to a listing. */
+type RosterSkip = "stale" | "duplicate";
+
+const ACTOR = { actorType: "system", actorId: "platform-seam" } as const;
+
+/**
+ * POST /internal/openproduct/seam/project-event — the platform's project
+ * deliveries (design §3.1), applied to EVERY listing whose stored link grant
+ * names the project (`listProfilesLinkedToProject`; a listing without a grant
+ * gets nothing, and an unknown project answers `{recorded: false}`, the S6
+ * fail-soft).
+ *
+ * `project.roster` — a full snapshot; the crew becomes it (design §3.1):
+ *
+ *   - IGNORED when older than the last applied roster (`issuedAt`) or the
+ *     same event again (`eventId`): a late or repeated delivery never rolls
+ *     the crew back.
+ *   - IGNORED, AND SAID, when it lists nobody, or no admin. The platform
+ *     sends nothing when a read fails and every workspace has an owner, so
+ *     either means something went wrong upstream — and applying it would
+ *     empty the crew or leave it with no Lead. These are the safety nets.
+ *   - Otherwise `applyCrewRoster` (one statement): add the missing at their
+ *     access's role, re-lock admins as Lead, unlock former admins, keep every
+ *     chosen role, remove the unlisted (consent edges retired). Each change
+ *     is audited in the local log with its roles and NO subject id — the
+ *     crew route's rule (a subject id in a payload is one the registry could
+ *     not erase). Then the roster is recorded, forward only.
+ *
+ * `project.deploy` — upsert per environment, newer `deployedAt` wins, the
+ * first deploy kept. Not audited: a deploy is the platform's fact, not an act
+ * on the listing, and the row itself is the record.
+ *
+ * ORDER: the roster sent when the link grant is minted can arrive before this
+ * side stored the grant; it then finds no listing and is dropped. The next
+ * change, or the daily sweep, heals it (said in the epic's status).
+ */
+export async function handleSeamProjectEvent(
+  _env: Env,
+  request: Request,
+  requestId: string,
+  deps: SeamProjectDeps,
+): Promise<Response> {
+  let body: Record<string, unknown>;
+  try {
+    body = (await request.json()) as Record<string, unknown>;
+  } catch {
+    return errorResponse("bad_request", "Invalid JSON body", 400, requestId);
+  }
+  if (body.seam !== SEAM_VERSION) {
+    return validationError(requestId, { seam: [`Must be "${SEAM_VERSION}"`] });
+  }
+  if (!isProjectEventType(body.type)) {
+    return validationError(requestId, { type: ["Unknown seam event type"] });
+  }
+  const eventId = typeof body.eventId === "string" && body.eventId.length > 0 && body.eventId.length <= 128 ? body.eventId : null;
+  if (!eventId) return validationError(requestId, { eventId: ["Required event id"] });
+
+  const read = body.type === "project.roster" ? readProjectRoster(body.data) : readProjectDeploy(body.data);
+  if (!read.ok) return validationError(requestId, read.fields);
+  const orgId = parseOrgPublicId(read.value.orgId);
+  const projectId = parseProjectPublicId(read.value.projectId);
+  if (!orgId) return validationError(requestId, { orgId: ["Required org public id"] });
+  if (!projectId) return validationError(requestId, { projectId: ["Required project public id"] });
+
+  const listings = await deps.repo.listProfilesLinkedToProject(orgId, projectId);
+  if (listings.length === 0) return successResponse({ recorded: false }, requestId, 200);
+  const now = (deps.now ?? (() => new Date()))().toISOString();
+
+  if (body.type === "project.deploy") {
+    const deploy = read.value as ProjectDeploy;
+    let applied = 0;
+    for (const listing of listings) {
+      const won = await deps.repo.upsertProductDeploy(
+        listing.id as Uuid,
+        { environment: deploy.environment, url: deploy.url, version: deploy.version, runRef: deploy.runRef, deployedAt: deploy.deployedAt },
+        now,
+      );
+      if (won) applied += 1;
+    }
+    return successResponse({ recorded: true, listings: listings.length, applied }, requestId, 200);
+  }
+
+  const roster = read.value as ProjectRoster;
+  const log =
+    deps.log ??
+    ((entry: { reason: "empty" | "no_admin"; eventId: string }) =>
+      console.warn(JSON.stringify({ level: "warn", msg: "seam_roster_ignored", reason: entry.reason, eventId: entry.eventId })));
+  const ignored: "empty" | "no_admin" | null =
+    roster.members.length === 0 ? "empty" : roster.members.some((member) => member.access === "admin") ? null : "no_admin";
+  if (ignored) {
+    log({ reason: ignored, eventId });
+    return successResponse({ recorded: false, ignored }, requestId, 200);
+  }
+
+  const outcomes: Array<{ applied: boolean; skipped?: RosterSkip; changes?: number }> = [];
+  for (const listing of listings) {
+    const profileId = listing.id as Uuid;
+    const last = await deps.repo.getProductSync(profileId);
+    if (last?.rosterEventId === eventId) {
+      outcomes.push({ applied: false, skipped: "duplicate" });
+      continue;
+    }
+    if (last?.rosterIssuedAt && Date.parse(last.rosterIssuedAt) > Date.parse(roster.issuedAt)) {
+      outcomes.push({ applied: false, skipped: "stale" });
+      continue;
+    }
+    const changes = await deps.repo.applyCrewRoster(profileId, roster.members, now);
+    for (const change of changes) {
+      const words =
+        change.change === "added"
+          ? { type: "openproduct.crew.synced_added", description: `joined the crew from Orunbase as ${change.role}`, payload: { role: change.role, locked: change.locked } }
+          : change.change === "removed"
+            ? { type: "openproduct.crew.synced_removed", description: `left the crew: no longer on the Orunbase project (was ${change.role})`, payload: { role: change.role } }
+            : {
+                type: `openproduct.crew.synced_${change.change}`,
+                description: `a crew role ${change.change === "relocked" ? "locked by" : "unlocked on"} Orunbase: ${change.from} to ${change.role}`,
+                payload: { from: change.from, to: change.role },
+              };
+      await deps.repo.appendAudit({
+        id: (deps.generateId ?? generateId)() as never,
+        orgId,
+        profileId,
+        ...ACTOR,
+        type: words.type,
+        description: `openproduct ${listing.slug}: ${words.description}`,
+        payload: { slug: listing.slug, ...words.payload },
+        requestId,
+        occurredAt: now,
+      });
+    }
+    await deps.repo.recordRosterSync(profileId, { issuedAt: roster.issuedAt, eventId, at: now });
+    outcomes.push({ applied: true, changes: changes.length });
+  }
+  return successResponse(
+    {
+      recorded: outcomes.some((o) => o.applied),
+      listings: listings.length,
+      applied: outcomes.filter((o) => o.applied).length,
+      skipped: outcomes.filter((o) => !o.applied).map((o) => o.skipped),
+    },
+    requestId,
+    200,
+  );
 }

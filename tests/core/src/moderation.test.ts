@@ -252,6 +252,9 @@ describe("a removed listing renders a tombstone, not a 404 (TS-3)", () => {
       },
       // MD2 — the media rows; none on these fixtures.
       // OPR-3 — the milestones; none on these fixtures.
+      async listProductDeploys() {
+        return [];
+      },
       async listPublicProductMilestones() {
         return [];
       },

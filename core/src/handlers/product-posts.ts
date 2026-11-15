@@ -117,6 +117,8 @@ export interface ProductPostHandlerDeps {
     | "setProductMilestoneShipped"
     // SC-2 — the stage, and what the step to Building writes beside it.
     | "setProductStage"
+    // SC-4 — a value equal to the synced one is stored as "follow the sync".
+    | "listProductDeploys"
     | "updateProfile"
     | "listPendingApplicationsForProfile"
     // OPR-4 — the crew's private threads, through the signed-in read.
@@ -1085,17 +1087,30 @@ export async function handleChangeStage(
   const change = result.change;
 
   const at = now.toISOString();
+  // SC-4 — USE SYNCED, as stored (design §3.3). The popup pre-fills each
+  // field a deploy can fill with the synced value, and "Use synced" puts it
+  // back; a value that arrives EQUAL to what Orunbase reported is stored as
+  // null — the crew set nothing of their own — so the page keeps following
+  // the deploys. A value the crew changed is theirs and wins until then.
+  const deploys =
+    change.direction === "forward" && (change.to === "stage" || change.to === "production")
+      ? await deps.repo.listProductDeploys(profileId)
+      : [];
+  const stageDeploy = deploys.find((d) => d.environment === "stage");
+  const productionDeploy = deploys.find((d) => d.environment === "production");
+  const unlessSynced = (value: string | null, synced: string | null | undefined): string | null =>
+    value !== null && synced && value === synced ? null : value;
   const moved = await deps.repo.setProductStage(profileId, {
     from: change.from,
     to: change.to,
     ...(change.direction === "forward" && change.to === "stage"
-      ? { tryUrl: change.stageUrl, stageNote: change.tryWhat }
+      ? { tryUrl: unlessSynced(change.stageUrl, stageDeploy?.url), stageNote: change.tryWhat }
       : {}),
     ...(change.direction === "forward" && change.to === "production"
       ? {
-          productionUrl: change.productionUrl,
-          productionSince: change.liveSince,
-          productionVersion: change.version,
+          productionUrl: unlessSynced(change.productionUrl, productionDeploy?.url),
+          productionSince: unlessSynced(change.liveSince, productionDeploy?.firstDeployedAt.slice(0, 10)),
+          productionVersion: unlessSynced(change.version, productionDeploy?.version),
           productionAccess: change.access,
         }
       : {}),

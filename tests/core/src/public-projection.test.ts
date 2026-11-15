@@ -200,6 +200,9 @@ function publicDeps(profile: ProfileRecord | null = storedProfile()): PublicHand
       },
       // MD2 — the media rows; none on these fixtures.
       // OPR-3 — the milestones; none on these fixtures.
+      async listProductDeploys() {
+        return [];
+      },
       async listPublicProductMilestones() {
         return [];
       },
@@ -776,6 +779,9 @@ describe("I9 — an observed value never reaches the wire without its moment", (
           },
           // MD2 — the media rows; none on these fixtures.
           // OPR-3 — the milestones; none on these fixtures.
+          async listProductDeploys() {
+            return [];
+          },
           async listPublicProductMilestones() {
             return [];
           },
@@ -837,6 +843,9 @@ describe("I9 — an observed value never reaches the wire without its moment", (
           },
           // MD2 — the media rows; none on these fixtures.
           // OPR-3 — the milestones; none on these fixtures.
+          async listProductDeploys() {
+            return [];
+          },
           async listPublicProductMilestones() {
             return [];
           },

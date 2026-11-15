@@ -3,6 +3,7 @@
 //   GET  …/orgs/{org}/profiles/{id}/crew?q=&role=&cursor=   read_crew
 //   PUT  …/orgs/{org}/profiles/{id}/crew/{subjectId}        manage_crew
 //   PUT  …/orgs/{org}/profiles/{id}/crew                    manage_crew
+//   GET  …/orgs/{org}/profiles/{id}/orunbase                read_crew (SC-4)
 //
 // WHO: the decision table in `authorize.ts` — anybody on the crew reads the
 // list; only a Lead changes a role. The listing must be this workspace's
@@ -41,18 +42,27 @@ import {
   type CrewList,
   type CrewRole,
   type CrewRolesAnswer,
+  type OrunbaseSync,
+  type SyncedDeploy,
 } from "@openproduct/contracts";
 
 import type { ActorContext } from "../authorize.js";
 import type { Env } from "../env.js";
 import { errorResponse, successResponse, validationError } from "../http.js";
-import { generateId, type Uuid } from "../ids.js";
+import { generateId, orgPublicId, type Uuid } from "../ids.js";
 import { authorizeFor, type ProfileHandlerDeps } from "./profiles.js";
 
 export interface CrewHandlerDeps {
   repo: Pick<
     OpenproductRepository,
-    "getProfileForOrg" | "getListingRole" | "listCrew" | "setCrewRole" | "appendAudit"
+    | "getProfileForOrg"
+    | "getListingRole"
+    | "listCrew"
+    | "setCrewRole"
+    | "appendAudit"
+    // SC-4 — the Orunbase card.
+    | "getProductSync"
+    | "listProductDeploys"
   >;
   now?: () => Date;
   generateId?: () => Uuid;
@@ -219,6 +229,48 @@ export async function handleSetCrewRoles(
     changed,
     counts: await countsOf(deps, profileId),
     refused,
+  };
+  return successResponse(answer, requestId);
+}
+
+/**
+ * GET …/orunbase — the crew's Orunbase card (SC-4, design §3.4): when the
+ * listing last synced, how many are on the crew, the last stage and
+ * production deploys (with the values a deploy reported even where the
+ * crew's own win on the page — the stage form shows both), and the
+ * workspace's public id for "Manage on Orunbase". Anybody on the crew;
+ * never cached, never in the public document.
+ */
+export async function handleOrunbaseSync(
+  env: Env,
+  requestId: string,
+  actor: ActorContext,
+  orgId: Uuid,
+  profileId: Uuid,
+  deps: CrewHandlerDeps,
+): Promise<Response> {
+  const door = await crewDoor(env, actor, "read_crew", orgId, profileId, deps, requestId);
+  if (!door.ok) return door.response;
+  const [sync, deploys, counts] = await Promise.all([
+    deps.repo.getProductSync(profileId),
+    deps.repo.listProductDeploys(profileId),
+    countsOf(deps, profileId),
+  ]);
+  // Field by field, never spread from the record (OD3).
+  const deployOf = (environment: "stage" | "production"): SyncedDeploy | null => {
+    const row = deploys.find((d) => d.environment === environment);
+    return row
+      ? { url: row.url, version: row.version, runRef: row.runRef, deployedAt: row.deployedAt, firstDeployedAt: row.firstDeployedAt }
+      : null;
+  };
+  const linked = door.profile.linkGrant !== null;
+  const answer: OrunbaseSync = {
+    linked,
+    syncedAt: sync?.syncedAt ?? null,
+    crew: counts.lead + counts.maintainer + counts.member,
+    stage: deployOf("stage"),
+    production: deployOf("production"),
+    workspaceRef: linked ? orgPublicId(door.profile.orgId) : null,
   };
   return successResponse(answer, requestId);
 }

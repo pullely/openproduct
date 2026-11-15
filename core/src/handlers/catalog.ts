@@ -53,7 +53,7 @@ import type { Env } from "../env.js";
 import { orgPublicId } from "../ids.js";
 import { errorResponse, successResponse, validationError } from "../http.js";
 import { readCardsPage, type CardsPage, type CardsPageRepo } from "./cards-page.js";
-import { launchHistoryOf, placementOf } from "./public.js";
+import { launchHistoryOf, placementOf, whereItRunsDeploysOf } from "./public.js";
 import { snapshotBaseline, snapshotDay, snapshotFields } from "./snapshots.js";
 
 export interface CatalogHandlerDeps {
@@ -67,6 +67,8 @@ export interface CatalogHandlerDeps {
     | "countPublishedWindows"
     | "getPublicProfile"
     | "listPublicRoleOpenings"
+    // SC-4 — the synced deploys Where it runs falls back to.
+    | "listProductDeploys"
     // UV1 — I8 says the API returns everything the website shows, and the
     // product page shows a placement. Same two reads the website's own
     // projection makes.
@@ -385,7 +387,7 @@ export async function handleCatalogProduct(
 
   const now = (deps.now ?? (() => new Date()))();
   const computedAt = now.toISOString();
-  const [openings, maintainers, metrics, media, placement, baseline, followerCounts, launches, milestoneRows] =
+  const [openings, maintainers, metrics, media, placement, baseline, followerCounts, launches, milestoneRows, deploys] =
     await Promise.all([
     deps.repo.listPublicRoleOpenings(profile.id),
     deps.repo.listPublicMaintainers(profile.id),
@@ -405,6 +407,8 @@ export async function handleCatalogProduct(
     launchHistoryOf(deps.repo, profile.id),
     // OPR-3 — the milestones, in the same round.
     deps.repo.listPublicProductMilestones(profile.id),
+    // SC-4 — the synced deploys Where it runs falls back to.
+    deps.repo.listProductDeploys(profile.id as never),
   ]);
   // The same four fields the website's projection carries, and no more.
   const milestones = milestoneRows.map((m) => ({
@@ -498,7 +502,7 @@ export async function handleCatalogProduct(
     // the crew said where it runs and nothing here checked that it answers.
     // Who set a row is named through the public roster, as on the page.
     whereItRuns: authored(
-      whereItRunsOf(profile, (subjectId) => {
+      whereItRunsOf({ ...profile, deploys: whereItRunsDeploysOf(deploys) }, (subjectId) => {
         const known = maintainers.find((m) => m.subjectId === subjectId);
         return known ? { name: known.displayName, handle: known.handle } : null;
       }),

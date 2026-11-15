@@ -548,5 +548,14 @@ export const manifest: MigrationManifest = {
       description:
         "openproduct: listing_maintainers.role widened to lead, maintainer or member (owner backfilled to lead); source (creator, seat or orunbase; every existing row creator) and locked (only a lead, set by SC-4 for Orunbase admins) (openproduct-stages-crew SC-3)",
     },
+    {
+      id: "2295_openproduct_orunbase_sync",
+      context: "openproduct",
+      path: "2295_openproduct_orunbase_sync/up.sql",
+      checksum:
+        "9ab006d31ab190c841a4b6c147b8b54b92686a56cda990e06432bb01e2c9b5fc",
+      description:
+        "openproduct: product_deploys (the last stage and production deploy per listing from seam S14, newer deployed_at wins, first_deployed_at kept), product_syncs (the last applied roster's issuedAt and event id, and when anything last synced) and listing_maintainers.synced_name, crew-only (openproduct-stages-crew SC-4)",
+    },
   ],
 };
