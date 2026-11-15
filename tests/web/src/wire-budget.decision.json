@@ -1,7 +1,7 @@
 {
   "$comment": "Decision WC2-8 (openproduct-worldclass-v2, recorded in sourceplane/orun-cloud specs/epics/openproduct-worldclass-v2/README.md): the performance budget is the number measured on 9 September 2026, held in CI, on the wire. Its numbers moved here at the repository cut (openproduct-standalone OPN1), so wire-budget.test.ts reads nothing outside this repository. They move only by a recorded decision: append an amendment here and change WIRE in tests/web-perf/src/wire.mjs in the same commit.",
   "decision": "WC2-8",
-  "bytesKB": 276,
+  "bytesKB": 305,
   "requests": 30,
   "thirdPartyHosts": 0,
   "amendments": [
@@ -10,6 +10,12 @@
       "fromKB": 250,
       "toKB": 276,
       "why": "The Next 16 upgrade. Next.js 15 left its support window and the OpenNext adapter stopped building it; 16.4.2's runtime (its router and the React it vendors) costs every page 26.5 KB more on the wire, and no app code grew. 276 is 250 plus exactly that rise, so every archetype keeps the margin it had."
+    },
+    {
+      "date": "2026-11-15",
+      "fromKB": 276,
+      "toKB": 305,
+      "why": "The top bar's face (openproduct-ui-fixes UF2). The owner chose Geist for the top bar on the design canvas; the bar is on every page, so every page fetches one more font file: geist-latin-wght.woff2, 29,288 bytes, the unmodified latin subset the site shipped before OPR1. 305 is 276 plus that file rounded up to the kilobyte, so every archetype keeps the margin it had. Requests are unchanged at 30: the most any walked page made after OPR2 was 27."
     }
   ],
   "notes": [

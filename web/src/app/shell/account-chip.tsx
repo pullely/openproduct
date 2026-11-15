@@ -210,7 +210,7 @@ export function AccountChip() {
           aria-label="Sign in"
           // 40px in the header, 44px below `sm` — the finger-first floor
           // every target on a phone takes (XP4).
-          className="grid h-[40px] w-[40px] shrink-0 place-items-center rounded-full bg-card text-muted-foreground transition-colors hover:text-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring max-sm:h-[44px] max-sm:w-[44px]"
+          className="grid h-[40px] w-[40px] shrink-0 place-items-center rounded-full text-muted-foreground transition-colors hover:text-foreground max-sm:bg-card focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring max-sm:h-[44px] max-sm:w-[44px]"
         >
           <ProfileIcon className="h-5 w-5" />
         </a>

@@ -1,0 +1,28 @@
+# UF-2: milestone UF2, the frosted centred navbar. The 56px bar in Geist with
+# centred plain-text sections, a frosted band that melts into the page and
+# deepens on scroll, ivory with the amber glow and no dot grid. The font and
+# wire budgets move by a recorded amendment for Geist.
+# The file is the contract; the task itself lives in Orunbase.
+apiVersion: orun.io/v1
+kind: TaskContract
+metadata:
+  name: UF-2
+  title: "UF2: frosted centred navbar"
+spec:
+  goal: The top bar is the calm frosted bar with centred plain-text sections, set in self-hosted Geist, over an ivory page with the amber glow and no dots.
+  affects:
+    - web/src/**
+    - tests/web/**
+    - tests/web-perf/**
+    - specs/epics/openproduct-ui-fixes/**
+    - tasks/**
+  deps:
+    - UF-1
+  doneWhen:
+    - Desktop bar is 56px tall with logo left, sections as plain text centred, search, bell and account right
+    - The current section is ink and medium weight; others grey; no pills or capsule
+    - Bar text is Geist from a committed woff2 with its OFL licence; font and wire budgets updated with reasons
+    - A frosted band blurs content under the bar and fades out within 14px below it; it deepens once scrolled
+    - No dot grid remains; the page is ivory with the soft amber glow at the top
+    - Web tests and web-perf lanes pass in CI
+  gates: []

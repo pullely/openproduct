@@ -124,7 +124,15 @@ import { CARDS, SAMPLE_SLUG } from "./fixture.mjs";
  * no amendment for OPR2 either: a note in the decision file, with these
  * numbers.
  */
-export const WIRE = { bytes: 276 * 1024, requests: 30, thirdPartyHosts: 0 };
+ *
+ * openproduct-ui-fixes UF2 (2026-11-15) — AN AMENDMENT, 276 → 305 KB. The
+ * owner chose Geist for the top bar, which is on every page: one more font
+ * file, 29,288 bytes (28.6 KB), on every route. 305 is 276 plus that file,
+ * rounded up to the kilobyte, so every page keeps the margin it had. Requests
+ * stay at 30: the most any walked page made after OPR2 was 27, and the file
+ * is one more. Recorded in tests/web/src/wire-budget.decision.json.
+ */
+export const WIRE = { bytes: 305 * 1024, requests: 30, thirdPartyHosts: 0 };
 
 /** The audit's two viewports (audit-reference.md). */
 const VIEWPORTS = [

@@ -91,6 +91,11 @@ export function SectionBar() {
                   }`}
                 >
                   <span className="relative inline-flex">
+                    {/* The current tab's mark (openproduct-ui-fixes UF2): a
+                        short ink line above its glyph, no pill. */}
+                    {current ? (
+                      <span aria-hidden="true" className="absolute -top-[7px] left-1/2 h-[2px] w-[18px] -translate-x-1/2 rounded-full bg-foreground" />
+                    ) : null}
                     <SectionGlyph icon={tab.icon} className="h-[22px] w-[22px] shrink-0" />
                     {marked ? <UnreadDot className="-right-[3px] -top-[2px]" /> : null}
                   </span>

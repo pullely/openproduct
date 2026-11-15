@@ -30,7 +30,7 @@ export function PostFooter({ post, returnTo }: { post: PublicProductPost; return
     <>
       <div
         data-post-summary
-        className="flex items-center justify-between gap-2.5 px-5 pt-3.5 text-[13px] text-muted-foreground empty:hidden max-sm:px-[14px] max-sm:pt-2"
+        className="flex items-center justify-between gap-2.5 px-4 pt-3 text-[13px] text-muted-foreground empty:hidden max-sm:px-[14px] max-sm:pt-2"
       >
         <ReactionSummary postId={post.id} reactions={safeCounts(post.reactions)} />
         {comments ? (

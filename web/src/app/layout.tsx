@@ -79,6 +79,21 @@ const plexMono = localFont({
   variable: "--font-plex-mono",
 });
 
+// UF2 — THE BAR'S OWN FACE (openproduct-ui-fixes design §2 rule 3). The owner
+// chose Geist for the top bar: the wordmark, the sections and the search.
+// Everything else stays Hanken Grotesk. One variable file across 400–600,
+// the unmodified latin subset this site shipped before OPR1 (restored from
+// its history). The bar is on every page, so every page fetches it: the font
+// and wire budgets moved by a recorded amendment for it
+// (tests/web/src/wire-budget.decision.json, 2026-11-15).
+const geist = localFont({
+  src: "../fonts/geist-latin-wght.woff2",
+  weight: "400 600",
+  style: "normal",
+  display: "swap",
+  variable: "--font-geist",
+});
+
 
 /**
  * The account control's shape, before the first paint.
@@ -203,7 +218,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       lang="en"
       suppressHydrationWarning
       data-accent={ACCENT}
-      className={`${hanken.variable} ${lora.variable} ${loraItalic.variable} ${plexMono.variable}`}
+      className={`${hanken.variable} ${lora.variable} ${loraItalic.variable} ${plexMono.variable} ${geist.variable}`}
     >
       <body className="flex min-h-dvh flex-col bg-background text-foreground antialiased">
         {/* esbuild's `keepNames` helper (`__name`) can be referenced by inline

@@ -80,7 +80,7 @@ export function FeedPosts({
 
   return (
     <>
-      <ol className="m-0 flex list-none flex-col gap-3.5 p-0 max-sm:gap-3" data-feed-posts>
+      <ol className="m-0 flex list-none flex-col gap-2.5 p-0 max-sm:gap-3" data-feed-posts>
         {children}
         {appended.length > 0 ? (
           <React.Suspense fallback={null}>

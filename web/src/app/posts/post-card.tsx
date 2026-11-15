@@ -207,7 +207,7 @@ function PostBody(props: PostCardProps & { variant: PostCardVariant }) {
 export function PostHead({ post, returnTo }: { post: PublicProductPost; returnTo: string }) {
   const href = `/${post.product.slug}`;
   return (
-    <div data-post-head className="flex items-center gap-3 px-5 pb-2.5 pt-[18px] max-sm:gap-2.5 max-sm:px-[14px] max-sm:pb-1.5 max-sm:pt-[14px]">
+    <div data-post-head className="flex items-center gap-3 px-4 pb-2 pt-3.5 max-sm:gap-2.5 max-sm:px-[14px] max-sm:pb-1.5 max-sm:pt-[14px]">
       <AppLink href={href} tabIndex={-1} aria-hidden="true" className="shrink-0">
         <ProductTile slug={post.product.slug} thumbnail={post.product.logo} size={44} />
       </AppLink>
@@ -361,7 +361,7 @@ function FeatureBody({ post, variant, milestoneCounts, headingLevel }: PostCardP
   const screenshot = blockLink(post.blocks, "screenshot");
   const demo = blockLink(post.blocks, "demo");
   return (
-    <div className={compact ? "contents" : "flex flex-col gap-3 px-[22px] pt-1 max-sm:gap-2 max-sm:px-[14px]"}>
+    <div className={compact ? "contents" : "flex flex-col gap-3 px-4 pt-1 max-sm:gap-2 max-sm:px-[14px]"}>
       <div className="flex items-center gap-2.5 max-sm:gap-2">
         <CheckBadge />
         <div className="flex min-w-0 flex-col">
@@ -480,7 +480,7 @@ function IdeaBody({ post, variant, seatHref, headingLevel }: PostCardProps & { v
   const seats = blockText(post.blocks, "seats");
   const evidence = blockLink(post.blocks, "evidence");
   return (
-    <div className={compact ? "contents" : "flex flex-col gap-3.5 px-6 pt-1 max-sm:gap-2.5 max-sm:px-4"}>
+    <div className={compact ? "contents" : "flex flex-col gap-3.5 px-[18px] pt-1 max-sm:gap-2.5 max-sm:px-4"}>
       <span data-stage-mark="idea" className="font-mono text-mono-label uppercase text-idea">
         {IDEA_MARK}
       </span>
@@ -560,7 +560,7 @@ function SeatBody({ post, variant, seatHref, headingLevel }: PostCardProps & { v
   if (variant !== "feed") {
     // The list's ticket (boards `Product`, `Person`): the seat on its side.
     return (
-      <div className="flex flex-wrap items-center gap-4 px-[26px] py-[18px] max-sm:px-[18px] max-sm:py-[14px]">
+      <div className="flex flex-wrap items-center gap-4 px-5 py-3.5 max-sm:px-[18px] max-sm:py-[14px]">
         <span aria-hidden="true" className={`flex h-[52px] w-[52px] items-center justify-center border-2 text-seat max-sm:h-[44px] max-sm:w-[44px] ${SEAT_RING}`}>
           <PlusIcon className="h-5 w-5 shrink-0" />
         </span>
@@ -603,7 +603,7 @@ function DemoBody({ post, variant, headingLevel }: PostCardProps & { variant: Po
   const compact = variant !== "feed";
   const blocks = drawnBlocks("demo", post.blocks, ["title"]);
   return (
-    <div className={compact ? "contents" : "flex flex-col gap-1 px-5 pt-0.5 max-sm:px-[14px]"}>
+    <div className={compact ? "contents" : "flex flex-col gap-1 px-4 pt-0.5 max-sm:px-[14px]"}>
       <PostTitle level={headingLevel} className="m-0 text-card-title font-semibold tracking-[-0.015em] text-foreground [overflow-wrap:anywhere]">
         {postHeadline(post)}
       </PostTitle>

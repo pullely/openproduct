@@ -297,10 +297,10 @@ export function HeaderSearch() {
         // first row. At rest it is the board's translucent white pill with a
         // hairline ring; over the card it sits in the well colour and the
         // ring goes, because the card is its edge now.
-        className={`relative z-[21] flex h-[40px] min-w-0 flex-1 items-center gap-2 rounded-full px-[14px] transition-colors motion-reduce:transition-none ${
+        className={`relative z-[21] flex h-[42px] min-w-0 flex-1 items-center gap-2 rounded-full px-4 transition-colors motion-reduce:transition-none ${
           open
             ? "bg-well"
-            : "bg-card/75 ring-1 ring-inset ring-foreground/[0.07] focus-within:ring-2 focus-within:ring-ring"
+            : "bg-foreground/[0.045] focus-within:ring-2 focus-within:ring-ring"
         }`}
       >
         <SearchGlyph />
