@@ -2,8 +2,8 @@
 
 | Milestone | Task | State | PR |
 |---|---|---|---|
-| UF1 — one layout on every page | UF-1 | In review | this PR |
-| UF2 — frosted centred navbar | UF-2 | In review | — |
+| UF1 — one layout on every page | UF-1 | Done | #20 |
+| UF2 — frosted centred navbar | UF-2 | In review | this PR |
 | UF3 — calm tab switching and feed loading | UF-3 | Not started | — |
 
 ## From UF1
