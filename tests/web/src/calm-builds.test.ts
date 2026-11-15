@@ -85,19 +85,28 @@ describe("the Products view is the filter beside the list, on the board's frame"
 
   // OPR-3 — Help wanted's body moved to `help-wanted/seats-view.tsx`, which
   // the page and its two filtered addresses all draw.
-  it.each(["feed/products-view.tsx", "products/[cursor]/page.tsx", "help-wanted/seats-view.tsx"])("%s is the board's page column", (file) => {
-    expect(code(file)).toContain("<main className={BOARD_PAGE}>");
+  it("products/[cursor]/page.tsx is the board's page column", () => {
+    expect(code("products/[cursor]/page.tsx")).toContain("<main className={BOARD_PAGE}>");
+  });
+
+  // openproduct-ui-fixes UF1 (design §1 rule 5): Products and Help wanted
+  // stand in the section shell the feed shares — no visible title row,
+  // columns 8px under the bar, 16px between — so moving between the three
+  // swaps only the content.
+  it.each(["feed/products-view.tsx", "help-wanted/seats-view.tsx"])("%s is the section shell", (file) => {
+    expect(code(file)).toContain("<main className={SECTION_PAGE}>");
+    expect(code(file)).toContain("<div className={RAIL_LEFT}>");
   });
 
   it("puts the stage filter beside the list, in the place OPR1 named for it", () => {
     // The board's two columns: the filter, then the list — one column with
     // the filter on top on a phone. No margin of anything else.
     const products = code("feed/products-view.tsx");
-    expect(products).toMatch(/<div data-products-body className="flex items-start gap-7 [^"]*max-md:flex-col[^"]*">/);
+    expect(products).toMatch(/<div data-products-body className="flex items-start gap-4 [^"]*max-md:flex-col[^"]*">/);
     expect(products.indexOf("<StageFilter ")).toBeGreaterThan(products.indexOf("data-products-body"));
     expect(products.indexOf("<StageFilter ")).toBeLessThan(products.indexOf("<ProductList"));
     const seats = code("help-wanted/seats-view.tsx");
-    expect(seats).toMatch(/<div data-seats-body className="flex items-start gap-7 [^"]*max-md:flex-col[^"]*">/);
+    expect(seats).toMatch(/<div data-seats-body className="flex items-start gap-4 [^"]*max-md:flex-col[^"]*">/);
     expect(seats.indexOf("<SeatFilter ")).toBeGreaterThan(seats.indexOf("data-seats-body"));
     expect(seats.indexOf("<SeatFilter ")).toBeLessThan(seats.indexOf("<SeatList"));
   });
@@ -117,7 +126,9 @@ describe("the sort is a pill track of links", () => {
     expect(control).toContain("aria-label={`Sort: ${PRODUCT_SORT_LABEL[current]}`}");
     // The summary is lifted into the title's row, which is the positioned box.
     expect(control).toMatch(/<summary[\s\S]*?absolute right-0 top-0/);
-    expect(code("feed/products-view.tsx")).toContain('<div className="relative" data-products-head>');
+    // UF1: the head is for the outline from `sm` up; on a phone it is the row
+    // the sort pill is lifted into.
+    expect(code("feed/products-view.tsx")).toContain('<div className="relative sm:sr-only" data-products-head>');
   });
 });
 

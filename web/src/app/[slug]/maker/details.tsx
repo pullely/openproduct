@@ -19,7 +19,7 @@ export type Look = "shipping" | "idea";
  *  name; the serif italic quote on an idea's note. */
 const PITCH_CLASS: Record<Look, string> = {
   shipping: "m-0 max-w-[640px] text-card-title font-normal leading-[1.5] text-copy [text-wrap:pretty] max-sm:text-[15px]",
-  idea: "m-0 max-w-[760px] font-serif text-title italic leading-[1.3] text-idea-deep [text-wrap:pretty] max-sm:text-card-title max-sm:leading-[1.35]",
+  idea: "m-0 font-serif text-title italic leading-[1.3] text-idea-deep [text-wrap:pretty] max-sm:text-card-title max-sm:leading-[1.35]",
 };
 
 /**

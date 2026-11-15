@@ -70,7 +70,7 @@ export function FeedView({
   const seats = directory ? openSeatProducts(directory) : [];
 
   return (
-    <main className="mx-auto box-border grid w-full max-w-[1440px] grid-cols-[minmax(0,1fr)] items-start gap-4 px-5 pb-10 pt-4 max-sm:gap-3 max-sm:px-3 max-sm:pb-6 max-sm:pt-3 min-[900px]:grid-cols-[minmax(0,1fr)_280px] min-[1180px]:grid-cols-[250px_minmax(0,860px)_280px] min-[1180px]:justify-center">
+    <main className="mx-auto box-border grid w-full max-w-[1920px] grid-cols-[minmax(0,1fr)] items-start gap-4 px-6 pb-8 pt-2 max-sm:gap-3 max-sm:px-3 max-sm:pb-6 max-sm:pt-3 min-[900px]:grid-cols-[minmax(0,1fr)_300px] min-[1180px]:grid-cols-[240px_minmax(0,1fr)_300px]">
       <style>{FEED_FOCUS_CSS}</style>
 
       <section aria-labelledby="feed-title" className="flex min-w-0 flex-col gap-3.5 max-sm:gap-3" data-feed>

@@ -12,7 +12,7 @@ import {
   type SearchSegment,
 } from "./segments";
 
-import { EYEBROW, FOCUS } from "../ui/design";
+import { EYEBROW, FOCUS, RAIL_LEFT } from "../ui/design";
 
 /**
  * The segmented control and the sections under it (openproduct-redesign
@@ -37,7 +37,10 @@ import { EYEBROW, FOCUS } from "../ui/design";
  *
  * A pill tray on a 6% ink wash, 4px inside; each segment 40px tall at 15px
  * with its count in the mono face. On a phone the tray spans the column and
- * the segments share it, 44px tall at 13px. A section's own head (`Products
+ * the segments share it, 44px tall at 13px. FROM `md` UP the tray is the
+ * page's left rail (openproduct-ui-fixes UF1, design §1 rule 4): a 240px
+ * card with the segments stacked, label left and count right, beside the
+ * sections — filters live in the left rail, never as pills over a list. A section's own head (`Products
  * · 3`) is drawn under All only: under one segment the pressed pill already
  * says it.
  */
@@ -57,11 +60,12 @@ export function SearchView({
   const shown = visibleSections(segment, counts);
 
   return (
-    <>
+    <div className="flex items-start gap-6 max-md:flex-col max-md:items-stretch max-md:gap-[26px] max-sm:gap-[10px]">
+      <div className={RAIL_LEFT}>
       <div
         role="group"
         aria-label="Show results"
-        className="box-border flex max-w-full flex-wrap gap-[2px] self-start rounded-full bg-foreground/[0.06] p-1 max-sm:flex-nowrap max-sm:self-stretch max-sm:p-[3px]"
+        className="box-border flex max-w-full flex-wrap gap-[2px] self-start rounded-full bg-foreground/[0.06] p-1 max-sm:flex-nowrap max-sm:self-stretch max-sm:p-[3px] md:flex-col md:flex-nowrap md:rounded-[16px] md:bg-card md:p-2.5"
       >
         {searchSegments(counts).map((item) => {
           const on = item.key === segment;
@@ -71,9 +75,9 @@ export function SearchView({
               type="button"
               onClick={() => setSegment(item.key)}
               aria-pressed={on}
-              className={`flex min-h-[40px] items-center gap-2 rounded-full border-0 px-4 text-[15px] transition-colors max-sm:min-h-[44px] max-sm:min-w-0 max-sm:flex-auto max-sm:justify-center max-sm:gap-[5px] max-sm:px-2 max-sm:text-[13px] ${FOCUS} ${
+              className={`flex min-h-[40px] items-center gap-2 rounded-full border-0 px-4 text-[15px] transition-colors md:justify-between md:rounded-[14px] md:px-2.5 md:text-left max-sm:min-h-[44px] max-sm:min-w-0 max-sm:flex-auto max-sm:justify-center max-sm:gap-[5px] max-sm:px-2 max-sm:text-[13px] ${FOCUS} ${
                 on
-                  ? "bg-card font-semibold text-foreground"
+                  ? "bg-card font-semibold text-foreground md:bg-foreground/[0.05]"
                   : "bg-transparent font-medium text-copy hover:text-foreground"
               }`}
             >
@@ -87,7 +91,9 @@ export function SearchView({
           );
         })}
       </div>
+      </div>
 
+      <div className="flex min-w-0 flex-1 flex-col gap-[26px] max-sm:gap-[10px]">
       {shown.map((section) => (
         <section
           key={section}
@@ -111,6 +117,7 @@ export function SearchView({
           {NO_MATCHES}
         </p>
       ) : null}
-    </>
+      </div>
+    </div>
   );
 }

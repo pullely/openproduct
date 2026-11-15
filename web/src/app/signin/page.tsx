@@ -59,7 +59,7 @@ export default async function SignInPage(props: {
     // Boards `SignIn` and `PhoneSignIn` (OPR1): the card alone, centred in
     // the column — no illustration beside it and no paragraph around it. On
     // a phone it sits under the header at the feed's own gutters.
-    <main className="mx-auto box-border flex w-full max-w-[1180px] justify-center px-6 pb-[72px] pt-16 max-sm:px-3 max-sm:pb-6 max-sm:pt-[10px]">
+    <main className="mx-auto box-border flex w-full max-w-[1920px] justify-center px-6 pb-[72px] pt-16 max-sm:px-3 max-sm:pb-6 max-sm:pt-[10px]">
       <SignInCard returnTo={returnTo} />
     </main>
   );

@@ -77,7 +77,7 @@ export default function MeLoading() {
 
         {/* The section: its 20px heading on a desktop, then three rows of
             the flat card — a 52px tile, a name over its line, a 40px pill. */}
-        <div className="flex min-w-0 max-w-[760px] flex-1 flex-col gap-3.5 max-md:max-w-none max-sm:gap-2.5">
+        <div className="flex min-w-0 flex-1 flex-col gap-3.5 max-sm:gap-2.5">
           <Shimmer className="mb-0.5 h-[25px] w-[150px] max-md:hidden" />
           <div className={ME_LIST}>
             {[0, 1, 2].map((i) => (

@@ -73,7 +73,7 @@ export function TopPanel() {
 
   return (
     <header className="sticky top-0 z-40 w-full bg-panel/[0.62] backdrop-blur-[16px] backdrop-saturate-[1.6]">
-      <div className="mx-auto box-border flex h-[60px] w-full max-w-[1180px] flex-nowrap items-center gap-x-6 px-6 max-lg:gap-x-4 max-sm:h-[68px] max-sm:gap-x-[10px] max-sm:px-[14px]">
+      <div className="mx-auto box-border flex h-[60px] w-full max-w-[1920px] flex-nowrap items-center gap-x-6 px-6 max-lg:gap-x-4 max-sm:h-[68px] max-sm:gap-x-[10px] max-sm:px-[14px]">
         <AppLink
           href="/"
           // QE0 — OFF. The home is the heaviest document on the estate, and a

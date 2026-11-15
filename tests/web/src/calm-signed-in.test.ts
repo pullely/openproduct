@@ -33,10 +33,11 @@ describe("one switcher on your page (CP-R2, board `Me`)", () => {
   });
 
   it("the pages stand in the boards' columns, and /submit keeps the calm frame", () => {
-    // `Me` is the 1180px board page; `Activity` 760px; `Settings` 1080px.
+    // One shell (openproduct-ui-fixes UF1): `Me` is the board page;
+    // `Activity` and `Settings` the same 1920px fluid column, 32px down.
     expect(code("me/page.tsx")).toContain("<main className={BOARD_PAGE}>");
-    expect(code("me/nav.tsx")).toMatch(/export const ACTIVITY_MAIN =\s*"[^"]*max-w-\[760px\][^"]*pt-9/);
-    expect(code("me/nav.tsx")).toMatch(/export const SETTINGS_MAIN =\s*"[^"]*max-w-\[1080px\][^"]*pt-8/);
+    expect(code("me/nav.tsx")).toMatch(/export const ACTIVITY_MAIN =\s*"[^"]*max-w-\[1920px\][^"]*pt-8/);
+    expect(code("me/nav.tsx")).toMatch(/export const SETTINGS_MAIN =\s*"[^"]*max-w-\[1920px\][^"]*pt-8/);
     expect(code("submit/page.tsx")).toContain("pb-[104px] pt-[80px]");
   });
 });

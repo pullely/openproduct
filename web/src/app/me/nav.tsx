@@ -125,13 +125,13 @@ export function MeSections({
  *  its blocks; `10px 12px` and 10px on a phone (boards `Activity`,
  *  `PhoneActivity`). */
 export const ACTIVITY_MAIN =
-  "mx-auto box-border flex w-full max-w-[760px] flex-col gap-5 px-6 pb-16 pt-9 max-sm:gap-2.5 max-sm:px-3 max-sm:pb-6 max-sm:pt-2.5";
+  "mx-auto box-border flex w-full max-w-[1920px] flex-col gap-6 px-6 pb-16 pt-8 max-sm:gap-2.5 max-sm:px-3 max-sm:pb-6 max-sm:pt-2.5";
 
 /** The boards' column for settings: 1080px, `32px 24px 64px`, 22px between
  *  its blocks; `10px 12px` and 10px on a phone (boards `Settings`,
  *  `PhoneSettings`). */
 export const SETTINGS_MAIN =
-  "mx-auto box-border flex w-full max-w-[1080px] flex-col gap-[22px] px-6 pb-16 pt-8 max-sm:gap-2.5 max-sm:px-3 max-sm:pb-6 max-sm:pt-2.5";
+  "mx-auto box-border flex w-full max-w-[1920px] flex-col gap-6 px-6 pb-16 pt-8 max-sm:gap-2.5 max-sm:px-3 max-sm:pb-6 max-sm:pt-2.5";
 
 /** A list of the flat cards a section is made of: 14px between, 10px on a
  *  phone. */

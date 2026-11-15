@@ -153,10 +153,23 @@ export const BADGE_SEAT =
 // phone boards) ── the frame, the header card, the side cards and the pill
 // row both pages share. Read out of the boards' inline styles.
 
-/** The boards' page column: 1180px, `28px 24px 64px`, 24px between the header
- *  card and the columns; `10px 12px` with 10px between on a phone. */
+/** The page shell (openproduct-ui-fixes UF1, design §1): fluid up to 1920px
+ *  with the 24px gutter, `28px 24px 64px`, 24px between the header card and
+ *  the columns; `10px 12px` with 10px between on a phone. Only past 1920px
+ *  does a page stop growing, so lines never run across an ultrawide screen. */
 export const BOARD_PAGE =
-  "mx-auto box-border flex w-full max-w-[1180px] flex-col gap-6 px-6 pb-16 pt-7 max-sm:gap-2.5 max-sm:px-3 max-sm:pb-6 max-sm:pt-2.5";
+  "mx-auto box-border flex w-full max-w-[1920px] flex-col gap-6 px-6 pb-16 pt-7 max-sm:gap-2.5 max-sm:px-3 max-sm:pb-6 max-sm:pt-2.5";
+
+/** The three section pages' shell (UF1, design §1 rule 5): Feed, Products and
+ *  Help wanted share one layout, with no visible title row, their columns 8px
+ *  under the bar and 16px between, so moving between them swaps only the
+ *  content. The phone keeps the board shell's own spacing. */
+export const SECTION_PAGE =
+  "mx-auto box-border flex w-full max-w-[1920px] flex-col gap-4 px-6 pb-8 pt-2 max-sm:gap-2.5 max-sm:px-3 max-sm:pb-6 max-sm:pt-2.5";
+
+/** A left rail (UF1, design §1 rule 2): 240px, full width once the columns
+ *  stack. Filters, sections and steps live here, never as pills over a list. */
+export const RAIL_LEFT = "w-[240px] shrink-0 max-md:w-auto";
 
 /** The boards' two columns: the main column beside a 300px side column, 24px
  *  between; one column once the pair no longer fits (the boards wrap). */

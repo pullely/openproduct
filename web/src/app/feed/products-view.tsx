@@ -21,7 +21,7 @@ import { StageFilter } from "./products-stage";
 import { SortControl, SortMenu } from "./sort-control";
 
 import { fetchAllDirectoryProjects, fetchDirectoryPage } from "../public-api";
-import { BOARD_PAGE, PAGE_TITLE } from "../ui/design";
+import { PAGE_TITLE, RAIL_LEFT, SECTION_PAGE } from "../ui/design";
 import { FailurePanel } from "../ui/failure";
 
 /**
@@ -139,10 +139,10 @@ export async function ProductsView({
   const moment = catalogueMomentCopy(products.computedAt);
 
   return (
-    <main className={BOARD_PAGE}>
+    <main className={SECTION_PAGE}>
       {/* `relative`: on a phone the sort's pill is lifted into this row, at
           the title's right (`SortMenu`). */}
-      <div className="relative" data-products-head>
+      <div className="relative sm:sr-only" data-products-head>
         <div className="flex flex-wrap items-baseline gap-x-[18px] gap-y-1.5 max-sm:min-h-[44px] max-sm:items-center max-sm:px-[2px] max-sm:pr-[150px]">
           <h1 className={PAGE_TITLE}>Products</h1>
           <p className="m-0 font-mono text-label uppercase tracking-[0.1em] text-muted-foreground max-sm:hidden" data-products-count>
@@ -162,8 +162,8 @@ export async function ProductsView({
 
       {/* The board's two columns: the stage filter beside the list; on a
           phone the filter is a row of three pills over it. */}
-      <div data-products-body className="flex items-start gap-7 max-md:flex-col max-md:items-stretch max-md:gap-2.5">
-        <div className="w-[250px] shrink-0 max-lg:w-[220px] max-md:w-auto">
+      <div data-products-body className="flex items-start gap-4 max-md:flex-col max-md:items-stretch max-md:gap-2.5">
+        <div className={RAIL_LEFT}>
           <StageFilter current={stage} sort={sort} counts={products.stages} />
         </div>
         <div className="min-w-0 flex-1">
