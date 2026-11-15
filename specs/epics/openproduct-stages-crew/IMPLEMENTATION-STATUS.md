@@ -61,6 +61,16 @@ What landed:
   has no Manage switch and no maker controls; a Member reads the private
   threads.
 
+Budgets, said plainly: the product page's JS limit moves 177,800 →
+178,628 (CI measured 178,562 for Updates, About and Crew: the role on the
+overlay's crew entry, the gate that reads it and the roles card's gate; the
+card and the popup are chunks fetched for the crew only), the measurement
+plus the 66 bytes of room it had, recorded in `tests/web-perf/src/budgets.mjs`.
+The first build put the home 100 bytes over the 306 KB wire budget; reading
+the role inline in `ui/overlay.ts` (in every page's bundle) instead of
+importing the contracts' helper brought it back under, so the wire budget
+did not move. No snapshot moved.
+
 Departures from the design, said plainly:
 
 - **The roles are the crew's, not the public page's.** The board draws the
