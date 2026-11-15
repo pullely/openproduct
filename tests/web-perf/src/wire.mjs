@@ -123,7 +123,6 @@ import { CARDS, SAMPLE_SLUG } from "./fixture.mjs";
  * keeps 6,631 bytes, and its requests fell from the limit to 27. So there is
  * no amendment for OPR2 either: a note in the decision file, with these
  * numbers.
- */
  *
  * openproduct-ui-fixes UF2 (2026-11-15) — AN AMENDMENT, 276 → 305 KB. The
  * owner chose Geist for the top bar, which is on every page: one more font
