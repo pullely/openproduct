@@ -89,28 +89,25 @@ export function MilestonesManager({ slug, standalone = false }: { slug: string; 
   );
 }
 
-/** The crew tab's roles: everybody on the crew (a Member read-only), on
- *  Manage. Never in the cached page — who holds which role is the crew's. */
-export function CrewRoles({ slug }: { slug: string }) {
+/**
+ * The crew-only cards that every role on the crew reads (a Member too), on
+ * Manage, and never in the cached page: the crew tab's roles (who holds
+ * which role is the crew's) and the Orunbase card (SC-4 — when the crew and
+ * the deploys last synced). One gate for both.
+ */
+function CrewOnly({ slug, Body }: { slug: string; Body: React.ComponentType<{ slug: string }> }) {
   const { crew, mode } = useMaker(slug);
   if (crew === null) return null;
   if (mode !== "manage") return null;
   return (
     <React.Suspense fallback={null}>
-      <CrewRolesBody slug={slug} />
+      <Body slug={slug} />
     </React.Suspense>
   );
 }
 
-/** The Orunbase card: everybody on the crew, on Manage. Never in the cached
- *  page — when the crew and the deploys last synced is the crew's. */
-export function OrunbaseCard({ slug }: { slug: string }) {
-  const { crew, mode } = useMaker(slug);
-  if (crew === null) return null;
-  if (mode !== "manage") return null;
-  return (
-    <React.Suspense fallback={null}>
-      <OrunbaseCardBody slug={slug} />
-    </React.Suspense>
-  );
-}
+/** The crew tab's roles. */
+export const CrewRoles = ({ slug }: { slug: string }) => <CrewOnly slug={slug} Body={CrewRolesBody} />;
+
+/** The Orunbase card at the top of the right rail. */
+export const OrunbaseCard = ({ slug }: { slug: string }) => <CrewOnly slug={slug} Body={OrunbaseCardBody} />;
