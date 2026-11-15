@@ -9,7 +9,12 @@ the code departed from `design.md`.
 | OPR1 — the new look | ✅ done (2026-11-14) | [#16](https://github.com/pullely/openproduct/pull/16) |
 | OPR2 — products post for themselves | ✅ done (2026-11-15) | [#17](https://github.com/pullely/openproduct/pull/17) |
 | OPR3 — threads, public and private | ✅ done (2026-11-15) | [#18](https://github.com/pullely/openproduct/pull/18) |
-| OPR4 — demos | waits on risks R1 | |
+| OPR4 — demos | moved to the epic `openproduct-demos` (2026-11-15), not built | |
+
+**The epic closed at OPR3 on 2026-11-15**, by the owner's decision (risks
+R1's default). Orunbase has nothing that records a demo, so OPR4 had
+nothing to build on; it is now `specs/epics/openproduct-demos/`. The
+close-out is task OPR-6.
 
 ## Inputs
 

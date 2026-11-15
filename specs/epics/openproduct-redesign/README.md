@@ -26,7 +26,7 @@ The epic, its milestones and its tasks live in Orunbase, in workspace
 
 | Field | Value |
 |-------|-------|
-| Status | In progress: OPR0 to OPR3 shipped; OPR4 (demos) waits on risks R1 |
+| Status | Closed at OPR3 (2026-11-15). OPR0 to OPR3 shipped; demos (OPR4) moved to the epic `openproduct-demos` |
 | Cluster | **OPR** (OPR0–OPR4) |
 | Owner(s) | `web` (every surface) · `packages/contracts` (wire types) · `packages/db` (schema and repository) · `core` (rules) · `gateway` (routes) · `tests/web`, `tests/web-perf` (the guards that pin the surface) |
 | Builds on | openproduct-standalone (OPN): the standalone repository, its Supabase data plane and its deploy path. This epic changes no infrastructure. |

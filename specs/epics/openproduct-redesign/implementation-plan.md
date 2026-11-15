@@ -107,7 +107,8 @@ Task **OPR-4**. Design §7.
 
 ## OPR4 — demos
 
-Task **OPR-5**. Design §8. Starts once risks R1 is answered.
+Task **OPR-5**. Design §8. **Moved to the epic `openproduct-demos` on
+2026-11-15; not built here.** The epic closed at OPR3.
 
 - Migration: `product_demos`; R2 storage of a recording; the signed seam
   route that receives a finished run.

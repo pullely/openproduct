@@ -9,6 +9,8 @@ the platform today is not known from this repository.
 *Default:* OPR4 does not start until the owner confirms the platform side.
 OPR1 to OPR3 do not depend on it. If the platform side is not ready when
 OPR3 lands, the epic closes at OPR3 and OPR4 moves to its own epic.
+*Answered 2026-11-15:* the platform has no demo recording. The owner
+closed the epic at OPR3; demos are the epic `openproduct-demos`.
 
 **R2. The sections with no board** (topics, stack, pricing, collections,
 digest, launches, the people list, the forum index).

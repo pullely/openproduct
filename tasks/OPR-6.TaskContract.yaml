@@ -1,0 +1,20 @@
+# OPR-6: the close-out. The owner closed openproduct-redesign at OPR3 on
+# 2026-11-15 and moved demos (OPR4, task OPR-5) to the epic openproduct-demos.
+# The file is the contract; the task itself lives in Orunbase.
+apiVersion: orun.io/v1
+kind: TaskContract
+metadata:
+  name: OPR-6
+  title: "OPR close-out: the epic closes at OPR3, demos move to their own epic"
+spec:
+  goal: The openproduct-redesign doc set says the epic closed at OPR3 and that demos moved to the epic openproduct-demos.
+  affects:
+    - specs/epics/openproduct-redesign/**
+    - specs/epics/openproduct-demos/**
+    - tasks/OPR-6.TaskContract.yaml
+  deps:
+    - OPR-4
+  doneWhen:
+    - IMPLEMENTATION-STATUS.md, README.md, implementation-plan.md and risks-and-open-questions.md of openproduct-redesign say the epic closed at OPR3
+    - specs/epics/openproduct-demos/README.md is on main and carries the demos design and the open question it waits on
+  gates: []
