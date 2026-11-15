@@ -6,7 +6,7 @@
 /** A 760px column, `40px 24px 72px`, its blocks 26px apart; on a phone
  *  `10px 12px` with 10px between (the tab bar's reserve is the shell's). */
 export const SEARCH_COLUMN =
-  "mx-auto box-border flex w-full max-w-[760px] flex-col gap-[26px] px-6 pb-[72px] pt-10 max-sm:gap-[10px] max-sm:px-3 max-sm:pb-6 max-sm:pt-[10px]";
+  "mx-auto box-border flex w-full max-w-[1920px] flex-col gap-6 px-6 pb-16 pt-8 max-sm:gap-[10px] max-sm:px-3 max-sm:pb-6 max-sm:pt-[10px]";
 
 /** The flat card a section's rows sit in: `6px 8px` inside; `4px 12px` on a
  *  phone, where the rows run edge to edge. */

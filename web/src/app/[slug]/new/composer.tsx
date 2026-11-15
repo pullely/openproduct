@@ -361,7 +361,7 @@ export function Composer(props: ComposerProps) {
     <main
       data-compose
       data-compose-kind={kind}
-      className="mx-auto box-border flex w-full max-w-[1440px] flex-col gap-5 px-5 pb-16 pt-4 max-md:gap-2.5 max-md:px-3 max-md:pb-6 max-md:pt-2.5"
+      className="mx-auto box-border flex w-full max-w-[1920px] flex-col gap-5 px-6 pb-16 pt-4 max-md:gap-2.5 max-md:px-3 max-md:pb-6 max-md:pt-2.5"
     >
       {/* The builder's bar: back to the product, where this is, how ready it
           is, and Post. */}

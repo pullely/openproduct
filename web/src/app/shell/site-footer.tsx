@@ -29,7 +29,7 @@ import { ThemeToggle } from "../ui/theme-toggle";
 export function SiteFooter() {
   const link = "tap text-muted-foreground no-underline hover:text-foreground hover:underline hover:underline-offset-[3px]";
   return (
-    <footer className="mx-auto box-border w-full max-w-[1180px] px-6 max-sm:px-4">
+    <footer className="mx-auto box-border w-full max-w-[1920px] px-6 max-sm:px-4">
       <div className="flex flex-col gap-4 border-t border-line pb-10 pt-6 text-[13px] text-muted-foreground">
         <nav aria-label="More" className="flex flex-wrap items-center gap-x-5 gap-y-1 max-sm:gap-y-0">
           {FOOTER_LINKS.map((item) =>

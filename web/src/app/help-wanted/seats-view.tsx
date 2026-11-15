@@ -2,7 +2,7 @@ import { orderBuilds } from "@openproduct/contracts";
 
 import { consoleOrigin } from "../../lib/platform";
 import { fetchAllDirectoryProjects, fetchPublicProfile } from "../public-api";
-import { BOARD_PAGE, EMPTY_NOTE, PAGE_TITLE } from "../ui/design";
+import { EMPTY_NOTE, PAGE_TITLE, RAIL_LEFT, SECTION_PAGE } from "../ui/design";
 import { FailurePanel } from "../ui/failure";
 
 import { SeatCard } from "./seat-card";
@@ -85,8 +85,8 @@ export async function HelpWantedView({ stage = "all" }: { stage?: SeatStageFilte
   const origin = consoleOrigin();
 
   return (
-    <main className={BOARD_PAGE}>
-      <div className="flex flex-wrap items-baseline gap-x-[18px] gap-y-1.5 max-sm:justify-between max-sm:gap-x-[10px] max-sm:gap-y-1 max-sm:px-[2px]">
+    <main className={SECTION_PAGE}>
+      <div className="flex flex-wrap items-baseline gap-x-[18px] gap-y-1.5 sm:sr-only max-sm:justify-between max-sm:gap-x-[10px] max-sm:gap-y-1 max-sm:px-[2px]">
         <h1 className={PAGE_TITLE}>Help wanted</h1>
         <p className="m-0 font-mono text-label uppercase tracking-[0.1em] text-muted-foreground max-sm:whitespace-nowrap max-sm:text-mono-label" data-seats-count>
           <span className="max-sm:hidden">{seatsCountLine(totals.seats, totals.products)}</span>
@@ -94,8 +94,8 @@ export async function HelpWantedView({ stage = "all" }: { stage?: SeatStageFilte
         </p>
       </div>
 
-      <div data-seats-body className="flex items-start gap-7 max-md:flex-col max-md:items-stretch max-md:gap-2.5">
-        <div className="w-[250px] shrink-0 max-lg:w-[220px] max-md:w-auto">
+      <div data-seats-body className="flex items-start gap-4 max-md:flex-col max-md:items-stretch max-md:gap-2.5">
+        <div className={RAIL_LEFT}>
           <SeatFilter current={stage} counts={counts} />
         </div>
         <div className="min-w-0 flex-1">

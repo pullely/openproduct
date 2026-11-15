@@ -141,20 +141,24 @@ export default async function InboxPage(props: {
   ].filter((group) => group.rows.length > 0);
 
   return (
-    <main className={ACTIVITY_MAIN}>
+    <main className={`${ACTIVITY_MAIN} md:grid md:grid-cols-[240px_minmax(0,1fr)] md:items-start`}>
       {/* The title with the read action opposite it, and the switch beneath
-          (board `Activity`). On a phone the board has no title row — the lit
+          (board `Activity`). FROM `md` UP the switch is the page's left rail
+          (openproduct-ui-fixes UF1, design §1 rule 4): this head dissolves
+          (`md:contents`) so the title, the switch and the read action sit in
+          the page's own two columns — the switch stacked in a 240px card on
+          the left, the groups beside it. On a phone the board has no title row — the lit
           tab in the bar below says where this is — so the title stays for
           the outline only and the action sits opposite the switch. */}
-      <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-5 max-sm:gap-x-2">
-        <h1 className={`${PAGE_TITLE} max-sm:sr-only`}>Activity</h1>
-        <nav aria-label="Show" className={`${SEGMENTS} justify-self-start sm:col-span-2 sm:row-start-2`}>
+      <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-5 max-sm:gap-x-2 md:contents">
+        <h1 className={`${PAGE_TITLE} max-sm:sr-only md:col-start-1 md:row-start-1`}>Activity</h1>
+        <nav aria-label="Show" className={`${SEGMENTS} justify-self-start sm:col-span-2 sm:row-start-2 md:col-span-1 md:col-start-1 md:row-span-3 md:w-full md:flex-col md:rounded-[16px] md:p-2.5`}>
           {TABS.map((t) => (
             <AppLink
               key={t.key}
               href={t.href}
               {...(t.key === tab ? { "aria-current": "page" as const } : {})}
-              className={`${SEGMENT} ${t.key === tab ? SEGMENT_ON : SEGMENT_OFF}`}
+              className={`${SEGMENT} md:rounded-[14px] md:px-2.5 ${t.key === tab ? SEGMENT_ON : SEGMENT_OFF}`}
             >
               {t.label}
             </AppLink>
@@ -163,7 +167,7 @@ export default async function InboxPage(props: {
         {/* The ONE read action. A form rather than a link, because it changes
             something — and no client JS, like every other act here. With
             nothing unread it is drawn spent, and does nothing. */}
-        <form method="post" action="/me/notifications/read" className="sm:col-start-2 sm:row-start-1">
+        <form method="post" action="/me/notifications/read" className="sm:col-start-2 sm:row-start-1 md:justify-self-end">
           <button
             type="submit"
             disabled={unread === 0}
@@ -175,12 +179,12 @@ export default async function InboxPage(props: {
       </div>
 
       {groups.length === 0 ? (
-        <p className="m-0 px-1.5 text-[15px] text-muted-foreground max-sm:rounded-[16px] max-sm:bg-card max-sm:px-3.5 max-sm:py-6 max-sm:text-center">
+        <p className="m-0 px-1.5 text-[15px] text-muted-foreground md:col-start-2 max-sm:rounded-[16px] max-sm:bg-card max-sm:px-3.5 max-sm:py-6 max-sm:text-center">
           Nothing here yet.
         </p>
       ) : (
         groups.map((group) => (
-          <section key={group.label} aria-label={group.label} className="flex flex-col gap-2 max-sm:gap-1.5">
+          <section key={group.label} aria-label={group.label} className="flex flex-col gap-2 md:col-start-2 max-sm:gap-1.5">
             <h2 className={`${EYEBROW} m-0 px-1.5 font-normal`}>{group.label}</h2>
             <ul className="m-0 flex list-none flex-col gap-0.5 rounded-[16px] bg-card p-1.5" data-activity-rows>
               {group.rows.map((item) => (

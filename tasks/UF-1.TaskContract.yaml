@@ -1,0 +1,26 @@
+# UF-1: milestone UF1, one layout on every page. One fluid shell (max
+# 1920px, 24px gutter), fixed rails, filters in the left rail, and the three
+# tab pages (Feed, Products, Help wanted) sharing one layout with no title
+# row. Lands the epic's doc set (specs/epics/openproduct-ui-fixes/).
+# The file is the contract; the task itself lives in Orunbase.
+apiVersion: orun.io/v1
+kind: TaskContract
+metadata:
+  name: UF-1
+  title: "UF1: one layout on every page"
+spec:
+  goal: Every desktop page uses one fluid shell with fixed rails, and the three tab pages share one layout with no title row.
+  affects:
+    - web/src/**
+    - tests/web/**
+    - tests/web-perf/**
+    - specs/epics/openproduct-ui-fixes/**
+    - tasks/**
+  doneWhen:
+    - "Page bodies share one container: max-width 1920px, 24px side gutter; no page caps its content at 1180px or narrower"
+    - Left rails are 240px and right rails 300px wherever a page has them
+    - Feed, Products and Help wanted have no visible title row and start their columns 8px under the bar
+    - Activity and Search put their filters in a left rail like Products
+    - specs/epics/openproduct-ui-fixes/ holds README, design, plan and IMPLEMENTATION-STATUS
+    - Web tests and web-perf layout lanes pass in CI
+  gates: []

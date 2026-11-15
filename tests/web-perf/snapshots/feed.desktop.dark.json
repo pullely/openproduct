@@ -12,15 +12,15 @@
     "width": 1270
   },
   "h1": {
-    "top": 73,
-    "left": 281,
+    "top": 66,
+    "left": 274,
     "width": 1,
     "height": 1
   },
   "firstRow": null,
   "footer": {
-    "left": 45,
-    "width": 1180,
+    "left": 0,
+    "width": 1270,
     "height": 130
   },
   "themeControl": {

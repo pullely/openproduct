@@ -191,7 +191,7 @@ export default async function MePage(props: {
         <section
           aria-labelledby="me-section-title"
           data-me-section={section}
-          className="flex min-w-0 max-w-[760px] flex-1 flex-col gap-3.5 max-md:max-w-none max-sm:gap-2.5"
+          className="flex min-w-0 flex-1 flex-col gap-3.5 max-sm:gap-2.5"
         >
           {/* The section's name: a heading beside the switcher on a desktop.
               On a phone the lit pill already says it, so it stays for the

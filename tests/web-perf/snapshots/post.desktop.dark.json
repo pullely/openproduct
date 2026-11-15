@@ -8,19 +8,19 @@
   "sectionBar": null,
   "main": {
     "top": 60,
-    "left": 45,
-    "width": 1180
+    "left": 0,
+    "width": 1270
   },
   "h1": {
     "top": 163,
-    "left": 131,
+    "left": 86,
     "width": 288,
     "height": 25
   },
   "firstRow": null,
   "footer": {
-    "left": 45,
-    "width": 1180,
+    "left": 0,
+    "width": 1270,
     "height": 130
   },
   "themeControl": {

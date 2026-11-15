@@ -125,8 +125,9 @@ describe("the section nav", () => {
     expect(header).toMatch(/backdrop-saturate-/);
     // design.md §2 rule 11.
     expect(header).not.toMatch(/\bborder(?:-|\b)|\bshadow/);
-    // The page's own column: 1180px, 24px gutters.
-    expect(panel).toMatch(/max-w-\[1180px\][^"]*\bpx-6\b/);
+    // The page's own shell (openproduct-ui-fixes UF1): fluid to 1920px,
+    // 24px gutters, so the mark lines up with the page's edge.
+    expect(panel).toMatch(/max-w-\[1920px\][^"]*\bpx-6\b/);
   });
 
   it("lights at most one destination: one `aria-current`, from one function", () => {
