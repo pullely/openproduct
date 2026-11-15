@@ -291,6 +291,8 @@ export default {
         sans: ["var(--font-sans)", "system-ui", "sans-serif"],
         serif: ["var(--font-serif)", "Georgia", "serif"],
         mono: ["var(--font-mono)", "ui-monospace", "monospace"],
+        // The top bar's face (openproduct-ui-fixes UF2).
+        bar: ["var(--font-bar)", "system-ui", "sans-serif"],
       },
       keyframes: {
         "fade-in": {
