@@ -1,0 +1,26 @@
+# SC-2: milestone SC1, four stages and where it runs.
+# The file is the contract; the task itself lives in Orunbase.
+apiVersion: orun.io/v1
+kind: TaskContract
+metadata:
+  name: SC-2
+  title: "SC1: four stages and where it runs"
+spec:
+  goal: Products move through Idea, Building, On stage and In production from Edit details, each step with its required inputs, and every product page shows where it runs.
+  affects:
+    - packages/**
+    - core/**
+    - gateway/**
+    - web/**
+    - tests/**
+    - specs/epics/openproduct-stages-crew/**
+    - tasks/**
+  deps:
+    - SC-1
+  doneWhen:
+    - profiles.stage holds idea, building, stage or production; shipping rows migrate to building, or stage when they have a try link
+    - PUT stage refuses a skipped step and a step whose required inputs are missing or invalid
+    - Edit details has a Stage row; Change stage opens the popup with per-step fields and n of m required
+    - Every product page shows Where it runs with stage and production rows
+    - Web tests and web-perf lanes pass in CI
+  gates: []

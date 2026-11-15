@@ -1,0 +1,195 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Phone: change stage</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600&amp;family=Lora:ital,wght@0,400;0,500;1,400&amp;family=IBM+Plex+Mono:wght@400;500&amp;display=swap">
+<style>
+body{margin:0;background:#F6F4EE}
+a{color:#8A6420}a:hover{color:#5E4415}
+button:focus-visible,input:focus-visible,textarea:focus-visible,a:focus-visible{outline:2px solid #B8862F;outline-offset:2px}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; box-sizing: border-box; background-color: #F6F4EE; background-image: radial-gradient(500px 260px at 50% -10%, rgba(184,134,47,0.18), transparent 62%); color: #141413; font-family: 'Hanken Grotesk', system-ui, sans-serif; font-size: 15px; line-height: 1.5; display: flex; flex-direction: column; overflow: hidden">
+<header style="display: flex; align-items: center; gap: 6px; padding: 8px 10px; min-height: 56px; box-sizing: border-box">
+<a href="PhoneProduct.dc.html" aria-label="Back to ackstack" style="width: 44px; height: 44px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #141413"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"></path></svg></a>
+<span style="flex: 1; min-width: 0; font-weight: 600">ackstack <span style="color: #6B6A66; font-weight: 400">/ Change stage</span></span>
+<span style="{{tagStyle}}"><span style="{{tagDot}}"></span>{{tagLabel}}</span>
+</header>
+<div style="flex: 1; overflow-y: auto; padding: 4px 16px 16px; display: flex; flex-direction: column; gap: 14px">
+<div role="radiogroup" aria-label="Stage" style="display: flex; flex-direction: column; gap: 8px">
+<sc-for list="{{steps}}" as="s" hint-placeholder-count="4">
+<button type="button" role="radio" aria-checked="{{s.picked}}" onClick="{{s.pick}}" disabled="{{s.locked}}" style="{{s.style}}">
+<span style="{{s.dot}}"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{s.icon}}"></path></svg></span>
+<span style="flex: 1; min-width: 0; display: flex; flex-direction: column; text-align: left; line-height: 1.3"><span style="font-weight: 600">{{s.label}}</span><span style="font-size: 13px; color: #6B6A66">{{s.sub}}</span></span>
+</button>
+</sc-for>
+</div>
+<sc-if value="{{hasForm}}" hint-placeholder-val="{{true}}">
+<div style="display: flex; flex-direction: column; gap: 14px; padding: 16px; border-radius: 16px; background: #FFFFFF">
+<sc-for list="{{fields}}" as="f" hint-placeholder-count="4">
+<div style="{{f.cell}}">
+<sc-if value="{{f.isSeg}}" hint-placeholder-val="{{false}}">
+<span style="display: flex; justify-content: space-between; gap: 10px; font-size: 13px; font-weight: 600"><span>{{f.label}}<span style="{{f.starStyle}}"> *</span></span><span style="{{f.hintStyle}}">{{f.hint}}</span></span>
+<div role="group" aria-label="{{f.label}}" style="align-self: flex-start; display: flex; flex-wrap: wrap; gap: 2px; padding: 3px; border-radius: 999px; background: rgba(20,20,19,0.06)">
+<sc-for list="{{f.options}}" as="o" hint-placeholder-count="3">
+<button type="button" onClick="{{o.pick}}" aria-pressed="{{o.on}}" style="{{o.style}}">{{o.label}}</button>
+</sc-for>
+</div>
+</sc-if>
+<sc-if value="{{f.isField}}" hint-placeholder-val="{{true}}">
+<label style="display: flex; flex-direction: column; gap: 6px">
+<span style="display: flex; justify-content: space-between; gap: 10px; font-size: 13px; font-weight: 600"><span>{{f.label}}<span style="{{f.starStyle}}"> *</span></span><span style="{{f.hintStyle}}">{{f.hint}}</span></span>
+<sc-if value="{{f.isInput}}" hint-placeholder-val="{{true}}"><input type="{{f.type}}" value="{{f.value}}" onInput="{{f.set}}" placeholder="{{f.ph}}" style="{{f.inputStyle}}"></sc-if>
+<sc-if value="{{f.isArea}}" hint-placeholder-val="{{false}}"><textarea rows="3" value="{{f.value}}" onInput="{{f.set}}" placeholder="{{f.ph}}" style="{{f.inputStyle}}"></textarea></sc-if>
+</label>
+</sc-if>
+<sc-if value="{{f.hasSync}}" hint-placeholder-val="{{false}}">
+<div style="{{f.syncRow}}">
+<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{f.syncIcon}}"></path></svg>
+<span style="flex: 1; min-width: 0">{{f.syncText}}</span>
+<sc-if value="{{f.changed}}" hint-placeholder-val="{{false}}"><button type="button" onClick="{{f.reset}}" style="border: 0; background: transparent; padding: 0; min-height: 28px; color: #8A6420; font: inherit; font-size: 13px; font-weight: 600; cursor: pointer">Use synced</button></sc-if>
+</div>
+</sc-if>
+</div>
+</sc-for>
+</div>
+</sc-if>
+
+
+<label style="display: flex; align-items: center; gap: 10px; min-height: 44px; padding: 0 4px">
+<input type="checkbox" checked="{{post}}" onChange="{{togglePost}}" style="width: 20px; height: 20px; accent-color: #141413; margin: 0">
+<span>Post it to the feed</span></label>
+<sc-if value="{{moved}}" hint-placeholder-val="{{false}}">
+<div style="padding: 12px 14px; border-radius: 14px; background: #E3EEE8; color: #2F5E4C; font-weight: 600">{{movedLabel}}</div>
+</sc-if>
+</div>
+<footer style="display: flex; align-items: center; gap: 10px; padding: 10px 16px 14px; border-top: 1px solid rgba(20,20,19,0.06); background: #F6F4EE">
+<span style="flex: 1; {{reqStyle}}">{{reqLabel}}</span>
+<button type="button" onClick="{{confirm}}" disabled="{{cantConfirm}}" style="{{confirmStyle}}">{{confirmLabel}}</button>
+</footer>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { view: 'maker', stage: null, panel: true, target: 'production', post: true, v: {}, saved: {}, moved: '' };
+  }
+  renderVals() {
+    const st = this.state;
+    const STAGES = [
+      { k: 'idea', label: 'Idea', sub: 'A problem worth building for', mono: 'IDEA', fg: '#5B3F86', bg: '#ECE6F3', dot: '#8C6A9E', icon: 'M9 18h6M10 21h4M12 3a6 6 0 00-4 10.5c.7.7 1 1.5 1 2.5h6c0-1 .3-1.8 1-2.5A6 6 0 0012 3z' },
+      { k: 'building', label: 'Building', sub: 'Code and a first milestone', mono: 'BUILDING', fg: '#8A6420', bg: '#F3E7CC', dot: '#B8862F', icon: 'M14.7 6.3a4 4 0 00-5.4 5.4L3 18l3 3 6.3-6.3a4 4 0 005.4-5.4l-2.5 2.5-2.4-.6-.6-2.4z' },
+      { k: 'stage', label: 'On stage', sub: 'People can try it', mono: 'ON STAGE', fg: '#3A4A75', bg: '#E6E9F2', dot: '#5B6B8C', icon: 'M8 5v14l11-7z' },
+      { k: 'production', label: 'In production', sub: 'Real people use it', mono: 'IN PRODUCTION', fg: '#2F5E4C', bg: '#E3EEE8', dot: '#2F7A4E', icon: 'M5 12l5 5 9-10' }
+    ];
+    // What Orunbase sync already knows. Placeholders in brackets.
+    const SYNC = {
+      repo: ['https://github.com/pullely/ackstack', 'Synced from Orunbase · project repo'],
+      stageUrl: ['https://ackstack-web-console-next-stage.nexo-7be.workers.dev', 'Synced from Orunbase · stage deploy [run] · [3h ago]'],
+      prodUrl: ['https://ackstack.app', 'Synced from Orunbase · production deploy [run] · [Nov 12]'],
+      since: ['2026-11-12', 'Synced from the first production deploy'],
+      version: ['1.0.0', 'Synced from the last deploy']
+    };
+    const cur = st.stage || this.props.startStage || 'stage';
+    const ci = STAGES.findIndex(s => s.k === cur);
+    const maker = st.view === 'maker';
+    const target = st.target;
+    const ti = target ? STAGES.findIndex(s => s.k === target) : -1;
+    const back = ti > -1 && ti < ci;
+    const C = STAGES[ci];
+    const T = ti > -1 ? STAGES[ti] : null;
+    const formKey = !T ? null : back ? 'back' : T.k;
+    const val = (k) => { const key = formKey + '.' + k; return key in st.v ? st.v[key] : (SYNC[k] ? SYNC[k][0] : ''); };
+    const setVal = (k, x) => this.setState({ v: { ...st.v, [formKey + '.' + k]: x } });
+    const seg = (on) => 'display: flex; align-items: center; min-height: 34px; padding: 0 14px; border: 0; border-radius: 999px; font: inherit; font-size: 13px; cursor: pointer; ' + (on ? 'background: #FFFFFF; color: #141413; font-weight: 600' : 'background: transparent; color: #6B6A66; font-weight: 500');
+    const LINK = /^https:\/\/[^\s.]+\.[^\s]+$/;
+    // One spec per step: [key, kind, label, required, opts]
+    const FORMS = {
+      building: [['repo', 'link', 'Repository', true], ['milestone', 'text', 'First milestone', true, { ph: '[What ships first]' }], ['comment', 'area', 'Comment', false, { max: 280 }]],
+      stage: [['stageUrl', 'link', 'Stage link', true], ['tryWhat', 'area', 'What people can try', true, { max: 280, ph: '[What works today, and what to try first]' }], ['comment', 'area', 'Comment', false, { max: 280 }]],
+      production: [['prodUrl', 'link', 'Production link', true], ['since', 'date', 'Live since', true, { half: true }], ['version', 'text', 'Version', false, { half: true, mono: true, ph: '1.0.0' }], ['who', 'seg', 'Who can use it', true, { options: [['everyone', 'Open to everyone'], ['waitlist', 'Waitlist'], ['invite', 'Invite only']], dflt: 'everyone' }], ['comment', 'area', 'Comment', false, { max: 280 }]],
+      back: [['reason', 'seg', 'Why it moves back', true, { options: [['paused', 'Paused'], ['rebuilding', 'Rebuilding'], ['moved', 'Moved elsewhere']] }], ['comment', 'area', 'Comment', false, { max: 280 }]],
+      idea: [['comment', 'area', 'Comment', false, { max: 280 }]]
+    };
+    const spec = formKey ? (FORMS[formKey] || []) : [];
+    let reqTotal = 0, reqDone = 0, anyBad = false;
+    const fields = spec.map(([k, kind, label, req, o]) => {
+      o = o || {};
+      let v = val(k);
+      if (kind === 'seg' && !v && o.dflt) v = o.dflt;
+      const len = (v || '').length;
+      const over = o.max && len > o.max;
+      const ok = kind === 'link' ? LINK.test(v.trim()) : kind === 'seg' ? !!v : !!v.trim() && !over;
+      if (req) { reqTotal++; if (ok) reqDone++; }
+      if (over || (kind === 'link' && v && !LINK.test(v.trim()))) anyBad = true;
+      const sync = SYNC[k];
+      const isSynced = !!sync && v === sync[0];
+      const bad = (over) || (kind === 'link' && v && !LINK.test(v.trim()));
+      return { label, isSeg: kind === 'seg', isField: kind !== 'seg', isInput: kind === 'link' || kind === 'text' || kind === 'date', isArea: kind === 'area',
+        type: kind === 'link' ? 'url' : kind === 'date' ? 'date' : 'text', value: v, ph: o.ph || (kind === 'link' ? 'https://' : ''),
+        set: (e) => setVal(k, e.target.value),
+        starStyle: req ? 'color: #8E3B27' : 'display: none',
+        hint: o.max ? (len + ' / ' + o.max) + (req ? '' : ' · Optional') : (req ? '' : 'Optional'),
+        hintStyle: 'font-weight: 500; font-family: IBM Plex Mono, monospace; font-size: 11px; ' + (over ? 'color: #8E3B27' : 'color: #6B6A66'),
+        cell: 'display: flex; flex-direction: column; gap: 6px; min-width: 0; grid-column: auto',
+        inputStyle: 'box-sizing: border-box; padding: ' + (kind === 'area' ? '10px 14px' : '0 14px') + '; min-height: 44px; border: 0; outline: 0; border-radius: 14px; background: #F7F5EF; color: #141413; font: inherit; font-size: 16px; resize: vertical; ' + (o.mono ? 'font-family: IBM Plex Mono, monospace; ' : '') + (bad ? 'box-shadow: inset 0 0 0 1.5px #B4533C' : isSynced ? 'box-shadow: inset 0 0 0 1px rgba(47,122,78,0.35)' : 'box-shadow: inset 0 0 0 1px rgba(20,20,19,0.08)'),
+        options: (o.options || []).map(([ok2, ol]) => ({ label: ol, on: v === ok2, pick: () => setVal(k, ok2), style: seg(v === ok2) })),
+        hasSync: !!sync, changed: !!sync && !isSynced,
+        syncText: !sync ? '' : isSynced ? sync[1] : 'Changed by you · Orunbase has ' + sync[0],
+        syncIcon: isSynced ? 'M4 12a8 8 0 0113.7-5.7L20 8.6M20 4v4.6h-4.6M20 12a8 8 0 01-13.7 5.7L4 15.4M4 20v-4.6h4.6' : 'M4 20h4L19 9l-4-4L4 16v4z',
+        syncRow: 'display: flex; align-items: center; gap: 6px; font-size: 13px; min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; ' + (isSynced ? 'color: #2F5E4C' : 'color: #8A6420'),
+        reset: () => { const nv = { ...st.v }; delete nv[formKey + '.' + k]; this.setState({ v: nv }); } };
+    });
+    const cantConfirm = !T || reqDone < reqTotal || anyBad;
+    const steps = STAGES.map((s, i) => {
+      const isCur = i === ci, picked = i === ti, past = i < ci;
+      const locked = isCur || i > ci + 1 || i < ci - 1;
+      return { label: s.label, picked, locked, icon: s.icon,
+        sub: isCur ? 'Now' : locked ? (i > ci ? 'After ' + STAGES[i - 1].label.toLowerCase() : s.sub) : (past ? 'Move back' : s.sub),
+        pick: () => { if (!locked) this.setState({ target: picked ? null : s.k, moved: '' }); },
+        dot: 'width: 30px; height: 30px; border-radius: 50%; flex-shrink: 0; display: flex; align-items: center; justify-content: center; ' + (isCur || picked ? 'background: ' + s.fg + '; color: #FFFFFF' : past ? 'background: ' + s.bg + '; color: ' + s.fg : 'background: #F0EEE6; color: #6B6A66'),
+        style: 'width: 100%; display: flex; align-items: center; gap: 12px; min-height: 60px; padding: 10px 14px; border: 0; border-radius: 14px; font: inherit; color: #141413; ' +
+          (picked ? 'background: ' + s.bg + '; box-shadow: inset 0 0 0 2px ' + s.fg + '; cursor: pointer' : isCur ? 'background: #FFFFFF; box-shadow: inset 0 0 0 1px rgba(20,20,19,0.12); cursor: default' : locked ? 'background: transparent; opacity: 0.55; cursor: not-allowed' : 'background: #FFFFFF; cursor: pointer') };
+    });
+    const isProd = cur === 'production';
+    const sv = st.saved;
+    const WHO = { everyone: 'Open to everyone', waitlist: 'Waitlist', invite: 'Invite only' };
+    const prodUrl = sv.prodUrl || SYNC.prodUrl[0];
+    return {
+      views: [['maker', 'Manage'], ['visitor', 'Visitor']].map(([k, label]) => ({ label, on: st.view === k,
+        pick: () => this.setState({ view: k, panel: k === 'maker' ? st.panel : false }),
+        style: 'min-height: 30px; padding: 0 12px; border: 0; border-radius: 999px; font: inherit; font-size: 13px; cursor: pointer; ' + (st.view === k ? 'background: #FFFFFF; color: #141413; font-weight: 600' : 'background: transparent; color: #6B6A66; font-weight: 500') })),
+      canChange: maker, isVisitor: !maker,
+      tagStyle: 'display: flex; align-items: center; gap: 6px; min-height: 26px; padding: 0 10px; border-radius: 999px; font-family: IBM Plex Mono, monospace; font-size: 11px; letter-spacing: 0.1em; background: ' + C.bg + '; color: ' + C.fg,
+      tagDot: 'width: 8px; height: 8px; border-radius: 50%; background: ' + C.dot, tagLabel: C.mono, tryLabel: isProd ? 'Open it' : 'Try it',
+      panelOpen: maker && st.panel,
+      onKey: (e) => { if (e.key === 'Escape') this.setState({ panel: false }); },
+      togglePanel: () => this.setState({ panel: !st.panel, target: st.panel ? st.target : (STAGES[ci + 1] ? STAGES[ci + 1].k : null) }),
+      changeBtn: 'display: flex; align-items: center; gap: 8px; min-height: 40px; padding: 0 18px; border: 0; border-radius: 999px; font: inherit; font-weight: 600; cursor: pointer; background: rgba(20,20,19,0.06); color: #141413',
+      steps, fields, hasForm: fields.length > 0,
+      reqLabel: reqTotal ? reqDone + ' of ' + reqTotal + ' required' : '',
+      reqStyle: 'font-size: 13px; ' + (reqTotal && reqDone === reqTotal ? 'color: #2F5E4C' : 'color: #6B6A66'),
+      post: st.post, togglePost: () => this.setState({ post: !st.post }),
+      cantConfirm, confirmLabel: !T ? 'Pick a stage' : back ? 'Move back to ' + T.label.toLowerCase() : 'Move to ' + T.label.toLowerCase(),
+      confirmStyle: 'display: flex; align-items: center; min-height: 40px; padding: 0 20px; border: 0; border-radius: 999px; font: inherit; font-weight: 600; ' + (cantConfirm ? 'background: #E4E2DA; color: #6B6A66; cursor: default' : 'background: #141413; color: #FAF9F5; cursor: pointer'),
+      confirm: () => { if (cantConfirm) return;
+        const saved = formKey === 'production' ? { prodUrl: val('prodUrl'), since: val('since'), version: val('version'), who: val('who') || 'everyone' } : sv;
+        this.setState({ stage: target, target: null, saved, moved: (back ? 'Moved back to ' : 'Moved to ') + T.label.toLowerCase() + (st.post ? ' · posted to the feed' : '') }); },
+      moved: !!st.moved, movedLabel: st.moved,
+      isProd,
+      prodWho: prodUrl === SYNC.prodUrl[0] ? 'Deployed by Orun · [run]' : 'Link set by [Maker of ackstack]',
+      prodFacts: [['ADDRESS', prodUrl], ['LIVE SINCE', sv.since || SYNC.since[0]], ['VERSION', sv.version || SYNC.version[0]], ['WHO CAN USE IT', WHO[sv.who || 'everyone']]].map(([label, value]) => ({ label, value }))
+    };
+  }
+}
+</script>
+</body>
+</html>

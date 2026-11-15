@@ -1,0 +1,27 @@
+# SC-4: milestone SC3, synced from Orunbase.
+# The file is the contract; the task itself lives in Orunbase.
+apiVersion: orun.io/v1
+kind: TaskContract
+metadata:
+  name: SC-4
+  title: "SC3: synced from Orunbase"
+spec:
+  goal: The crew and the deploys follow the linked Orunbase project over the S13 seam edge, and the product page shows the sync.
+  affects:
+    - packages/**
+    - core/**
+    - gateway/**
+    - web/**
+    - tests/**
+    - seam-fixtures/**
+    - specs/**
+    - tasks/**
+  deps:
+    - SC-3
+  doneWhen:
+    - The gateway verifies project.roster and project.deploy deliveries at /seam/v1/project-events and core applies them idempotently
+    - A roster adds missing people at their Orunbase role and removes people no longer listed; Leads set on Orunbase stay locked
+    - Deploys fill Where it runs and pre-fill the stage form; a crew edit wins until Use synced
+    - The product page shows the Orunbase card to the crew with the last sync time
+    - The epic status reads complete
+  gates: []

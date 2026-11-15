@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Phone: crew and roles</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600&amp;family=Lora:ital,wght@0,400;0,500;1,400&amp;family=IBM+Plex+Mono:wght@400;500&amp;display=swap">
+<style>
+body{margin:0;background:#F6F4EE}
+a{color:#8A6420}a:hover{color:#5E4415}
+button:focus-visible,a:focus-visible{outline:2px solid #B8862F;outline-offset:2px}
+.op-sw>span{transition:transform .18s cubic-bezier(0.2,0.8,0.2,1)}
+@media (prefers-reduced-motion: reduce){.op-sw>span{transition:none}}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; box-sizing: border-box; background-color: #F6F4EE; background-image: radial-gradient(500px 260px at 50% -10%, rgba(184,134,47,0.18), transparent 62%); color: #141413; font-family: 'Hanken Grotesk', system-ui, sans-serif; font-size: 15px; line-height: 1.5; display: flex; flex-direction: column; overflow: hidden">
+<header style="display: flex; align-items: center; gap: 6px; padding: 8px 10px; min-height: 56px; box-sizing: border-box">
+<a href="{{backHref}}" onClick="{{back}}" aria-label="Back" style="width: 44px; height: 44px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #141413"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"></path></svg></a>
+<span style="flex: 1; min-width: 0; font-weight: 600">{{title}}</span>
+</header>
+<div style="flex: 1; overflow-y: auto; padding: 4px 16px 24px; display: flex; flex-direction: column; gap: 14px">
+
+<sc-if value="{{isList}}" hint-placeholder-val="{{true}}">
+<section style="background: #FFFFFF; border-radius: 16px; padding: 6px 0; display: flex; flex-direction: column">
+<sc-for list="{{people}}" as="p" hint-placeholder-count="5">
+<button type="button" onClick="{{p.open}}" style="{{p.row}}">
+<span style="width: 40px; height: 40px; border-radius: 50%; background: #F0EEE6; display: flex; align-items: center; justify-content: center; font-weight: 600; flex-shrink: 0">{{p.mono}}</span>
+<span style="flex: 1; min-width: 0; display: flex; flex-direction: column; text-align: left; line-height: 1.3"><span style="font-weight: 600">{{p.name}}</span><span style="font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; letter-spacing: 0.1em; color: #6B6A66">{{p.from}}</span></span>
+<span style="font-size: 13px; font-weight: 600; color: #2B2A27">{{p.role}}</span>
+<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6B6A66" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"></path></svg>
+</button>
+</sc-for>
+</section>
+</sc-if>
+
+<sc-if value="{{isPerson}}" hint-placeholder-val="{{false}}">
+<section style="background: #FFFFFF; border-radius: 16px; padding: 16px; display: flex; align-items: center; gap: 12px">
+<span style="width: 48px; height: 48px; border-radius: 50%; background: #F0EEE6; display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 18px">{{sel.mono}}</span>
+<span style="flex: 1; min-width: 0; display: flex; flex-direction: column; line-height: 1.3"><span style="font-weight: 600; font-size: 18px">{{sel.name}}</span><span style="font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; letter-spacing: 0.1em; color: #6B6A66">{{sel.from}}</span></span>
+</section>
+<div role="radiogroup" aria-label="Role" style="display: grid; grid-template-columns: repeat(1, minmax(0, 1fr)); gap: 6px">
+<sc-for list="{{roles}}" as="r" hint-placeholder-count="3">
+<button type="button" role="radio" aria-checked="{{r.on}}" onClick="{{r.pick}}" style="{{r.style}}"><span style="font-weight: 600">{{r.label}}</span><span style="font-size: 13px; opacity: 0.8">{{r.can}}</span></button>
+</sc-for>
+</div>
+<span style="font-size: 13px; color: #6B6A66">Removing them from the project on Orunbase removes them here</span>
+</sc-if>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  constructor(props) { super(props); this.state = { sel: null, r: { b: 'maintainer', n: 'maintainer', d: 'member', a: 'member' } }; }
+  renderVals() {
+    const st = this.state;
+    const NAMES = { lead: 'Lead', maintainer: 'Maintainer', member: 'Member' };
+    const CAN = { lead: 'Everything, and decides who does what', maintainer: 'Edits the product, changes its stage, posts, handles seats', member: 'On the crew, reads private threads' };
+    const PEOPLE = [
+      { id: 'm', name: '[Maker of ackstack]', mono: 'M', from: 'ORUNBASE · OWNER', locked: true },
+      { id: 'b', name: '[Builder]', mono: 'B', from: 'ORUNBASE · BUILDER' },
+      { id: 'n', name: '[Builder 2]', mono: 'B', from: 'ORUNBASE · NEW' },
+      { id: 'd', name: '[Designer]', mono: 'D', from: 'ORUNBASE · TEAM VIEWER' },
+      { id: 'a', name: '[Advisor]', mono: 'A', from: 'ORUNBASE · SEAT' }
+    ];
+    const sel = PEOPLE.find(p => p.id === st.sel);
+    const cur = sel && st.r[sel.id];
+    return {
+      isList: !sel, isPerson: !!sel, title: sel ? 'Role' : 'ackstack / Crew',
+      backHref: sel ? '#' : 'PhoneProduct.dc.html', back: sel ? (e) => { e.preventDefault(); this.setState({ sel: null }); } : undefined,
+      people: PEOPLE.map((pp, i) => ({ ...pp, role: pp.locked ? 'Lead' : NAMES[st.r[pp.id]],
+        open: () => { if (!pp.locked) this.setState({ sel: pp.id }); },
+        row: 'display: flex; align-items: center; gap: 12px; min-height: 60px; padding: 8px 16px; border: 0; background: transparent; font: inherit; color: #141413; ' + (pp.locked ? 'cursor: default; ' : 'cursor: pointer; ') + (i ? 'border-top: 1px solid rgba(20,20,19,0.06)' : '') })),
+      sel: sel || { mono: '', name: '', from: '' },
+      roles: sel ? Object.keys(NAMES).map(k => ({ label: NAMES[k], can: CAN[k], on: cur === k, pick: () => this.setState({ r: { ...st.r, [sel.id]: k } }),
+        style: 'display: flex; flex-direction: column; align-items: flex-start; gap: 2px; min-height: 64px; padding: 10px 14px; border: 0; border-radius: 14px; font: inherit; text-align: left; cursor: pointer; ' + (cur === k ? 'background: #141413; color: #FAF9F5' : 'background: #FFFFFF; color: #141413') })) : []
+    };
+  }
+}
+</script>
+</body>
+</html>
