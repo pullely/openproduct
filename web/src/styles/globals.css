@@ -2019,7 +2019,7 @@ header.bar-frost {
 }
 
 /* The feed's first view (UF3 rule 3): on a fresh load the first posts rise
-   in one after another. Never after a soft navigation (`data-navigated`,
+   12px into place one after another, at full opacity throughout. Never after a soft navigation (`data-navigated`,
    set by AppLink), so coming back to the feed shows it at once. */
 html:not([data-navigated]) [data-feed-posts] > li {
   animation: feed-rise 0.55s cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
@@ -2028,8 +2028,10 @@ html:not([data-navigated]) [data-feed-posts] > li:nth-child(2) { animation-delay
 html:not([data-navigated]) [data-feed-posts] > li:nth-child(3) { animation-delay: 160ms; }
 html:not([data-navigated]) [data-feed-posts] > li:nth-child(4) { animation-delay: 240ms; }
 html:not([data-navigated]) [data-feed-posts] > li:nth-child(n + 5) { animation-delay: 320ms; }
+/* Movement only, never a fade: a post is readable at full contrast from its
+   first frame (an accessibility audit at load caught text mid-fade). */
 @keyframes feed-rise {
-  from { opacity: 0; translate: 0 18px; }
+  from { translate: 0 12px; }
 }
 
 @media (prefers-reduced-motion: reduce) {

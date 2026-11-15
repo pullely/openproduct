@@ -82,7 +82,9 @@ What landed:
   `#content` (`site-content`) crossfades — 0.14s out, 0.22s in — and the
   current section's 2px line (`section-line`) glides to the new one. Hovering
   another section previews its line.
-- The feed's first view: on a fresh load its first posts rise in, 80ms apart;
+- The feed's first view: on a fresh load its first posts rise 12px into
+  place, 80ms apart, at full opacity (a fade failed the contrast audit, which
+  read the text mid-fade);
   after any soft navigation (`data-navigated` on `<html>`) they do not.
 - Reduced motion, or a browser without view transitions: the move simply
   happens, with no animation.
