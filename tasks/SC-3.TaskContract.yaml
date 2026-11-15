@@ -1,0 +1,26 @@
+# SC-3: milestone SC2, crew roles.
+# The file is the contract; the task itself lives in Orunbase.
+apiVersion: orun.io/v1
+kind: TaskContract
+metadata:
+  name: SC-3
+  title: "SC2: crew roles"
+spec:
+  goal: Every crew member holds one role, Lead, Maintainer or Member, every write checks it, and Leads change roles in the Edit crew popup.
+  affects:
+    - packages/**
+    - core/**
+    - gateway/**
+    - web/**
+    - tests/**
+    - specs/epics/openproduct-stages-crew/**
+    - tasks/**
+  deps:
+    - SC-2
+  doneWhen:
+    - listing_maintainers roles are lead, maintainer or member; owners migrate to lead
+    - Writes need Maintainer or Lead; role changes need Lead; Members read private threads
+    - The crew tab shows a count, the leads and Edit crew; the popup searches, filters by role and pages 30 at a time
+    - An approved seat request adds the person as a Member
+    - Web tests and web-perf lanes pass in CI
+  gates: []

@@ -1,0 +1,17 @@
+# SC-1: milestone SC0, the openproduct-stages-crew spec.
+# The file is the contract; the task itself lives in Orunbase.
+apiVersion: orun.io/v1
+kind: TaskContract
+metadata:
+  name: SC-1
+  title: "SC0: the openproduct-stages-crew spec"
+spec:
+  goal: The epic's doc set, the canvas boards and the task contracts are on main.
+  affects:
+    - specs/**
+    - tasks/**
+  doneWhen:
+    - specs/epics/openproduct-stages-crew/ has README, design, implementation-plan, risks and IMPLEMENTATION-STATUS
+    - The canvas boards at v99 sit under boards/
+    - tasks/SC-1 to SC-4 contracts exist
+  gates: []
