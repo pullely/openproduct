@@ -693,8 +693,9 @@ describe("seats — a seat is a role opening, written by slug like every other c
 
 describe("the route files are adapters", () => {
   // SC-2 — `stage`: Change stage, one step at a time. SC-3 — `crew`: the
-  // crew's own list, and Edit crew's save.
-  const ROUTES = ["posts", "milestones", "profile", "needs-you", "seats", "stage", "crew"].map((name) => `[slug]/manage/${name}/route.ts`);
+  // crew's own list, and Edit crew's save. SC-4 — `orunbase`: the crew's
+  // Orunbase card, read only.
+  const ROUTES = ["posts", "milestones", "profile", "needs-you", "seats", "stage", "crew", "orunbase"].map((name) => `[slug]/manage/${name}/route.ts`);
 
   it("exist, one per crew surface, each beside no page", () => {
     for (const file of ROUTES) {
@@ -724,6 +725,8 @@ describe("the route files are adapters", () => {
     expect(code("[slug]/manage/stage/route.ts")).not.toContain("export async function GET");
     // The crew is read (the list) and written (a save) at one address.
     expect(code("[slug]/manage/crew/route.ts")).toMatch(/export async function GET[\s\S]*export async function POST/);
+    // The Orunbase card is read; the platform is what writes it.
+    expect(code("[slug]/manage/orunbase/route.ts")).not.toContain("export async function POST");
   });
 
   it("the one adapter takes the token from the session and answers sign-in through the one place that builds it", () => {

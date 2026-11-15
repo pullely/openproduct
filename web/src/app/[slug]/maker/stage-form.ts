@@ -26,7 +26,13 @@ import {
   STAGE_BACK_REASONS,
   STAGE_BACK_REASON_LABELS,
   STAGE_NOTE_MAX,
+  SYNCED_STAGE_FIELDS,
+  USE_SYNCED,
+  changedFieldLine,
   isoDay,
+  stageLinkOf,
+  syncedFieldLine,
+  syncedStageValues,
   nextStage,
   stageDirection,
   stageFieldError,
@@ -34,10 +40,15 @@ import {
   validateStageChange,
   type ChangeStageRequest,
   type ProductStage,
+  type OrunbaseSync,
   type StageStepField,
+  type SyncedStageField,
 } from "@openproduct/contracts";
 
+import { agoOf } from "../../ui/time";
 import type { StageStart } from "../where-it-runs";
+
+export { USE_SYNCED };
 
 export const CHANGE_STAGE_TITLE = "Change stage";
 
@@ -125,22 +136,78 @@ export type StageValues = Partial<Record<StageFieldName, string>>;
  * What a step's fields start at: the crew's own words for it, off the public
  * document — the listing's repository, the stage link and what people can
  * try, the production facts — and "Open to everyone" for who can use it, as
- * the board does. Nothing else is filled in for them.
+ * the board does. SC3: where the crew set nothing, what Orunbase synced (the
+ * document already shows a synced value where there is no crew one, and the
+ * crew's own sync read fills the steps the document has no row for yet).
  */
-export function initialStageValues(start: StageStart): StageValues {
+export function initialStageValues(start: StageStart, synced: SyncedValues = {}): StageValues {
   const stage = start.whereItRuns.stage;
   const production = start.whereItRuns.production;
   return {
     repository: start.repoUrl ?? "",
     firstMilestone: "",
-    stageUrl: start.tryUrl ?? "",
+    stageUrl: start.tryUrl ?? synced.stageUrl ?? stage?.url ?? "",
     tryWhat: stage?.note ?? "",
-    productionUrl: production?.url ?? "",
-    liveSince: production?.since ?? "",
-    version: production?.version ?? "",
+    productionUrl: production?.url ?? synced.productionUrl ?? "",
+    liveSince: production?.since ?? synced.liveSince ?? "",
+    version: production?.version ?? synced.version ?? "",
     access: production?.access ?? "everyone",
     reason: "",
   };
+}
+
+// ─── SC3: what Orunbase synced, beside what the crew typed ─────────────────
+
+/** What a deploy says for each field it can fill. */
+export type SyncedValues = Partial<Record<SyncedStageField, string>>;
+
+/** The crew's sync read, as the form's synced values. */
+export function syncedValuesOf(sync: Pick<OrunbaseSync, "stage" | "production"> | null): SyncedValues {
+  return syncedStageValues(sync);
+}
+
+/** The values once the sync read arrives: every field still empty takes the
+ *  synced value; nothing the crew already has is touched. */
+export function withSynced(values: StageValues, synced: SyncedValues): StageValues {
+  const next: StageValues = { ...values };
+  for (const name of SYNCED_STAGE_FIELDS) {
+    const value = synced[name];
+    if (value && !(next[name] ?? "").trim()) next[name] = value;
+  }
+  return next;
+}
+
+function isSyncedField(name: StageFieldName): name is SyncedStageField {
+  return (SYNCED_STAGE_FIELDS as readonly string[]).includes(name);
+}
+
+/** Two values the same, a link compared as the contract normalises it. */
+function same(name: SyncedStageField, value: string, synced: string): boolean {
+  if (name === "stageUrl" || name === "productionUrl") {
+    return (stageLinkOf(value.trim()) ?? value.trim()) === (stageLinkOf(synced) ?? synced);
+  }
+  return value.trim() === synced;
+}
+
+/** The line under a field a deploy can fill (boards `Stage`, `PhoneStage`):
+ *  green "Synced from Orunbase · …" while it holds the synced value, amber
+ *  "Changed by you · Orunbase has …" with Use synced once the crew changed
+ *  it; nothing where Orunbase said nothing. */
+export type SyncState = { kind: "synced" | "changed"; text: string; synced: string };
+
+export function syncStateOf(
+  name: StageFieldName,
+  value: string,
+  synced: SyncedValues,
+  sync: Pick<OrunbaseSync, "stage" | "production"> | null,
+  now: Date,
+): SyncState | null {
+  if (!sync || !isSyncedField(name)) return null;
+  const value_ = synced[name];
+  if (!value_) return null;
+  return same(name, value, value_)
+    ? { kind: "synced", text: syncedFieldLine(name, sync, (iso) => agoOf(iso, now.getTime())), synced: value_ }
+    : { kind: "changed", text: changedFieldLine(value_), synced: value_ };
 }
 
 /** One field's sentence, while the person types: null when it is fine, or

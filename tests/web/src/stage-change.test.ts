@@ -206,12 +206,13 @@ describe("Change stage lives inside Edit details, and nowhere else (design §1.4
 
 describe("Where it runs (design §1.5)", () => {
   const where: WhereItRuns = {
-    stage: { url: "https://stage.acme.dev/", note: "Send a policy", setBy: null, at: null },
+    stage: { url: "https://stage.acme.dev/", note: "Send a policy", version: null, source: { url: "crew" }, setBy: null, at: null },
     production: {
       url: "https://acme.app/",
       since: "2026-11-12",
       version: "1.0.0",
       access: "waitlist",
+      source: { url: "crew", since: "crew", version: "crew" },
       setBy: { kind: "crew", name: "Ada Iyer", handle: "ada" },
       at: "2026-11-15T10:00:00.000Z",
     },

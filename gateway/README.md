@@ -33,8 +33,10 @@ platform. It applies CORS, rate limits and auth, then forwards to the
   asks the platform which subject an email address belongs to
   (`/v1/seam/openproduct/subject-by-email`) and checks the password against
   core.
-- **Seam receivers.** It verifies the platform's HMAC-signed S6/S7 webhooks with
-  `LISTING_SEAM_SECRET`, then forwards them to core.
+- **Seam receivers.** It verifies the platform's HMAC-signed S6/S7/S14 webhooks
+  with `LISTING_SEAM_SECRET`, then forwards them to core. For S14 the
+  envelope's `eventId` must be the delivery's `X-Webhook-ID`; after core
+  applies one, the product (and, for a roster, people) pages are purged.
 - **Media.** Upload (`POST .../profiles/{profile}/media`) keeps the bytes in this
   worker and writes them to the `MEDIA` R2 bucket. Serving `/v1/media/...` is one
   R2 read with an immutable cache header, and never touches core.
@@ -66,7 +68,7 @@ platform. It applies CORS, rate limits and auth, then forwards to the
 | POST | `/v1/openproduct/auth/{sign-up,verify,sign-in,sign-out}` | Password auth plane |
 | various | `/v1/openproduct/me/**`, `/listings/{slug}/people`, `/reports/**`, `/threads/**`, `/comments`, `/posts/{id}/vote` | Signed-in contributor, roster, moderation and discussion routes |
 | various | `/v1/organizations/{org}/openproduct/profiles/**` | Maker routes for a listing, including media upload and `POST .../repo-check` (the S8 repository read) |
-| POST | `/seam/v1/{join-requests,workspace-events,workspace-purge}` | Signed platform webhooks (S6, S7) |
+| POST | `/seam/v1/{join-requests,workspace-events,workspace-purge,project-events}` | Signed platform webhooks (S6, S7, S14) |
 
 - **Cron triggers:** `*/10 * * * *` and `23 * * * *` (see above).
 - **Durable Object:** `RateLimitBucket`, bound as `RATE_LIMIT`, SQLite-backed
@@ -143,6 +145,6 @@ pnpm --filter @openproduct/gateway dev                         # wrangler dev
 ## Related
 
 - Tests: [`tests/gateway`](../tests/gateway/README.md)
-- Seam contract (S2, S6, S7, S8): `specs/components/19-openproduct-seam.md` (in sourceplane/orun-cloud)
+- Seam contract (S2, S6, S7, S8, S14): `specs/components/19-openproduct-seam.md` (in sourceplane/orun-cloud)
 - `specs/epics/openproduct-independence/` (in sourceplane/orun-cloud) (the gateway's origin) · `openproduct-performance` (sourceplane/orun-cloud `specs/epics/openproduct-performance/README.md`) (caching, the `api.` hostname) · `openproduct-worldclass` (sourceplane/orun-cloud `specs/epics/openproduct-worldclass/README.md`) (the sweep schedule, media, MCP)
 - Public API docs page: <https://openproduct.live/docs/api>

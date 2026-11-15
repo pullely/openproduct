@@ -32,7 +32,8 @@ service binding.
   issuing, resolving and revoking `ops_` sessions.
 - Verifies the platform's workspace link grant (seam S4, `src/seam.ts`) and
   records the seam events the gateway forwards (S6 join requests and workspace
-  events, S7 workspace purge).
+  events, S7 workspace purge, S14 the linked project's roster and deploys,
+  which keep each crew and Where it runs in sync with Orunbase).
 - Does the inward half of the sweep when the gateway calls it: rebuilds the
   catalogue and search index, takes snapshots, runs the integrity and defence
   sweeps, ranks launch boards, fires due launches, queues the digest and records
@@ -62,6 +63,7 @@ headers the gateway sets after resolving the bearer.
 | POST | `/internal/openproduct/auth/sessions[/resolve,/revoke]` | Issue, resolve and revoke openproduct sessions |
 | GET | `/internal/openproduct/credentials/{id}` | The credential read the gateway's sign-in uses |
 | POST | `/internal/openproduct/seam/{join-request,workspace-event}` | S6 seam events (signature already checked by the gateway) |
+| POST | `/internal/openproduct/seam/project-event` | S14 `project.roster` and `project.deploy` (signature already checked by the gateway) |
 | POST | `/v1/internal/openproduct/workspace-purge` | S7 workspace purge; refuses unless `WORKSPACE_PURGE_ENABLED` is `"true"` |
 | GET, POST | `/internal/openproduct/{signals,media/captures,sweep,search,catalogue,snapshots,endorsements,defence,digest,launches}/...` | Sweep endpoints driven by the gateway's cron |
 

@@ -58,7 +58,7 @@ export async function crewWrite<T>(
  *  read's own search params (`?q=&role=&cursor=` for the crew list). */
 export async function crewRead<T>(
   slug: string,
-  route: "milestones" | "needs-you" | "posts" | "crew",
+  route: "milestones" | "needs-you" | "posts" | "crew" | "orunbase",
   fetchImpl: typeof fetch = fetch,
   query = "",
 ): Promise<CrewActResult<T>> {

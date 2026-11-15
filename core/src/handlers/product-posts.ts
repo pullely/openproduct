@@ -40,6 +40,7 @@ import {
   productPostsPageSize,
   publishedPostBlocks,
   validatePostBlocks,
+  stageLinkOf,
   validateStageChange,
   type CrewMilestone,
   type CrewNeedsYou,
@@ -1098,17 +1099,22 @@ export async function handleChangeStage(
       : [];
   const stageDeploy = deploys.find((d) => d.environment === "stage");
   const productionDeploy = deploys.find((d) => d.environment === "production");
-  const unlessSynced = (value: string | null, synced: string | null | undefined): string | null =>
-    value !== null && synced && value === synced ? null : value;
+  // Links compare as the contract normalises them (`stageLinkOf`), as the
+  // request's own value already was.
+  const unlessSynced = (value: string | null, synced: string | null | undefined, link = false): string | null => {
+    if (value === null || !synced) return value;
+    const syncedValue = link ? (stageLinkOf(synced) ?? synced) : synced;
+    return value === syncedValue ? null : value;
+  };
   const moved = await deps.repo.setProductStage(profileId, {
     from: change.from,
     to: change.to,
     ...(change.direction === "forward" && change.to === "stage"
-      ? { tryUrl: unlessSynced(change.stageUrl, stageDeploy?.url), stageNote: change.tryWhat }
+      ? { tryUrl: unlessSynced(change.stageUrl, stageDeploy?.url, true), stageNote: change.tryWhat }
       : {}),
     ...(change.direction === "forward" && change.to === "production"
       ? {
-          productionUrl: unlessSynced(change.productionUrl, productionDeploy?.url),
+          productionUrl: unlessSynced(change.productionUrl, productionDeploy?.url, true),
           productionSince: unlessSynced(change.liveSince, productionDeploy?.firstDeployedAt.slice(0, 10)),
           productionVersion: unlessSynced(change.version, productionDeploy?.version),
           productionAccess: change.access,

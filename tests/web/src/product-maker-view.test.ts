@@ -121,6 +121,9 @@ describe("no maker element is in any server render", () => {
       "needs-you.tsx",
       "new-post.tsx",
       "notice.tsx",
+      // SC-4 — the Orunbase card at the top of the right rail, fetched for
+      // the crew only.
+      "orunbase-card.tsx",
       // Keeps the room the maker view takes true (`gate.ts`).
       "reserve.tsx",
       // The seat form and the crew's seats card, fetched for the crew.
@@ -137,21 +140,21 @@ describe("no maker element is in any server render", () => {
   it("a visitor's bundle carries the gates and never the pieces: each crew-only piece is fetched for the crew", () => {
     const page = code(PAGE);
     // The page takes the crew-only pieces through the gates…
-    expect(page).toContain('import { CrewRoles, EditPostLink, MilestonesManager, NeedsYou, NewPostRow, ViewSwitch } from "./maker/lazy";');
-    for (const file of ["view-switch", "needs-you", "new-post", "milestones", "details-form", "seat-form", "crew-roles", "crew-dialog", "crew-model", "model", "act"]) {
+    expect(page).toContain('import { CrewRoles, EditPostLink, MilestonesManager, NeedsYou, NewPostRow, OrunbaseCard, ViewSwitch } from "./maker/lazy";');
+    for (const file of ["view-switch", "needs-you", "new-post", "milestones", "details-form", "seat-form", "crew-roles", "crew-dialog", "crew-model", "orunbase-card", "orunbase-model", "model", "act"]) {
       expect([file, new RegExp(`from "\\./maker/${file}"`).test(page)]).toEqual([file, false]);
     }
     // …and each gate asks `useMaker` before it fetches anything.
     const gates = code(`${MAKER_DIR}/lazy.tsx`);
-    expect(gates.match(/React\.lazy\(\(\) =>\s*import\("\.\/(view-switch|needs-you|new-post|milestones|crew-roles)"\)/g)).toHaveLength(6);
-    expect(gates).not.toMatch(/^import .* from "\.\/(view-switch|needs-you|new-post|milestones|crew-roles|crew-dialog|crew-model|model|act)";$/m);
+    expect(gates.match(/React\.lazy\(\(\) =>\s*import\("\.\/(view-switch|needs-you|new-post|milestones|crew-roles|orunbase-card)"\)/g)).toHaveLength(7);
+    expect(gates).not.toMatch(/^import .* from "\.\/(view-switch|needs-you|new-post|milestones|crew-roles|crew-dialog|crew-model|orunbase-card|orunbase-model|model|act)";$/m);
     expect(gates.match(/if \(!managing\) return null;/g)).toHaveLength(4);
     // SC-3 — the switch is for the crew who write; the roles card for the
     // whole crew (a Member read-only), on Manage.
     expect(gates).toContain("if (!writes) return null;");
     expect(gates).toContain("if (crew === null) return null;");
     expect(gates).toContain('if (mode !== "manage") return null;');
-    expect(gates.match(/<React\.Suspense fallback=\{null\}>/g)).toHaveLength(6);
+    expect(gates.match(/<React\.Suspense fallback=\{null\}>/g)).toHaveLength(7);
     // Edit crew's popup is fetched from inside the roles card, when pressed.
     expect(code(`${MAKER_DIR}/crew-roles.tsx`)).toContain('React.lazy(() => import("./crew-dialog")');
     // The two files that draw something for a visitor as well (the pitch,
@@ -170,14 +173,17 @@ describe("no maker element is in any server render", () => {
   it("holds the maker view's room from the first paint on a later visit, and gives it back when it is not the crew's page", () => {
     // The slots: empty in every visitor's page, around the pieces that push
     // what is under them down.
-    expect([...MAKER_SLOTS]).toEqual(["needs-you", "post", "milestones"]);
+    // SC-4 — the Orunbase card, at the top of each page's right rail.
+    expect([...MAKER_SLOTS]).toEqual(["needs-you", "post", "milestones", "orunbase"]);
     const page = code(PAGE);
-    expect(page.match(/<MakerSlot name="(needs-you|post|milestones)">/g)).toEqual([
+    expect(page.match(/<MakerSlot name="(needs-you|post|milestones|orunbase)">/g)).toEqual([
+      '<MakerSlot name="orunbase">',
       '<MakerSlot name="needs-you">',
       '<MakerSlot name="post">',
       '<MakerSlot name="milestones">',
       '<MakerSlot name="needs-you">',
       '<MakerSlot name="milestones">',
+      '<MakerSlot name="orunbase">',
     ]);
     expect(page).toContain('<div data-maker-slot={name} className="maker-slot" style={{ minHeight: `var(${makerSlotProperty(name)}, 0px)` }}>');
     expect(makerSlotProperty("needs-you")).toBe("--maker-needs-you");

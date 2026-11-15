@@ -29,9 +29,12 @@ import {
   type CrewMilestone,
   type CrewNeedsYou,
   type CrewProductPost,
+  type OrunbaseCard,
   type ProductStage,
 } from "@openproduct/contracts";
 
+import { consoleOrigin } from "../../lib/platform";
+import { consoleWorkspaceViewUrl } from "../[slug]/workspace-view";
 import { sanitizeReturnTo } from "../auth/auth";
 
 import {
@@ -43,6 +46,7 @@ import {
   deleteCrewSeat,
   fetchCrewList,
   fetchNeedsYou,
+  fetchOrunbaseSync,
   saveCrewRoles,
   listCrewMilestones,
   listCrewPosts,
@@ -501,6 +505,24 @@ export async function handleCrewSave(call: CrewCall): Promise<CrewAnswer> {
 /** `GET /{slug}/manage/needs-you` — pending seat requests and drafts. */
 export async function handleNeedsYouRead(call: CrewCall): Promise<CrewAnswer> {
   return crewRead<{ needsYou: CrewNeedsYou }>(call, (token, ids) => fetchNeedsYou(token, ids, call.fetchImpl));
+}
+
+/**
+ * `GET /{slug}/manage/orunbase` — the crew's Orunbase card (SC-4, design
+ * §3.4): core's sync read, and where "Manage on Orunbase" goes — the
+ * workspace on the console (`consoleOrigin()` and the workspace's public id,
+ * the S12 landing), which only this side knows. Anybody on the crew.
+ */
+export async function handleOrunbaseRead(call: CrewCall, origin: string = consoleOrigin()): Promise<CrewAnswer> {
+  return crewRead<OrunbaseCard>(call, async (token, ids) => {
+    const result = await fetchOrunbaseSync(token, ids, call.fetchImpl);
+    if (result.kind !== "ok") return result;
+    const sync = result.data;
+    return {
+      kind: "ok",
+      data: { ...sync, manageUrl: sync.workspaceRef ? consoleWorkspaceViewUrl(origin, sync.workspaceRef) : null },
+    };
+  });
 }
 
 /**

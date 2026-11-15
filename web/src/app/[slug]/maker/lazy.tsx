@@ -27,6 +27,8 @@ const NewPostRowBody = React.lazy(() => import("./new-post").then((module) => ({
 const EditPostLinkBody = React.lazy(() => import("./new-post").then((module) => ({ default: module.EditPostLink })));
 // SC-3 — the crew tab's roles card (and, inside it, Edit crew).
 const CrewRolesBody = React.lazy(() => import("./crew-roles").then((module) => ({ default: module.CrewRoles })));
+// SC-4 — the Orunbase card at the top of the right rail.
+const OrunbaseCardBody = React.lazy(() => import("./orunbase-card").then((module) => ({ default: module.OrunbaseCard })));
 const MilestonesManagerBody = React.lazy(() =>
   import("./milestones").then((module) => ({ default: module.MilestonesManager })),
 );
@@ -96,6 +98,19 @@ export function CrewRoles({ slug }: { slug: string }) {
   return (
     <React.Suspense fallback={null}>
       <CrewRolesBody slug={slug} />
+    </React.Suspense>
+  );
+}
+
+/** The Orunbase card: everybody on the crew, on Manage. Never in the cached
+ *  page — when the crew and the deploys last synced is the crew's. */
+export function OrunbaseCard({ slug }: { slug: string }) {
+  const { crew, mode } = useMaker(slug);
+  if (crew === null) return null;
+  if (mode !== "manage") return null;
+  return (
+    <React.Suspense fallback={null}>
+      <OrunbaseCardBody slug={slug} />
     </React.Suspense>
   );
 }

@@ -250,8 +250,10 @@ describe("the header card is the board's", () => {
     );
     expect(shipping.match(/Try it/g)).toBeNull();
     const where = code("[slug]/where-it-runs.ts");
-    expect(where).toContain('if (profile.stage === "production" && production) return { label: "Open it", href: production.url };');
-    expect(where).toContain('return profile.tryUrl ? { label: "Try it", href: profile.tryUrl } : null;');
+    expect(where).toContain('if (profile.stage === "production" && where.production) return { label: "Open it", href: where.production.url };');
+    // SC-4 — the crew's try link ?? the stage deploy's address.
+    expect(where).toContain("const tryHref = profile.tryUrl ?? where.stage?.url ?? null;");
+    expect(where).toContain('return tryHref ? { label: "Try it", href: tryHref } : null;');
     // No stand-in destination: not the live address, not the repository.
     expect(actions).not.toContain("profile.liveUrl");
     expect(actions).not.toMatch(/Try it[\s\S]{0,40}profile\.repoUrl/);

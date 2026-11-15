@@ -112,7 +112,7 @@ import { TalkSection } from "../talk/talk-section";
 import { InstallLine } from "./install-line";
 import { LaunchHealth } from "./launch-health";
 import { MakerHeaderActions, ProductPitch, VisitorOnly } from "./maker/details";
-import { CrewRoles, EditPostLink, MilestonesManager, NeedsYou, NewPostRow, ViewSwitch } from "./maker/lazy";
+import { CrewRoles, EditPostLink, MilestonesManager, NeedsYou, NewPostRow, OrunbaseCard, ViewSwitch } from "./maker/lazy";
 import { makerSlotProperty, type MakerSlotName } from "./maker/gate";
 import { CrewNoticeLine } from "./maker/notice";
 import { MakerReserve } from "./maker/reserve";
@@ -577,6 +577,12 @@ async function ShippingPage({
             Crew card steps aside on the Crew tab, which is the same people
             and seats at full width: nothing is on the page twice. */}
         <aside className={BOARD_STACK}>
+          {/* SC-4 — the Orunbase card, at the top of the rail: the crew's
+              own, after load (design §3.4). The slot is empty in every
+              visitor's page; the crew's browser holds its room. */}
+          <MakerSlot name="orunbase">
+            <OrunbaseCard slug={slug} />
+          </MakerSlot>
           {tab === "crew" ? null : (
             <CrewSideCard slug={slug} maintainers={profile.maintainers} openRoles={openRoles} />
           )}
@@ -975,6 +981,9 @@ async function IdeaPage({ read, profile }: { read: ListingRead; profile: PublicP
         </div>
 
         <aside className={BOARD_STACK}>
+          <MakerSlot name="orunbase">
+            <OrunbaseCard slug={slug} />
+          </MakerSlot>
           <CrewSideCard
             slug={slug}
             maintainers={profile.maintainers}

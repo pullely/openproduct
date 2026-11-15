@@ -3,13 +3,13 @@
 import * as React from "react";
 import { createPortal } from "react-dom";
 
-import type { ProductStage } from "@openproduct/contracts";
+import type { OrunbaseSync, ProductStage } from "@openproduct/contracts";
 
 import { BTN_INK, FOCUS } from "../../ui/design";
 import { STAGE_TONE } from "../../ui/stage-tone";
 import type { StageStart } from "../where-it-runs";
 
-import { crewWrite, fieldError } from "./act";
+import { crewRead, crewWrite, fieldError } from "./act";
 import {
   CHANGE_STAGE_TITLE,
   canMove,
@@ -22,8 +22,13 @@ import {
   stageFormFields,
   stageOptions,
   stageRequestOf,
+  syncStateOf,
+  syncedValuesOf,
+  withSynced,
+  USE_SYNCED,
   type StageFormField,
   type StageValues,
+  type SyncState,
 } from "./stage-form";
 import { useMaker } from "./use-maker";
 
@@ -78,6 +83,11 @@ export function StageDialog({
   const [errors, setErrors] = React.useState<Record<string, string[]>>({});
   const [failed, setFailed] = React.useState<string | null>(null);
   const [busy, setBusy] = React.useState(false);
+  // SC-4 — what Orunbase synced: the crew's own read, asked once on open.
+  // Fields still empty take the synced value; each field a deploy can fill
+  // then says whether it holds it (green) or the crew changed it (amber).
+  const [sync, setSync] = React.useState<OrunbaseSync | null>(null);
+  const synced = React.useMemo(() => syncedValuesOf(sync), [sync]);
   const dialog = React.useRef<HTMLDivElement | null>(null);
   const titleId = React.useId();
   const now = new Date();
@@ -85,6 +95,19 @@ export function StageDialog({
   const fields = target ? stageFormFields(from, target) : [];
   const progress = requiredProgress(fields, values, now);
   const movable = !busy && canMove(from, target, values, now);
+
+  React.useEffect(() => {
+    let live = true;
+    void (async () => {
+      const result = await crewRead<OrunbaseSync>(slug, "orunbase");
+      if (!live || !result.ok || !result.data.linked) return;
+      setSync(result.data);
+      setValues((current) => withSynced(current, syncedValuesOf(result.data)));
+    })();
+    return () => {
+      live = false;
+    };
+  }, [slug]);
 
   // In on open, trapped while open, back on close.
   React.useEffect(() => {
@@ -236,6 +259,7 @@ export function StageDialog({
                   value={values[field.name] ?? ""}
                   onChange={(value) => set(field.name, value)}
                   error={fieldError(errors, field.name) ?? liveFieldError(field, values[field.name] ?? "", now)}
+                  sync={syncStateOf(field.name, values[field.name] ?? "", synced, sync, now)}
                 />
               ))}
             </div>
@@ -286,11 +310,14 @@ function StageField({
   value,
   onChange,
   error,
+  sync = null,
 }: {
   field: StageFormField;
   value: string;
   onChange: (value: string) => void;
   error: string | null;
+  /** SC-4 — the synced value's line, for a field a deploy can fill. */
+  sync?: SyncState | null;
 }) {
   const id = React.useId();
   const errorId = `${id}-error`;
@@ -370,7 +397,40 @@ function StageField({
         />
       )}
       {error ? <FieldError id={errorId}>{error}</FieldError> : null}
+      {sync ? <SyncLine sync={sync} onUseSynced={() => onChange(sync.synced)} /> : null}
     </label>
+  );
+}
+
+/**
+ * SC-4 — the line under a field a deploy can fill (boards `Stage`,
+ * `PhoneStage`): green "Synced from Orunbase · …" while it holds the synced
+ * value; amber "Changed by you · Orunbase has …" and **Use synced** once the
+ * crew changed it. Use synced puts the synced value back, and a Move that
+ * sends it stores no value of the crew's own — the page follows the deploys
+ * again (core, `handleChangeStage`).
+ */
+function SyncLine({ sync, onUseSynced }: { sync: SyncState; onUseSynced: () => void }) {
+  return (
+    <span
+      data-sync-line={sync.kind}
+      className={`flex min-w-0 items-center gap-1.5 text-[13px] ${sync.kind === "synced" ? "text-success" : "text-amber-ink"}`}
+    >
+      <span className="min-w-0 flex-1 truncate">{sync.text}</span>
+      {sync.kind === "changed" ? (
+        <button
+          type="button"
+          data-use-synced
+          onClick={(event) => {
+            event.preventDefault();
+            onUseSynced();
+          }}
+          className={`inline-flex min-h-[28px] shrink-0 cursor-pointer items-center border-0 bg-transparent p-0 text-[13px] font-semibold text-amber-ink hover:underline max-sm:min-h-[44px] ${FOCUS}`}
+        >
+          {USE_SYNCED}
+        </button>
+      ) : null}
+    </span>
   );
 }
 

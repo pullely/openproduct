@@ -4,8 +4,112 @@
 |---|---|---|---|
 | SC0 — the spec | SC-1 | Done | #23 |
 | SC1 — four stages and where it runs | SC-2 | Done | #24 |
-| SC2 — crew roles | SC-3 | In review | this PR |
-| SC3 — synced from Orunbase | SC-4 | Not started | |
+| SC2 — crew roles | SC-3 | Done | #25 |
+| SC3 — synced from Orunbase | SC-4 | Done | #26 |
+
+**The epic is complete.** Every milestone has landed; what is left is listed
+under "Known follow-ups" below, and marking EP-5 completed in the Orunbase
+console is the one leftover outside this repository.
+
+## From SC3
+
+What landed:
+
+- **The seam edge S14** (not S13, which was already the workspace picker):
+  `POST /seam/v1/project-events` on the gateway, verified like S6 (the
+  canonical HMAC scheme with `LISTING_SEAM_SECRET`), the envelope's `eventId`
+  required to be the delivery's `X-Webhook-ID`, forwarded to core over the
+  binding. After core applies an event the gateway purges the product pages
+  (and, for a roster, the people pages). The platform's two fixtures are in
+  `seam-fixtures/` byte for byte (sourceplane/orun-cloud#2405) and pinned by
+  exact-key tests in the contracts, core and the gateway. The ids are the
+  public `org_…` / `prj_…` forms, parsed as the workspace event's are.
+- **Migration 2295**: `product_deploys` (one row per listing per environment:
+  url, version, run ref, the last `deployed_at` and the earliest
+  `first_deployed_at`), `product_syncs` (the last applied roster's `issuedAt`
+  and event id, and when anything last synced), and
+  `listing_maintainers.synced_name` — the name Orunbase gave a synced person,
+  read by the crew's own list after their own name and the public roster's,
+  and by no public query. It sits on the membership row, which the subject
+  registry already classifies as theirs, so it leaves with them.
+- **Core applies** each event to every listing whose stored link grant names
+  the project (an unknown project answers 200 `{recorded: false}`, the S6
+  fail-soft). A `project.roster` is ignored when it repeats the last event
+  id or is older than the last applied roster; otherwise one statement makes
+  the crew the snapshot: the missing are added at their access's role
+  (admin → a locked Lead, builder → Maintainer, viewer → Member; `source`
+  orunbase), admins are re-locked as Lead, a locked Lead who is no longer an
+  admin is unlocked at their access's role, every other role the crew chose
+  stands, and everybody not listed is removed — whatever brought them —
+  with their consent-roster edge retired, so the public page drops them and
+  the private threads close to them by the same decision table. Each add,
+  removal, re-lock and unlock is audited (`openproduct.crew.synced_*`) with
+  roles and no subject id, the crew route's rule. A `project.deploy` is
+  upserted per environment: newer `deployedAt` wins, a late older one only
+  moves "first deployed" earlier.
+- **Synced vs crew values** (design §3.3): Where it runs reads the crew's
+  value ?? the synced one — the stage link is the try link ?? the stage
+  deploy's address, the stage row shows the stage deploy's version, and
+  production's link, version and "live since" are the crew's ?? the
+  production deploy's (its first deploy's day). Each row carries a per-field
+  `source` (`crew` · `synced`; a crew value equal to the synced one reads as
+  synced), and `setBy` gains `{kind: "orun"}`: "Deployed by Orun · <day>"
+  when the row's link is the synced one. The catalogue API's `whereItRuns`
+  carries the same, and its `tryUrl` stays the crew's own word. Try it goes to
+  the synced stage link when the crew set none.
+- **Use synced**: the Change stage popup asks the crew's sync read on open,
+  fills each empty field a deploy can fill, and says under each such field
+  "Synced from Orunbase · stage deploy <run> · <time>" (green) or, once the
+  crew changed it, "Changed by you · Orunbase has <value>" with **Use
+  synced** (amber), which puts the synced value back. Core stores a submitted
+  value equal to the synced one as no crew value (null), so the page keeps
+  following the deploys; a changed one is the crew's and wins. Same door
+  (`write`: Maintainer and Lead) as every stage move.
+- **The Orunbase card**: `GET …/profiles/{id}/orunbase` (any role,
+  `read_crew`) and `GET /{slug}/manage/orunbase` on the web, which adds where
+  "Manage on Orunbase" goes — the workspace's console landing
+  (`consoleOrigin()` and the workspace ref, the S12 door). The card is the
+  first thing in the right rail of both product pages (on a phone, where the
+  rail stacks under the column), for the crew on Manage, read after load and
+  never in the cached page: "Orunbase", "In sync · <time>", Crew · N people,
+  Stage · <version> · <time>, Production · <…> or "No deploy yet", Manage on
+  Orunbase. No Sync now button (design §3.5). Its room is held by a fourth
+  maker slot (`orunbase`), so a crew member's later visits do not move the
+  rail when it arrives.
+
+Departures from the design, said plainly:
+
+- **Two more safety nets on the roster**: one that lists nobody, or no
+  admin, is ignored and logged (`seam_roster_ignored`). The platform sends
+  nothing when a read fails and every workspace has an owner, so either means
+  something went wrong upstream — and applying it would empty the crew or
+  leave it with no Lead.
+- **Use synced lives in the Change stage popup**, as the board draws it. A
+  product already in production returns a field to the synced value at its
+  next move; emptying the Stage link in Edit details makes the stage row
+  follow the stage deploy again. There is no separate Use synced endpoint.
+- **The early roster is dropped, not buffered**: the roster sent when the link
+  grant is minted can reach openproduct before it stored the grant, finds no
+  listing and is answered `{recorded: false}`. The next change, or the
+  platform's daily sweep, heals it; a buffer keyed by a project nobody has
+  linked yet would be a table of strangers' rosters.
+- **Manage on Orunbase goes to the S12 landing** (`/view/{workspaceRef}`),
+  the one console address this side already mints; for the crew it opens the
+  workspace they are already in.
+- `seam-fixtures/webhook-contract.json` (the twin-copied transport card) is
+  unchanged: the platform's commit did not add S14's path to it, and the card
+  is to change on both sides at once.
+
+Known follow-ups:
+
+- No post kind for a stage change, so the Change stage popup has no comment
+  box and no "Post it to the feed" (from SC1).
+- `/products/stage/shipping` and `/help-wanted/stage/shipping`, OPR-3's old
+  filter addresses, answer 404 (from SC1).
+- A deploy's `url` is always null until the platform knows environment
+  addresses; until then the crew types the links and the deploys fill the
+  versions and "live since" only.
+- Console only: mark EP-5 completed in Orunbase.
 
 ## From SC2
 

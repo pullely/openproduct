@@ -137,9 +137,24 @@ function stageOf(i) {
 /** Whether a stage has a stage link: on stage and in production. */
 const LIVE = (stage) => stage === "stage" || stage === "production";
 
+/** SC-4 — the sample's last stage deploy, as Orunbase reported it (the
+ *  crew's Orunbase card reads it; the url is null as the platform sends it). */
+const STAGE_DEPLOY = {
+  url: null,
+  version: "v0.4.0",
+  runRef: "01JD00000000000000000STAGE",
+  deployedAt: "2026-05-30T09:00:00.000Z",
+  firstDeployedAt: "2026-05-02T09:00:00.000Z",
+};
+
 /** SC-2 — Where it runs, as core's projection writes it (contracts
  *  `whereItRunsOf`): the stage row while on stage or in production, the
- *  production row in production, who set it named through the roster. */
+ *  production row in production, who set it named through the roster.
+ *
+ *  SC-4 — synced from Orunbase: the sample (`product-00`, on stage) has a
+ *  stage deploy whose version the row shows; a product in production reads
+ *  its version and "live since" from its production deploys (the links stay
+ *  the crew's — the platform reports no address yet). */
 function WHERE_IT_RUNS_FOR(c) {
   const by = { kind: "crew", name: "Ada Lovelace", handle: SAMPLE_HANDLE };
   return {
@@ -147,16 +162,27 @@ function WHERE_IT_RUNS_FOR(c) {
       ? {
           url: `https://example.com/${c.slug}`,
           note: "Sign up, send a policy and collect a signature.",
+          version: c.slug === SAMPLE_SLUG ? STAGE_DEPLOY.version : null,
+          source: { url: "crew" },
           setBy: c.stage === "stage" ? by : null,
           at: c.stage === "stage" ? EARLIER : null,
         }
       : null,
     production:
       c.stage === "production"
-        ? { url: `https://${c.slug}.example.com/`, since: "2026-05-01", version: "1.0.0", access: "everyone", setBy: by, at: EARLIER }
+        ? {
+            url: `https://${c.slug}.example.com/`,
+            since: "2026-05-01",
+            version: "1.0.0",
+            access: "everyone",
+            source: { url: "crew", since: "synced", version: "synced" },
+            setBy: by,
+            at: EARLIER,
+          }
         : null,
   };
 }
+
 
 const MILESTONE_ID = (n) => `pms_${String(n).padStart(32, "0")}`;
 
@@ -1575,6 +1601,12 @@ function crewAnswer(rest, req, search) {
   const method = req.method ?? "GET";
   const body = req.body && typeof req.body === "object" ? req.body : {};
   if (rest === "/crew" || rest.startsWith("/crew/")) return crewRolesAnswer(rest, req, search);
+  // SC-4 — the crew's Orunbase card: in sync, the crew, the stage deploy;
+  // nothing in production yet. Exactly ORUNBASE_SYNC_KEYS.
+  if (rest === "/orunbase") {
+    if (method !== "GET") return undefined;
+    return { linked: true, syncedAt: EARLIER, crew: CREW_PEOPLE.length, stage: STAGE_DEPLOY, production: null, workspaceRef: CREW_ORG };
+  }
   const milestones = CREW_MILESTONES_FOR(CREW_SLUG);
   const stage = CARDS[0].stage;
   // SC-2 — Change stage. Answered as core would for a step it accepted;
