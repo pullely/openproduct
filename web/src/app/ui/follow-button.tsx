@@ -85,6 +85,7 @@ export function FollowButton({
   size = "regular",
   tone = "plain",
   countHidden = false,
+  glyph = false,
 }: {
   kind: FollowKind;
   value: string;
@@ -98,6 +99,9 @@ export function FollowButton({
   tone?: "plain" | "outline" | "ink";
   /** The sidebar's rows draw the button alone; the count is on the page. */
   countHidden?: boolean;
+  /** LR3 (openproduct-left-rail design §5.2): draw a plus that becomes a tick
+   *  instead of the words. The words stay as the control's name. */
+  glyph?: boolean;
 }) {
   const key = followKey({ kind, value });
   const state = useOverlay(
@@ -141,11 +145,22 @@ export function FollowButton({
         disabled={pending}
         aria-pressed={following}
         title={FOLLOW_MEANING}
-        className={`inline-flex items-center rounded-full border transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring ${geometry} ${
-          following ? followed : resting
-        }`}
+        className={`inline-flex items-center rounded-full border transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring ${
+          glyph ? "h-[40px] w-[40px] justify-center max-sm:h-[44px] max-sm:w-[44px]" : geometry
+        } ${following ? followed : resting}`}
       >
-        {following ? FOLLOWING_LABEL : FOLLOW_LABEL}
+        {glyph ? (
+          <>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <path d={following ? "M5 12.5l4.5 4.5L19 7.5" : "M12 5v14M5 12h14"} />
+            </svg>
+            <span className="sr-only">{following ? FOLLOWING_LABEL : FOLLOW_LABEL}</span>
+          </>
+        ) : following ? (
+          FOLLOWING_LABEL
+        ) : (
+          FOLLOW_LABEL
+        )}
       </button>
       {/* The count sits OUTSIDE the button, and that is not only layout: the
           button's label changes with the visitor and the number does not, so

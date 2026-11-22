@@ -114,8 +114,9 @@ describe("the two anchors the cards link to", () => {
     // (`post-footer.tsx`) links its count there and its Comment to `#comment`.
     expect(code("posts/post-card.tsx")).toContain("href={`${page}#comments`}");
     const footer = code("posts/post-footer.tsx");
-    expect(footer).toContain("href={`${page}#comments`}");
-    expect(footer).toContain("href={`${page}#comment`}");
+    // LR3: one icon link — to the thread when there are comments, to the
+    // field when there are none.
+    expect(footer).toContain("href={comments ? `${page}#comments` : `${page}#comment`}");
   });
 
   it("both exist on every post's page, whether or not anybody can comment", () => {

@@ -27,34 +27,27 @@ export function PostFooter({ post, returnTo }: { post: PublicProductPost; return
   const page = productPostPagePath(post.product.slug, post.id);
   const comments = commentCountLine(post.commentCount);
   return (
-    <>
-      <div
-        data-post-summary
-        className="flex items-center justify-between gap-2.5 px-4 pt-3 text-[13px] text-muted-foreground empty:hidden max-sm:px-[14px] max-sm:pt-2"
+    // ONE ROW OF ICONS (LR3, openproduct-left-rail design §5.2): the reaction
+    // picker and the comment link as icons with no fill until hovered, and
+    // what readers have said at the row's end. Each icon has a name and a
+    // tooltip; the comment count is a number beside its bubble.
+    <div className="flex items-center gap-1 px-2.5 pb-2 pt-1.5 max-sm:px-2">
+      <ReactionPicker postId={post.id} returnTo={returnTo} />
+      <AppLink
+        href={comments ? `${page}#comments` : `${page}#comment`}
+        data-post-comments
+        aria-label={comments ?? "Comment"}
+        title={comments ?? "Comment"}
+        className={`flex h-[40px] min-w-[40px] items-center justify-center gap-1.5 rounded-full px-2.5 text-[13px] font-medium text-muted-foreground no-underline transition-colors hover:bg-accent hover:text-foreground max-sm:h-[44px] max-sm:min-w-[44px] ${FOCUS}`}
       >
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinejoin="round" aria-hidden="true">
+          <path d="M4 5h16v11H8l-4 4z" />
+        </svg>
+        {post.commentCount > 0 ? <span aria-hidden="true">{post.commentCount}</span> : null}
+      </AppLink>
+      <div data-post-summary className="ml-auto flex items-center pr-1.5 text-[13px] text-muted-foreground empty:hidden">
         <ReactionSummary postId={post.id} reactions={safeCounts(post.reactions)} />
-        {comments ? (
-          <AppLink
-            href={`${page}#comments`}
-            data-post-comments
-            className={`ml-auto py-1.5 text-muted-foreground underline decoration-border-strong underline-offset-[3px] ${FOCUS}`}
-          >
-            {comments}
-          </AppLink>
-        ) : null}
       </div>
-      <div className="mx-2.5 mt-2.5 grid grid-cols-2 gap-0.5 border-t border-line pb-1.5 pt-1 max-sm:mx-2 max-sm:mt-1.5">
-        <ReactionPicker postId={post.id} returnTo={returnTo} />
-        <AppLink
-          href={`${page}#comment`}
-          className={`flex min-h-[40px] items-center justify-center gap-1.5 rounded-full text-[13px] font-medium text-copy no-underline hover:bg-foreground/[0.04] max-sm:min-h-[44px] ${FOCUS}`}
-        >
-          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
-            <path d="M4 5h16v11H8l-4 4z" />
-          </svg>
-          Comment
-        </AppLink>
-      </div>
-    </>
+    </div>
   );
 }

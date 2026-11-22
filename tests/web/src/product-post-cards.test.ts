@@ -110,20 +110,17 @@ describe("one card per kind, and the kind is the card's shape", () => {
     for (const kind of PRODUCT_POST_KINDS) expect(shells).toMatch(new RegExp(`\\n  ${kind}:`));
   });
 
-  it("each shape is its own: the glow, the panel, the note, the ticket", () => {
+  it("every kind wears the one tile; the kind is told inside it (openproduct-left-rail LR3)", () => {
     const src = code(CARD);
-    const shell = (kind: string) => new RegExp(`\\n  ${kind}:\\s*"([^"]*)"`).exec(src)?.[1] ?? "";
-    // Feature shipped: the amber glow from the corner, on a card.
-    expect(shell("feature")).toContain("bg-[radial-gradient(520px_200px_at_100%_0%,oklch(var(--brand-amber-inverted)/0.22),transparent_70%)]");
-    // New idea: the lavender note with one square corner.
-    expect(shell("idea")).toContain("rounded-[4px_16px_16px_16px]");
-    expect(shell("idea")).toContain("bg-idea-wash");
-    // Help wanted: the ticket does NOT clip, because its notches sit outside it.
-    expect(shell("seat")).not.toContain("overflow-hidden");
-    expect(src).toContain('{post.kind === "seat" ? <TicketNotches /> : null}');
-    expect(part("TicketNotches")).toContain("-left-3");
-    expect(part("TicketNotches")).toContain("-right-3");
-    expect(part("TicketNotches")).toContain("bg-background");
+    // OPR1 gave each kind a shape: the amber glow, the lavender note, the
+    // ticket with its notches. The kind colours are retired (design §1.5)
+    // and a post is a tile (§5.1): a 1px border, a 16px radius, the border a
+    // step darker under the pointer.
+    expect(src).toMatch(/export const POST_TILE =\s*"relative overflow-hidden rounded-\[16px\] border border-border bg-card transition-colors hover:border-faint";/);
+    for (const kind of PRODUCT_POST_KINDS) expect(src).toMatch(new RegExp(`\\n  ${kind}: POST_TILE,`));
+    expect(src).not.toContain("radial-gradient");
+    expect(src).not.toContain("bg-idea-wash");
+    expect(src).not.toContain("TicketNotches");
 
     // Feature: the check badge, the name, what it does, the bars, Try it.
     const feature = part("FeatureBody");
@@ -133,7 +130,12 @@ describe("one card per kind, and the kind is the card's shape", () => {
     // post's own — every post carries its product's.
     expect(feature).toContain("<MilestoneSegments counts={milestoneCounts ?? post.product.milestoneCounts} />");
     expect(feature).toContain("data-post-try");
-    expect(feature).toMatch(/Try it\s*<svg/);
+    // LR3 (design §5.3): the Try it link is the shaded tile — the stronger
+    // fill, no border, the label over the host it goes to, and the mark
+    // that says it leaves the site.
+    expect(feature).toMatch(/data-post-try\s+className=\{`flex min-h-\[52px\] items-center justify-between gap-3 rounded-\[12px\] bg-secondary px-4 py-2\.5 text-foreground no-underline transition-colors hover:bg-border/);
+    expect(feature).toContain("{linkHost(tryLink)}");
+    expect(feature).not.toContain("bg-primary");
 
     // Version: the release-notes panel, the version big and mono, a row per line.
     const version = part("VersionBody");
@@ -389,8 +391,11 @@ describe("counts are shown only above zero", () => {
     expect(reactionCountLine({ useful: 3, would_use: 2, impressive: 0, curious: 0 })).toBe("5 reactions");
     const footer = part("PostFooter", FOOTER);
     expect(footer).toContain("const comments = commentCountLine(post.commentCount);");
-    expect(footer).toMatch(/\{comments \? \(\s*<AppLink/);
-    // With nothing to say the row takes no room.
+    // LR3: the comment link is an icon that is always there; the count is a
+    // number beside it above zero, and the link's name says the count.
+    expect(footer).toContain("aria-label={comments ?? \"Comment\"}");
+    expect(footer).toContain("{post.commentCount > 0 ? <span aria-hidden=\"true\">{post.commentCount}</span> : null}");
+    // With no reactions the summary takes no room.
     expect(footer).toContain("empty:hidden");
     expect(part("CompactFooter")).toContain("const reactions = reactionCountLine(safeCounts(post.reactions));");
   });
@@ -398,7 +403,7 @@ describe("counts are shown only above zero", () => {
   it("the comment count links to the post's own page", () => {
     const footer = part("PostFooter", FOOTER);
     expect(footer).toContain("const page = productPostPagePath(post.product.slug, post.id);");
-    expect(footer).toContain("href={`${page}#comments`}");
+    expect(footer).toContain("href={comments ? `${page}#comments` : `${page}#comment`}");
     expect(part("CompactFooter")).toContain("href={`${page}#comments`}");
   });
 

@@ -207,15 +207,17 @@ export function ReactionPicker({
 
   return (
     <form id={reactAnchor(postId)} method="post" action={reactPath(postId, null, target)} onSubmit={onSubmit} className="relative flex">
-      <details ref={details} className="group/react relative flex-1">
+      <details ref={details} className="group/react relative">
         <summary
           data-react-button
-          className={`flex min-h-[40px] cursor-pointer list-none items-center justify-center gap-1.5 rounded-full text-[13px] hover:bg-foreground/[0.04] max-sm:min-h-[44px] [&::-webkit-details-marker]:hidden ${FOCUS} ${
-            mine ? "font-semibold text-amber-ink" : "font-medium text-copy"
+          title={mine ? PRODUCT_POST_REACTION_LABELS[mine] : "React"}
+          className={`flex h-[40px] w-[40px] cursor-pointer list-none items-center justify-center rounded-full transition-colors max-sm:h-[44px] max-sm:w-[44px] [&::-webkit-details-marker]:hidden ${FOCUS} ${
+            mine ? "bg-secondary text-foreground" : "text-muted-foreground hover:bg-accent hover:text-foreground"
           }`}
         >
-          <ReactionGlyph reaction={mine ?? "useful"} size={17} />
-          {mine ? PRODUCT_POST_REACTION_LABELS[mine] : "React"}
+          {/* An icon alone (LR3, design §5.2); the word is its name. */}
+          <ReactionGlyph reaction={mine ?? "useful"} size={18} />
+          <span className="sr-only">{mine ? PRODUCT_POST_REACTION_LABELS[mine] : "React"}</span>
         </summary>
         <div
           role="group"
