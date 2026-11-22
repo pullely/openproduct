@@ -267,6 +267,31 @@ describe("the left rail lists the whole site", () => {
   });
 });
 
+// openproduct-left-rail LR4 (design §5.4): a post is made from its product's
+// page, by its crew, and nowhere else.
+describe("posting starts on the product's page only", () => {
+  it("the bar, the rail, the phone's tabs and the feed offer no way to start a post", () => {
+    for (const file of ["shell/top-panel.tsx", "shell/side-rail.tsx", "shell/section-bar.tsx", "shell/shell.ts", "feed/feed-view.tsx", "feed/feed-posts.tsx", "feed/feed-you.tsx"]) {
+      const source = markupOf(file);
+      expect([file, /New post|Create post|NewPostRow|newPostKinds|\/new[`"]/.test(source)]).toEqual([file, false]);
+    }
+  });
+
+  it("the product's Updates column draws New post for its crew, after load, and for nobody else", () => {
+    const row = markupOf("[slug]/maker/new-post.tsx");
+    // Nothing on the server and nothing for a visitor: the row is null
+    // unless this browser's own session manages this product.
+    expect(row).toMatch(/const \{ managing \} = useMaker\(slug\);\s*if \(!managing\) return null;/);
+    expect(row).toContain('aria-label="New post"');
+    // The post is for the product whose page this is: the kinds' links are
+    // built from its slug, so there is no product to pick.
+    expect(row).toContain("newPostKinds(slug).map");
+    expect(markupOf("[slug]/product-page.tsx")).toContain("<NewPostRow slug={slug} />");
+    // A bordered card, like every other since LR1.
+    expect(row).toContain("rounded-[16px] border border-border bg-card px-[18px] py-3.5");
+  });
+});
+
 describe("the footer holds what left the bar", () => {
   it("links every section that has no board, and each one is a route that exists", () => {
     const hrefs = FOOTER_LINKS.map((l) => l.href);

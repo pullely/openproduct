@@ -5,8 +5,14 @@
 | LR0 — the spec | LR-1 | Done | #27 |
 | LR1 — graphite and system type | LR-2 | Done | #28 |
 | LR2 — the left rail on every page, phone first | LR-3 | Done | #29 |
-| LR3 — tiled posts with icon actions | LR-4 | In review | this PR |
-| LR4 — posting from the product page | LR-5 | Not started | |
+| LR3 — tiled posts with icon actions | LR-4 | Done | #30 |
+| LR4 — posting from the product page | LR-5 | In review | this PR |
+
+**The epic is complete when this PR lands.** Every milestone has landed;
+what the build left out of the board is listed under each milestone's
+"Departures", and collected under "Known follow-ups" at the end. Marking
+EP-6 completed in the Orunbase console is the one leftover outside this
+repository.
 
 ## From LR1
 
@@ -157,3 +163,40 @@ Departures from the design, said plainly:
   line and the Try it word).
 - **Product rows and seat cards are unchanged.** Their actions are not
   icons yet.
+
+## From LR4
+
+What landed:
+
+- **Nothing had to move.** The site already made posts the way design §5.4
+  asks: "New post" is a row on a product's Updates column
+  (`[slug]/maker/new-post.tsx`), drawn after load for a browser whose own
+  session manages that product and for nobody else, and its kinds link to
+  `/[slug]/new`, so the product is the page's and there is no picker. The
+  bar, the rail, the phone's tabs and the feed never offered it.
+- **It is pinned now.** `shell.test.ts` holds both halves: no chrome or
+  feed file starts a post, and the product page's row is gated on
+  `managing`.
+- **The row is a bordered card**, like every other since LR1.
+
+Departures from the design, said plainly:
+
+- **The row is the site's, not the board's.** The board draws one "Post an
+  update" bar that opens a dialog. The site's row of five kind pills, each
+  going to the full-page composer, is kept: it is the same act with one
+  step fewer.
+
+## Known follow-ups
+
+None is scheduled; each is a departure recorded above.
+
+- Pages that spell a serif title, a mono uppercase label or an amber
+  gradient inline still carry their old size and case (LR1).
+- Products and Help wanted keep their own filter column beside the rail,
+  and page frames are not rewritten phone first (LR2).
+- Between 640px and 960px the menu button is the only navigation (LR2).
+- No share or save on a post in the feed; reactions keep four choices;
+  product rows and seat cards keep text actions (LR3).
+- The prose comments in `globals.css` still describe the old palette in
+  places, and the retired section-line transition rules remain (LR1, LR2).
+- The web-perf snapshots follow the CI runner's fonts (risk R7).
