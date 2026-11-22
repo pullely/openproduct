@@ -277,17 +277,14 @@ describe("contrast, measured, in both ramps", () => {
     ["--on-accent", "--endorse"],
   ];
 
-  it("keeps the amber a MARK: its word is the ink, and on its own tint the deeper ink", () => {
-    // The one pair in the redesign's palette that does not clear AA as
-    // written: #8A6420 on #F3E7CC is 4.36:1. So an amber word on the amber
-    // tint takes `--endorse-ink` / `--warning-strong` (one step deeper, and
-    // in TEXT_PAIRS above), `--amber-ink` is for the page and a card, and
-    // `--amber` itself is a mark and not a word in the light ramp. Pinned so nobody
-    // "fixes" the board's hex or pairs the two without noticing.
-    expect(ratio(LIGHT["--amber-ink"]!, LIGHT["--amber-soft"]!)).toBeLessThan(4.5);
-    expect(ratio(LIGHT["--amber"]!, LIGHT["--card"]!)).toBeLessThan(4.5);
-    expect(ratio(LIGHT["--endorse-ink"]!, LIGHT["--amber-soft"]!)).toBeGreaterThanOrEqual(4.5);
+  it("has no amber to pair: the old amber family is grey, and its tint is the selected fill (LR1)", () => {
+    // openproduct-left-rail design §1 rule 5 retired the kind colours. The
+    // amber tokens keep their names and carry greys: the tint is the same
+    // value as the selected fill, and the word that sits on it is the text
+    // colour, which clears AA with room.
     expect(LIGHT["--endorse-soft"]).toEqual(LIGHT["--amber-soft"]);
+    expect(LIGHT["--endorse-soft"]).toEqual(LIGHT["--secondary"]);
+    expect(ratio(LIGHT["--endorse-ink"]!, LIGHT["--amber-soft"]!)).toBeGreaterThanOrEqual(7);
   });
 
   it("holds 4.5:1 in BOTH ramps on every pair the estate paints as text", () => {

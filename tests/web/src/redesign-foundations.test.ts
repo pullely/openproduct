@@ -1,4 +1,7 @@
-// The redesign's foundations (openproduct-redesign OPR1, design.md §3).
+// The site's foundations: openproduct-redesign OPR1 set them, and
+// openproduct-left-rail LR1 (design §1 to §3) replaced the palette, the
+// faces, the card's skin, the page's ground and the logo. The type ladder
+// and the pill controls are still OPR1's.
 //
 // OPR1 changed what every page INHERITS — the palette, the three faces, the
 // type ladder, the card's skin, the logo, the page's ground — before any page
@@ -10,7 +13,7 @@
 // SOURCE PINS, like the rest of this suite. The contrast of each pair is
 // measured in `dark-ramp.test.ts`; this file holds that the VALUES are the
 // design's and that the names components reach for resolve.
-import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
+import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -45,69 +48,55 @@ function hex(token: string): string {
   return oklchToHex(Number(m[1]), Number(m[2]), Number(m[3])).toUpperCase();
 }
 
-describe("the palette is the boards'", () => {
-  // design.md §3's table, token by token. The stylesheet stores OKLCH triples;
-  // what is pinned is the hex each one paints, because the hex is what the
-  // design names.
+// openproduct-left-rail LR1 (design §1) replaced the boards' warm palette with
+// graphite: neutral greys, no accent hue, and a card told by its border.
+describe("the palette is graphite", () => {
+  // design §1 rules 2 and 6, token by token. The stylesheet stores OKLCH
+  // triples; what is pinned is the hex each one paints, because the hex is
+  // what the design names.
   it.each([
-    ["background", "#F6F4EE"], // page
-    ["card", "#FFFFFF"],
+    ["background", "#FFFFFF"], // page
+    ["card", "#FFFFFF"], // the same colour as the page: the border is its edge
     ["popover", "#FFFFFF"],
-    ["foreground", "#141413"], // ink
-    ["copy", "#2B2A27"], // text
-    ["muted-foreground", "#6B6A66"], // muted
-    ["faint", "#6B6A66"], // the redesign has one muted
-    ["primary", "#141413"], // the primary button is ink on any page
-    ["primary-foreground", "#FAF9F5"],
-    ["secondary", "#F0EEE6"], // sunken
-    ["muted", "#F7F5EF"], // the lighter well
-    ["sunken", "#F0EEE6"],
-    ["well", "#F7F5EF"],
-    ["link", "#8A6420"], // a link is amber, at its text-safe value
-    ["success", "#2F7A4E"],
-    ["destructive", "#8E3B27"], // danger, as a word
-    ["run-failed", "#B4533C"], // danger, as a mark
-    ["brand-amber", "#B8862F"],
-    ["endorse", "#B8862F"], // the accent is the amber
-    ["endorse-soft", "#F3E7CC"],
-    ["amber", "#B8862F"],
-    ["amber-ink", "#8A6420"],
-    ["amber-soft", "#F3E7CC"],
-    ["idea", "#5B3F86"],
-    ["idea-deep", "#2A1F3D"],
-    ["idea-soft", "#ECE6F3"],
-    ["idea-wash", "#F4F0F8"],
-    ["version", "#3A4A75"],
-    ["version-soft", "#E6E9F2"],
-    ["seat", "#2F6F73"],
-    ["seat-ink", "#1F5357"],
-    ["seat-soft", "#DDEDEC"],
-    ["seat-wash", "#F0F7F6"],
+    ["foreground", "#1F2328"], // text
+    ["copy", "#1F2328"],
+    ["muted-foreground", "#59636E"], // muted
+    ["faint", "#59636E"], // one muted
+    ["primary", "#1F2328"], // the primary button is text-coloured
+    ["primary-foreground", "#FFFFFF"],
+    ["secondary", "#EAEEF2"], // the stronger fill: the selected state
+    ["muted", "#F6F8FA"], // the subtle fill
+    ["accent", "#F6F8FA"], // row and nav hover
+    ["sunken", "#F6F8FA"],
+    ["well", "#F6F8FA"],
+    ["border", "#D1D9E0"],
+    ["line-soft", "#D1D9E0"],
+    ["link", "#1F2328"], // a link is text-coloured and underlined, not a hue
+    ["endorse", "#1F2328"], // the accent is retired: the mark is text-coloured
+    ["endorse-ink", "#1F2328"],
+    ["endorse-soft", "#EAEEF2"],
+    ["amber-soft", "#EAEEF2"],
+    ["success", "#2F7A4E"], // green stays, for success only
+    ["destructive", "#8E3B27"], // red stays, for danger only
+    ["run-failed", "#B4533C"],
   ])("--%s paints %s", (token, expected) => {
     expect(hex(token)).toBe(expected);
   });
 
-  it("writes the hairline as 6% of ink already laid on its surface", () => {
-    // rgba(20,20,19,0.06) over the page and over a white card. A border token
-    // is an opaque triple here, so the alpha is composited in the value.
-    const over = (bg: [number, number, number]) =>
-      "#" +
-      [20, 20, 19]
-        .map((ink, i) => Math.round(ink * 0.06 + bg[i]! * 0.94))
-        .map((v) => v.toString(16).padStart(2, "0"))
-        .join("")
-        .toUpperCase();
-    expect(hex("border")).toBe(over([246, 244, 238]));
-    expect(hex("line-soft")).toBe(over([246, 244, 238]));
-    expect(hex("line")).toBe(over([255, 255, 255]));
+  it("paints no kind colour, in either ramp (design §1 rule 5)", () => {
+    // Amber, lavender, slate and teal are retired. Their tokens keep their
+    // names, because call sites read them, and carry no chroma to speak of.
+    const hued = Array.from(
+      ROOT.matchAll(/\n\s*(--(?:dk-)?(?:amber|brand-amber|idea|version|seat|warning|info|agent|endorse|link)[\w-]*):\s*[\d.]+\s+([\d.]+)\s+[\d.]+;/g),
+      (m) => [m[1]!, Number(m[2])] as const,
+    ).filter(([, chroma]) => chroma > 0.03);
+    expect(hued).toEqual([]);
   });
 
-  it("makes the header's panel a light bar under ink, not a dark one", () => {
-    // The redesign's header is rgba(255,255,255,0.62) with a blur. The token
-    // is the white; the 0.62 belongs to the bar's own class.
+  it("makes the header's panel white under the text colour", () => {
     expect(hex("panel")).toBe("#FFFFFF");
-    expect(hex("panel-foreground")).toBe("#141413");
-    expect(hex("panel-muted")).toBe("#6B6A66");
+    expect(hex("panel-foreground")).toBe("#1F2328");
+    expect(hex("panel-muted")).toBe("#59636E");
   });
 
   it("gives every new kind a Tailwind name that takes an opacity", () => {
@@ -135,50 +124,22 @@ describe("the palette is the boards'", () => {
   });
 });
 
-// openproduct-ui-fixes UF2 added the fourth face: Geist, the top bar's own
-// (design §2 rule 3), one variable file of 29,288 bytes that every page
-// fetches because the bar is on every page.
-describe("four faces, six files, self-hosted", () => {
-  const FONTS_DIR = resolve(WEB, "src/fonts");
-  const FILES = [
-    "geist-latin-wght.woff2",
-    "hanken-grotesk-latin-wght.woff2",
-    "ibm-plex-mono-latin-400.woff2",
-    "ibm-plex-mono-latin-500.woff2",
-    "lora-latin-400-italic.woff2",
-    "lora-latin-400.woff2",
-  ];
-  const woff2 = readdirSync(FONTS_DIR).filter((f) => f.endsWith(".woff2")).sort();
-  const bytes = woff2.reduce((sum, f) => sum + statSync(resolve(FONTS_DIR, f)).size, 0);
-
-  it("ships exactly these six files, and nothing left over from before", () => {
-    expect(woff2).toEqual(FILES);
-    expect(readdirSync(FONTS_DIR).filter((f) => /geist-mono|newsreader/i.test(f))).toEqual([]);
+// openproduct-left-rail LR1 (design §2): the system typeface. The four faces
+// and six files OPR1 and UF2 shipped are gone, and no page fetches a font.
+describe("the system typeface, no webfont", () => {
+  it("ships no font file and declares none", () => {
+    const fonts = resolve(WEB, "src/fonts");
+    expect(existsSync(fonts) ? readdirSync(fonts) : []).toEqual([]);
+    const layout = code(LAYOUT);
+    expect(layout).not.toMatch(/next\/font/);
+    expect(layout).not.toMatch(/\.woff2?/);
+    expect(code(CSS)).not.toMatch(/@font-face|\.woff2?/);
   });
 
-  it("carries each family's licence beside it", () => {
-    for (const licence of ["geist.OFL.txt", "hanken-grotesk.OFL.txt", "lora.OFL.txt", "ibm-plex-mono.OFL.txt"]) {
-      expect(existsSync(resolve(FONTS_DIR, licence))).toBe(true);
-    }
-  });
-
-  it("weighs 127,952 bytes on disk; a page fetches five of the six, and the font budget is those plus thin headroom", () => {
-    expect(bytes).toBe(127_952);
-    // The budget is what a page FETCHES. Lora's italic is declared without a
-    // preload, so every walked route takes the other five files.
-    const italic = statSync(resolve(FONTS_DIR, "lora-latin-400-italic.woff2")).size;
-    const fetched = bytes - italic;
-    expect(fetched).toBe(105_212);
-    const budget = /const FONTS = \{ bytes: ([\d_]+), files: (\d+) \};/.exec(
-      readFileSync(resolve(PERF, "budgets.mjs"), "utf-8"),
-    );
-    expect(budget).not.toBeNull();
-    const [limit, files] = [Number(budget![1]!.replace(/_/g, "")), Number(budget![2])];
-    expect(files).toBe(FILES.length - 1);
-    // Deterministic bytes, so the headroom stays under a tenth: a loose budget
-    // on a stable number is a budget that admits a face.
-    expect(limit).toBeGreaterThanOrEqual(fetched);
-    expect(limit - fetched).toBeLessThan(fetched * 0.1);
+  it("holds the font budget at nothing", () => {
+    const lane = readFileSync(resolve(PERF, "budgets.mjs"), "utf-8");
+    expect(lane).toContain("const FONTS = { bytes: 0, files: 0 };");
+    expect(lane).toContain("const FONTS_WITH_ITALIC = { bytes: 0, files: 0 };");
   });
 
   it("what every page's bundle draws with is six class strings, in a file of their own (OPR-3)", () => {
@@ -213,69 +174,17 @@ describe("four faces, six files, self-hosted", () => {
     }
   });
 
-  it("a page that quotes an idea fetches the sixth, and only such a page may (OPR-3)", () => {
-    // The boards quote an idea in Lora's italic. A page that draws a word in
-    // it takes the italic's file; every other page is still held to four.
-    // The lane decides by what the page PAINTS, not by a list of routes.
-    const lane = readFileSync(resolve(PERF, "budgets.mjs"), "utf-8");
-    const italic = /const FONTS_WITH_ITALIC = \{ bytes: ([\d_]+), files: (\d+) \};/.exec(lane);
-    const plain = /const FONTS = \{ bytes: ([\d_]+), files: (\d+) \};/.exec(lane);
-    expect(italic).not.toBeNull();
-    const [limit, files] = [Number(italic![1]!.replace(/_/g, "")), Number(italic![2])];
-    expect(files).toBe(FILES.length);
-    // All six, plus exactly the headroom the five-file budget carries.
-    expect(limit - bytes).toBe(Number(plain![1]!.replace(/_/g, "")) - 105_212);
-    expect(lane).toContain("const fonts = m.drawsSerifItalic ? FONTS_WITH_ITALIC : FONTS;");
-    expect(lane).toContain('cs.fontStyle === "italic" && /lora/i.test(cs.fontFamily)');
-    // Still declared without a preload: the browser takes it only where a
-    // quote is drawn.
-    expect(LAYOUT).toMatch(/const loraItalic = localFont\(\{[\s\S]*?preload: false,/);
-  });
-
-  it("says the same in the fonts README", () => {
-    const readme = read("src/fonts/README.md");
-    for (const file of FILES) expect(readme).toContain(`\`${file}\``);
-    expect(readme).toContain("127,952");
-  });
-
-  it("loads every one of them from the layout with next/font/local, and nothing else", () => {
-    const layout = code(LAYOUT);
-    expect(layout).toContain('import localFont from "next/font/local";');
-    expect(layout).not.toMatch(/next\/font\/google/);
-    const loaded = Array.from(layout.matchAll(/"\.\.\/fonts\/([\w.-]+\.woff2)"/g), (m) => m[1]!).sort();
-    expect(loaded).toEqual(FILES);
-    // `swap` on every declaration (four families, Lora's two cuts declared
-    // apart); weights stop at 600.
-    expect(layout.match(/display: "swap"/g)?.length).toBe(5);
-    expect(layout).toContain('weight: "400 600"');
-    expect(layout).not.toMatch(/weight: "[^"]*[7-9]00/);
-    expect(layout).toContain(
-      "className={`${hanken.variable} ${lora.variable} ${loraItalic.variable} ${plexMono.variable} ${geist.variable}`}",
-    );
-    // Lora's italic is declared apart from the upright and NOT preloaded:
-    // `next/font` preloads every file a declaration names on every route,
-    // and the italic is drawn on one page. The browser fetches it where a
-    // quote is set in it, through the family `.font-serif.italic` names.
-    expect(layout).toMatch(
-      /const loraItalic = localFont\(\{\s*src: "\.\.\/fonts\/lora-latin-400-italic\.woff2",[\s\S]*?variable: "--font-lora-italic",\s*preload: false,/,
-    );
-    expect(layout).toMatch(/const lora = localFont\(\{\s*src: "\.\.\/fonts\/lora-latin-400\.woff2",/);
-    expect((layout.match(/preload: false/g) ?? []).length).toBe(1);
-    expect(CSS).toContain('--font-serif-italic: var(--font-lora-italic, "Lora"), var(--font-serif);');
-    expect(CSS).toMatch(/\.font-serif\.italic \{\s*font-family: var\(--font-serif-italic\);/);
-  });
-
-  it("lands them on the four stacks the stylesheet and Tailwind read", () => {
-    expect(CSS).toContain('--font-sans: var(--font-hanken, "Hanken Grotesk"),');
-    expect(CSS).toContain('--font-serif: var(--font-lora, "Lora"),');
-    expect(CSS).toContain('--font-mono: var(--font-plex-mono, "IBM Plex Mono"),');
+  it("lands every face on the system stacks", () => {
+    expect(CSS).toContain('--font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans",');
+    expect(CSS).toContain("--font-mono: ui-monospace, SFMono-Regular,");
+    // The serif and the bar's face are retired: their names resolve to the
+    // UI face, so a call site that still says `font-serif` draws in it.
+    expect(CSS).toContain("--font-serif: var(--font-sans);");
+    expect(CSS).toContain("--font-serif-italic: var(--font-sans);");
+    expect(CSS).toContain("--font-bar: var(--font-sans);");
     expect(TAILWIND).toContain('sans: ["var(--font-sans)", "system-ui", "sans-serif"]');
-    expect(TAILWIND).toContain('serif: ["var(--font-serif)", "Georgia", "serif"]');
     expect(TAILWIND).toContain('mono: ["var(--font-mono)", "ui-monospace", "monospace"]');
-    // The bar's face (UF2): Geist over the UI face, and only there.
-    expect(CSS).toContain('--font-bar: var(--font-geist, "Geist"), var(--font-sans);');
-    expect(TAILWIND).toContain('bar: ["var(--font-bar)", "system-ui", "sans-serif"]');
-    expect(code(CSS)).not.toMatch(/geist mono|newsreader/i);
+    expect(code(CSS)).not.toMatch(/hanken|lora|plex|geist|newsreader/i);
   });
 
   it("reaches no third-party host for a font", () => {
@@ -333,19 +242,22 @@ describe("the type ladder is the redesign's", () => {
     expect(CSS).toMatch(/html,\n {2}body \{[^}]*font-size: 14px;/);
   });
 
-  it("draws the page title in Lora 400 at 40px, 28 on a phone", () => {
-    expect(design.PAGE_TITLE).toContain("font-serif");
-    expect(design.PAGE_TITLE).toContain("font-normal");
-    expect(design.PAGE_TITLE).toContain("text-display");
-    expect(design.PAGE_TITLE).toContain("max-sm:text-title");
-    expect(design.EYEBROW).toBe("font-mono text-mono-label uppercase text-muted-foreground");
+  it("draws the page title in the UI face at 26px/600, 22 on a phone (LR1)", () => {
+    expect(design.PAGE_TITLE).toBe("m-0 text-[26px] font-semibold leading-[1.25] text-foreground max-sm:text-[22px]");
+    expect(design.PAGE_TITLE).not.toContain("font-serif");
+    // The small label: 12px/600, not monospace, not uppercase, not tracked.
+    expect(design.EYEBROW).toBe("text-[12px] font-semibold text-muted-foreground");
   });
 });
 
-describe("flat cards, pill controls", () => {
-  it("draws a card as white at a 16px radius with no border and no shadow", () => {
-    expect(design.CARD).toBe("overflow-hidden rounded-[16px] bg-card");
-    expect(design.PANEL).toBe("rounded-[16px] bg-card p-6");
+describe("bordered cards, pill controls", () => {
+  it("draws a card at a 16px radius with a 1px border and no shadow (LR1)", () => {
+    // The page and the card are the same colour, so the border is the edge.
+    expect(design.CARD).toBe("overflow-hidden rounded-[16px] border border-border bg-card");
+    expect(design.PANEL).toBe("rounded-[16px] border border-border bg-card p-6");
+    for (const name of ["TILE", "TILE_LINK", "EMPTY_NOTE", "BOARD_CARD", "SIDE_CARD", "SEGMENTS"] as const) {
+      expect([name, design[name].includes("border border-border")]).toEqual([name, true]);
+    }
     expect(CSS).toMatch(/--radius: 16px;/);
   });
 
@@ -383,45 +295,28 @@ describe("flat cards, pill controls", () => {
 });
 
 describe("the page's ground", () => {
-  // openproduct-ui-fixes UF2 (design §2 rule 7): the owner rejected the dot
-  // grid. The ground is ivory and the one amber glow at the top.
-  it("is a soft amber glow at the top and no dot grid, from tokens", () => {
-    const ground = /\n {2}body \{\n {4}background-image:([\s\S]*?)\n {2}\}/.exec(CSS)?.[1] ?? "";
-    expect(ground).toContain("radial-gradient(1100px 460px at 50% -72px, oklch(var(--page-glow) / 0.18), transparent 62%)");
-    expect(ground).not.toContain("--page-dot");
-    expect(ground).not.toMatch(/background-size/);
-    expect(ground).toContain("background-repeat: no-repeat;");
-    expect(hex("page-glow")).toBe("#B8862F");
-    expect(hex("page-dot")).toBe("#141413");
-  });
-
-  it("has a dark equivalent by value, not by a second rule", () => {
-    // The dark scopes are aliases only (`dark-ramp.test.ts`), so the ground
-    // follows the ramp: a dimmer glow, and dots lighter than the page.
-    const dk = (token: string) =>
-      new RegExp(`--dk-${token}:\\s*([\\d.]+)\\s+[\\d.]+\\s+[\\d.]+;`).exec(ROOT)?.[1];
-    expect(Number(dk("page-glow"))).toBeLessThan(0.6539);
-    expect(Number(dk("page-dot"))).toBeGreaterThan(Number(dk("background")));
-    expect(CSS.match(/background-image:\s*radial-gradient\(1100px/g)?.length).toBe(1);
+  // openproduct-left-rail LR1 (design §1 rule 8): flat. No glow, no dot grid.
+  it("is the page colour and nothing painted over it", () => {
+    expect(code(CSS)).not.toMatch(/\n {2}body \{[^}]*background-image/);
+    expect(code(CSS)).not.toMatch(/radial-gradient\(1100px/);
+    expect(code(CSS)).not.toMatch(/oklch\(var\(--page-(?:glow|dot)\)/);
   });
 
   it("tells the browser's chrome the page colour", () => {
-    expect(code(LAYOUT)).toContain('themeColor: "#f6f4ee"');
+    expect(code(LAYOUT)).toContain('themeColor: "#ffffff"');
   });
 });
 
-describe("the logo is a P whose head is an o", () => {
-  it("draws an ink stem and an amber ring inline, 2.6 wide with round caps", () => {
+describe("the logo is the ring tile", () => {
+  // openproduct-left-rail LR1 (design §3): a near-black rounded tile, a white
+  // ring, and an amber dot at the ring's top right.
+  it("draws the tile, the ring and the dot inline", () => {
     const mark = code(read("src/app/shell/logomark.tsx"));
     expect(mark).toContain('viewBox="0 0 24 24"');
-    expect(mark).toContain('fill="none"');
-    expect(mark).toContain('strokeLinecap="round"');
-    expect(mark).toContain("stroke = 2.6");
-    // The stem follows the text colour, so it is ink on light and light on dark.
-    expect(mark).toContain('<path d="M8 3.5V21" stroke="currentColor" />');
-    // The ring is the accent, which is the amber.
-    expect(mark).toContain('<circle cx="14" cy="9.5" r="6" className="stroke-endorse" />');
-    expect(mark).not.toMatch(/\bfill-/);
+    expect(mark).toContain('<rect x="0.5" y="0.5" width="23" height="23" rx="6" fill="#17150F" className="stroke-border" strokeWidth="1" />');
+    expect(mark).toContain('<circle cx="11.5" cy="12.5" r="4.6" stroke="#FFFFFF" strokeWidth={stroke} />');
+    expect(mark).toContain('<circle cx="16.8" cy="7.2" r="2.3" fill="#C9952F" />');
+    expect(mark).toContain("stroke = 2.4");
     // Nothing re-weights it at a call site.
     for (const file of ["src/app/shell/top-panel.tsx", "src/app/shell/auth-modal.tsx"]) {
       expect(code(read(file))).not.toMatch(/<Logomark[^>]*stroke=/);
@@ -431,12 +326,9 @@ describe("the logo is a P whose head is an o", () => {
   it("wears the same mark in the browser tab", () => {
     const icon = code(read("src/app/icon.svg/route.ts"));
     expect(icon).toContain('viewBox="0 0 24 24"');
-    expect(icon).toContain('stroke-width="2.6"');
-    expect(icon).toContain('stroke-linecap="round"');
-    expect(icon).toContain('d="M8 3.5V21"');
-    expect(icon).toContain('<circle cx="14" cy="9.5" r="6" stroke="#B8862F"/>');
-    expect(icon).toContain(".stem{stroke:#141413}");
-    expect(icon).toContain("@media (prefers-color-scheme:dark)");
+    expect(icon).toContain('<rect width="24" height="24" rx="6" fill="#17150F"/>');
+    expect(icon).toContain('<circle cx="11.5" cy="12.5" r="4.6" stroke="#FFFFFF" stroke-width="2.4"/>');
+    expect(icon).toContain('<circle cx="16.8" cy="7.2" r="2.3" fill="#C9952F"/>');
     expect(code(LAYOUT)).toContain('icons: { icon: "/icon.svg" }');
   });
 });

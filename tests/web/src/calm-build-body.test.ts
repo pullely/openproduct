@@ -18,13 +18,14 @@ const code = (file: string) =>
     .replace(/^\s*\/\/.*$/gm, "");
 
 describe("sections a reader can find (CP-R4)", () => {
-  it("the section card is the flat card with the board's room (OPR1)", () => {
-    // openproduct-redesign: white at a 16px radius, no border, no shadow,
+  it("the section card is the bordered card with the board's room (LR1)", () => {
+    // openproduct-left-rail LR1: a 16px radius, a 1px border (the card and
+    // the page are the same colour), no shadow,
     // `20px 22px` inside and 14px on a phone — one string, in `ui/design.ts`,
     // and the page's sections add only the room an anchored heading needs
     // under the site's header.
     expect(code("ui/design.ts")).toContain(
-      'export const BOARD_CARD = "rounded-[16px] bg-card px-[22px] py-5 max-sm:p-[14px]";',
+      'export const BOARD_CARD = "rounded-[16px] border border-border bg-card px-[22px] py-5 max-sm:p-[14px]";',
     );
     expect(code("[slug]/sections.ts")).toContain("export const SECTION_CARD = `${BOARD_CARD} scroll-mt-[80px]`;");
     expect(code("[slug]/sections.ts")).not.toMatch(/\bborder\b|shadow/);

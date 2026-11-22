@@ -129,6 +129,5 @@ not relocatable between runs.
 ## Related
 
 - Tests: [`tests/web`](../tests/web/README.md) · [`tests/web-perf`](../tests/web-perf/README.md)
-- Webfonts: [`src/fonts/README.md`](src/fonts/README.md)
 - Seam URL edges: `specs/components/19-openproduct-seam.md` (in sourceplane/orun-cloud)
 - `specs/epics/openproduct-independence/` (in sourceplane/orun-cloud) (the standalone site) · `openproduct-performance` (sourceplane/orun-cloud `specs/epics/openproduct-performance/README.md`) (caching, the 2026-09-09 hostname outage) · `openproduct-studio` (sourceplane/orun-cloud `specs/epics/openproduct-studio/README.md`)

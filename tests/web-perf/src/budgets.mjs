@@ -165,7 +165,10 @@ const RUNS = Number(process.env.XP4_RUNS ?? 3);
  * subset the site shipped before OPR1. Five files, 105,212 bytes, and the
  * same 6,076 bytes of headroom.
  */
-const FONTS = { bytes: 111_288, files: 5 };
+// ─── 5 FILES / 111,288 → 0 FILES / 0, 2026-11-23 (openproduct-left-rail LR1) ─
+// The system typeface (design §2): no webfont is declared, so no route may
+// fetch one. Zero is the budget, and any font request fails this lane.
+const FONTS = { bytes: 0, files: 0 };
 
 /**
  * OPR-3 — THE FIFTH FILE, ON THE PAGES THAT DRAW IT, AND ONLY THERE.
@@ -194,7 +197,9 @@ const FONTS = { bytes: 111_288, files: 5 };
  * The same thin headroom as above, to the byte: 127,952 + 6,076 (six files
  * since UF2 added Geist).
  */
-const FONTS_WITH_ITALIC = { bytes: 134_028, files: 6 };
+// LR1: there is no italic file either; the branch is kept so the lane's
+// shape is unchanged, and both budgets are nothing.
+const FONTS_WITH_ITALIC = { bytes: 0, files: 0 };
 
 /**
  * OPP11 — THE JS BUDGETS CAME DOWN BY 1,107 BYTES, ON EVERY ROUTE.
