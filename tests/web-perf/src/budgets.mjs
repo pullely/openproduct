@@ -485,7 +485,30 @@ const BUDGETS = {
   // and 17,100 are those plus the ~2.3% and ~2.8% this table carries —
   // BOTH LOWER than the product list's limits they replace (173,858 and
   // 17,500): the feed is the lighter page.
-  "/": { js: 168_100, doc: 17_100, cls: 0.02, lcp: 2000, reads: 2, images: 400_000 },
+  /* ─── LR2, 2026-11-23 (openproduct-left-rail): THE RAIL IS ON EVERY PAGE ────
+ *
+ * One left rail carries the whole site's navigation (design §4): seventeen
+ * links, each with a glyph, in every document, and the rail, its menu button
+ * and ten new glyphs in every page's script. Measured by this lane in CI (run
+ * 45065215237) as about 0.6 to 1.1 KB of gzipped document and 1.4 KB of
+ * script. The routes below were within that of their limits and are amended
+ * to the measurement plus 100 bytes of room; every other route absorbed it.
+ *
+ *   /                                                    doc   17_100 →   17_855  (measured 17,755)
+ *   /product-00                                          js   178_695 →  180_221  (measured 180,121)
+ *   /product-00                                          doc   25_650 →   26_429  (measured 26,329)
+ *   /product-00/about                                    js   178_695 →  180_221  (measured 180,121)
+ *   /product-00/about                                    doc   25_650 →   26_454  (measured 26,354)
+ *   /product-00/crew                                     js   178_695 →  180_221  (measured 180,121)
+ *   /product-00/crew                                     doc   22_350 →   23_177  (measured 23,077)
+ *   /product-00/talk                                     doc   26_900 →   27_565  (measured 27,465)
+ *   /product-00/posts/ppo_00000000000000000000000000000001 doc   15_200 →   16_083  (measured 15,983)
+ *   /people                                              doc   12_500 →   13_258  (measured 13,158)
+ *   /people/ada                                          doc   17_500 →   18_094  (measured 17,994)
+ *   /submit                                              js   178_590 →  178_753  (measured 178,653)
+ *   /submit                                              doc    8_000 →    9_191  (measured 9,091)
+ */
+  "/": { js: 168_100, doc: 17_855, cls: 0.02, lcp: 2000, reads: 2, images: 400_000 },
   // THREE, AND IT HAS BEEN THREE SINCE CB1 — the number here was stale, and
   // it took a lane that failed on one run and passed on the next to notice.
   //
@@ -548,7 +571,7 @@ const BUDGETS = {
   // 178,650, so the two gates stay separate. The new limit is the
   // measurement plus the same 66 bytes of room. The documents did not move
   // past their limits.
-  [`/${SAMPLE_SLUG}`]: { js: 178_695, doc: 25_650, cls: 0.02, lcp: 2000, reads: 3, images: 400_000 },
+  [`/${SAMPLE_SLUG}`]: { js: 180_221, doc: 26_429, cls: 0.02, lcp: 2000, reads: 3, images: 400_000 },
   // OPR-3 — THE PRODUCT PAGE'S OTHER THREE TABS, each an address of its own
   // (design §5), budgeted the day they were added (2026-11-15).
   //
@@ -567,8 +590,8 @@ const BUDGETS = {
   // READS: the listing and the directory on every tab; Updates adds the
   // product's posts and Talk the discussion, so About and Crew read twice
   // and Talk three times — concurrently, as the note above says of Updates.
-  [`/${SAMPLE_SLUG}/about`]: { js: 178_695, doc: 25_650, cls: 0.02, lcp: 2000, reads: 2, images: 400_000 },
-  [`/${SAMPLE_SLUG}/crew`]: { js: 178_695, doc: 22_350, cls: 0.02, lcp: 2000, reads: 2, images: 400_000 },
+  [`/${SAMPLE_SLUG}/about`]: { js: 180_221, doc: 26_454, cls: 0.02, lcp: 2000, reads: 2, images: 400_000 },
+  [`/${SAMPLE_SLUG}/crew`]: { js: 180_221, doc: 23_177, cls: 0.02, lcp: 2000, reads: 2, images: 400_000 },
   //
   // OPR-4 — TALK RE-MEASURED, AND ONLY TALK, WITH THE NUMBERS NAMED
   // (2026-11-15). Talk gained its composer (a field, the thread's kind, the
@@ -596,7 +619,7 @@ const BUDGETS = {
   // ~2.8% this table carries. The wire budget did not move.
   // SC-2 — Talk's document gained Where it runs too: 26,418 B (was 25,744),
   // so 26,250 → 26,900, the same room. Its JS did not move past its limit.
-  [`/${SAMPLE_SLUG}/talk`]: { js: 184_900, doc: 26_900, cls: 0.02, lcp: 2000, reads: 3, images: 400_000 },
+  [`/${SAMPLE_SLUG}/talk`]: { js: 184_900, doc: 27_565, cls: 0.02, lcp: 2000, reads: 3, images: 400_000 },
   // OPR-3 — A POST'S OWN PAGE (design §5: `/{slug}/posts/{id}`), budgeted the
   // day it was added. 183,214 B across 19 chunks: the full card with its
   // reaction controls, and the live thread under it (the comment field, the
@@ -606,7 +629,7 @@ const BUDGETS = {
   // FOUR READS, issued together once the post has said which product it is
   // for: the post, the product's document (the side card), the post's thread
   // and the product's other posts ("More from").
-  [`/${SAMPLE_SLUG}/posts/${SAMPLE_POST}`]: { js: 187_500, doc: 15_200, cls: 0.02, lcp: 2000, reads: 4, images: 400_000 },
+  [`/${SAMPLE_SLUG}/posts/${SAMPLE_POST}`]: { js: 187_500, doc: 16_083, cls: 0.02, lcp: 2000, reads: 4, images: 400_000 },
   // OPP1 RE-BASELINED THE JS HERE, AND ONLY HERE, WITH THE NUMBER NAMED.
   //
   // Converting the public surface to `next/link` pulls the App Router's
@@ -635,7 +658,7 @@ const BUDGETS = {
   // budget because they share a prefix is how a budget stops noticing.
   //
   // 133,500 is the measurement plus ~2.2%.
-  "/people": { js: 177_592, doc: 12_500, cls: 0.02, lcp: 2000, reads: 1 },
+  "/people": { js: 177_592, doc: 13_258, cls: 0.02, lcp: 2000, reads: 1 },
   // MP0 put the design's counter row and the three tabs on this page, and the
   // launched tab's rows with them. Still ONE read — the header, all three
   // counts and the tab's list arrive as one document — and the weight is
@@ -681,7 +704,7 @@ const BUDGETS = {
   //   each the same cached read a product page makes. Carrying the stage on
   //   the person document's own listings would bring this back to two, and
   //   is the change to make if this number ever needs to fall.
-  "/people/ada": { js: 177_966, doc: 17_500, cls: 0.02, lcp: 2000, reads: 5 },
+  "/people/ada": { js: 177_966, doc: 18_094, cls: 0.02, lcp: 2000, reads: 5 },
   // IN0 ADDED THIS ROUTE TO THE TABLE, because IN0 is what made the page worth
   // measuring: `/submit` was a three-field form, and it now renders the feed's
   // own row as a live preview — the row shell, the logo tile and the tile
@@ -707,7 +730,7 @@ const BUDGETS = {
   // rendered from what somebody is typing. A read appearing here would mean
   // this page had started asking the server about a draft — which is the one
   // thing IN0's design is built to prevent.
-  "/submit": { js: 178_590, doc: 8_000, cls: 0.02, lcp: 2000, reads: 0 },
+  "/submit": { js: 178_753, doc: 9_191, cls: 0.02, lcp: 2000, reads: 0 },
 };
 
 /**

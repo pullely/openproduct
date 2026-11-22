@@ -86,6 +86,13 @@ What landed:
   in the document for everyone (I6): `data-auth-branch` hides it and
   `.rail-yours` gives it no height for a browser with no session.
 
+- **Thirteen budgets amended, and recorded.** The rail is in every document
+  and every page's script: about 0.6 to 1.1 KB of gzipped document and
+  1.4 KB of script, measured in CI (run 45065215237). Thirteen route limits
+  that were within that of their measurements move to the measurement plus
+  100 bytes (`tests/web-perf/src/budgets.mjs` lists each); every other
+  route absorbed it. Twenty desktop snapshots move for the rail's 248px.
+
 Tests rewritten to the new rules: `shell`, `mobile-shell`, `navigation`,
 `icons` and `target-size`; `shell` gains the rail's own suite.
 
