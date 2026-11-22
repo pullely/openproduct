@@ -4,7 +4,7 @@
 |---|---|---|---|
 | LR0 — the spec | LR-1 | Done | #27 |
 | LR1 — graphite and system type | LR-2 | Done | #28 |
-| LR2 — the left rail on every page, phone first | LR-3 | In review | this PR |
+| LR2 — the left rail on every page, phone first | LR-3 | Done | #29 |
 | LR3 — tiled posts with icon actions | LR-4 | In review | this PR |
 | LR4 — posting from the product page | LR-5 | Not started | |
 
