@@ -105,14 +105,15 @@ export function FeedView({
         <section
           aria-label="openproduct"
           data-auth-branch="anonymous"
-          className="self-start overflow-hidden rounded-[16px] bg-card [grid-area:1/1]"
+          className="self-start overflow-hidden rounded-[16px] border border-border bg-card [grid-area:1/1]"
         >
           <div aria-hidden="true" className="h-[56px] bg-[linear-gradient(120deg,oklch(var(--amber-soft)),oklch(var(--sunken)))]" />
           <div className="-mt-8 flex flex-col items-center gap-1 px-4 pb-4 text-center">
             <span aria-hidden="true" className="grid h-16 w-16 place-items-center rounded-full bg-card ring-4 ring-card">
-              <svg width="30" height="30" viewBox="0 0 24 24" fill="none" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M8 3.5V21" className="stroke-foreground" />
-                <circle cx="14" cy="9.5" r="6" className="stroke-brand-amber" />
+<svg width="36" height="36" viewBox="0 0 24 24" fill="none">
+                <rect width="24" height="24" rx="6" fill="#17150F" />
+                <circle cx="11.5" cy="12.5" r="4.6" stroke="#FFFFFF" strokeWidth="2.4" />
+                <circle cx="16.8" cy="7.2" r="2.3" fill="#C9952F" />
               </svg>
             </span>
             <span className="mt-1.5 text-[16px] font-semibold text-foreground">openproduct</span>

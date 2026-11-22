@@ -20,3 +20,7 @@
 - **R6 — each merge deploys.** Merging to `main` deploys stage, then prod,
   so the site changes one milestone at a time and is briefly a mix: graphite
   with the old bar after LR1, for example.
+- **R7 — snapshots follow the runner's fonts.** The system typeface means
+  heading widths depend on the fonts installed where the page is measured.
+  The web-perf snapshot lane compares exact pixels, so its baselines are
+  CI's own measurements and a new runner image may need them re-recorded.

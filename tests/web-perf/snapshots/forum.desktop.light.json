@@ -12,15 +12,15 @@
     "width": 1000
   },
   "h1": {
-    "top": 136,
+    "top": 144,
     "left": 179,
-    "width": 147,
-    "height": 44
+    "width": 101,
+    "height": 33
   },
   "firstRow": {
     "left": 179,
     "width": 912,
-    "height": 114
+    "height": 116
   },
   "footer": {
     "left": 0,
@@ -28,13 +28,13 @@
     "height": 130
   },
   "themeControl": {
-    "width": 57,
+    "width": 56,
     "height": 26
   },
   "colours": {
-    "body": "oklch(0.967 0.0082 91.48)",
-    "text": "oklch(0.1908 0.002 106.59)",
+    "body": "oklch(1 0 0)",
+    "text": "oklch(0.2542 0.0111 254.04)",
     "header": "rgba(0, 0, 0, 0)",
-    "h1": "oklch(0.1908 0.002 106.59)"
+    "h1": "oklch(0.2542 0.0111 254.04)"
   }
 }

@@ -15,8 +15,6 @@ spec:
   system: openproduct
   docs:
     overview: README.md
-    pages:
-      - { path: src/fonts/README.md, role: reference, title: Webfonts }
   links:
     - title: Production
       url: https://openproduct.live

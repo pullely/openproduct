@@ -31,14 +31,14 @@ export const PAGE_SUBTITLE =
 /** The title row: the title on the left, an action on the right, wrapping. */
 export const PAGE_HEAD = "flex flex-wrap items-end justify-between gap-5";
 
-/** A card (OPR1): flat white on the page colour — 16px radius, no border, no
- *  shadow. The page is #F6F4EE and the card #FFFFFF, and that step is the
- *  whole of its edge. Rows inside it clip. */
-export const CARD = "overflow-hidden rounded-[16px] bg-card";
+/** A card (LR1, openproduct-left-rail design §1 rule 4): the page and the
+ *  card are the same colour, so a 1px border is its edge. 16px radius, no
+ *  shadow. Rows inside it clip. */
+export const CARD = "overflow-hidden rounded-[16px] border border-border bg-card";
 
 /** A card with its own padding — the rail's panels, a form. The card's skin
  *  and 24px inside. */
-export const PANEL = "rounded-[16px] bg-card p-6";
+export const PANEL = "rounded-[16px] border border-border bg-card p-6";
 
 /** A card's head: the heading and its meta on one baseline, `16px 20px 12px`. */
 export const CARD_HEAD = "flex items-baseline justify-between gap-2.5 px-5 pb-3 pt-4";
@@ -100,9 +100,9 @@ export const TEXTAREA =
 /** A field's label: 13px/500 in `--copy`, 6px above the field. */
 export const LABEL = "mb-1.5 block text-[13px] font-medium text-copy";
 
-/** The mono label (OPR1): IBM Plex Mono 10.5px uppercase, tracked 0.12em,
- *  `--muted`. */
-export const EYEBROW = "font-mono text-mono-label uppercase text-muted-foreground";
+/** The small label (LR1, openproduct-left-rail design §2 rule 4): 12px/600
+ *  in the UI face, `--muted`. Not monospace, not uppercase, not tracked. */
+export const EYEBROW = "text-[12px] font-semibold text-muted-foreground";
 
 /** The quiet underlined link a footer or a meta line carries. */
 export const LINK_QUIET = "underline underline-offset-[3px] hover:text-foreground";
@@ -116,16 +116,16 @@ export const CRUMBS = "flex items-center gap-2 text-[13.5px] text-muted-foregrou
 
 /** A tile (OPR1): the flat card as one item of a grid or a list — the card's
  *  skin with no padding of its own, so each list says its own room. */
-export const TILE = "rounded-[16px] bg-card";
+export const TILE = "rounded-[16px] border border-border bg-card";
 
 /** A tile that is itself the link: the card's skin, and `--accent` under the
  *  pointer — the flat design's hover, since there is no border to darken. */
-export const TILE_LINK = "rounded-[16px] bg-card transition-colors hover:bg-accent";
+export const TILE_LINK = "rounded-[16px] border border-border bg-card transition-colors hover:bg-accent";
 
 /** The empty state of a list (OPR1): one centred sentence on the flat card,
  *  where the dashed panel used to be. */
 export const EMPTY_NOTE =
-  "m-0 rounded-[16px] bg-card px-5 py-10 text-center text-[15px] leading-[1.6] text-muted-foreground";
+  "m-0 rounded-[16px] border border-border bg-card px-5 py-10 text-center text-[15px] leading-[1.6] text-muted-foreground";
 
 /** A block set INTO a card (OPR1): the sunken fill at the field's 14px
  *  radius — a quoted note, a code sample, a nested record. No border. */
@@ -185,11 +185,11 @@ export const BOARD_STACK = "grid min-w-0 grid-cols-[minmax(0,1fr)] gap-[18px] ma
 
 /** A main-column card: the flat card with the boards' `20px 22px` inside,
  *  14px on a phone. */
-export const BOARD_CARD = "rounded-[16px] bg-card px-[22px] py-5 max-sm:p-[14px]";
+export const BOARD_CARD = "rounded-[16px] border border-border bg-card px-[22px] py-5 max-sm:p-[14px]";
 
 /** A side-column card: the flat card, 18px inside and 12px between its rows;
  *  14px inside on a phone. */
-export const SIDE_CARD = "flex flex-col gap-3 rounded-[16px] bg-card p-[18px] max-sm:p-[14px]";
+export const SIDE_CARD = "flex flex-col gap-3 rounded-[16px] border border-border bg-card p-[18px] max-sm:p-[14px]";
 
 /** A side card's heading: 15px/600. */
 export const SIDE_TITLE = "m-0 text-[15px] font-semibold leading-[1.3] text-foreground";
@@ -200,15 +200,13 @@ export const BOARD_CARD_TITLE = "m-0 text-card-title font-semibold tracking-[-0.
 /** A label/value row in a side card: 15px, the label muted, no rule. */
 export const SIDE_ROW = "flex items-baseline justify-between gap-2.5 text-[15px]";
 
-/** The product header's cover band: 140px of amber wash with a glow at its
- *  top right. Desktop only — the phone board draws no band on a product. */
-export const COVER_PRODUCT =
-  "h-[140px] bg-[radial-gradient(600px_200px_at_85%_0%,oklch(var(--brand-amber-inverted)/0.55),transparent_70%),linear-gradient(120deg,oklch(var(--amber-soft)),oklch(var(--warning-wash)))] max-sm:hidden";
+/** The product header's cover band (LR1): 140px of the subtle fill, flat.
+ *  Desktop only — a phone draws no band on a product. */
+export const COVER_PRODUCT = "h-[140px] border-b border-border bg-muted max-sm:hidden";
 
-/** A person's cover band: 120px of the sunken wash under the same glow; 72px
- *  on a phone. */
-export const COVER_PERSON =
-  "h-[120px] bg-[radial-gradient(600px_200px_at_85%_0%,oklch(var(--brand-amber-inverted)/0.4),transparent_70%),linear-gradient(120deg,oklch(var(--sunken)),oklch(var(--primary-foreground)))] max-sm:h-[72px]";
+/** A person's cover band (LR1): 120px of the subtle fill, flat; 72px on a
+ *  phone. */
+export const COVER_PERSON = "h-[120px] border-b border-border bg-muted max-sm:h-[72px]";
 
 /** The header card's ink button: `BTN_PRIMARY` at the boards' 15px/600 with
  *  room for a glyph — "Try it". 44px on a phone. */
@@ -243,7 +241,7 @@ export const BTN_SOFT_SMALL =
   "inline-flex h-[40px] shrink-0 items-center justify-center gap-1.5 whitespace-nowrap rounded-full bg-foreground/[0.06] px-4 text-[13px] font-semibold text-copy no-underline transition-colors hover:bg-foreground/[0.1] max-sm:h-[44px]";
 
 /** A segmented switch (OPR1): the white pill a page's tabs sit in. */
-export const SEGMENTS = "flex gap-0.5 self-start rounded-full bg-card p-1 max-sm:p-[3px]";
+export const SEGMENTS = "flex gap-0.5 self-start rounded-full border border-border bg-card p-1 max-sm:p-[3px]";
 
 /** One segment: 40px, 15px/500; 44px and 13px on a phone. */
 export const SEGMENT =

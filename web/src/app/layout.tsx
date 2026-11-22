@@ -1,7 +1,6 @@
 import { publicApexOrigin } from "./public-api";
 import { SITE_CARD_ALT, cardMeta } from "./ui/og";
 import type { Metadata, Viewport } from "next";
-import localFont from "next/font/local";
 import "../styles/globals.css";
 
 import { SESSION_HINT_COOKIE, SIGNED_IN_CLASS } from "./auth/auth";
@@ -13,86 +12,11 @@ import { SectionBar } from "./shell/section-bar";
 import { SiteFooter } from "./shell/site-footer";
 import { TopPanel } from "./shell/top-panel";
 
-// OPR1 — THE REDESIGN'S THREE FACES, and each has exactly one job
-// (openproduct-redesign design.md §3). Hanken Grotesk is every UI voice at a
-// 15px base; Lora is display only — page titles and idea quotes, the quotes
-// in its italic; IBM Plex Mono is the small uppercase label and the machine
-// facts (licences, counts, component names).
-//
-// FIVE FILES, 98,664 BYTES, OF WHICH A PAGE FETCHES FOUR (75,924) unless it
-// sets a quote in Lora's italic — see `loraItalic` below. The font budget
-// holds the four (`FONTS` in tests/web-perf/src/budgets.mjs), and the wire
-// budget did not move (tests/web/src/wire-budget.decision.json has the
-// measured numbers). `latin`
-// only and `swap` on all three. Each file is here for a use the design names and no other: Hanken
-// Grotesk is one variable file across 400–600, Lora ships 400 upright and 400
-// italic and no second weight, and IBM Plex Mono — which has no variable
-// build — ships 400 and the 500 its labels are set in. Weights stop at 600.
-//
-// The files are committed under src/fonts rather than fetched from Google
-// Fonts at build time, so `next build` never depends on
-// fonts.googleapis.com and no visitor's browser reaches a third-party host
-// (the wire budget allows none). See src/fonts/README.md.
-const hanken = localFont({
-  src: "../fonts/hanken-grotesk-latin-wght.woff2",
-  weight: "400 600",
-  style: "normal",
-  display: "swap",
-  variable: "--font-hanken",
-});
-
-const lora = localFont({
-  src: "../fonts/lora-latin-400.woff2",
-  weight: "400",
-  style: "normal",
-  display: "swap",
-  variable: "--font-lora",
-  // A serif: size the fallback against Times New Roman.
-  adjustFontFallback: "Times New Roman",
-});
-
-// LORA'S ITALIC IS DECLARED, NOT PRELOADED. `next/font` preloads every file
-// a declaration names, on every route the layout wraps — which is all of
-// them — and the italic is drawn only where a quote is: one page today (a
-// digest week's note), none of the boarded ones in OPR1. Declared in the
-// upright's own call it cost every page 22,740 bytes it never painted with.
-// Its own declaration with `preload: false` leaves the `@font-face` in the
-// stylesheet and the fetch to the browser, which makes it only on a page
-// that sets text in it (`.font-serif.italic` in globals.css names this
-// family first).
-const loraItalic = localFont({
-  src: "../fonts/lora-latin-400-italic.woff2",
-  weight: "400",
-  style: "italic",
-  display: "swap",
-  variable: "--font-lora-italic",
-  preload: false,
-  adjustFontFallback: "Times New Roman",
-});
-
-const plexMono = localFont({
-  src: [
-    { path: "../fonts/ibm-plex-mono-latin-400.woff2", weight: "400", style: "normal" },
-    { path: "../fonts/ibm-plex-mono-latin-500.woff2", weight: "500", style: "normal" },
-  ],
-  display: "swap",
-  variable: "--font-plex-mono",
-});
-
-// UF2 — THE BAR'S OWN FACE (openproduct-ui-fixes design §2 rule 3). The owner
-// chose Geist for the top bar: the wordmark, the sections and the search.
-// Everything else stays Hanken Grotesk. One variable file across 400–600,
-// the unmodified latin subset this site shipped before OPR1 (restored from
-// its history). The bar is on every page, so every page fetches it: the font
-// and wire budgets moved by a recorded amendment for it
-// (tests/web/src/wire-budget.decision.json, 2026-11-15).
-const geist = localFont({
-  src: "../fonts/geist-latin-wght.woff2",
-  weight: "400 600",
-  style: "normal",
-  display: "swap",
-  variable: "--font-geist",
-});
+// LR1 — THE SYSTEM TYPEFACE (openproduct-left-rail design §2). No webfont is
+// declared: every face is a system stack set in globals.css (`--font-sans`,
+// `--font-mono`), so a page fetches no font file at all. The five files
+// OPR1 and UF2 shipped (Hanken Grotesk, Lora and its italic, IBM Plex Mono,
+// Geist) are gone from src/fonts with their `next/font` declarations.
 
 
 /**
@@ -206,10 +130,10 @@ export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",
-  // The light page's own colour (`--background`, #F6F4EE). Light is the
+  // The light page's own colour (`--background`, #FFFFFF since LR1). Light is the
   // default ramp — a reader gets dark only by choosing it (globals.css) — and
   // this is a build-time fact in the document, the same for every visitor.
-  themeColor: "#f6f4ee",
+  themeColor: "#ffffff",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
@@ -218,7 +142,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       lang="en"
       suppressHydrationWarning
       data-accent={ACCENT}
-      className={`${hanken.variable} ${lora.variable} ${loraItalic.variable} ${plexMono.variable} ${geist.variable}`}
     >
       <body className="flex min-h-dvh flex-col bg-background text-foreground antialiased">
         {/* esbuild's `keepNames` helper (`__name`) can be referenced by inline

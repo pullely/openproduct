@@ -493,7 +493,9 @@ describe("XP-1 — one accent colour, one meaning", () => {
     const SPENDS_GOLD =
       /(?:\b(?:bg|text|border|fill|stroke|ring|outline|from|via|to|shadow|accent|caret|decoration)-endorse\b)|--endorse/g;
     expect((markupOf("shell/top-panel.tsx").match(SPENDS_GOLD) ?? []).length).toBe(0);
-    expect((markupOf("shell/logomark.tsx").match(SPENDS_GOLD) ?? []).length).toBe(1);
+    // openproduct-left-rail LR1: the mark is a tile in its own colours (design
+    // §3) and no longer reads the accent token at all.
+    expect((markupOf("shell/logomark.tsx").match(SPENDS_GOLD) ?? []).length).toBe(0);
     expect((markupOf("shell/section-bar.tsx").match(SPENDS_GOLD) ?? []).length).toBe(0);
     // The avatar: a neutral white disc, in the signed-in branch.
     const chip = markupOf("shell/account-chip.tsx");

@@ -1,27 +1,27 @@
 /**
- * The logo (openproduct-redesign OPR1, design.md §3): a "P" whose head is an
- * "o" — an ink stem and an amber ring.
+ * The logo (openproduct-left-rail LR1, design §3): a near-black rounded tile,
+ * a white ring, and an amber dot at the ring's top right.
  *
  * Drawn inline so the header's brand block is one paint with no extra
- * request, and the same two strokes the tab icon wears
+ * request, and the same three shapes the tab icon wears
  * (`app/icon.svg/route.ts`).
  *
- * THE STEM IS `currentColor`, so it is ink on the light bar and the page's
- * light ink on the dark one without the component reading the theme. THE RING
- * IS THE ACCENT (`--endorse`, which is the amber #B8862F on :root and lifted
- * in the dark ramp) — the one place the chrome spends it besides the bell's
- * badge, exactly as the old mark's dot did (XP-1; `shell.test.ts` counts).
+ * THE COLOURS ARE THE MARK'S OWN, not the theme's: the tile is #17150F and
+ * the ring white on either ramp, so the mark is the same picture everywhere.
+ * On the dark ramp the tile would sink into the page, so it carries a 1px
+ * outline in `--border` there (`.dark-outline` is not needed: the stroke
+ * reads the token and is the page's own colour on the light ramp's white).
+ * THE DOT IS THE ONLY AMBER LEFT ON THE SITE (design §1 rule 7).
  *
- * `stroke` is both strokes' weight in the 24-unit box: 2.6, the boards'
- * value, with round caps and no fill.
+ * `stroke` is the ring's weight in the 24-unit box.
  *
- * `className` is for a size that depends on the viewport (the header draws
- * 24px, and 26px on a phone): a CSS width and height take precedence over
- * the `size` attributes, which stay as the size before the stylesheet lands.
+ * `className` is for a size that depends on the viewport: a CSS width and
+ * height take precedence over the `size` attributes, which stay as the size
+ * before the stylesheet lands.
  */
 export function Logomark({
   size = 22,
-  stroke = 2.6,
+  stroke = 2.4,
   className = "",
 }: {
   size?: number;
@@ -34,14 +34,13 @@ export function Logomark({
       height={size}
       viewBox="0 0 24 24"
       fill="none"
-      strokeWidth={stroke}
-      strokeLinecap="round"
       aria-hidden="true"
       focusable="false"
       className={`shrink-0 ${className}`}
     >
-      <path d="M8 3.5V21" stroke="currentColor" />
-      <circle cx="14" cy="9.5" r="6" className="stroke-endorse" />
+      <rect x="0.5" y="0.5" width="23" height="23" rx="6" fill="#17150F" className="stroke-border" strokeWidth="1" />
+      <circle cx="11.5" cy="12.5" r="4.6" stroke="#FFFFFF" strokeWidth={stroke} />
+      <circle cx="16.8" cy="7.2" r="2.3" fill="#C9952F" />
     </svg>
   );
 }

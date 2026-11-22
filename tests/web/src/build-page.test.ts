@@ -166,7 +166,7 @@ describe("the header card is the board's", () => {
     expect(header).toContain("<h1 className={`${PAGE_TITLE} min-w-0 break-words`}>{slug}</h1>");
     // Lora 400 at 40px, 28 on a phone — the shared title, not a local size.
     expect(code("ui/design-core.ts")).toMatch(
-      /export const PAGE_TITLE =\s*"m-0 font-serif text-display font-normal[^"]*max-sm:text-title/,
+      /export const PAGE_TITLE =\s*"m-0 text-\[26px\] font-semibold[^"]*max-sm:text-\[22px\]/,
     );
     expect(code("ui/design.ts")).toContain('export { BTN_OUTLINE, BTN_PRIMARY, BTN_SOFT, FOCUS, PAGE_NARROW, PAGE_TITLE } from "./design-core";');
   });

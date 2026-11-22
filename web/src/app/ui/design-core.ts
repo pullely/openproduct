@@ -16,11 +16,11 @@
 export const PAGE_NARROW =
   "mx-auto box-border w-full max-w-[900px] px-8 pb-[96px] pt-[64px] max-sm:px-4 max-sm:pb-[72px] max-sm:pt-10";
 
-/** The page title (OPR1): Lora 400 at 40px, line-height 1.1, -0.015em; 28px
- *  on a phone — the boards' `h1`. One size on every page, so a page announces
+/** The page title (LR1, openproduct-left-rail design §2 rule 3): the UI face
+ *  at 26px/600, line-height 1.25; 22px on a phone. One size on every page, so a page announces
  *  itself the same way wherever a reader lands. */
 export const PAGE_TITLE =
-  "m-0 font-serif text-display font-normal tracking-[-0.015em] text-foreground max-sm:text-title max-sm:leading-[1.1]";
+  "m-0 text-[26px] font-semibold leading-[1.25] text-foreground max-sm:text-[22px]";
 
 /** The act (CP-R1): the one thing a page asks for — offer, post, publish,
  *  sign in, start a thread: a 40px pill in `--primary`, which is ink
