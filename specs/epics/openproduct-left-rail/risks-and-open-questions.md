@@ -9,8 +9,9 @@
   unselected state; the axe gate and `dark-ramp.test.ts` hold the text
   pairs, not this.
 - **R3 — the JS budgets.** A rail on every page is in every page's bundle.
-  The rail's list is data and its markup is server-rendered; only the
-  drawer's open state and the folding sections are client code.
+  The rail's list is data; the rail is a client component only for
+  `usePathname`, as the bar is, and the drawer's open state is one
+  attribute on `<html>`.
 - **R4 — the tests pin the old design.** Many web tests assert the old
   ramp, faces, the three sections and the frosted bar. Each is updated to
   the new rule in the PR that changes it and named in the status file.

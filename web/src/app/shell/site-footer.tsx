@@ -31,7 +31,7 @@ export function SiteFooter() {
   return (
     <footer className="mx-auto box-border w-full max-w-[1920px] px-6 max-sm:px-4">
       <div className="flex flex-col gap-4 border-t border-line pb-10 pt-6 text-[13px] text-muted-foreground">
-        <nav aria-label="More" className="flex flex-wrap items-center gap-x-5 gap-y-1 max-sm:gap-y-0">
+        <nav aria-label="More" className="flex flex-wrap items-center gap-x-5 gap-y-1 max-sm:gap-y-0 min-[960px]:hidden">
           {FOOTER_LINKS.map((item) =>
             // A feed is a document, not a page: the client router cannot
             // soft-navigate to it, so it is a real anchor.

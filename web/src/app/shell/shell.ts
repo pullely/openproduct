@@ -64,6 +64,120 @@ export const SECTIONS: readonly Section[] = [
   { id: "help-wanted", label: "Help wanted", href: "/help-wanted", icon: "seats" },
 ] as const;
 
+/** A destination in the left rail. */
+export interface RailLink {
+  readonly id: string;
+  readonly label: string;
+  readonly href: string;
+  readonly icon: RailIcon;
+  /** A document the client router cannot soft-navigate to (a feed). */
+  readonly plain?: boolean;
+}
+
+/** The glyphs the rail's destinations wear: `rail-glyph.tsx` resolves them. */
+export type RailIcon =
+  | SectionIcon
+  | "threads"
+  | "mine"
+  | "build"
+  | "topics"
+  | "people"
+  | "stack"
+  | "pricing"
+  | "collections"
+  | "digest"
+  | "rss"
+  | "docs"
+  | "posting"
+  | "checks"
+  | "transparency";
+
+/** A folding group of the rail. */
+export interface RailGroup {
+  readonly id: string;
+  readonly title: string;
+  /** Shown only to a browser that knows it has a session (`data-auth-branch`). */
+  readonly signedIn?: boolean;
+  readonly links: readonly RailLink[];
+}
+
+/**
+ * The left rail's first rows (openproduct-left-rail LR2, design §4.2): the
+ * three sections and Discussions.
+ *
+ * DERIVED FROM `SECTIONS`, so the rail, the phone's tab bar and
+ * `sectionFor` cannot disagree about what the sections are or where they
+ * live. The feed is "Home" here: the rail is a list of places, and the
+ * place is the front page.
+ *
+ * THIS REVERSES OPR1's CLOSED LIST for the navigation as a whole (design
+ * §6): the rail lists every section, People included. `SECTIONS` itself is
+ * still three, and still what the phone's tab bar draws.
+ */
+export const RAIL_PRIMARY: readonly RailLink[] = [
+  ...SECTIONS.map((section) => ({
+    id: section.id,
+    label: section.id === "feed" ? "Home" : section.label,
+    href: section.href,
+    icon: section.icon as RailIcon,
+  })),
+  { id: "threads", label: "Discussions", href: "/threads", icon: "threads" },
+];
+
+/**
+ * The rail's folding groups, in the design's order (§4.2).
+ *
+ * NOTHING HERE IS PERSONAL. "Your products" is the same two links for every
+ * signed-in visitor (the list of their products is the first section of
+ * `/me`); it is hidden from a browser with no session by `data-auth-branch`,
+ * not left out of the document, so the rail is the same bytes for everyone
+ * (I6).
+ *
+ * Every `href` is a route this app serves (`shell.test.ts` walks the list
+ * against the app directory).
+ */
+export const RAIL_GROUPS: readonly RailGroup[] = [
+  {
+    id: "yours",
+    title: "Your products",
+    signedIn: true,
+    links: [
+      { id: "mine", label: "Your products", href: "/me", icon: "mine" },
+      { id: "build", label: "Open a build", href: "/submit", icon: "build" },
+    ],
+  },
+  {
+    id: "topics",
+    title: "Topics",
+    links: [{ id: "topics", label: "All topics", href: "/topics", icon: "topics" }],
+  },
+  {
+    id: "explore",
+    title: "Explore",
+    links: [
+      { id: "people", label: "People", href: "/people", icon: "people" },
+      { id: "stack", label: "Stacks", href: "/stack", icon: "stack" },
+      { id: "pricing", label: "Pricing", href: "/pricing", icon: "pricing" },
+      { id: "collections", label: "Collections", href: "/collections", icon: "collections" },
+      { id: "digest", label: "Weekly digest", href: "/digest", icon: "digest" },
+      { id: "rss", label: "RSS", href: "/digest/feed.xml", icon: "rss", plain: true },
+    ],
+  },
+  {
+    id: "resources",
+    title: "Resources",
+    links: [
+      { id: "docs", label: "Docs", href: "/docs", icon: "docs" },
+      { id: "posting", label: "How posting works", href: "/docs/posting", icon: "posting" },
+      { id: "checks", label: "What runs automatically", href: "/docs/checks", icon: "checks" },
+      { id: "transparency", label: "Transparency", href: "/transparency", icon: "transparency" },
+    ],
+  },
+] as const;
+
+/** Every link the rail draws, in order. */
+export const RAIL_LINKS: readonly RailLink[] = [...RAIL_PRIMARY, ...RAIL_GROUPS.flatMap((group) => group.links)];
+
 /** Where the Activity bell and the phone's fourth tab go. */
 export const ACTIVITY_PATH = "/activity";
 

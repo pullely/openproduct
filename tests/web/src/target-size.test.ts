@@ -214,9 +214,11 @@ describe("the standalone links that had to be told", () => {
     const bar = strip("shell/top-panel.tsx");
     expect(bar).toMatch(/aria-label="Search"\s+className="[^"]*min-h-\[44px\]/);
     expect(bar).toMatch(/max-sm:min-h-\[44px\] max-sm:min-w-\[44px\]/);
-    // The header's sections are plain text in a 44px hit area (openproduct-
-    // ui-fixes UF2); they are not displayed on a phone.
-    expect(bar).toMatch(/relative flex h-\[44px\] shrink-0 items-center/);
+    // openproduct-left-rail LR2: the sections are the rail's rows, each a
+    // 44px hit area at every width; the menu button that opens the rail is
+    // 40px, 44px on a phone.
+    expect(strip("shell/side-rail.tsx")).toMatch(/flex min-h-\[44px\] items-center gap-3/);
+    expect(strip("shell/rail-toggle.tsx")).toMatch(/h-\[40px\] w-\[40px\][^"]*max-sm:h-\[44px\] max-sm:w-\[44px\]/);
     // The account menu's rows: 40px, 44px on a phone.
     expect(chip).toMatch(/flex min-h-\[40px\] items-center[^"]*max-sm:min-h-\[44px\]/);
     // The search card's rows are 44px and its chevron 40px (desktop only).
