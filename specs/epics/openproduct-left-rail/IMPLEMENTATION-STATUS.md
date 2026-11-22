@@ -54,5 +54,10 @@ Departures from the design, said plainly:
   around them were not all rewritten.
 - **`[data-accent]` blocks are untouched.** The three optional accent
   families still exist in the stylesheet; nothing sets the attribute.
+- **The geometry snapshots are the CI runner's.** With no webfont, text is
+  set in whatever the machine has, so `tests/web-perf/snapshots/*.json`
+  hold the widths and heights CI's Chromium measured (run 45062888765),
+  applied from its log rather than recorded on a laptop. A change of runner
+  image can move them by a pixel with no change here; see risk R7.
 - **The theme colour is light only.** `themeColor` is `#ffffff`, as it was
   one value before.
