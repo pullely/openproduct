@@ -136,6 +136,12 @@ What landed:
   a plus that becomes a tick (`FollowButton`'s new `glyph` prop).
 - **The check badge** is the selected fill under the text colour, not amber.
 
+- **Four script budgets amended, and recorded.** `FollowButton`'s glyph form
+  costs 189 to 195 bytes on the product page, its About and Crew tabs and
+  `/submit`, against the 100 bytes of room LR2 left; each moves to CI's
+  measurement plus 100 bytes (run 45067595166). Four post-page snapshots
+  move for the icon row.
+
 Tests rewritten to the new rules: `product-post-cards` and `post-page`.
 
 Departures from the design, said plainly:
