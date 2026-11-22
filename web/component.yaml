@@ -15,7 +15,6 @@ spec:
   system: openproduct
   docs:
     overview: README.md
-    pages:
   links:
     - title: Production
       url: https://openproduct.live
