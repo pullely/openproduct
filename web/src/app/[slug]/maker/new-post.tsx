@@ -43,7 +43,7 @@ export function NewPostRow({ slug }: { slug: string }) {
       id="post"
       aria-label="New post"
       data-new-post
-      className="flex scroll-mt-[80px] flex-wrap items-center gap-x-3.5 gap-y-2.5 rounded-[16px] bg-card px-[18px] py-3.5 max-sm:flex-col max-sm:items-stretch max-sm:gap-0.5 max-sm:p-2"
+      className="flex scroll-mt-[80px] flex-wrap items-center gap-x-3.5 gap-y-2.5 rounded-[16px] border border-border bg-card px-[18px] py-3.5 max-sm:flex-col max-sm:items-stretch max-sm:gap-0.5 max-sm:p-2"
     >
       <h2 className="m-0 text-[15px] font-semibold text-foreground max-sm:px-2 max-sm:py-1.5">New post</h2>
       <div className="flex flex-[1_1_420px] flex-wrap gap-1.5 max-sm:flex-none max-sm:flex-col max-sm:gap-0.5">
