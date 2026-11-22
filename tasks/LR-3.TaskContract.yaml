@@ -1,0 +1,27 @@
+# LR-3: milestone LR2, the left rail on every page, phone first. One rail
+# holds the whole site's navigation; on a phone the tab bar stays and a menu
+# button opens the rail as a drawer.
+# The file is the contract; the task itself lives in Orunbase.
+apiVersion: orun.io/v1
+kind: TaskContract
+metadata:
+  name: LR-3
+  title: "LR2: the left rail on every page, phone first"
+spec:
+  goal: Every page shares one left rail that lists the whole site, pinned from 960px and a drawer on a phone, with the layout written from the phone up.
+  affects:
+    - web/**
+    - tests/web/**
+    - tests/web-perf/**
+    - specs/epics/openproduct-left-rail/**
+    - tasks/**
+  deps:
+    - LR-2
+  doneWhen:
+    - Every page renders the rail with the sections and order of design §4.2
+    - On a phone the bottom tab bar stays and a menu button opens the rail as a drawer that closes on navigation and on Escape
+    - From 960px the rail is pinned beside the content
+    - The bar no longer carries the sections or Create post
+    - No page scrolls sideways at 360px
+    - Web tests and web-perf lanes pass in CI
+  gates: []

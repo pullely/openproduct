@@ -1,0 +1,1107 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Openproduct prototype</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+body{margin:0}
+a{color:#1F2328}a:hover{color:#59636E}
+.op{--bg:#FFFFFF;--sf:#FFFFFF;--sf2:#F6F8FA;--hover:#EAEEF2;--line:#D1D9E0;--ink:#1F2328;--mut:#59636E;--acc:#1F2328;--gold:#1F2328;--on:#FFFFFF;--soft:#EAEEF2;--ok:#1A7F37;--inv:#1F2328;--invt:#FFFFFF;background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans',Helvetica,Arial,sans-serif;font-size:14px;line-height:1.5;min-height:100vh}
+.op.dark{--bg:#0D1117;--sf:#0D1117;--sf2:#151B23;--hover:#212830;--line:#3D444D;--ink:#F0F6FC;--mut:#9198A1;--acc:#F0F6FC;--gold:#F0F6FC;--on:#0D1117;--soft:#262C36;--ok:#3FB950;--inv:#F0F6FC;--invt:#0D1117}
+.op *{box-sizing:border-box}
+.op a{color:var(--acc)}
+.op button,.op input,.op textarea,.op select{font:inherit;color:inherit}
+.op button{cursor:pointer}
+.op :focus-visible{outline:2px solid var(--acc);outline-offset:2px}
+.op h1,.op h2,.op h3,.op p{margin:0}
+.ic{width:20px;height:20px;flex:none;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.ic.s{width:16px;height:16px}
+.mono{font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:11px;letter-spacing:.08em;text-transform:uppercase}
+.mut{color:var(--mut)}.acc{color:var(--acc)}.okc{color:var(--ok)}
+.grow{flex:1;min-width:0}
+.rel{position:relative}
+.row{display:flex;align-items:center;gap:10px}
+.wrap{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.col{display:flex;flex-direction:column;gap:12px}
+
+.top{position:sticky;top:0;z-index:30;height:56px;display:flex;align-items:center;gap:10px;padding:0 16px;background:var(--sf);border-bottom:1px solid var(--line)}
+.brand{display:flex;align-items:center;gap:8px;border:0;background:transparent;padding:6px 8px;border-radius:10px;min-height:44px;font-size:20px;font-weight:600;letter-spacing:-.02em}
+.brand .ic{width:26px;height:26px;stroke:var(--gold);stroke-width:3}
+.search{flex:1;max-width:560px;margin:0 auto;display:flex;align-items:center;gap:8px;height:40px;padding:0 14px;border-radius:999px;background:var(--sf2);border:1px solid transparent;color:var(--mut)}
+.search:focus-within{border-color:var(--acc);background:var(--sf)}
+.search input{flex:1;min-width:0;border:0;background:transparent;outline:0;color:var(--ink)}
+.search input::placeholder{color:var(--mut)}
+.icb{position:relative;width:40px;height:40px;flex:none;display:inline-grid;place-items:center;border:0;border-radius:50%;background:transparent}
+.icb:hover{background:var(--hover)}
+.dot{position:absolute;top:8px;right:9px;width:8px;height:8px;border-radius:50%;background:#C2410C;border:2px solid var(--sf)}
+.menu-btn{display:none}
+.av{width:36px;height:36px;flex:none;border-radius:50%;border:0;background:var(--soft);color:var(--acc);display:inline-grid;place-items:center;font-weight:600;font-size:12px}
+.av.l{width:80px;height:80px;font-size:24px;border:4px solid var(--sf)}
+.drop{position:absolute;right:0;top:46px;width:248px;background:var(--sf);border:1px solid var(--line);border-radius:14px;padding:6px;box-shadow:0 10px 28px rgba(0,0,0,.18);z-index:40}
+
+.shell{display:flex;align-items:flex-start}
+.side{width:264px;flex:none;position:sticky;top:56px;max-height:calc(100vh - 56px);min-height:calc(100vh - 56px);overflow-y:auto;padding:12px;border-right:1px solid var(--line);background:var(--sf)}
+.nav{display:flex;align-items:center;gap:12px;width:100%;min-height:44px;padding:0 12px;border:0;border-radius:10px;background:transparent;text-align:left}
+.nav:hover{background:var(--hover)}
+.nav.on{background:var(--sf2);font-weight:600}
+.nav .sub{display:block;font-size:10px;color:var(--mut)}
+.count{margin-left:auto;font-size:12px;color:var(--mut)}
+.sech{display:flex;align-items:center;justify-content:space-between;width:100%;min-height:44px;padding:0 12px;border:0;border-radius:10px;background:transparent;color:var(--mut)}
+.sech:hover{background:var(--hover)}
+.sech .ic{transition:transform .15s}
+.sech.shut .ic{transform:rotate(-90deg)}
+.sep{height:1px;background:var(--line);margin:8px 0}
+.body{flex:1;min-width:0;display:flex;flex-wrap:wrap;gap:24px;justify-content:center;padding:20px 24px 64px}
+.main{flex:999 1 520px;min-width:0;max-width:760px;display:flex;flex-direction:column;gap:12px}
+.rail{flex:1 1 300px;max-width:320px;display:flex;flex-direction:column;gap:16px}
+
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:40px;padding:0 16px;border-radius:999px;border:1px solid transparent;background:var(--sf2);color:var(--ink);font-weight:500;text-decoration:none;white-space:nowrap}
+.btn:hover{background:var(--hover)}
+.op a.btn{color:var(--ink)}
+.btn.pri,.op a.btn.pri{background:var(--inv);color:var(--invt)}
+.btn.pri:hover{opacity:.88}
+.btn.gold,.op a.btn.gold{background:var(--gold);color:var(--on)}
+.btn.on{background:var(--soft);color:var(--acc)}
+.btn.on .fillable{fill:currentColor}
+.btn.ghost{background:transparent;border-color:var(--line)}
+.btn.ghost:hover{background:var(--hover)}
+.btn.sm{min-height:34px;padding:0 12px;font-size:13px}
+.btn.full{width:100%}
+.tabs{display:flex;gap:4px;flex-wrap:wrap}
+.tab{display:inline-flex;align-items:center;gap:6px;min-height:40px;padding:0 14px;border-radius:999px;border:0;background:transparent;color:var(--mut);font-weight:500}
+.tab:hover{background:var(--hover)}
+.tab.on{background:var(--sf2);color:var(--ink)}
+.tab small{font-size:12px;opacity:.8}
+.tag{display:inline-flex;align-items:center;min-height:22px;padding:0 8px;border-radius:999px;background:var(--sf2);font-size:12px;color:var(--mut);white-space:nowrap}
+.tag.gold{background:var(--soft);color:var(--acc)}
+.card{background:var(--sf);border:1px solid var(--line);border-radius:16px;padding:16px}
+.h1{font-size:24px;font-weight:600;letter-spacing:-.02em;line-height:1.2}
+.h2{font-size:16px;font-weight:600}
+.lead{color:var(--mut);font-size:15px}
+.segs{display:flex;gap:4px}
+.seg{height:4px;flex:1;border-radius:2px;background:var(--line)}
+.seg.on{background:var(--gold)}
+.logo{width:40px;height:40px;flex:none;border-radius:10px;display:inline-grid;place-items:center;color:#fff;background:var(--sf2)}
+.logo .ic{width:60%;height:60%}
+.logo.crm{background:#B5791F}
+.logo.opl{background:#17150F;color:#E3B45C;border:1px solid var(--line)}
+.logo.new{color:var(--mut)}
+.logo.s{width:24px;height:24px;border-radius:6px}
+.logo.l{width:72px;height:72px;border-radius:18px;border:4px solid var(--sf);margin-top:-36px}
+
+.composer{display:flex;align-items:center;gap:10px;width:100%;padding:8px 10px;border:1px solid var(--line);border-radius:16px;background:var(--sf);text-align:left}
+.composer .fake{flex:1;min-width:0;min-height:40px;display:flex;align-items:center;padding:0 14px;border-radius:999px;background:var(--sf2);color:var(--mut)}
+.feed{display:flex;flex-direction:column}
+.post{padding:12px 16px 10px;border-top:1px solid var(--line);display:flex;flex-direction:column;gap:8px}
+.post:hover{background:var(--sf);border-radius:16px;border-top-color:transparent}
+.post:hover + .post{border-top-color:transparent}
+.plink{display:inline-flex;align-items:center;gap:8px;border:0;background:transparent;padding:4px 6px 4px 0;border-radius:8px;min-height:32px}
+.plink:hover b{text-decoration:underline}
+.ptitle{border:0;background:transparent;padding:0;text-align:left;font-size:18px;font-weight:600;letter-spacing:-.01em;line-height:1.3}
+.ptitle:hover{color:var(--acc)}
+.linkbox{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 14px;border:1px solid var(--line);border-radius:12px;background:var(--sf);text-decoration:none}
+.op a.linkbox{color:var(--ink)}
+.linkbox:hover{border-color:var(--acc)}
+.item{display:flex;align-items:flex-start;gap:12px;padding:14px 16px;border-top:1px solid var(--line)}
+.item:hover{background:var(--sf);border-radius:16px}
+.namebtn{border:0;background:transparent;padding:0;font-weight:600;font-size:16px;text-align:left}
+.namebtn:hover{text-decoration:underline}
+.tiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px}
+.tile{display:flex;align-items:center;gap:12px;padding:14px;border:1px solid var(--line);border-radius:16px;background:var(--sf)}
+.tile:hover{border-color:var(--acc)}
+.tilebtn{flex:1;min-width:0;display:flex;align-items:center;gap:12px;border:0;background:transparent;padding:0;text-align:left;min-height:44px}
+.kv{display:flex;justify-content:space-between;gap:12px;padding:7px 0;border-top:1px solid var(--line);font-size:13px}
+.kv:first-child{border-top:0}
+.kv span:last-child{text-align:right;font-weight:500;overflow-wrap:anywhere}
+.stat{flex:1;min-width:80px}
+.stat b{display:block;font-size:20px;font-weight:600}
+.stat span{font-size:12px;color:var(--mut)}
+.in{width:100%;min-height:44px;padding:10px 14px;border-radius:12px;border:1px solid var(--line);background:var(--sf);color:var(--ink)}
+.in:focus{outline:0;border-color:var(--acc)}
+textarea.in{min-height:96px;resize:vertical}
+.lab{display:block;font-weight:500;margin:0 0 6px}
+.code{display:block;padding:12px 14px;border-radius:12px;background:var(--sf2);font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:12px;overflow-x:auto;white-space:pre}
+.empty{padding:40px 16px;text-align:center;border:1px dashed var(--line);border-radius:16px;color:var(--mut)}
+.empty b{display:block;color:var(--ink);font-size:16px;margin-bottom:4px}
+.banner{height:64px;margin:-16px -16px 0;border-radius:15px 15px 0 0;background:var(--soft)}
+.disc{display:flex;align-items:center;gap:6px;border:0;background:transparent;padding:6px 0;min-height:36px;color:var(--acc);font-weight:500;text-align:left}
+.scrim{position:fixed;inset:0;z-index:50;background:rgba(0,0,0,.5);display:grid;place-items:center;padding:16px}
+.modal{width:100%;max-width:520px;max-height:90vh;overflow:auto;background:var(--sf);border-radius:20px;padding:20px;display:flex;flex-direction:column;gap:14px}
+.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);z-index:60;background:var(--inv);color:var(--invt);padding:10px 18px;border-radius:999px;font-weight:500;box-shadow:0 8px 24px rgba(0,0,0,.25)}
+.foot{font-size:12px;color:var(--mut);display:flex;flex-wrap:wrap;gap:4px 12px}
+.foot button{border:0;background:transparent;padding:4px 0;color:var(--mut)}
+.foot button:hover{color:var(--ink);text-decoration:underline}
+.op b{font-weight:600}
+.op a{text-decoration:underline}
+.op a.btn,.op a.linkbox{text-decoration:none}
+.mono{font-family:inherit;font-size:12px;letter-spacing:0;text-transform:none;font-weight:600}
+.brand{font-size:18px;letter-spacing:0}
+.brand .ic{stroke:var(--ink)}
+.search:focus-within{border-color:var(--ink)}
+.dot{background:var(--ink)}
+.nav .sub{font-size:12px;font-weight:400}
+.nav.on,.tab.on{background:var(--soft);font-weight:600}
+.tab{font-weight:400;color:var(--ink)}
+.tab:hover{background:var(--sf2)}
+.btn{background:var(--hover)}
+.btn:hover{background:var(--line)}
+.btn.on{border-color:var(--mut);color:var(--ink);font-weight:600}
+.tag.gold{color:var(--ink);font-weight:500}
+.h1{letter-spacing:0;line-height:1.25}
+.lead{font-size:14px}
+.ptitle{letter-spacing:0;line-height:1.25}
+.ptitle:hover{color:var(--ink);text-decoration:underline}
+.post:hover,.item:hover{background:var(--sf2)}
+.linkbox:hover,.tile:hover{border-color:var(--mut)}
+.in:focus{border-color:var(--ink)}
+.lab{font-weight:600}
+.code{font-family:ui-monospace,SFMono-Regular,'SF Mono',Menlo,Consolas,monospace}
+.banner{background:var(--sf2)}
+.disc{color:var(--ink);text-decoration:underline}
+.toast{font-weight:400}
+.op{font-size:15px;line-height:1.6}
+.body{gap:40px;padding:28px 32px 80px}
+.main{gap:20px;max-width:720px}
+.rail{gap:20px;max-width:300px}
+.card{padding:20px}
+.col{gap:14px}
+.side{padding:16px 12px}
+.nav{gap:14px}
+.sep{margin:12px 0}
+.h1{font-size:26px}
+.lead{font-size:15px;margin-top:4px}
+.post{padding:20px 16px 14px;gap:12px}
+.post p{max-width:64ch}
+.item{padding:20px 16px;gap:16px}
+.ptitle{font-size:20px}
+.kv{padding:10px 0;font-size:14px}
+.tag{background:transparent;padding:0}
+.tag.gold{background:var(--sf2);padding:0 8px}
+.post .btn.sm,.item .btn.sm{background:transparent;border-color:transparent;color:var(--mut);min-height:36px;padding:0 10px;font-weight:400}
+.post .btn.sm:hover,.item .btn.sm:hover{background:var(--hover);color:var(--ink)}
+.post .btn.sm.on,.item .btn.sm.on{background:var(--soft);color:var(--ink)}
+.post .btn.sm .ic.s,.item .btn.sm .ic.s{width:18px;height:18px}
+.icb{color:var(--mut)}
+.icb:hover{color:var(--ink)}
+.icb.pri{border:1px solid var(--line)}
+.icb.on{background:var(--soft);color:var(--ink)}
+.icb.on .fillable{fill:currentColor}
+.linkbox{background:var(--hover);border-color:transparent;padding:12px 16px}
+.linkbox:hover{background:var(--line);border-color:transparent}
+.mark{width:28px;height:28px;flex:none;border-radius:7px}
+.op.dark .mark{box-shadow:0 0 0 1px var(--line)}
+.logo.opl{position:relative;color:#FFFFFF}
+.logo.opl .ic{stroke-width:3}
+.logo.opl::after{content:"";position:absolute;top:13%;right:13%;width:22%;height:22%;border-radius:50%;background:#C9952F}
+.post{padding:20px;border:1px solid var(--line);border-radius:16px;background:var(--sf)}
+.post + .post{margin-top:12px}
+.post:hover{background:var(--sf);border-color:var(--mut);border-radius:16px}
+.post:hover + .post{border-top-color:var(--line)}
+@media(max-width:960px){
+.menu-btn{display:inline-grid}
+.side{display:none;position:fixed;top:56px;left:0;bottom:0;z-index:25;width:284px;max-height:none;box-shadow:0 10px 28px rgba(0,0,0,.2)}
+.side.open{display:block}
+.rail{max-width:none}
+.body{padding:12px 12px 48px;gap:16px}
+.word,.hide-s{display:none}
+}
+</style>
+</helmet>
+<div class="op {{themeCls}}">
+
+<header class="top">
+<button class="icb menu-btn" aria-label="Open menu" onClick="{{toggleNav}}"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="{{ic.menu}}"></path></svg></button>
+<button class="brand" aria-label="openproduct home" onClick="{{nav.feed}}"><svg class="mark" viewBox="0 0 24 24" aria-hidden="true"><rect x="0" y="0" width="24" height="24" rx="6" style="fill: #17150F"></rect><circle cx="11.5" cy="12.5" r="4.6" style="fill: none; stroke: #FFFFFF; stroke-width: 2.4"></circle><circle cx="16.8" cy="7.2" r="2.3" style="fill: #C9952F"></circle></svg><span class="word">openproduct</span></button>
+<label class="search"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="{{ic.search}}"></path></svg><input type="search" aria-label="Search products and people" placeholder="Search products and people" value="{{q}}" onChange="{{setQ}}"></label>
+<button class="icb" aria-label="Toggle dark mode" onClick="{{toggleDark}}"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="{{ic.moon}}"></path></svg></button>
+<sc-if value="{{signedIn}}" hint-placeholder-val="{{ true }}">
+<button class="icb" aria-label="Activity" onClick="{{nav.activity}}"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="{{ic.bell}}"></path></svg><sc-if value="{{unread}}" hint-placeholder-val="{{ true }}"><span class="dot"></span></sc-if></button>
+<div class="rel">
+<button class="av" aria-label="Account menu" onClick="{{toggleMenu}}">AM</button>
+<sc-if value="{{menuOpen}}" hint-placeholder-val="{{ false }}">
+<div class="drop">
+<button class="nav" onClick="{{nav.profile}}"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="{{ic.user}}"></path></svg><span>View profile<span class="sub">@ada</span></span></button>
+<button class="nav" onClick="{{nav.activity}}"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="{{ic.bell}}"></path></svg><span>Activity</span></button>
+<button class="nav" onClick="{{nav.submit}}"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="{{ic.plus}}"></path></svg><span>Open a build</span></button>
+<button class="nav" onClick="{{toggleDark}}"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="{{ic.moon}}"></path></svg><span>{{themeLabel}}</span></button>
+<div class="sep"></div>
+<button class="nav" onClick="{{signOut}}"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="{{ic.logout}}"></path></svg><span>Sign out</span></button>
+</div>
+</sc-if>
+</div>
+</sc-if>
+<sc-if value="{{signedOut}}" hint-placeholder-val="{{ false }}">
+<button class="btn pri" onClick="{{nav.signin}}">Sign in</button>
+</sc-if>
+</header>
+
+<div class="shell">
+<nav class="side {{sideCls}}" aria-label="Primary">
+<sc-for list="{{navMain}}" as="it" hint-placeholder-count="4">
+<button class="nav {{it.cls}}" onClick="{{it.go}}"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="{{it.icon}}"></path></svg><span>{{it.label}}</span><sc-if value="{{it.badge}}" hint-placeholder-val="{{ false }}"><span class="count">{{it.badge}}</span></sc-if></button>
+</sc-for>
+<sc-for list="{{sections}}" as="sec" hint-placeholder-count="3">
+<div class="sep"></div>
+<button class="sech {{sec.cls}}" onClick="{{sec.toggle}}"><span class="mono">{{sec.title}}</span><svg class="ic s" viewBox="0 0 24 24" aria-hidden="true"><path d="{{ic.chev}}"></path></svg></button>
+<sc-if value="{{sec.open}}" hint-placeholder-val="{{ true }}">
+<sc-for list="{{sec.items}}" as="it" hint-placeholder-count="3">
+<button class="nav {{it.cls}}" onClick="{{it.go}}">
+<sc-if value="{{it.hasLogo}}" hint-placeholder-val="{{ false }}"><span class="logo s {{it.logoCls}}"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="{{it.logoD}}"></path></svg></span></sc-if>
+<sc-if value="{{it.hasIcon}}" hint-placeholder-val="{{ true }}"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="{{it.icon}}"></path></svg></sc-if>
+<span>{{it.label}}<sc-if value="{{it.sub}}" hint-placeholder-val="{{ false }}"><span class="sub mono">{{it.sub}}</span></sc-if></span>
+</button>
+</sc-for>
+</sc-if>
+</sc-for>
+<div class="sep"></div>
+<p class="mut" style="font-size: 12px; padding: 8px 12px">Products built in the open. Every build is a public repo and a public workspace on Orunbase.</p>
+</nav>
+
+<div class="body">
+<main class="main">
+
+<sc-if value="{{isFeed}}" hint-placeholder-val="{{ true }}">
+<div class="tabs" role="tablist" aria-label="Sort the feed">
+<sc-for list="{{feedSorts}}" as="t" hint-placeholder-count="3"><button class="tab {{t.cls}}" onClick="{{t.pick}}">{{t.label}}</button></sc-for>
+</div>
+</sc-if>
+
+<sc-if value="{{isProducts}}" hint-placeholder-val="{{ false }}">
+<div>
+<h1 class="h1">Products</h1>
+<p class="lead">2 products · 1 built · 1 idea</p>
+</div>
+<input class="in" type="search" aria-label="Search products" placeholder="Search products" value="{{pQuery}}" onChange="{{setPQuery}}">
+<div class="tabs" aria-label="Stage">
+<sc-for list="{{stageChips}}" as="t" hint-placeholder-count="5"><button class="tab {{t.cls}}" onClick="{{t.pick}}">{{t.label}} <small>{{t.n}}</small></button></sc-for>
+</div>
+<div class="wrap">
+<span class="mono mut">Sort</span>
+<sc-for list="{{pSorts}}" as="t" hint-placeholder-count="3"><button class="btn sm {{t.cls}}" onClick="{{t.pick}}">{{t.label}}</button></sc-for>
+<sc-if value="{{hasFacet}}" hint-placeholder-val="{{ false }}"><button class="btn sm on" onClick="{{clearFacet}}">{{facetLabel}}<svg class="ic s" viewBox="0 0 24 24" aria-hidden="true"><path d="{{ic.x}}"></path></svg></button></sc-if>
+</div>
+</sc-if>
+
+<sc-if value="{{isHelp}}" hint-placeholder-val="{{ false }}">
+<div>
+<h1 class="h1">Help wanted</h1>
+<p class="lead">1 open seat across 1 product</p>
+</div>
+<div class="tabs" aria-label="Stage">
+<sc-for list="{{seatChips}}" as="t" hint-placeholder-count="5"><button class="tab {{t.cls}}" onClick="{{t.pick}}">{{t.label}} <small>{{t.n}}</small></button></sc-for>
+</div>
+</sc-if>
+
+<sc-if value="{{isProduct}}" hint-placeholder-val="{{ false }}">
+<section class="card col">
+<div class="banner"></div>
+<div class="row" style="align-items: flex-end">
+<span class="logo l {{prod.logoCls}}"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="{{prod.logoD}}"></path></svg></span>
+<div class="grow">
+<h1 class="h1">{{prod.name}}</h1>
+<span class="mono acc">{{prod.stageLabel}}</span>
+</div>
+</div>
+<sc-if value="{{prod.hasMs}}" hint-placeholder-val="{{ false }}"><div class="segs"><sc-for list="{{prod.segs}}" as="g" hint-placeholder-count="4"><span class="seg {{g.cls}}"></span></sc-for></div></sc-if>
+<p class="lead">{{prod.tagline}}</p>
+<div class="wrap"><sc-for list="{{prod.metaTags}}" as="m" hint-placeholder-count="3"><span class="tag">{{m.t}}</span></sc-for><span class="tag">{{prod.followersLabel}}</span></div>
+<div class="wrap">
+<button class="btn {{prod.followCls}}" onClick="{{prod.follow}}">{{prod.followLabel}}</button>
+<sc-if value="{{prod.isLive}}" hint-placeholder-val="{{ false }}">
+<a class="btn gold" href="{{prod.href}}" target="_blank" rel="noreferrer">Open it<svg class="ic s" viewBox="0 0 24 24" aria-hidden="true"><path d="{{ic.ext}}"></path></svg></a>
+<button class="btn {{prod.upCls}}" aria-label="Upvote" title="Upvote" onClick="{{prod.upvote}}"><svg class="ic fillable" viewBox="0 0 24 24" aria-hidden="true"><path d="{{ic.up}}"></path></svg><b>{{prod.upCount}}</b></button>
+</sc-if>
+<sc-if value="{{prod.isIdea}}" hint-placeholder-val="{{ false }}">
+<button class="btn gold" onClick="{{prod.takeSeat}}">Take a seat</button>
+<button class="btn {{prod.useCls}}" onClick="{{prod.wouldUse}}"><svg class="ic fillable" viewBox="0 0 24 24" aria-hidden="true"><path d="{{ic.up}}"></path></svg>I’d use this <b>{{prod.useCount}}</b></button>
+</sc-if>
+<button class="icb {{prod.saveCls}}" aria-label="{{prod.saveLabel}}" title="{{prod.saveLabel}}" onClick="{{prod.save}}"><svg class="ic fillable" viewBox="0 0 24 24" aria-hidden="true"><path d="{{ic.bookmark}}"></path></svg></button>
+<button class="icb" aria-label="Report this listing" onClick="{{openReport}}"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="{{ic.flag}}"></path></svg></button>
+</div>
+</section>
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px">
+<sc-for list="{{prod.envs}}" as="e" hint-placeholder-count="2">
+<div class="card"><span class="mono mut">{{e.label}}</span><div style="font-weight: 600; margin-top: 4px">{{e.value}}</div><p class="mut" style="font-size: 13px; margin-top: 4px">{{e.note}}</p></div>
+</sc-for>
+</div>
+<div class="tabs" role="tablist">
+<sc-for list="{{prodTabs}}" as="t" hint-placeholder-count="4"><button class="tab {{t.cls}}" onClick="{{t.pick}}">{{t.label}}</button></sc-for>
+</div>
+<sc-if value="{{canPost}}" hint-placeholder-val="{{ false }}">
+<button class="composer" onClick="{{openCompose}}"><span class="av">AM</span><span class="fake">Post an update for {{prod.name}}</span><span class="btn sm pri">Create post</span></button>
+</sc-if>
+<sc-if value="{{prodAbout}}" hint-placeholder-val="{{ false }}">
+<section class="card col">
+<h2 class="h2">{{prod.aboutTitle}}</h2>
+<sc-for list="{{prod.aboutParas}}" as="a" hint-placeholder-count="2"><p>{{a.t}}</p></sc-for>
+<h2 class="h2">Built with</h2>
+<div class="wrap"><sc-for list="{{prod.stackTags}}" as="m" hint-placeholder-count="5"><button class="btn sm" onClick="{{m.go}}">{{m.t}}</button></sc-for></div>
+<sc-if value="{{prod.hasAlts}}" hint-placeholder-val="{{ false }}">
+<h2 class="h2">Alternatives</h2>
+<sc-for list="{{prod.altList}}" as="a" hint-placeholder-count="1"><div class="row"><button class="namebtn" style="font-size: 14px" onClick="{{a.go}}">{{a.name}}</button><span class="mut">{{a.why}}</span></div></sc-for>
+</sc-if>
+</section>
+</sc-if>
+<sc-if value="{{prodCrew}}" hint-placeholder-val="{{ false }}">
+<section class="card col">
+<h2 class="h2">Crew</h2>
+<sc-for list="{{prod.crewList}}" as="c" hint-placeholder-count="1"><div class="row"><span class="av">{{c.initials}}</span><div class="grow"><button class="namebtn" style="font-size: 14px" onClick="{{c.go}}">{{c.name}}</button><div class="mut" style="font-size: 13px">{{c.handle}}</div></div></div></sc-for>
+<sc-if value="{{prod.noCrew}}" hint-placeholder-val="{{ false }}"><p class="mut">Needs a first builder. The first person to take a seat starts the crew.</p><div><button class="btn gold" onClick="{{prod.takeSeat}}">Take a seat</button></div></sc-if>
+</section>
+</sc-if>
+</sc-if>
+
+<sc-if value="{{isPost}}" hint-placeholder-val="{{ false }}">
+<div><button class="btn sm ghost" onClick="{{nav.feed}}">← Back to the feed</button></div>
+</sc-if>
+
+<sc-if value="{{isProfile}}" hint-placeholder-val="{{ false }}">
+<section class="card col">
+<div class="banner"></div>
+<div class="row" style="align-items: flex-end"><span class="av l" style="margin-top: -40px">AM</span><div class="grow"><h1 class="h1">Ada Maker</h1><span class="mut">@ada</span></div></div>
+<div class="row"><div class="stat"><b>{{followingCount}}</b><span>Following</span></div><div class="stat"><b>2</b><span>Products</span></div></div>
+</section>
+<div class="tabs" role="tablist">
+<sc-for list="{{profTabs}}" as="t" hint-placeholder-count="3"><button class="tab {{t.cls}}" onClick="{{t.pick}}">{{t.label}}</button></sc-for>
+</div>
+</sc-if>
+
+<sc-if value="{{isSearch}}" hint-placeholder-val="{{ false }}">
+<div><h1 class="h1">Search</h1><p class="lead">{{searchLead}}</p></div>
+<sc-if value="{{hasPeopleHits}}" hint-placeholder-val="{{ false }}">
+<h2 class="h2">People</h2>
+<div class="tile"><button class="tilebtn" onClick="{{nav.profile}}"><span class="av">AM</span><span><b>Ada Maker</b><br><span class="mut">@ada · 2 products</span></span></button></div>
+</sc-if>
+</sc-if>
+
+<sc-if value="{{isTiles}}" hint-placeholder-val="{{ false }}">
+<div><h1 class="h1">{{tilesTitle}}</h1><p class="lead">{{tilesLead}}</p></div>
+<div class="tiles">
+<sc-for list="{{tiles}}" as="t" hint-placeholder-count="4">
+<div class="tile">
+<button class="tilebtn" onClick="{{t.open}}"><span class="av">{{t.mono}}</span><span><b>{{t.title}}</b><br><span class="mut" style="font-size: 13px">{{t.meta}}</span></span></button>
+<sc-if value="{{t.hasFollow}}" hint-placeholder-val="{{ false }}"><button class="icb {{t.followCls}}" aria-label="{{t.followLabel}}" title="{{t.followLabel}}" onClick="{{t.follow}}"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="{{t.followIcon}}"></path></svg></button></sc-if>
+</div>
+</sc-for>
+</div>
+</sc-if>
+
+<sc-if value="{{isCollections}}" hint-placeholder-val="{{ false }}">
+<div><h1 class="h1">Collections</h1><p class="lead">Builds grouped by the people who use them.</p></div>
+<div class="empty"><b>No collections have been published yet.</b><p style="margin-bottom: 12px">A collection appears here once someone groups builds they use.</p><button class="btn pri" onClick="{{nav.submit}}">Open a build</button></div>
+</sc-if>
+
+<sc-if value="{{isThreads}}" hint-placeholder-val="{{ false }}">
+<div class="row"><div class="grow"><h1 class="h1">Discussions</h1><p class="lead">Every thread on a public listing, newest first.</p></div><button class="btn pri" onClick="{{toggleThreadForm}}"><svg class="ic s" viewBox="0 0 24 24" aria-hidden="true"><path d="{{ic.plus}}"></path></svg>Start a thread</button></div>
+<div class="tabs" aria-label="Tag">
+<sc-for list="{{threadChips}}" as="t" hint-placeholder-count="7"><button class="tab {{t.cls}}" onClick="{{t.pick}}">{{t.label}}</button></sc-for>
+</div>
+<div class="wrap"><span class="mono mut">Sort</span><sc-for list="{{threadSorts}}" as="t" hint-placeholder-count="2"><button class="btn sm {{t.cls}}" onClick="{{t.pick}}">{{t.label}}</button></sc-for></div>
+</sc-if>
+
+<sc-if value="{{showThreadForm}}" hint-placeholder-val="{{ false }}">
+<section class="card col">
+<h2 class="h2">Start a thread</h2>
+<div><label class="lab" for="tt">Title</label><input id="tt" class="in" placeholder="What do you want to talk about?" value="{{tTitle}}" onChange="{{setTTitle}}"></div>
+<div><span class="lab">Tag</span><div class="wrap"><sc-for list="{{tagPick}}" as="t" hint-placeholder-count="6"><button class="btn sm {{t.cls}}" onClick="{{t.pick}}">{{t.label}}</button></sc-for></div></div>
+<div class="row"><button class="btn pri" onClick="{{postThread}}">Post publicly</button><button class="btn ghost" onClick="{{toggleThreadForm}}">Cancel</button></div>
+</section>
+</sc-if>
+
+<sc-if value="{{isDigest}}" hint-placeholder-val="{{ false }}">
+<div><h1 class="h1">The digest</h1><p class="lead">Every week. No account, no address.</p></div>
+<div class="wrap"><button class="btn" onClick="{{copyRss}}"><svg class="ic s" viewBox="0 0 24 24" aria-hidden="true"><path d="{{ic.rss}}"></path></svg>RSS</button><button class="btn" onClick="{{copyJson}}"><svg class="ic s" viewBox="0 0 24 24" aria-hidden="true"><path d="{{ic.code}}"></path></svg>JSON Feed</button></div>
+<section class="card col">
+<h2 class="h2">Email me the weekly digest</h2>
+<sc-if value="{{notSubscribed}}" hint-placeholder-val="{{ true }}">
+<div class="wrap"><input class="in" style="flex: 1 1 220px; width: auto" type="email" aria-label="Email address" placeholder="you@example.com" value="{{email}}" onChange="{{setEmail}}"><button class="btn pri" onClick="{{subscribe}}">Subscribe</button></div>
+</sc-if>
+<sc-if value="{{subscribed}}" hint-placeholder-val="{{ false }}"><p class="okc">Subscribed. The first digest arrives the week after the first launch.</p></sc-if>
+</section>
+<div class="empty"><b>Nothing has launched yet</b><p>So there is no week to look back on. The first one appears here the week after the first launch.</p></div>
+</sc-if>
+
+<sc-if value="{{isSubmit}}" hint-placeholder-val="{{ false }}">
+<div><h1 class="h1">Open a build</h1><p class="lead">Link a public workspace, write the pitch and publish.</p></div>
+<section class="card col">
+<div><label class="lab" for="f1">Build name</label><input id="f1" class="in" placeholder="Acme Thing" value="{{form.name}}" onChange="{{setForm.name}}"></div>
+<div><label class="lab" for="f2">One-liner <span class="mut">(optional)</span></label><input id="f2" class="in" placeholder="What it does, in a sentence" value="{{form.line}}" onChange="{{setForm.line}}"></div>
+<div><label class="lab" for="f3">Pitch <span class="mut">(optional)</span></label><textarea id="f3" class="in" placeholder="Why it matters, who it's for, and what you're looking for in people." value="{{form.pitch}}" onChange="{{setForm.pitch}}"></textarea></div>
+<div><label class="lab" for="f4">Public repository <span class="mut">(optional)</span></label><input id="f4" class="in" placeholder="https://github.com/owner/repo" value="{{form.repo}}" onChange="{{setForm.repo}}"></div>
+<div class="row"><button class="btn pri" onClick="{{submitBuild}}">Continue on Orunbase<svg class="ic s" viewBox="0 0 24 24" aria-hidden="true"><path d="{{ic.ext}}"></path></svg></button><button class="btn ghost" onClick="{{nav.feed}}">Back to the feed</button></div>
+</section>
+</sc-if>
+
+<sc-if value="{{isDocs}}" hint-placeholder-val="{{ false }}">
+<div class="tabs" role="tablist" aria-label="Docs">
+<sc-for list="{{docTabs}}" as="t" hint-placeholder-count="6"><button class="tab {{t.cls}}" onClick="{{t.pick}}">{{t.label}}</button></sc-for>
+</div>
+<div><span class="mono mut">Docs</span><h1 class="h1">{{doc.title}}</h1><p class="lead" style="margin-top: 6px">{{doc.lead}}</p></div>
+<sc-for list="{{doc.sections}}" as="sx" hint-placeholder-count="3">
+<section class="card col">
+<h2 class="h2">{{sx.h}}</h2>
+<sc-if value="{{sx.p}}" hint-placeholder-val="{{ true }}"><p>{{sx.p}}</p></sc-if>
+<sc-if value="{{sx.hasRows}}" hint-placeholder-val="{{ false }}"><div><sc-for list="{{sx.rows}}" as="r" hint-placeholder-count="3"><div class="kv" style="justify-content: flex-start; flex-wrap: wrap"><b style="flex: 0 0 220px; max-width: 100%">{{r.k}}</b><span class="mut" style="flex: 1 1 260px; text-align: left; font-weight: 400">{{r.v}}</span></div></sc-for></div></sc-if>
+<sc-if value="{{sx.code}}" hint-placeholder-val="{{ false }}"><code class="code">{{sx.code}}</code></sc-if>
+</section>
+</sc-for>
+</sc-if>
+
+<sc-if value="{{isTransparency}}" hint-placeholder-val="{{ false }}">
+<div><h1 class="h1">What we removed, and how often we were wrong</h1><p class="lead" style="margin-top: 6px">Every act of moderation on openproduct is written to an append-only record before it takes effect. This page is generated from that record.</p><p class="mono mut" style="margin-top: 8px">24 August 2026 to 22 November 2026 · rolling 90 days</p></div>
+<section class="card"><div class="wrap" style="align-items: flex-start"><div class="stat"><b>0</b><span>Acts taken against something</span></div><div class="stat"><b>0</b><span>Acts undone</span></div><div class="stat"><b>—</b><span>Undone as a share</span></div></div><p class="mut" style="font-size: 13px; margin-top: 12px">A dash means there is nothing to take a share of — not that the share was nought.</p></section>
+<sc-for list="{{tpSections}}" as="sx" hint-placeholder-count="3">
+<section class="card col" style="gap: 6px">
+<h2 class="h2">{{sx.h}}</h2>
+<p class="mut">{{sx.sub}}</p>
+<p>None in this window.</p>
+<button class="disc" onClick="{{sx.toggle}}"><svg class="ic s" viewBox="0 0 24 24" aria-hidden="true"><path d="{{ic.chev}}"></path></svg>{{sx.q}}</button>
+<sc-if value="{{sx.open}}" hint-placeholder-val="{{ false }}"><p class="mut">{{sx.a}}</p></sc-if>
+</section>
+</sc-for>
+</sc-if>
+
+<sc-if value="{{isActivity}}" hint-placeholder-val="{{ false }}">
+<div class="row"><div class="grow"><h1 class="h1">Activity</h1><p class="lead">What happened on your products and seats.</p></div><button class="icb pri" aria-label="Mark all read" title="Mark all read" onClick="{{markRead}}"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="{{ic.check}}"></path></svg></button></div>
+<div class="feed">
+<sc-for list="{{activity}}" as="a" hint-placeholder-count="3">
+<div class="item"><span class="av"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="{{a.icon}}"></path></svg></span><div class="grow"><button class="namebtn" style="font-size: 14px; font-weight: 500" onClick="{{a.go}}">{{a.text}}</button><div class="mut" style="font-size: 13px">{{a.when}}</div></div></div>
+</sc-for>
+</div>
+</sc-if>
+
+<sc-if value="{{isSignin}}" hint-placeholder-val="{{ false }}">
+<section class="card col" style="max-width: 420px; width: 100%; margin: 24px auto; padding: 24px">
+<h1 class="h1">Sign in</h1>
+<button class="btn pri full" onClick="{{signIn}}">Continue with Orunbase</button>
+<div class="row mut"><span class="grow sep"></span>or<span class="grow sep"></span></div>
+<div><label class="lab" for="si1">Email</label><input id="si1" class="in" type="email" placeholder="you@example.com"></div>
+<div><label class="lab" for="si2">Password</label><input id="si2" class="in" type="password" placeholder="••••••••"></div>
+<button class="disc" onClick="{{forgot}}">Forgot your password?</button>
+<button class="btn gold full" onClick="{{signIn}}">Sign in</button>
+<p class="mut">New here? <button class="disc" style="display: inline-flex" onClick="{{signIn}}">Create an account</button></p>
+</section>
+</sc-if>
+
+<sc-if value="{{showSeats}}" hint-placeholder-val="{{ false }}">
+<sc-if value="{{seatsTitle}}" hint-placeholder-val="{{ false }}"><h2 class="h2">{{seatsTitle}}</h2></sc-if>
+<sc-for list="{{seats}}" as="st" hint-placeholder-count="1">
+<section class="card col">
+<div class="row"><span class="logo {{st.logoCls}}"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="{{st.logoD}}"></path></svg></span><div class="grow"><span class="mono acc">Open seat</span><h2 class="h2">{{st.role}}</h2><button class="plink" onClick="{{st.open}}"><b>{{st.productName}}</b><span class="mut">· {{st.stage}}</span></button></div></div>
+<div class="wrap"><span class="tag">{{st.time}}</span><span class="tag">{{st.note}}</span></div>
+<p>{{st.desc}}</p>
+<div><button class="btn {{st.cls}}" onClick="{{st.take}}">{{st.label}}</button></div>
+</section>
+</sc-for>
+</sc-if>
+
+<sc-if value="{{showPlist}}" hint-placeholder-val="{{ false }}">
+<sc-if value="{{plistTitle}}" hint-placeholder-val="{{ false }}"><h2 class="h2">{{plistTitle}}</h2></sc-if>
+<div class="feed">
+<sc-for list="{{plist}}" as="p" hint-placeholder-count="2">
+<div class="item">
+<span class="logo {{p.logoCls}}"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="{{p.logoD}}"></path></svg></span>
+<div class="grow col" style="gap: 6px">
+<div class="wrap"><button class="namebtn" onClick="{{p.open}}">{{p.name}}</button><span class="tag">{{p.topic}}</span><span class="tag gold">{{p.stageLabel}}</span><sc-if value="{{p.hasSeats}}" hint-placeholder-val="{{ false }}"><span class="tag gold">{{p.seatsLabel}}</span></sc-if></div>
+<sc-if value="{{p.hasMs}}" hint-placeholder-val="{{ false }}"><div class="segs" style="max-width: 200px"><sc-for list="{{p.segs}}" as="g" hint-placeholder-count="4"><span class="seg {{g.cls}}"></span></sc-for></div></sc-if>
+<p class="mut">{{p.tagline}}</p>
+<div class="wrap">
+<button class="btn sm {{p.upCls}}" aria-label="Upvote" title="Upvote" onClick="{{p.upvote}}"><svg class="ic s fillable" viewBox="0 0 24 24" aria-hidden="true"><path d="{{ic.up}}"></path></svg><b>{{p.upCount}}</b></button>
+<button class="btn sm {{p.saveCls}}" aria-label="{{p.saveLabel}}" title="{{p.saveLabel}}" onClick="{{p.save}}"><svg class="ic s fillable" viewBox="0 0 24 24" aria-hidden="true"><path d="{{ic.bookmark}}"></path></svg></button>
+</div>
+</div>
+<button class="icb {{p.followCls}}" aria-label="{{p.followLabel}}" title="{{p.followLabel}}" onClick="{{p.follow}}"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="{{p.followIcon}}"></path></svg></button>
+</div>
+</sc-for>
+</div>
+</sc-if>
+
+<sc-if value="{{showPosts}}" hint-placeholder-val="{{ true }}">
+<sc-if value="{{postsTitle}}" hint-placeholder-val="{{ false }}"><h2 class="h2">{{postsTitle}}</h2></sc-if>
+<div class="feed">
+<sc-for list="{{posts}}" as="p" hint-placeholder-count="2">
+<article class="post">
+<div class="wrap">
+<button class="plink" onClick="{{p.openProduct}}"><span class="logo s {{p.logoCls}}"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="{{p.logoD}}"></path></svg></span><b>{{p.productName}}</b></button>
+<span class="mut">· {{p.date}}</span>
+<span class="tag gold">{{p.kind}}</span>
+<span class="grow"></span>
+<button class="icb {{p.followCls}}" aria-label="{{p.followLabel}}" title="{{p.followLabel}}" onClick="{{p.follow}}"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="{{p.followIcon}}"></path></svg></button>
+</div>
+<button class="ptitle" onClick="{{p.open}}">{{p.title}}</button>
+<p>{{p.body}}</p>
+<sc-if value="{{p.hasMs}}" hint-placeholder-val="{{ false }}"><div class="row"><span class="mono mut">Milestone {{p.milestone}}</span><div class="segs grow" style="max-width: 240px"><sc-for list="{{p.segs}}" as="g" hint-placeholder-count="4"><span class="seg {{g.cls}}"></span></sc-for></div></div></sc-if>
+<sc-if value="{{p.hasTry}}" hint-placeholder-val="{{ true }}"><a class="linkbox" href="{{p.tryHref}}" target="_blank" rel="noreferrer"><span><span class="mono mut">Try it</span><br>{{p.tryUrl}}</span><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="{{ic.ext}}"></path></svg></a></sc-if>
+<div class="wrap">
+<button class="btn sm {{p.usefulCls}}" aria-label="Useful" title="Useful" onClick="{{p.toggleUseful}}"><svg class="ic s fillable" viewBox="0 0 24 24" aria-hidden="true"><path d="{{ic.up}}"></path></svg><b>{{p.count}}</b></button>
+<button class="btn sm" aria-label="Comments" onClick="{{p.open}}"><svg class="ic s" viewBox="0 0 24 24" aria-hidden="true"><path d="{{ic.comment}}"></path></svg><b>{{p.commentCount}}</b></button>
+<button class="btn sm" aria-label="Share" title="Share" onClick="{{p.share}}"><svg class="ic s" viewBox="0 0 24 24" aria-hidden="true"><path d="{{ic.share}}"></path></svg></button>
+<button class="btn sm {{p.saveCls}}" aria-label="{{p.saveLabel}}" title="{{p.saveLabel}}" onClick="{{p.save}}"><svg class="ic s fillable" viewBox="0 0 24 24" aria-hidden="true"><path d="{{ic.bookmark}}"></path></svg></button>
+</div>
+</article>
+</sc-for>
+</div>
+</sc-if>
+
+<sc-if value="{{showThreads}}" hint-placeholder-val="{{ false }}">
+<sc-if value="{{isProduct}}" hint-placeholder-val="{{ false }}"><div><button class="btn pri" onClick="{{toggleThreadForm}}"><svg class="ic s" viewBox="0 0 24 24" aria-hidden="true"><path d="{{ic.plus}}"></path></svg>Start a thread</button></div></sc-if>
+<div class="feed">
+<sc-for list="{{threads}}" as="th" hint-placeholder-count="1">
+<div class="item"><span class="av"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="{{ic.chat}}"></path></svg></span><div class="grow"><b style="font-size: 16px">{{th.title}}</b><div class="wrap" style="margin-top: 4px"><span class="tag gold">{{th.tag}}</span><span class="mut" style="font-size: 13px">{{th.where}} · @ada · just now · 0 replies</span></div></div></div>
+</sc-for>
+</div>
+</sc-if>
+
+<sc-if value="{{isPost}}" hint-placeholder-val="{{ false }}">
+<section class="card col">
+<h2 class="h2">{{commentsTitle}}</h2>
+<sc-if value="{{signedIn}}" hint-placeholder-val="{{ true }}">
+<textarea class="in" aria-label="Write a comment" placeholder="Write a comment" value="{{draft}}" onChange="{{setDraft}}"></textarea>
+<div><button class="btn pri" onClick="{{addComment}}">Comment</button></div>
+</sc-if>
+<sc-if value="{{signedOut}}" hint-placeholder-val="{{ false }}"><div><button class="btn pri" onClick="{{nav.signin}}">Sign in to comment</button></div></sc-if>
+<sc-for list="{{comments}}" as="c" hint-placeholder-count="0">
+<div class="row" style="align-items: flex-start"><span class="av">AM</span><div class="grow"><b>Ada Maker</b> <span class="mut">· {{c.when}}</span><p style="white-space: pre-line">{{c.text}}</p><button class="btn sm {{c.cls}}" style="margin-top: 6px" onClick="{{c.like}}"><svg class="ic s fillable" viewBox="0 0 24 24" aria-hidden="true"><path d="{{ic.up}}"></path></svg><b>{{c.n}}</b></button></div></div>
+</sc-for>
+<sc-if value="{{noComments}}" hint-placeholder-val="{{ true }}"><p class="mut">No comments yet. Talk lives under posts — be the first.</p></sc-if>
+</section>
+</sc-if>
+
+<sc-if value="{{empty.show}}" hint-placeholder-val="{{ false }}">
+<div class="empty"><b>{{empty.title}}</b><p>{{empty.text}}</p></div>
+</sc-if>
+
+</main>
+
+<aside class="rail" aria-label="Sidebar">
+<sc-if value="{{railAbout}}" hint-placeholder-val="{{ false }}">
+<section class="card col">
+<div class="row"><span class="logo {{prod.logoCls}}"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="{{prod.logoD}}"></path></svg></span><div class="grow"><button class="namebtn" onClick="{{prod.open}}">{{prod.name}}</button><div class="mono mut">{{prod.stageLabel}}</div></div></div>
+<p class="mut" style="font-size: 13px">{{prod.tagline}}</p>
+<div class="row" style="align-items: flex-start"><sc-for list="{{prod.statList}}" as="x" hint-placeholder-count="3"><div class="stat"><b>{{x.v}}</b><span>{{x.l}}</span></div></sc-for></div>
+<button class="btn full {{prod.followCls}}" onClick="{{prod.follow}}">{{prod.followLabel}}</button>
+</section>
+<section class="card">
+<h2 class="h2" style="margin-bottom: 8px">In the open</h2>
+<sc-for list="{{prod.facts}}" as="f" hint-placeholder-count="5"><div class="kv"><span class="mut">{{f.k}}</span><span>{{f.v}}</span></div></sc-for>
+</section>
+<sc-if value="{{prod.hasHealth}}" hint-placeholder-val="{{ false }}">
+<section class="card">
+<h2 class="h2" style="margin-bottom: 8px">Repo health</h2>
+<sc-for list="{{prod.health}}" as="f" hint-placeholder-count="5"><div class="kv"><span class="mut">{{f.k}}</span><span>{{f.v}}</span></div></sc-for>
+<button class="disc" onClick="{{dispute}}">Dispute an item</button>
+</section>
+<section class="card col">
+<h2 class="h2">Badge for your README</h2>
+<code class="code">{{prod.badge}}</code>
+<div><button class="btn sm" onClick="{{copyBadge}}">Copy markdown</button></div>
+</section>
+</sc-if>
+</sc-if>
+
+<sc-if value="{{railPreview}}" hint-placeholder-val="{{ false }}">
+<section class="card col">
+<span class="mono mut">How it will look</span>
+<div class="row"><span class="logo new"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="{{ic.grid}}"></path></svg></span><div class="grow"><b style="font-size: 16px">{{preview.name}}</b><div class="mono acc">Idea</div></div></div>
+<p class="mut">{{preview.line}}</p>
+<p style="font-size: 13px; white-space: pre-line">{{preview.pitch}}</p>
+<span class="tag">{{preview.repo}}</span>
+</section>
+</sc-if>
+
+<sc-if value="{{railDefault}}" hint-placeholder-val="{{ true }}">
+<section class="card col">
+<h2 class="h2">Open seats</h2>
+<button class="tilebtn" onClick="{{openSeatProduct}}"><span class="logo opl"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="{{ic.ring}}"></path></svg></span><span><b>openproduct-live</b><br><span class="acc" style="font-size: 13px">Contributor · 1 open seat</span></span></button>
+<button class="btn sm full" onClick="{{nav.help}}">All open seats</button>
+</section>
+<section class="card col">
+<h2 class="h2">Following</h2>
+<sc-for list="{{followingList}}" as="p" hint-placeholder-count="1">
+<button class="tilebtn" onClick="{{p.open}}"><span class="logo {{p.logoCls}}"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="{{p.logoD}}"></path></svg></span><b>{{p.name}}</b></button>
+</sc-for>
+<sc-if value="{{noFollowing}}" hint-placeholder-val="{{ false }}"><p class="mut">Follow a product to see it here.</p></sc-if>
+</section>
+</sc-if>
+
+<div class="foot">
+<button onClick="{{nav.docs}}">Docs</button><button onClick="{{nav.posting}}">How posting works</button><button onClick="{{nav.checks}}">What runs automatically</button><button onClick="{{nav.transparency}}">Transparency</button><button onClick="{{nav.digest}}">Weekly digest</button><button onClick="{{copyRss}}">RSS</button>
+</div>
+</aside>
+</div>
+</div>
+
+<sc-if value="{{modalSeat}}" hint-placeholder-val="{{ false }}">
+<div class="scrim"><div class="modal" role="dialog" aria-label="Take the seat">
+<div class="row"><h2 class="h2 grow">Take the seat: Contributor</h2><button class="icb" aria-label="Close" onClick="{{closeModal}}"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="{{ic.x}}"></path></svg></button></div>
+<p class="mut">openproduct-live · Async / Flexible — pick up issues at your own pace (e.g., 2–5 hrs/week)</p>
+<div><label class="lab" for="sm1">A note to the crew <span class="mut">(optional)</span></label><textarea id="sm1" class="in" placeholder="What you'd like to pick up first" value="{{seatNote}}" onChange="{{setSeatNote}}"></textarea></div>
+<div class="row"><button class="btn pri" onClick="{{sendSeat}}">Send to the crew</button><button class="btn ghost" onClick="{{closeModal}}">Cancel</button></div>
+</div></div>
+</sc-if>
+
+<sc-if value="{{modalReport}}" hint-placeholder-val="{{ false }}">
+<div class="scrim"><div class="modal" role="dialog" aria-label="Report this listing">
+<div class="row"><h2 class="h2 grow">Report this listing</h2><button class="icb" aria-label="Close" onClick="{{closeModal}}"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="{{ic.x}}"></path></svg></button></div>
+<p class="mut">What is wrong with it?</p>
+<div class="col" style="gap: 6px"><sc-for list="{{reasons}}" as="r" hint-placeholder-count="7"><button class="btn sm {{r.cls}}" style="justify-content: flex-start; white-space: normal; text-align: left; padding: 8px 14px" onClick="{{r.pick}}">{{r.label}}</button></sc-for></div>
+<div><label class="lab" for="rp1">Anything else we should know? <span class="mut">(optional)</span></label><textarea id="rp1" class="in"></textarea></div>
+<div class="row"><button class="btn pri" onClick="{{sendReport}}">Send report</button><button class="btn ghost" onClick="{{closeModal}}">Cancel</button></div>
+</div></div>
+</sc-if>
+
+<sc-if value="{{modalCompose}}" hint-placeholder-val="{{ false }}">
+<div class="scrim"><div class="modal" role="dialog" aria-label="Create post">
+<div class="row"><h2 class="h2 grow">Create post</h2><button class="icb" aria-label="Close" onClick="{{closeModal}}"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="{{ic.x}}"></path></svg></button></div>
+<p class="mut">Posting for <b>{{composeFor}}</b>, as a member of its crew.</p>
+<div><span class="lab">Kind</span><div class="wrap"><sc-for list="{{composeKinds}}" as="t" hint-placeholder-count="5"><button class="btn sm {{t.cls}}" onClick="{{t.pick}}">{{t.label}}</button></sc-for></div><p class="mut" style="font-size: 13px; margin-top: 6px">{{kindHelp}}</p></div>
+<div><label class="lab" for="cp1">{{kindF1}}</label><input id="cp1" class="in" value="{{compose.f1}}" onChange="{{setCompose.f1}}"></div>
+<div><label class="lab" for="cp2">{{kindF2}}</label><textarea id="cp2" class="in" value="{{compose.f2}}" onChange="{{setCompose.f2}}"></textarea></div>
+<sc-if value="{{kindF3}}" hint-placeholder-val="{{ true }}"><div><label class="lab" for="cp3">{{kindF3}} <span class="mut">{{kindF3Note}}</span></label><input id="cp3" class="in" value="{{compose.f3}}" onChange="{{setCompose.f3}}"></div></sc-if>
+<div class="row"><button class="btn pri" onClick="{{publishPost}}">Post</button><button class="btn ghost" onClick="{{closeModal}}">Cancel</button></div>
+</div></div>
+</sc-if>
+
+<sc-if value="{{toast}}" hint-placeholder-val="{{ false }}"><div class="toast" role="status">{{toast}}</div></sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"dark":{"editor":"boolean","default":false},"$preview":{"width":1440,"height":1500}}'>
+class Component extends DCLogic {
+  state = {
+    route: 'feed', slug: 'broke-crm', postId: 'p1', docTab: 'overview', prodTab: 'updates', profTab: 'posts',
+    dark: null, navOpen: false, menuOpen: false, signedIn: true, unread: true,
+    sec: { products: true, topics: true, explore: true, resources: false },
+    following: { 'openproduct-live': true }, followTopic: {}, followPeople: {},
+    useful: { p1: true }, saved: {}, savedProd: {}, upvoted: {}, wouldUse: {}, liked: {},
+    comments: {}, draft: '', extraPosts: [],
+    feedSort: 'latest', pStage: 'all', pSort: 'active', pQuery: '', facet: null,
+    q: '', seatFilter: 'all', seatSent: false, seatNote: '', modal: null, reason: '', toast: '',
+    threads: [], tFilter: 'All', tSort: 'latest', tTitle: '', tTag: 'Question', tOpen: false,
+    form: { name: '', line: '', pitch: '', repo: '' },
+    compose: { kind: 'Feature shipped', slug: 'broke-crm', f1: '', f2: '', f3: '' },
+    email: '', subscribed: false, tp: {}
+  };
+
+  go(route, extra) {
+    this.setState(Object.assign({ route: route, navOpen: false, menuOpen: false, modal: null, tOpen: false }, extra || {}));
+    try { window.scrollTo(0, 0); } catch (e) {}
+  }
+  flip(group, id) {
+    const g = Object.assign({}, this.state[group]);
+    g[id] = !g[id];
+    this.setState({ [group]: g });
+  }
+  say(msg) {
+    this.setState({ toast: msg });
+    clearTimeout(this._t);
+    this._t = setTimeout(() => this.setState({ toast: '' }), 2600);
+  }
+  componentWillUnmount() { clearTimeout(this._t); }
+
+  data() {
+    if (this._d) return this._d;
+    const ic = {
+      logo: 'M7 21V8a5 5 0 1 1 5 5H7',
+      home: 'M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z',
+      grid: 'M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z',
+      ring: 'M12 19a7 7 0 1 0 0-14 7 7 0 0 0 0 14z',
+      seat: 'M15 20v-1.5A3.5 3.5 0 0 0 11.5 15h-5A3.5 3.5 0 0 0 3 18.5V20M9 11a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7zM19 8v6M16 11h6',
+      chat: 'M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z',
+      tag: 'M3 12V4h8l9.5 9.5a1.5 1.5 0 0 1 0 2.1l-5.9 5.9a1.5 1.5 0 0 1-2.1 0zM7.5 8.5h.01',
+      people: 'M16 20v-1a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v1M9.5 11a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7zM21 20v-1a4 4 0 0 0-3-3.9M15.5 4.1a3.5 3.5 0 0 1 0 6.8',
+      layers: 'M12 3 3 8l9 5 9-5zM3 12l9 5 9-5M3 16l9 5 9-5',
+      coin: 'M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18zM15 9.5c-.5-1-1.6-1.5-3-1.5-1.7 0-3 .8-3 2s1 1.8 3 2 3 .8 3 2-1.3 2-3 2c-1.4 0-2.5-.5-3-1.5M12 6.5V8M12 16v1.5',
+      folder: 'M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z',
+      mail: 'M4 5h16a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1zM3.5 6.5 12 13l8.5-6.5',
+      book: 'M5 4h11a3 3 0 0 1 3 3v13H8a3 3 0 0 1-3-3zM5 17a3 3 0 0 1 3-3h11',
+      pen: 'M4 20h4L19.5 8.5a2.1 2.1 0 0 0-3-3L5 17zM14.5 7.5l3 3',
+      bolt: 'M13 3 5 13.5h6L10 21l8-10.5h-6z',
+      eye: 'M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12zM12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z',
+      plus: 'M12 5v14M5 12h14',
+      bell: 'M6 16v-5a6 6 0 1 1 12 0v5l1.5 2h-15zM10 20.5a2.2 2.2 0 0 0 4 0',
+      search: 'M11 18a7 7 0 1 0 0-14 7 7 0 0 0 0 14zM20 20l-3.8-3.8',
+      up: 'M12 4 4 12.5h4.5V20h7v-7.5H20z',
+      comment: 'M5 5h14a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H9.5L5 19.5V16a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1z',
+      share: 'M4 13v6a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-6M12 15V4M7.5 8.5 12 4l4.5 4.5',
+      bookmark: 'M6 4h12v16.5l-6-4.5-6 4.5z',
+      ext: 'M9 5H5v14h14v-4M13 4h7v7M20 4l-9 9',
+      chev: 'M6 9l6 6 6-6',
+      menu: 'M4 7h16M4 12h16M4 17h16',
+      moon: 'M20 14.5A8.5 8.5 0 0 1 9.5 4a8.5 8.5 0 1 0 10.5 10.5z',
+      check: 'M5 12.5l4.5 4.5L19 7.5',
+      x: 'M6 6l12 12M18 6 6 18',
+      rss: 'M5 5a14 14 0 0 1 14 14M5 11a8 8 0 0 1 8 8M6 19a1 1 0 1 0 0-2 1 1 0 0 0 0 2z',
+      user: 'M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM4.5 20.5a7.5 7.5 0 0 1 15 0',
+      flag: 'M5 21V4h12l-2 4 2 4H5',
+      code: 'M8 7l-5 5 5 5M16 7l5 5-5 5',
+      logout: 'M9 4H5v16h4M15 8l4 4-4 4M19 12H9'
+    };
+    const products = [
+      {
+        slug: 'broke-crm', name: 'broke-crm', logoCls: 'crm', logoD: ic.grid, topic: 'Productivity', stage: 'production',
+        stageLabel: 'In production · 2 of 4', ms: 2, baseFollowers: 2, baseUp: 0, seats: 0, pricing: 'Free',
+        href: 'https://www.brokecrm.cloud/',
+        tagline: 'BrokeCRM: a free, open-source, multi-tenant CRM on Cloudflare Workers and Postgres, inspired by and built on Atomic CRM by Marmelab.',
+        meta: ['Productivity', 'Apache-2.0', 'Managed service'],
+        stack: ['TypeScript', 'React', 'Vite', 'Cloudflare Workers', 'Postgres', 'Supabase', 'R2', 'Terraform', 'MCP'],
+        envs: [
+          { label: 'Stage', value: 'www.brokecrm.cloud', note: 'Try the demo in your browser on fake data.' },
+          { label: 'Production', value: 'www.brokecrm.cloud', note: 'Open to everyone · live since Nov 20, 2026 · Link set by the crew' }
+        ],
+        aboutTitle: 'About',
+        about: [
+          'BrokeCRM: a free, open-source, multi-tenant CRM on Cloudflare Workers and Postgres, inspired by and built on Atomic CRM by Marmelab.',
+          'Contacts, companies, deals on a pipeline board, notes with file attachments, tasks, tags, search, import and export.'
+        ],
+        facts: [
+          { k: 'Repository', v: 'vijayakrishnans/openproduct-crm' }, { k: 'Workspace', v: 'Open on Orunbase' }, { k: 'Pricing', v: 'Free' },
+          { k: 'Licence', v: 'Apache-2.0' }, { k: 'Language', v: 'TypeScript' }, { k: 'Last commit', v: '11h ago' },
+          { k: 'Open issues', v: '0' }, { k: 'Published', v: '17 Nov 2026' }, { k: 'Taking offers', v: 'Not right now' }
+        ],
+        stats: [{ v: '31', l: 'Changes, 7 days' }, { v: '#1', l: 'Most active' }],
+        health: [
+          { k: 'Builds', v: '—' }, { k: 'Licence detectable', v: '✓ 4h ago' }, { k: 'README present', v: '—' },
+          { k: 'Tests present', v: '—' }, { k: 'A commit within 90 days', v: '✓ 4h ago' }
+        ],
+        alts: [{ slug: 'openproduct-live', name: 'openproduct-live', why: 'shares 5 of its stack · runs the same way' }],
+        crew: [{ name: 'Ada Maker', handle: '@ada', initials: 'AM' }],
+        badge: '[![openproduct](https://openproduct.live/badge/broke-crm)](https://openproduct.live/broke-crm)'
+      },
+      {
+        slug: 'openproduct-live', name: 'openproduct-live', logoCls: 'opl', logoD: ic.ring, topic: 'Dev tools', stage: 'idea',
+        stageLabel: 'Idea · needs a first builder', ms: 0, baseFollowers: 0, baseUp: 0, baseUse: 1, seats: 1, pricing: 'Free',
+        href: 'https://openproduct.live/',
+        tagline: 'A public directory of open builds: products made in public, with their code, plan and work in progress visible.',
+        meta: ['Dev tools', '1 open seat'],
+        stack: ['TypeScript', 'React', 'Cloudflare Workers', 'Postgres', 'Terraform', 'Next.js', 'Tailwind CSS', 'Vitest'],
+        envs: [
+          { label: 'Stage', value: 'Not on stage yet', note: 'An idea, not built yet.' },
+          { label: 'Production', value: 'Not in production yet', note: 'Appears here when the crew sets a link.' }
+        ],
+        aboutTitle: 'The problem',
+        about: [
+          'openproduct.live lists products that are built in the open. Every build on it is a public repository and a public Orunbase workspace, so its code, its plan and its work in progress can be seen while they happen, not after a launch.',
+          'Anyone can browse builds, people, open roles, threads and the weekly digest without signing in. Makers link a public workspace, write the pitch and publish. Contributors save, follow, endorse, comment and apply for open roles.',
+          'It runs on Cloudflare Workers, with Postgres on Supabase behind Hyperdrive, R2 for media and a Durable Object for rate limits.'
+        ],
+        facts: [
+          { k: 'Stage', v: 'Idea' }, { k: 'Posted', v: '14 Nov 2026' }, { k: 'Repository', v: 'pullely/openproduct' },
+          { k: 'Workspace', v: 'Open on Orunbase' }, { k: 'Pricing', v: 'Free' }
+        ],
+        stats: [{ v: '1', l: 'Open seat' }],
+        health: [], alts: [], crew: [], badge: ''
+      }
+    ];
+    const posts = [
+      { id: 'p1', slug: 'broke-crm', kind: 'Feature shipped', date: '20 Nov 2026', order: 2, title: 'Google and GitHub sign-in', body: 'You can signin using Google and github now', milestone: 'M2', ms: 2, tryUrl: 'www.brokecrm.cloud', tryHref: 'https://www.brokecrm.cloud/', base: 1 },
+      { id: 'p2', slug: 'openproduct-live', kind: 'Feature shipped', date: '15 Nov 2026', order: 1, title: 'Introducing Openproduct', body: 'Openproduct is a platform designed for builders to ship and share products in the open, turning every build into a public repository and a collaborative workspace.', milestone: '', ms: 0, tryUrl: 'openproduct.live', tryHref: 'https://openproduct.live/', base: 1 }
+    ];
+    const seats = [
+      { id: 's1', slug: 'openproduct-live', role: 'Contributor', stage: 'Idea', stageKey: 'idea', time: 'Async / Flexible — pick up issues at your own pace (e.g., 2–5 hrs/week)', note: 'Nobody yet — this opening is a week old.', desc: 'Pick up open tasks and ship pull requests to improve the directory catalogue, maker flows, and core platform. You\'ll work directly in the public GitHub repo (pullely/openproduct) and Orunbase workspace, helping build features across Cloudflare Workers, Supabase Postgres, and R2.' }
+    ];
+    const docs = {
+      overview: { label: 'Overview', title: 'The catalog, and how to read it', lead: 'Everything on openproduct is available as JSON, and every field says where it came from.', sections: [
+        { h: 'The API', p: 'Anonymous. No credential is accepted on any route below — the response is identical for every caller, which is what makes it cacheable. Cached for 60 seconds.', rows: [
+          { k: 'GET /v1/products', v: 'Every published listing.' }, { k: 'GET /v1/products/{slug}', v: 'One product. Unknown, unpublished and unreachable all answer 404.' },
+          { k: 'GET /v1/facets', v: 'The vocabulary the catalog is filterable by.' }, { k: 'GET /v1/openapi.json', v: 'The schema, version 1.5.0.' } ],
+          code: 'curl https://openproduct-gateway-prod.openproduct.workers.dev/v1/products' },
+        { h: 'For an agent', p: 'The same catalog, over the Model Context Protocol. Anonymous and stateless, like the routes above.', rows: [
+          { k: 'list_products', v: 'Every published listing, narrowed by the published facet vocabulary.' }, { k: 'get_product', v: 'One listing by its slug, with its components, open roles and observed metrics.' },
+          { k: 'list_facets', v: 'The published vocabulary the catalog is filterable by.' } ],
+          code: 'https://openproduct-gateway-prod.openproduct.workers.dev/mcp' },
+        { h: 'What every field tells you', p: 'A metric is absent — never zero — when a listing’s tier cannot see it, or when what we last read has gone stale past its window.', rows: [
+          { k: 'authored', v: 'A person wrote it — a maintainer or a contributor — and it is visibly in their voice.' }, { k: 'observed', v: 'Something measured it, at a stated time. Comes with observedAt, always.' },
+          { k: 'derived', v: 'We computed it, from a published formula. Comes with the formula’s id.' } ] }
+      ] },
+      api: { label: 'API reference', title: 'API changelog and stability policy', lead: 'The catalog is version 1.5.0. Every change to what it returns is listed here with the milestone that made it.', sections: [
+        { h: 'The policy', p: 'Additive forever. A field, once published, stays. A removal is announced on this page with a date at least 90 days out, carries a Deprecation header for the whole notice period, and is marked x-deprecated in the OpenAPI document until it goes. There is no 2.0.0: a breaking change is a new path beside the old one.' }
+      ] },
+      checks: { label: 'What runs automatically', title: 'What runs automatically', lead: 'Some things here are checked automatically. None of those checks can remove anything: only a person removes, and every removal is recorded and appealable.', sections: [
+        { h: 'The checks', p: 'Four, and each says what it can do to what it finds.', rows: [
+          { k: 'This pitch may not say anything', v: 'May withhold from search engines.' }, { k: 'A group of accounts that arrived together', v: 'May stop counting toward a total.' },
+          { k: 'Accounts endorsing substantially the same set', v: 'May stop counting toward a total.' }, { k: 'Most of a launch’s endorsements came from accounts younger than the launch', v: 'Does nothing on its own.' } ] },
+        { h: 'How often the pitch check is wrong', p: '0 of 20 genuine pitches were wrongly flagged. 6 of 6 empty ones were caught. Measured against a corpus assembled for the purpose, not a sample of real listings.' }
+      ] },
+      formulas: { label: 'Formulas', title: 'How every number is computed', lead: 'Every ordering and every computed figure on openproduct resolves to one sentence. There is no relevance score, and no engagement signal — no clicks, no dwell time, no trending.', sections: [
+        { h: 'The orders you can choose', p: 'Three, and no fourth. Each is a sentence rather than a score, which is what makes it arguable.', rows: [
+          { k: 'sort.most-active', v: 'Merged changes times counted upvotes over the trailing seven days, each plus one, highest first, so a build needs both work and interest to lead.' } ] }
+      ] },
+      runbook: { label: 'Runbook', title: 'Runbook', lead: 'One page per degraded state, reached from the alert rather than found by search.', sections: [
+        { h: 'How a phase is re-fired', rows: [
+          { k: 'Wait one tick', v: 'Every phase runs on the next materialisation cron, every ten minutes.' }, { k: 'Run the gateway’s cron by hand', v: 'Cloudflare dashboard → Workers → openproduct-gateway → Triggers → Run.' },
+          { k: 'Call the route directly', v: 'From a session that holds the binding.' } ] }
+      ] },
+      posting: { label: 'Posting', title: 'Five kinds of post, and nothing else', lead: 'Every post is one of these templates, filled in block by block, so posts of the same kind look the same and can be compared, filtered and trusted.', sections: [
+        { h: 'The rules', rows: [
+          { k: 'Every post shows who and what', v: 'The product it is about and the person who posted it.' }, { k: 'Some posts draft themselves', v: 'Shipping a milestone drafts a Feature shipped post, and opening a seat drafts a Help wanted post. Nothing goes out until someone on the crew presses Post.' },
+          { k: 'Talk lives under posts', v: 'Comments, replies and reactions are open on every post. There is no free-standing status update.' }, { k: 'Only the crew posts for a product', v: 'You can post only for products you are on the crew of.' } ] },
+        { h: 'The five kinds', rows: [
+          { k: 'Feature shipped', v: 'Something new that people can use today.' }, { k: 'New version', v: 'A numbered release with its changes listed.' }, { k: 'Demo', v: 'A recorded run of the real product.' },
+          { k: 'New idea', v: 'A problem worth building for, before any code.' }, { k: 'Help wanted', v: 'An open seat on the crew.' } ] },
+        { h: 'Left out on purpose', p: 'Free text, links and images on their own. Reordering. Reposts — a post appears in the feed once.' }
+      ] }
+    };
+    const kinds = {
+      'Feature shipped': { help: 'Something new that people can use today.', f1: 'Feature', f2: 'What it does', f3: 'Try it', f3n: '(an http(s) address)' },
+      'New version': { help: 'A numbered release with its changes listed.', f1: 'Version', f2: 'Added', f3: 'Changed', f3n: '(optional)' },
+      'Demo': { help: 'A recorded run of the real product.', f1: 'Title', f2: 'Note', f3: '', f3n: '' },
+      'New idea': { help: 'A problem worth building for, before any code.', f1: 'Who has it', f2: 'Problem', f3: 'Why now', f3n: '(optional)' },
+      'Help wanted': { help: 'An open seat on the crew.', f1: 'Role', f2: 'What you’d do', f3: 'Time', f3n: '(optional)' }
+    };
+    this._d = {
+      ic: ic, products: products, posts: posts, seats: seats, docs: docs, kinds: kinds,
+      stackList: [['Cloudflare Workers', 2], ['Postgres', 2], ['React', 2], ['Terraform', 2], ['TypeScript', 2], ['Next.js', 1], ['Tailwind CSS', 1], ['Vitest', 1]],
+      pricingList: [['Free', 2], ['Open core', 0], ['Paid', 0], ['Free to self-host', 0]],
+      topicList: [['Dev tools', 1], ['Productivity', 1]],
+      tags: ['Design', 'Proposal', 'Question', 'Governance', 'Contributing', 'Accessibility'],
+      reasons: ['Spam or generated filler', 'Impersonates a person or organisation', 'Listed by someone who does not maintain it', 'Abusive or targets a person', 'Malware, or a security risk to anyone who runs it', 'Claims something about itself that is not true', 'Something else'],
+      tp: [
+        { id: 'acts', h: 'Every act, by kind', sub: 'Including the decision to do nothing.', q: 'Why the decisions to do nothing are counted', a: 'An estate that publishes only its removals is publishing a boast.' },
+        { id: 'appeals', h: 'Appeals', sub: 'Filed by the people the acts were about, refusals counted beside upholds.', q: 'Why refusals are counted', a: 'A page showing only the appeals we granted would be the same boast in a different section.' },
+        { id: 'reports', h: 'Reports', sub: 'What people told us about listings, by where each one got to.', q: 'Why a rolling window', a: 'The last 90 days, rolling. A cumulative figure only ever goes up, which makes a bad quarter permanently diluted by every good one before it.' }
+      ]
+    };
+    return this._d;
+  }
+
+  renderVals() {
+    const s = this.state, D = this.data(), ic = D.ic;
+    const go = (r, x) => () => this.go(r, x);
+    const is = (r) => s.route === r;
+    const dark = s.dark === null ? !!this.props.dark : s.dark;
+    const segs = (n) => [1, 2, 3, 4].map((i) => ({ cls: i <= n ? 'on' : '' }));
+    const set = (k) => (e) => this.setState({ [k]: e.target.value });
+    const setIn = (group, k) => (e) => this.setState({ [group]: Object.assign({}, s[group], { [k]: e.target.value }) });
+    const chip = (key, cur, label, extra) => Object.assign({ label: label, cls: cur === key ? 'on' : '', pick: () => this.setState(extra(key)) });
+    const openFacet = (type, value) => go('products', { facet: { type: type, value: value }, pStage: 'all', pQuery: '' });
+    const seatModal = () => { if (!s.signedIn) { this.go('signin'); return; } this.setState({ modal: 'seat' }); };
+
+    const pv = (p) => {
+      const f = !!s.following[p.slug], up = !!s.upvoted[p.slug], sv = !!s.savedProd[p.slug], wu = !!s.wouldUse[p.slug];
+      const followers = p.baseFollowers + (f ? 1 : 0);
+      return Object.assign({}, p, {
+        open: go('product', { slug: p.slug, prodTab: 'updates' }),
+        follow: () => { this.flip('following', p.slug); this.say(f ? 'Unfollowed ' + p.name : 'Following ' + p.name); },
+        followLabel: f ? 'Following' : 'Follow', followIcon: f ? ic.check : ic.plus, followCls: f ? 'on' : 'pri',
+        segs: segs(p.ms), hasMs: p.ms > 0, isIdea: p.stage === 'idea', isLive: p.stage === 'production',
+        hasSeats: p.seats > 0, seatsLabel: p.seats + ' open seat',
+        followersLabel: followers + (followers === 1 ? ' follower' : ' followers'),
+        upCount: p.baseUp + (up ? 1 : 0), upCls: up ? 'on' : '', upvote: () => this.flip('upvoted', p.slug),
+        useCount: (p.baseUse || 0) + (wu ? 1 : 0), useCls: wu ? 'on' : '', wouldUse: () => this.flip('wouldUse', p.slug),
+        saveLabel: sv ? 'Saved' : 'Save', saveCls: sv ? 'on' : '', save: () => this.flip('savedProd', p.slug),
+        takeSeat: seatModal,
+        metaTags: p.meta.map((t) => ({ t: t })),
+        aboutParas: p.about.map((t) => ({ t: t })),
+        stackTags: p.stack.map((t) => ({ t: t, go: openFacet('stack', t) })),
+        hasAlts: p.alts.length > 0, altList: p.alts.map((a) => Object.assign({}, a, { go: go('product', { slug: a.slug, prodTab: 'updates' }) })),
+        crewList: p.crew.map((c) => Object.assign({}, c, { go: go('profile') })), noCrew: p.crew.length === 0,
+        statList: [{ v: String(followers), l: 'Followers' }].concat(p.stats),
+        hasHealth: p.health.length > 0
+      });
+    };
+    const prods = D.products.map(pv);
+    const bySlug = {};
+    prods.forEach((p) => { bySlug[p.slug] = p; });
+    const prod = bySlug[s.slug] || prods[0];
+
+    const postv = (p) => {
+      const pr = bySlug[p.slug], u = !!s.useful[p.id], sv = !!s.saved[p.id];
+      return Object.assign({}, p, {
+        productName: pr.name, logoCls: pr.logoCls, logoD: pr.logoD,
+        followCls: pr.followCls, followLabel: pr.followLabel, followIcon: pr.followIcon, follow: pr.follow,
+        open: go('post', { postId: p.id, slug: p.slug }), openProduct: pr.open,
+        count: p.base + (u ? 1 : 0), usefulCls: u ? 'on' : '', toggleUseful: () => this.flip('useful', p.id),
+        commentCount: (s.comments[p.id] || []).length,
+        saveCls: sv ? 'on' : '', saveLabel: sv ? 'Saved' : 'Save', save: () => this.flip('saved', p.id),
+        share: () => this.say('Link copied'),
+        hasMs: p.ms > 0, segs: segs(p.ms), hasTry: !!p.tryUrl
+      });
+    };
+    const allPosts = s.extraPosts.concat(D.posts).map(postv);
+    const ql = s.q.trim().toLowerCase();
+    const hit = (t) => ql && String(t).toLowerCase().indexOf(ql) >= 0;
+
+    let posts = [], postsTitle = '', showPosts = false;
+    if (is('feed')) {
+      showPosts = true;
+      posts = allPosts.slice();
+      if (s.feedSort === 'useful') posts.sort((a, b) => b.count - a.count || b.order - a.order);
+      if (s.feedSort === 'following') posts = posts.filter((p) => s.following[p.slug]);
+    } else if (is('product') && s.prodTab === 'updates') { showPosts = true; posts = allPosts.filter((p) => p.slug === s.slug); }
+    else if (is('post')) { showPosts = true; posts = allPosts.filter((p) => p.id === s.postId); }
+    else if (is('profile') && s.profTab === 'posts') { showPosts = true; posts = allPosts; }
+    else if (is('profile') && s.profTab === 'saved') { showPosts = true; posts = allPosts.filter((p) => s.saved[p.id]); }
+    else if (is('search')) { posts = allPosts.filter((p) => hit(p.title) || hit(p.body)); showPosts = posts.length > 0; postsTitle = 'Posts'; }
+
+    let plist = [], plistTitle = '', showPlist = false;
+    const stageCount = (k) => prods.filter((p) => k === 'all' || p.stage === k).length;
+    if (is('products')) {
+      showPlist = true;
+      const pq = s.pQuery.trim().toLowerCase();
+      plist = prods.filter((p) => (s.pStage === 'all' || p.stage === s.pStage)
+        && (!pq || (p.name + ' ' + p.tagline + ' ' + p.topic).toLowerCase().indexOf(pq) >= 0)
+        && (!s.facet || (s.facet.type === 'topic' ? p.topic === s.facet.value : s.facet.type === 'pricing' ? p.pricing === s.facet.value : p.stack.indexOf(s.facet.value) >= 0)));
+      if (s.pSort === 'upvoted') plist.sort((a, b) => b.upCount - a.upCount);
+    } else if (is('search')) { plist = prods.filter((p) => hit(p.name) || hit(p.tagline) || hit(p.topic)); showPlist = plist.length > 0; plistTitle = 'Products'; }
+    else if (is('profile') && s.profTab === 'products') { showPlist = true; plist = prods; }
+
+    const prodAbout = is('product') && s.prodTab === 'about';
+    let seats = [], showSeats = false, seatsTitle = '';
+    const seatv = (st) => { const pr = bySlug[st.slug]; return Object.assign({}, st, { productName: pr.name, logoCls: pr.logoCls, logoD: pr.logoD, open: pr.open, take: seatModal, label: s.seatSent ? 'Sent to the crew' : 'Take the seat', cls: s.seatSent ? 'on' : 'gold' }); };
+    if (is('help')) { showSeats = true; seats = D.seats.filter((x) => s.seatFilter === 'all' || x.stageKey === s.seatFilter).map(seatv); }
+    else if (prodAbout) { seats = D.seats.filter((x) => x.slug === s.slug).map(seatv); showSeats = seats.length > 0; seatsTitle = 'Open seats'; }
+
+    const prodTalk = is('product') && s.prodTab === 'talk';
+    const showThreads = is('threads') || prodTalk;
+    let threads = s.threads.map((t) => Object.assign({}, t, { where: t.slug ? t.slug : 'openproduct' }));
+    if (prodTalk) threads = threads.filter((t) => t.slug === s.slug);
+    if (is('threads') && s.tFilter !== 'All') threads = threads.filter((t) => t.tag === s.tFilter);
+
+    const peopleHit = hit('Ada Maker') || hit('ada');
+    let empty = { show: false, title: '', text: '' };
+    const em = (title, text) => { empty = { show: true, title: title, text: text }; };
+    if (is('feed') && !posts.length) em('Nothing here yet', 'Follow a product to see its updates in this view.');
+    else if (is('products') && !plist.length) em('No products match', 'Clear a filter or try another stage.');
+    else if (is('help') && !seats.length) em('No open seats at this stage', 'Seats appear here when a crew opens one.');
+    else if (showThreads && !threads.length) em('No threads yet', 'Start one — every thread lives on a public listing.');
+    else if (is('product') && s.prodTab === 'updates' && !posts.length) em('No updates yet', 'The crew has not posted for this product.');
+    else if (is('profile') && s.profTab === 'saved' && !posts.length) em('Nothing saved yet', 'Save a post from the feed and it shows up here.');
+    else if (is('search') && !ql) em('Search openproduct', 'Type in the bar above to search products, people and posts.');
+    else if (is('search') && !posts.length && !plist.length && !peopleHit) em('No results', 'Nothing matches “' + s.q + '”.');
+
+    const tilesBy = {
+      topics: { title: 'Topics', lead: 'Follow a topic to see its builds in your feed.', items: D.topicList.map((t) => { const f = !!s.followTopic[t[0]]; return { title: t[0], mono: t[0].slice(0, 2), meta: t[1] + ' product · ' + (f ? 1 : 0) + (f ? ' follower' : ' followers'), open: openFacet('topic', t[0]), hasFollow: true, followLabel: f ? 'Following' : 'Follow', followIcon: f ? ic.check : ic.plus, followCls: f ? 'on' : 'pri', follow: () => this.flip('followTopic', t[0]) }; }) },
+      stack: { title: 'Built with', lead: 'What the builds here run on.', items: D.stackList.map((t) => ({ title: t[0], mono: t[0].slice(0, 2), meta: t[1] + (t[1] === 1 ? ' product' : ' products'), open: openFacet('stack', t[0]) })) },
+      pricing: { title: 'Pricing', lead: 'How each build charges, as its crew declared it.', items: D.pricingList.map((t) => ({ title: t[0], mono: t[0].slice(0, 2), meta: t[1] + ' products', open: openFacet('pricing', t[0]) })) },
+      people: { title: 'People building in the open', lead: 'Makers and contributors on public listings.', items: [(() => { const f = !!s.followPeople.rv; return { title: 'Ada Maker', mono: 'AM', meta: '@ada · 2 products', open: go('profile'), hasFollow: false }; })()] }
+    };
+    const tb = tilesBy[s.route];
+
+    const navDef = [['feed', 'Home', ic.home], ['products', 'Products', ic.grid, '2'], ['help', 'Help wanted', ic.seat, '1'], ['threads', 'Discussions', ic.chat]];
+    const item = (route, label, icon, extra) => ({ label: label, icon: icon, hasIcon: true, cls: is(route) && (!extra || s.docTab === extra.docTab) ? 'on' : '', go: go(route, extra) });
+    const sections = [];
+    const sec = (id, title, items) => sections.push({ title: title, open: !!s.sec[id], cls: s.sec[id] ? '' : 'shut', toggle: () => this.flip('sec', id), items: items });
+    if (s.signedIn) sec('products', 'Your products', prods.map((p) => ({ label: p.name, sub: p.isIdea ? 'Idea' : 'In production', hasLogo: true, logoCls: p.logoCls, logoD: p.logoD, cls: is('product') && s.slug === p.slug ? 'on' : '', go: p.open })).concat([item('submit', 'Open a build', ic.plus)]));
+    sec('topics', 'Topics', D.topicList.map((t) => ({ label: t[0], icon: ic.tag, hasIcon: true, cls: is('products') && s.facet && s.facet.value === t[0] ? 'on' : '', go: openFacet('topic', t[0]) })).concat([item('topics', 'All topics', ic.grid)]));
+    sec('explore', 'Explore', [item('people', 'People', ic.people), item('stack', 'Stacks', ic.layers), item('pricing', 'Pricing', ic.coin), item('collections', 'Collections', ic.folder), item('digest', 'Weekly digest', ic.mail)]);
+    sec('resources', 'Resources', [item('docs', 'Docs', ic.book, { docTab: 'overview' }), item('docs', 'How posting works', ic.pen, { docTab: 'posting' }), item('docs', 'What runs automatically', ic.bolt, { docTab: 'checks' }), item('transparency', 'Transparency', ic.eye)]);
+
+    const kind = D.kinds[s.compose.kind];
+    const pickCompose = (k, v) => () => this.setState({ compose: Object.assign({}, s.compose, { [k]: v }) });
+    const comments = (s.comments[s.postId] || []).map((c, i) => { const key = s.postId + ':' + i, l = !!s.liked[key]; return { text: c.text, when: c.when, n: l ? 1 : 0, cls: l ? 'on' : '', like: () => this.flip('liked', key) }; });
+    const followingList = prods.filter((p) => s.following[p.slug]);
+    const facetNames = { topic: 'Topic', stack: 'Built with', pricing: 'Pricing' };
+
+    return {
+      ic: ic, themeCls: dark ? 'dark' : '', themeLabel: dark ? 'Light mode' : 'Dark mode',
+      sideCls: s.navOpen ? 'open' : '', signedIn: s.signedIn, signedOut: !s.signedIn, menuOpen: s.menuOpen, unread: s.unread,
+      toggleNav: () => this.setState({ navOpen: !s.navOpen }), toggleMenu: () => this.setState({ menuOpen: !s.menuOpen }),
+      toggleDark: () => this.setState({ dark: !dark, menuOpen: false }),
+      signOut: () => { this.go('feed', { signedIn: false }); this.say('Signed out'); },
+      signIn: () => { this.go('feed', { signedIn: true }); this.say('Signed in as @ada'); },
+      forgot: () => this.say('Reset link sent, if that address has an account'),
+      q: s.q, setQ: (e) => { const v = e.target.value; this.setState({ q: v, route: v ? 'search' : (s.route === 'search' ? 'feed' : s.route) }); },
+      nav: { feed: go('feed'), products: go('products', { facet: null }), help: go('help'), activity: go('activity', { unread: false }), profile: go('profile'), submit: go('submit'), signin: go('signin'), docs: go('docs', { docTab: 'overview' }), posting: go('docs', { docTab: 'posting' }), checks: go('docs', { docTab: 'checks' }), transparency: go('transparency'), digest: go('digest') },
+      navMain: navDef.map((n) => ({ label: n[1], icon: n[2], badge: n[3] || '', cls: is(n[0]) ? 'on' : '', go: go(n[0], n[0] === 'products' ? { facet: null } : null) })),
+      sections: sections,
+
+      isFeed: is('feed'), isProducts: is('products'), isHelp: is('help'), isProduct: is('product'), isPost: is('post'), isProfile: is('profile'),
+      isSearch: is('search'), isTiles: !!tb, isCollections: is('collections'), isThreads: is('threads'), isDigest: is('digest'), isSubmit: is('submit'),
+      isDocs: is('docs'), isTransparency: is('transparency'), isActivity: is('activity'), isSignin: is('signin'),
+
+      feedSorts: [['latest', 'Latest'], ['useful', 'Most useful'], ['following', 'Following']].map((t) => chip(t[0], s.feedSort, t[1], (k) => ({ feedSort: k }))),
+      openCompose: () => this.setState({ modal: 'compose', menuOpen: false, compose: Object.assign({}, s.compose, { slug: s.slug }) }),
+      canPost: is('product') && s.prodTab === 'updates' && s.signedIn, composeFor: s.compose.slug,
+
+      pQuery: s.pQuery, setPQuery: set('pQuery'),
+      stageChips: [['all', 'Everything'], ['idea', 'Ideas'], ['building', 'Building'], ['stage', 'On stage'], ['production', 'In production']].map((t) => Object.assign(chip(t[0], s.pStage, t[1], (k) => ({ pStage: k })), { n: stageCount(t[0]) })),
+      pSorts: [['active', 'Most active'], ['newest', 'Newest'], ['upvoted', 'Upvoted']].map((t) => chip(t[0], s.pSort, t[1], (k) => ({ pSort: k }))),
+      hasFacet: !!s.facet, facetLabel: s.facet ? facetNames[s.facet.type] + ': ' + s.facet.value : '', clearFacet: () => this.setState({ facet: null }),
+      showPlist: showPlist, plist: plist, plistTitle: plistTitle,
+
+      seatChips: [['all', 'All'], ['idea', 'On ideas'], ['building', 'Being built'], ['stage', 'On stage'], ['production', 'In production']].map((t) => Object.assign(chip(t[0], s.seatFilter, t[1], (k) => ({ seatFilter: k })), { n: D.seats.filter((x) => t[0] === 'all' || x.stageKey === t[0]).length })),
+      showSeats: showSeats, seats: seats, seatsTitle: seatsTitle,
+
+      prod: prod, prodAbout: prodAbout, prodCrew: is('product') && s.prodTab === 'crew',
+      prodTabs: [['updates', 'Updates'], ['about', 'About'], ['crew', 'Crew'], ['talk', 'Talk']].map((t) => chip(t[0], s.prodTab, t[1], (k) => ({ prodTab: k, tOpen: false }))),
+      openReport: () => this.setState({ modal: 'report', reason: '' }),
+      dispute: () => this.say('Dispute opened — a person will read it'),
+      copyBadge: () => this.say('Badge markdown copied'),
+
+      showPosts: showPosts, posts: posts, postsTitle: postsTitle,
+      commentsTitle: comments.length + (comments.length === 1 ? ' comment' : ' comments'), comments: comments, noComments: comments.length === 0,
+      draft: s.draft, setDraft: set('draft'),
+      addComment: () => { const t = s.draft.trim(); if (!t) { this.say('Write something first'); return; } const c = Object.assign({}, s.comments); c[s.postId] = (c[s.postId] || []).concat([{ text: t, when: 'just now' }]); this.setState({ comments: c, draft: '' }); },
+
+      followingCount: followingList.length,
+      profTabs: [['posts', 'Posts'], ['products', 'Products'], ['saved', 'Saved']].map((t) => chip(t[0], s.profTab, t[1], (k) => ({ profTab: k }))),
+
+      searchLead: ql ? 'Results for “' + s.q + '”' : 'Products, people and posts.', hasPeopleHits: !!peopleHit,
+
+      tilesTitle: tb ? tb.title : '', tilesLead: tb ? tb.lead : '', tiles: tb ? tb.items : [],
+
+      showThreads: showThreads, threads: threads, showThreadForm: showThreads && s.tOpen,
+      toggleThreadForm: () => { if (!s.signedIn) { this.go('signin'); return; } this.setState({ tOpen: !s.tOpen }); },
+      threadChips: ['All'].concat(D.tags).map((t) => chip(t, s.tFilter, t, (k) => ({ tFilter: k }))),
+      threadSorts: [['latest', 'Latest'], ['replied', 'Most replied']].map((t) => chip(t[0], s.tSort, t[1], (k) => ({ tSort: k }))),
+      tagPick: D.tags.map((t) => chip(t, s.tTag, t, (k) => ({ tTag: k }))),
+      tTitle: s.tTitle, setTTitle: set('tTitle'),
+      postThread: () => { const t = s.tTitle.trim(); if (!t) { this.say('Give the thread a title'); return; } this.setState({ threads: [{ id: 't' + Date.now(), title: t, tag: s.tTag, slug: is('product') ? s.slug : '' }].concat(s.threads), tTitle: '', tOpen: false, tFilter: 'All' }); this.say('Thread posted'); },
+
+      email: s.email, setEmail: set('email'), subscribed: s.subscribed, notSubscribed: !s.subscribed,
+      subscribe: () => { if (s.email.indexOf('@') < 1) { this.say('Enter an email address'); return; } this.setState({ subscribed: true }); },
+      copyRss: () => this.say('Feed address copied: /digest/feed.xml'), copyJson: () => this.say('JSON Feed address copied'),
+
+      form: s.form, setForm: { name: setIn('form', 'name'), line: setIn('form', 'line'), pitch: setIn('form', 'pitch'), repo: setIn('form', 'repo') },
+      submitBuild: () => { if (!s.form.name.trim()) { this.say('Give the build a name'); return; } this.say('Continuing on Orunbase to link a workspace…'); },
+      preview: { name: s.form.name || 'Acme Thing', line: s.form.line || 'What it does, in a sentence', pitch: s.form.pitch, repo: s.form.repo ? s.form.repo.replace('https://github.com/', '') : 'No repository yet' },
+
+      docTabs: Object.keys(D.docs).map((k) => chip(k, s.docTab, D.docs[k].label, (x) => ({ docTab: x }))),
+      doc: { title: D.docs[s.docTab].title, lead: D.docs[s.docTab].lead, sections: D.docs[s.docTab].sections.map((x) => ({ h: x.h, p: x.p || '', code: x.code || '', rows: x.rows || [], hasRows: !!x.rows })) },
+
+      tpSections: D.tp.map((x) => Object.assign({}, x, { open: !!s.tp[x.id], toggle: () => this.flip('tp', x.id) })),
+
+      activity: [
+        { icon: ic.up, text: '1 other person found “Google and GitHub sign-in” useful', when: 'broke-crm · 20 Nov 2026', go: go('post', { postId: 'p1', slug: 'broke-crm' }) },
+        { icon: ic.check, text: 'broke-crm is live in production — open to everyone', when: 'Since Nov 20, 2026', go: bySlug['broke-crm'].open },
+        { icon: ic.seat, text: 'The Contributor seat on openproduct-live has been open a week with nobody yet', when: 'openproduct-live · Help wanted', go: go('help') }
+      ],
+      markRead: () => { this.setState({ unread: false }); this.say('All caught up'); },
+
+      railAbout: is('product') || is('post'), railPreview: is('submit'),
+      railDefault: !(is('product') || is('post') || is('submit') || is('signin')),
+      followingList: followingList, noFollowing: followingList.length === 0,
+      openSeatProduct: go('product', { slug: 'openproduct-live', prodTab: 'about' }), openCrm: bySlug['broke-crm'].open,
+
+      modalSeat: s.modal === 'seat', modalReport: s.modal === 'report', modalCompose: s.modal === 'compose',
+      closeModal: () => this.setState({ modal: null }),
+      seatNote: s.seatNote, setSeatNote: set('seatNote'),
+      sendSeat: () => { this.setState({ modal: null, seatSent: true }); this.say('Sent to the crew of openproduct-live'); },
+      reasons: D.reasons.map((r) => chip(r, s.reason, r, (k) => ({ reason: k }))),
+      sendReport: () => { if (!s.reason) { this.say('Choose a reason'); return; } this.setState({ modal: null }); this.say('Report sent — a person will read it'); },
+
+      compose: s.compose, setCompose: { f1: setIn('compose', 'f1'), f2: setIn('compose', 'f2'), f3: setIn('compose', 'f3') },
+      composeProducts: prods.map((p) => ({ label: p.name, logoCls: p.logoCls, logoD: p.logoD, cls: s.compose.slug === p.slug ? 'on' : '', pick: pickCompose('slug', p.slug) })),
+      composeKinds: Object.keys(D.kinds).map((k) => ({ label: k, cls: s.compose.kind === k ? 'on' : '', pick: pickCompose('kind', k) })),
+      kindHelp: kind.help, kindF1: kind.f1, kindF2: kind.f2, kindF3: kind.f3, kindF3Note: kind.f3n,
+      publishPost: () => {
+        const c = s.compose;
+        if (!c.f1.trim() || !c.f2.trim()) { this.say('Fill in the required blocks'); return; }
+        const isFeature = c.kind === 'Feature shipped', link = isFeature ? c.f3.trim() : '';
+        const post = { id: 'n' + Date.now(), slug: c.slug, kind: c.kind, date: 'Just now', order: 3 + s.extraPosts.length, title: c.f1.trim(), body: c.f2.trim(), milestone: '', ms: 0, tryUrl: link.replace(/^https?:\/\//, ''), tryHref: link, base: 0 };
+        this.setState({ extraPosts: [post].concat(s.extraPosts), modal: null, compose: Object.assign({}, c, { f1: '', f2: '', f3: '' }) });
+        this.say('Posted for ' + c.slug);
+      },
+
+      toast: s.toast, empty: empty
+    };
+  }
+}
+</script>
+</body>
+</html>
