@@ -8,24 +8,24 @@
   "sectionBar": null,
   "main": {
     "top": 56,
-    "left": 0,
-    "width": 1270
+    "left": 248,
+    "width": 1022
   },
   "h1": {
     "top": 62,
-    "left": 20,
+    "left": 268,
     "width": 113,
     "height": 33
   },
   "firstRow": {
-    "left": 275,
-    "width": 313,
+    "left": 523,
+    "width": 354,
     "height": 230
   },
   "footer": {
-    "left": 0,
-    "width": 1270,
-    "height": 130
+    "left": 248,
+    "width": 1022,
+    "height": 96
   },
   "themeControl": {
     "width": 56,

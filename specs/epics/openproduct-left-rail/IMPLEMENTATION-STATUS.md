@@ -3,8 +3,8 @@
 | Milestone | Task | State | PR |
 |---|---|---|---|
 | LR0 — the spec | LR-1 | Done | #27 |
-| LR1 — graphite and system type | LR-2 | In review | this PR |
-| LR2 — the left rail on every page, phone first | LR-3 | Not started | |
+| LR1 — graphite and system type | LR-2 | Done | #28 |
+| LR2 — the left rail on every page, phone first | LR-3 | In review | this PR |
 | LR3 — tiled posts with icon actions | LR-4 | Not started | |
 | LR4 — posting from the product page | LR-5 | Not started | |
 
@@ -61,3 +61,59 @@ Departures from the design, said plainly:
   image can move them by a pixel with no change here; see risk R7.
 - **The theme colour is light only.** `themeColor` is `#ffffff`, as it was
   one value before.
+
+## From LR2
+
+What landed:
+
+- **The rail's list is data.** `shell/shell.ts` gains `RAIL_PRIMARY` (the
+  three sections, the feed as Home, and Discussions), `RAIL_GROUPS` (Your
+  products, Topics, Explore, Resources) and `RAIL_LINKS`; `railCurrent` in
+  `shell/section-for.ts` lights one row or none.
+- **The rail is in every page's frame.** `shell/side-rail.tsx`, rendered by
+  the root layout beside the page's own column. Rows are 44px with a glyph
+  (`shell/rail-glyph.tsx`, ten new glyphs in `ui/icons.tsx`); groups fold
+  with `<details>`, so folding needs no script.
+- **Phone first.** The stylesheet's base rules are the phone's: the rail is
+  out of the page and opens as a drawer under the bar, over a scrim, from
+  the menu button (`shell/rail-toggle.tsx`). It closes on Escape, on
+  navigation and on a tap outside. From 960px the rail is pinned, 248px
+  wide, and scrolls on its own. The bottom tab bar is unchanged.
+- **The bar lost its sections.** Feed, Products and Help wanted are rows of
+  the rail; UF3's crossfade still runs for those three. The footer's links
+  are hidden from 960px, where the rail carries every one of them.
+- **Your products** is the same two links for every signed-in visitor and is
+  in the document for everyone (I6): `data-auth-branch` hides it and
+  `.rail-yours` gives it no height for a browser with no session.
+
+- **Thirteen budgets amended, and recorded.** The rail is in every document
+  and every page's script: about 0.6 to 1.1 KB of gzipped document and
+  1.4 KB of script, measured in CI (run 45065215237). Thirteen route limits
+  that were within that of their measurements move to the measurement plus
+  100 bytes (`tests/web-perf/src/budgets.mjs` lists each); every other
+  route absorbed it. Twenty desktop snapshots move for the rail's 248px.
+
+Tests rewritten to the new rules: `shell`, `mobile-shell`, `navigation`,
+`icons` and `target-size`; `shell` gains the rail's own suite.
+
+Departures from the design, said plainly:
+
+- **Topics lists one link.** The board lists each topic in the rail. Topics
+  are data, and the rail is the same bytes on every page, so it links All
+  topics only.
+- **Your products is two links, not the visitor's products.** The board
+  lists each of the maker's products. That is personal data, which the
+  shell does not render on the server; the list is the first section of
+  `/me`, one tap away.
+- **RSS is a row** under Explore, so hiding the footer's links at 960px
+  removes nothing.
+- **The gliding section line is retired** with the bar's text links; the
+  current row is a fill. Its view-transition rules are still in the
+  stylesheet and now name nothing.
+- **Pages keep their own columns.** The feed's You card and the filters'
+  left rail on Products and Help wanted still sit beside the site rail, so
+  those pages have two left columns on wide screens. The pages' frames are
+  not rewritten phone first in this PR; only the shell is.
+- **Between 640px and 960px there is no tab bar and no pinned rail**: the
+  menu button is the navigation at those widths.
+- **Not on the sign-in door**, which keeps the mark and nothing else.

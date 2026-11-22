@@ -1018,6 +1018,85 @@
 }
 
 @layer components {
+  /* ─── LR2 — THE LEFT RAIL (openproduct-left-rail design §4) ───────────
+     PHONE FIRST: the base rules are the phone's, and the rail is not in the
+     page at all — it is a drawer under the bar that the bar's menu button
+     opens by setting `data-site-rail` on `<html>` (`shell/rail-toggle.tsx`).
+     From 960px it is pinned beside the content and scrolls on its own, and
+     the attribute no longer matters.
+
+     The bar is 68px on a phone and 56px from `sm` (`shell/top-panel.tsx`),
+     so the drawer and the pinned rail both start under it. */
+  [data-site-rail-nav] {
+    display: none;
+    box-sizing: border-box;
+    background: oklch(var(--card));
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+  [data-site-rail-scrim] {
+    display: none;
+  }
+  :root[data-site-rail] [data-site-rail-nav] {
+    display: block;
+    position: fixed;
+    z-index: 39;
+    top: 68px;
+    bottom: 0;
+    left: 0;
+    width: min(86vw, 300px);
+    border-right: 1px solid oklch(var(--border));
+    padding-bottom: var(--tabbar-reserve);
+  }
+  :root[data-site-rail] [data-site-rail-scrim] {
+    display: block;
+    position: fixed;
+    z-index: 38;
+    inset: 68px 0 0 0;
+    background: oklch(var(--scrim) / 0.45);
+  }
+  @media (min-width: 640px) {
+    :root[data-site-rail] [data-site-rail-nav] {
+      top: 56px;
+      padding-bottom: 0;
+    }
+    :root[data-site-rail] [data-site-rail-scrim] {
+      inset: 56px 0 0 0;
+    }
+  }
+  @media (min-width: 960px) {
+    [data-site-rail-nav],
+    :root[data-site-rail] [data-site-rail-nav] {
+      display: block;
+      position: sticky;
+      z-index: auto;
+      top: 56px;
+      bottom: auto;
+      left: auto;
+      width: 248px;
+      flex: none;
+      height: calc(100dvh - 56px);
+      border-right: 1px solid oklch(var(--border));
+      padding-bottom: 0;
+    }
+    :root[data-site-rail] [data-site-rail-scrim] {
+      display: none;
+    }
+  }
+  /* The rail's signed-in group takes no room for a browser with no session.
+     The shared auth-branch rule hides a branch and KEEPS its box, which is
+     right for the chip and a hole in a list; so this group's wrapper has no
+     height until the session class is on the root. Height, not `display`:
+     the branch rule stays the only thing that decides what is shown. */
+  .rail-yours {
+    height: 0;
+    overflow: hidden;
+  }
+  :root.op-signed-in .rail-yours {
+    height: auto;
+    overflow: visible;
+  }
+
   /*
    * Console design interaction layer. These recipes are keyed on data
    * attributes rather than utility classes because they describe *relationships*

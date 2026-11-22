@@ -300,3 +300,101 @@ export function SortIcon(props: IconProps) {
     </Svg>
   );
 }
+
+// ── openproduct-left-rail LR2: the rail's destinations ─────────────────────
+
+/** Discussions: a speech bubble. */
+export function ThreadIcon(props: IconProps) {
+  return (
+    <Svg {...props}>
+      <path d="M17 9.6a6.6 6.6 0 0 1-9.6 5.9L3.5 16.5l1-3.7A6.6 6.6 0 1 1 17 9.6Z" />
+    </Svg>
+  );
+}
+
+/** Stacks: three layers. */
+export function StackIcon(props: IconProps) {
+  return (
+    <Svg {...props}>
+      <path d="m10 3-7 3.8 7 3.8 7-3.8L10 3Z" />
+      <path d="m3 10 7 3.8 7-3.8M3 13.2 10 17l7-3.8" />
+    </Svg>
+  );
+}
+
+/** Pricing: a coin. */
+export function PriceIcon(props: IconProps) {
+  return (
+    <Svg {...props}>
+      <circle cx="10" cy="10" r="7" />
+      <path d="M12.3 8.1c-.4-.8-1.2-1.2-2.3-1.2-1.3 0-2.3.6-2.3 1.6s.8 1.4 2.3 1.6 2.3.6 2.3 1.6-1 1.6-2.3 1.6c-1.1 0-1.9-.4-2.3-1.2M10 5.6v1.3M10 13.3v1.1" />
+    </Svg>
+  );
+}
+
+/** Collections: a folder. */
+export function FolderIcon(props: IconProps) {
+  return (
+    <Svg {...props}>
+      <path d="M2.8 6.2c0-.9.7-1.6 1.6-1.6h3.2l1.6 1.6h6.4c.9 0 1.6.7 1.6 1.6v6c0 .9-.7 1.6-1.6 1.6H4.4c-.9 0-1.6-.7-1.6-1.6V6.2Z" />
+    </Svg>
+  );
+}
+
+/** Docs: a book. */
+export function BookIcon(props: IconProps) {
+  return (
+    <Svg {...props}>
+      <path d="M4.4 3.5h8.8a2.4 2.4 0 0 1 2.4 2.4v10.6H6.8a2.4 2.4 0 0 1-2.4-2.4V3.5Z" />
+      <path d="M4.4 14.1a2.4 2.4 0 0 1 2.4-2.4h8.8" />
+    </Svg>
+  );
+}
+
+/** How posting works: a pen. */
+export function PenIcon(props: IconProps) {
+  return (
+    <Svg {...props}>
+      <path d="M3.5 16.5h3.3l9.4-9.4a1.7 1.7 0 0 0-2.4-2.4l-9.5 9.4-.8 2.4Z" />
+      <path d="m12.2 6.3 2.4 2.4" />
+    </Svg>
+  );
+}
+
+/** What runs automatically: a bolt. */
+export function BoltIcon(props: IconProps) {
+  return (
+    <Svg {...props}>
+      <path d="M10.8 2.8 4.4 11.2h4.8l-.8 6 6.4-8.4H10l.8-6Z" />
+    </Svg>
+  );
+}
+
+/** Transparency: an eye. */
+export function EyeIcon(props: IconProps) {
+  return (
+    <Svg {...props}>
+      <path d="M2.2 10S5 4.8 10 4.8 17.8 10 17.8 10 15 15.2 10 15.2 2.2 10 2.2 10Z" />
+      <circle cx="10" cy="10" r="2.4" />
+    </Svg>
+  );
+}
+
+/** A feed for a reader: three arcs from a point. */
+export function RssIcon(props: IconProps) {
+  return (
+    <Svg {...props}>
+      <path d="M4.2 4.2a11.6 11.6 0 0 1 11.6 11.6M4.2 9.4a6.4 6.4 0 0 1 6.4 6.4" />
+      <path d="M4.8 15.2h.01" />
+    </Svg>
+  );
+}
+
+/** Opening the rail on a phone: three rules. */
+export function MenuIcon(props: IconProps) {
+  return (
+    <Svg {...props}>
+      <path d="M3.5 6h13M3.5 10h13M3.5 14h13" />
+    </Svg>
+  );
+}

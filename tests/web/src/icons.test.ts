@@ -9,7 +9,7 @@ import { readFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { PHONE_TABS, SECTIONS } from "@openproduct-web/app/shell/shell";
+import { PHONE_TABS, RAIL_LINKS, SECTIONS } from "@openproduct-web/app/shell/shell";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const APP_DIR = resolve(__dirname, "../../../web/src/app");
@@ -49,7 +49,15 @@ describe("the icon set", () => {
     // out, and the redesign kept out.
     expect(read("shell/section-bar.tsx")).toContain("<SectionGlyph icon={tab.icon}");
     expect(read("shell/top-panel.tsx")).not.toContain("<SectionGlyph");
-    expect(read("shell/top-panel.tsx")).toContain("{section.label}");
+    // openproduct-left-rail LR2: the sections left the bar for the rail,
+    // where every row is a glyph beside its word, from one switch of its own.
+    const railGlyph = read("shell/rail-glyph.tsx");
+    for (const link of RAIL_LINKS) {
+      expect(railGlyph).toContain(`case "${link.icon}":`);
+    }
+    const rail = read("shell/side-rail.tsx");
+    expect(rail).toContain("<RailGlyph icon={link.icon}");
+    expect(rail).toContain("{link.label}");
   });
 
   it("never leaves a glyph as the only name of a control", () => {

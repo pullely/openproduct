@@ -9,6 +9,7 @@ import { AuthNotice } from "./auth-notice";
 import { KeyboardLayer } from "./shell/keyboard-layer";
 import { NavigationProgress } from "./shell/navigation-progress";
 import { SectionBar } from "./shell/section-bar";
+import { SideRail } from "./shell/side-rail";
 import { SiteFooter } from "./shell/site-footer";
 import { TopPanel } from "./shell/top-panel";
 
@@ -198,18 +199,27 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             bell's unread dot) arrives in its own islands after paint. */}
         <TopPanel />
         <AuthNotice />
-        {/* The page owns its own container; the shell owns the frame around
-            it. `flex-1` keeps the footer at the bottom on a short page.
-            `tabIndex={-1}` is what makes the skip link above actually move
-            focus: without it the browser scrolls to this element and leaves
-            focus in the shell, so the next Tab goes back to the navigation
-            the visitor just asked to skip. */}
-        <div id="content" tabIndex={-1} className="flex-1 outline-none">
-          {children}
+        {/* THE FRAME (openproduct-left-rail LR2, design §4): the rail beside
+            the page's own column, on every page. Below 960px the rail is out
+            of the flow (a drawer; globals.css), so the column is the full
+            width and this row is the page alone. */}
+        <div className="flex w-full flex-1 items-start">
+          <SideRail />
+          <div className="flex min-w-0 flex-1 flex-col self-stretch">
+            {/* The page owns its own container; the shell owns the frame
+                around it. `flex-1` keeps the footer at the bottom on a short
+                page. `tabIndex={-1}` is what makes the skip link above
+                actually move focus: without it the browser scrolls to this
+                element and leaves focus in the shell, so the next Tab goes
+                back to the navigation the visitor just asked to skip. */}
+            <div id="content" tabIndex={-1} className="flex-1 outline-none">
+              {children}
+            </div>
+            {/* The footer, as the design draws it — and a product or person
+                page renders its own in its place (shell/site-footer.tsx). */}
+            <SiteFooter />
+          </div>
         </div>
-        {/* The footer, as the design draws it — and a product or person page
-            renders its own in its place (shell/site-footer.tsx). */}
-        <SiteFooter />
         {/* The phone's four tabs (FR1; the board's floating bar since OPR1).
             It is `fixed`, so it takes no space in this column; the reserve
             that keeps the last row of a page above it is `--tabbar-reserve`

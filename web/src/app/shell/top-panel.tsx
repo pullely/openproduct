@@ -10,7 +10,8 @@ import { NotificationBell } from "./notification-bell";
 import { HeaderSearch } from "./palette";
 import { SearchGlyph } from "./palette-glyph";
 import { sectionFor } from "./section-for";
-import { SECTIONS, SIGN_IN_PATH } from "./shell";
+import { RailToggle } from "./rail-toggle";
+import { SIGN_IN_PATH } from "./shell";
 
 import { AppLink } from "../ui/link";
 
@@ -76,7 +77,10 @@ export function TopPanel() {
 
   return (
     <header className="bar-frost sticky top-0 z-40 w-full font-bar">
-      <div className="mx-auto box-border flex h-[56px] w-full max-w-[1920px] flex-nowrap items-center gap-x-6 px-6 max-lg:gap-x-4 max-sm:h-[68px] max-sm:gap-x-[10px] max-sm:px-[14px] sm:grid sm:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)]">
+      <div className="mx-auto box-border flex h-[56px] w-full max-w-[1920px] flex-nowrap items-center gap-x-6 px-6 max-lg:gap-x-4 max-sm:h-[68px] max-sm:gap-x-[10px] max-sm:px-[14px]">
+        {/* LR2 — the menu button: below 960px it opens the rail as a drawer.
+            Not on the door, which has no rail. */}
+        {door ? null : <RailToggle />}
         <AppLink
           href="/"
           // QE0 — OFF. The home is the heaviest document on the estate, and a
@@ -101,40 +105,6 @@ export function TopPanel() {
 
         {door ? null : (
           <>
-            {/* THE SECTIONS, AS PILLS. 36px tall, 2px apart; the current one is
-                an ink pill with the light ink on it. Below `sm` they are the
-                bottom tab bar instead, so every one is still reachable on a
-                phone (XP4). Both navs are labelled "Main", which is correct
-                because only one is ever displayed. */}
-            <nav aria-label="Main" className="flex shrink-0 items-center gap-9 justify-self-center max-lg:gap-6 max-sm:hidden">
-              {SECTIONS.map((section) => {
-                const current = section.id === activeSection;
-                return (
-                  <AppLink
-                    key={section.id}
-                    href={section.href}
-                    // QE0 — OFF, with the tab bar's: a prefetch per section on
-                    // every page load, for the click that usually never comes.
-                    // The hover warm in `AppLink` keeps the switch instant for
-                    // the person who reaches for it.
-                    prefetch={false}
-                    transition="section"
-                    aria-current={current ? "page" : undefined}
-                    className={`section-link relative flex h-[44px] shrink-0 items-center whitespace-nowrap rounded-[6px] text-[16px] tracking-[-0.005em] no-underline transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring ${
-                      current
-                        ? "font-medium text-foreground"
-                        : "font-normal text-muted-foreground hover:text-foreground"
-                    }`}
-                  >
-                    {section.label}
-                    {/* The current section's line (UF3): one named element,
-                        so a switch glides it from the old section to the new. */}
-                    {current ? <span aria-hidden="true" className="section-line" /> : null}
-                  </AppLink>
-                );
-              })}
-            </nav>
-
             {/* The right-hand group takes the row's slack and packs to the right,
                 so the search box, the bell and the profile control sit at the
                 column's edge. `min-w-0` lets the search box shrink inside it. */}

@@ -1,4 +1,4 @@
-import { ACTIVITY_PATH, SECTIONS } from "./shell";
+import { ACTIVITY_PATH, RAIL_LINKS, SECTIONS } from "./shell";
 
 /**
  * Which destination a path belongs to, and therefore which pill or tab is
@@ -92,3 +92,30 @@ export const RESERVED_HEADS: ReadonlySet<string> = new Set([
   "threads",
   "transparency",
 ]);
+
+/**
+ * Which rail link a pathname lights (openproduct-left-rail LR2), or "".
+ *
+ * The longest rail address the path is at or under wins, so `/docs/posting`
+ * lights "How posting works" and `/docs/api` lights "Docs". A path under no
+ * rail address falls back to its section — a product's page lights
+ * Products, exactly as the phone's tab bar reads it. Activity is the bell's,
+ * not the rail's, so it lights nothing here.
+ *
+ * AT MOST ONE, like `sectionFor`: the rail carries one `aria-current`.
+ */
+export function railCurrent(pathname: string): string {
+  const path = (pathname.split("?")[0] ?? "/").replace(/\/+$/, "") || "/";
+  let best = "";
+  let length = 0;
+  for (const link of RAIL_LINKS) {
+    if (link.plain || link.href === "/") continue;
+    if ((path === link.href || path.startsWith(`${link.href}/`)) && link.href.length > length) {
+      best = link.id;
+      length = link.href.length;
+    }
+  }
+  if (best) return best;
+  const section = sectionFor(pathname);
+  return section === "activity" ? "" : section;
+}

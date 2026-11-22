@@ -144,7 +144,7 @@ describe("the intent prefetch", () => {
 describe("viewport prefetch on the fixed set", () => {
   const sectionLinks = (source: string) =>
     (source.match(/<AppLink\b[\s\S]*?>/g) ?? []).filter(
-      (link) => link.includes("href={section.href}") || link.includes("href={tab.href}"),
+      (link) => link.includes("href={link.href}") || link.includes("href={tab.href}"),
     );
 
   it("is OFF on both bars and the wordmark — QE0's budget on the wire", () => {
@@ -157,7 +157,8 @@ describe("viewport prefetch on the fixed set", () => {
     // than absent, so a reader sees a decision where OPP13's was.
     const top = code("shell/top-panel.tsx");
     for (const [file, source] of [
-      ["shell/top-panel.tsx", top],
+      // openproduct-left-rail LR2: the sections' links are the rail's rows.
+      ["shell/side-rail.tsx", code("shell/side-rail.tsx")],
       ["shell/section-bar.tsx", code("shell/section-bar.tsx")],
     ] as const) {
       const links = sectionLinks(source);
@@ -207,10 +208,14 @@ describe("the navigation's bookkeeping", () => {
 
 describe("the section switch (openproduct-ui-fixes UF3)", () => {
   it("runs the three sections through a view transition, and only them", () => {
-    const panel = code("shell/top-panel.tsx");
-    expect(panel).toContain('transition="section"');
-    expect((panel.match(/transition="section"/g) ?? []).length).toBe(1);
-    expect(panel).toContain('{current ? <span aria-hidden="true" className="section-line" /> : null}');
+    // openproduct-left-rail LR2: the three sections are rows of the rail,
+    // and only those rows take the transition. The gliding line is retired
+    // with the bar's text links; the current row is a fill.
+    const rail = code("shell/side-rail.tsx");
+    expect(rail).toMatch(/\{\.\.\.\(SECTION_IDS\.has\(link\.id\)\s*\? \{ transition: "section" as const \}\s*: \{\}\)\}/);
+    expect((rail.match(/transition: "section"/g) ?? []).length).toBe(1);
+    expect(rail).toMatch(/new Set\(\s*SECTIONS\.map\(\(section\) => section\.id\),?\s*\)/);
+    expect(code("shell/top-panel.tsx")).not.toContain("transition=");
     const link = code("ui/link.tsx");
     expect(link).toContain('if (transition === "section" && switchSection(() => router.push(href))) event.preventDefault();');
     const nav = code("ui/navigation.ts");

@@ -25,12 +25,17 @@ import {
   COUNT_PLACEHOLDER,
   FOOTER_LINKS,
   PHONE_TABS,
+  RAIL_GROUPS,
+  RAIL_LINKS,
+  RAIL_PRIMARY,
   SEARCH_PLACEHOLDER,
   SECTIONS,
   initialsOf,
   resolveCrumb,
   signInHref,
 } from "@openproduct-web/app/shell/shell";
+
+import { railCurrent } from "@openproduct-web/app/shell/section-for";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const APP_DIR = resolve(__dirname, "../../../web/src/app");
@@ -140,12 +145,17 @@ describe("the section nav", () => {
     // The pills and the bell both ask `sectionFor`, which names one
     // destination or none — so two of them cannot be current at once.
     expect(panel).toContain("const activeSection = sectionFor(pathname)");
-    expect(panel).toContain('aria-current={current ? "page" : undefined}');
     expect(panel).toContain('<NotificationBell current={activeSection === "activity"} />');
-    expect((panel.match(/aria-current=/g) ?? []).length).toBe(1);
-    // The current section is ink at medium weight, the others grey: plain
-    // text, no pill (openproduct-ui-fixes UF2, design §2 rule 2).
-    expect(panel).toMatch(/current\s*\?\s*"font-medium text-foreground"/);
+    // openproduct-left-rail LR2: the sections left the bar for the rail, so
+    // the bar itself lights nothing and the rail lights one row —
+    // `railCurrent` names one or none.
+    expect((panel.match(/aria-current=/g) ?? []).length).toBe(0);
+    const rail = markupOf("shell/side-rail.tsx");
+    expect(rail).toContain("const current = railCurrent(pathname);");
+    expect(rail).toContain('aria-current={on ? "page" : undefined}');
+    expect((rail.match(/aria-current=/g) ?? []).length).toBe(1);
+    // The current row is the selected fill at 600; the others are plain.
+    expect(rail).toMatch(/on\s*\? "bg-secondary font-semibold text-foreground"/);
   });
 });
 
@@ -158,10 +168,13 @@ describe("two pages take less of the header (boards `SignIn`, `PhoneSearch`)", (
     // the render is the same for every visitor (I6).
     expect(SIGN_IN_PATH).toBe("/signin");
     expect(panel).toContain("const door = path === SIGN_IN_PATH;");
-    expect(panel).toMatch(/\{door \? null : \(\s*<>\s*(?:\{\}\s*)?<nav aria-label="Main"/);
+    // LR2: no menu button and no rail there either — the door has nothing
+    // to open.
+    expect(panel).toContain("{door ? null : <RailToggle />}");
+    expect(markupOf("shell/side-rail.tsx")).toMatch(/=== SIGN_IN_PATH\) return null;/);
     // Everything else in the bar is inside that one branch.
     const rest = panel.slice(panel.indexOf("{door ? null : ("));
-    for (const part of ["<HeaderSearch />", "<NotificationBell", "<AccountChip />", "SECTIONS.map"]) {
+    for (const part of ["<HeaderSearch />", "<NotificationBell", "<AccountChip />"]) {
       expect([part, rest.includes(part)]).toEqual([part, true]);
       expect([part, panel.slice(0, panel.indexOf("{door ? null : (")).includes(part)]).toEqual([part, false]);
     }
@@ -176,6 +189,81 @@ describe("two pages take less of the header (boards `SignIn`, `PhoneSearch`)", (
     expect(panel).toMatch(/\{onSearch \? null : \(\s*<AppLink\s+href=\{SEARCH_PATH\}\s+aria-label="Search"/);
     // Still exactly one such link in the source, and still phone-only.
     expect((panel.match(/href=\{SEARCH_PATH\}/g) ?? []).length).toBe(1);
+  });
+});
+
+// openproduct-left-rail LR2 (design §4.2): one rail lists the whole site.
+// This REVERSES OPR1's closed three-section navigation and its rule that
+// People is not in the navigation (design §6); `SECTIONS` is still three.
+describe("the left rail lists the whole site", () => {
+  it("opens with the three sections and Discussions, the feed as Home", () => {
+    expect(RAIL_PRIMARY.map((link) => [link.id, link.label, link.href])).toEqual([
+      ["feed", "Home", "/"],
+      ["products", "Products", "/products"],
+      ["help-wanted", "Help wanted", "/help-wanted"],
+      ["threads", "Discussions", "/threads"],
+    ]);
+  });
+
+  it("folds the rest into four groups, in the design's order", () => {
+    expect(RAIL_GROUPS.map((group) => [group.title, group.links.map((link) => link.label)])).toEqual([
+      ["Your products", ["Your products", "Open a build"]],
+      ["Topics", ["All topics"]],
+      ["Explore", ["People", "Stacks", "Pricing", "Collections", "Weekly digest", "RSS"]],
+      ["Resources", ["Docs", "How posting works", "What runs automatically", "Transparency"]],
+    ]);
+    // Only the first is for a signed-in visitor; it is hidden, not left out.
+    expect(RAIL_GROUPS.map((group) => group.signedIn === true)).toEqual([true, false, false, false]);
+  });
+
+  it("names every row once, and every address is a route that exists", () => {
+    expect(new Set(RAIL_LINKS.map((link) => link.id)).size).toBe(RAIL_LINKS.length);
+    for (const link of RAIL_LINKS) {
+      const path = link.plain ? link.href.replace(/\/[^/]+$/, "") : link.href;
+      expect([link.href, served(path)]).toEqual([link.href, true]);
+    }
+    // Everything the footer links is in the rail too, so hiding the
+    // footer's links from 960px (where the rail is pinned) removes nothing.
+    const railed = new Set(RAIL_LINKS.map((link) => link.href));
+    for (const link of FOOTER_LINKS) expect([link.href, railed.has(link.href)]).toEqual([link.href, true]);
+  });
+
+  it("lights one row or none, the longest address a path is under", () => {
+    expect(railCurrent("/")).toBe("feed");
+    expect(railCurrent("/products")).toBe("products");
+    expect(railCurrent("/help-wanted/stage/idea")).toBe("help-wanted");
+    expect(railCurrent("/threads/abc")).toBe("threads");
+    expect(railCurrent("/docs")).toBe("docs");
+    expect(railCurrent("/docs/api")).toBe("docs");
+    expect(railCurrent("/docs/posting")).toBe("posting");
+    expect(railCurrent("/docs/checks?x=1")).toBe("checks");
+    expect(railCurrent("/people/ada")).toBe("people");
+    expect(railCurrent("/me")).toBe("mine");
+    expect(railCurrent("/submit")).toBe("build");
+    // A product's page lights Products, as the phone's tab bar reads it.
+    expect(railCurrent("/kettleworks")).toBe("products");
+    // Activity is the bell's, and a feed document is not a page.
+    expect(railCurrent("/activity")).toBe("");
+    expect(railCurrent("/digest/feed.xml")).toBe("digest");
+  });
+
+  it("is in the frame of every page, beside the page's own column", () => {
+    const layout = markupOf("layout.tsx");
+    expect(layout).toMatch(/<div className="flex w-full flex-1 items-start">\s*<SideRail \/>\s*<div className="flex min-w-0 flex-1 flex-col self-stretch">/);
+    // The footer's links are the rail's from 960px, where it is pinned.
+    expect(markupOf("shell/site-footer.tsx")).toContain('aria-label="More" className="flex flex-wrap items-center gap-x-5 gap-y-1 max-sm:gap-y-0 min-[960px]:hidden"');
+  });
+
+  it("is a drawer below 960px that closes on Escape, on navigation and on a tap outside", () => {
+    const toggle = markupOf("shell/rail-toggle.tsx");
+    expect(toggle).toContain('aria-label="Menu"');
+    expect(toggle).toContain("aria-expanded={open}");
+    expect(toggle).toContain('aria-controls="site-rail"');
+    expect(toggle).toContain('if (event.key === "Escape") close();');
+    expect(toggle).toMatch(/useEffect\(\(\) => \{\s*close\(\);\s*\}, \[pathname, close\]\);/);
+    const rail = markupOf("shell/side-rail.tsx");
+    expect(rail).toContain('<aside id="site-rail"');
+    expect(rail).toMatch(/data-site-rail-scrim=""\s+aria-hidden="true"\s+onClick=\{closeRail\}/);
   });
 });
 

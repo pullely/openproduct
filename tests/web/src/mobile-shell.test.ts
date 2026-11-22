@@ -26,6 +26,9 @@ const read = (file: string) => readFileSync(resolve(APP, file), "utf-8");
 const code = (file: string) =>
   read(file).replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "");
 
+// openproduct-left-rail LR2: the sections left the header for the left rail.
+// The rail reads `RAIL_PRIMARY`, which `shell.ts` derives from `SECTIONS`, so
+// the rule this suite holds is unchanged: one list, read by both navs.
 describe("one nav, in two positions", () => {
   // The failure this prevents is the obvious one: a second list of sections
   // written into the bottom bar, correct on the day and three sections behind
@@ -33,15 +36,16 @@ describe("one nav, in two positions", () => {
   // `PHONE_TABS`, which `shell.ts` derives from `SECTIONS`; and both light
   // the cell `sectionFor` names.
   it("both read the shared list, and both ask the same function where they are", () => {
-    expect(code("shell/top-panel.tsx")).toMatch(/import \{[^}]*SECTIONS[^}]*\} from "\.\/shell"/);
+    expect(code("shell/side-rail.tsx")).toMatch(/import \{[^}]*RAIL_PRIMARY[^}]*\} from "\.\/shell"/);
     expect(code("shell/section-bar.tsx")).toMatch(/import \{[^}]*PHONE_TABS[^}]*\} from "\.\/shell"/);
     expect(code("shell/shell.ts")).toMatch(/PHONE_TABS[^=]*=\s*\[\s*\.\.\.SECTIONS\.map/);
-    for (const file of ["shell/top-panel.tsx", "shell/section-bar.tsx"]) {
+    expect(code("shell/shell.ts")).toMatch(/RAIL_PRIMARY[^=]*=\s*\[\s*\.\.\.SECTIONS\.map/);
+    for (const file of ["shell/side-rail.tsx", "shell/section-bar.tsx"]) {
       expect(code(file)).toContain('from "./section-for"');
     }
   });
 
-  it.each(["shell/top-panel.tsx", "shell/section-bar.tsx"])(
+  it.each(["shell/top-panel.tsx", "shell/side-rail.tsx", "shell/section-bar.tsx"])(
     "%s defines no sections of its own",
     (file) => {
       for (const label of [...SECTIONS.map((s) => s.label), ...PHONE_TABS.map((t) => t.label)]) {
@@ -57,16 +61,22 @@ describe("one nav, in two positions", () => {
     // XP4's rule that no section may be dropped on a phone.
     expect(code("shell/section-bar.tsx")).toContain("PHONE_TABS.map");
     expect(code("shell/section-bar.tsx")).not.toMatch(/PHONE_TABS\.(?:filter|slice)/);
-    expect(code("shell/top-panel.tsx")).toContain("SECTIONS.map");
+    expect(code("shell/side-rail.tsx")).toContain("RAIL_PRIMARY.map(row)");
+    expect(code("shell/side-rail.tsx")).not.toMatch(/RAIL_(?:PRIMARY|GROUPS)\.(?:filter|slice)/);
   });
 
   it("shows exactly one of the two at any width", () => {
-    // The header's pills are `max-sm:hidden`; the bar is `sm:hidden`. Both
-    // carry `aria-label="Main"`, which is correct precisely because only one
-    // is ever displayed — `display: none` keeps the other out of the
-    // accessibility tree, so there is one Main landmark, not two.
-    expect(read("shell/top-panel.tsx")).toMatch(/aria-label="Main" className="[^"]*max-sm:hidden/);
+    // The phone's bar is `sm:hidden` and is the one "Main" landmark. The
+    // rail is the "Site" landmark: pinned from 960px, and below that a
+    // drawer that is `display: none` until the menu button opens it, so it
+    // is out of the accessibility tree while closed.
+    expect(read("shell/top-panel.tsx")).not.toContain('aria-label="Main"');
     expect(code("shell/section-bar.tsx")).toMatch(/aria-label="Main"\s+className="[^"]*sm:hidden/);
+    expect(read("shell/side-rail.tsx")).toContain('<nav aria-label="Site"');
+    const css = readFileSync(resolve(APP, "../styles/globals.css"), "utf-8");
+    expect(css).toMatch(/\n {2}\[data-site-rail-nav\] \{\s*display: none;/);
+    expect(css).toMatch(/:root\[data-site-rail\] \[data-site-rail-nav\] \{\s*display: block;\s*position: fixed;/);
+    expect(css).toMatch(/@media \(min-width: 960px\) \{\s*\[data-site-rail-nav\],[\s\S]*?position: sticky;/);
   });
 });
 
@@ -264,9 +274,13 @@ describe("the header may not grow", () => {
 
   it("on a phone, is a mark, a search field that is a link, and the profile control", () => {
     const bar = code("shell/top-panel.tsx");
-    // The sections are not in the row on a phone (they are the tab bar), and
-    // neither is the search box that opens a card, nor the bell.
-    expect(bar).toMatch(/<nav aria-label="Main" className="[^"]*max-sm:hidden/);
+    // The sections are not in the row at any width (LR2: they are the rail,
+    // and on a phone the tab bar), and on a phone neither is the search box
+    // that opens a card, nor the bell. The menu button that opens the rail
+    // is the row's first control below 960px.
+    expect(bar).not.toContain("<nav");
+    expect(bar).toContain("{door ? null : <RailToggle />}");
+    expect(code("shell/rail-toggle.tsx")).toContain("min-[960px]:hidden");
     expect(code("shell/palette.tsx")).toContain("max-sm:hidden");
     expect(code("shell/notification-bell.tsx")).toContain("max-sm:hidden");
     // The search field is a LINK to the search page, 44px tall, phone only,
