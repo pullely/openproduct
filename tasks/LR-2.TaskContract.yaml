@@ -1,0 +1,27 @@
+# LR-2: milestone LR1, graphite and system type. Every page is drawn in
+# neutral greys with no accent hue, in the system typeface, in both themes,
+# and the mark is the ring tile.
+# The file is the contract; the task itself lives in Orunbase.
+apiVersion: orun.io/v1
+kind: TaskContract
+metadata:
+  name: LR-2
+  title: "LR1: graphite and system type"
+spec:
+  goal: Every page is drawn in the graphite ramp with the system typeface, in light and dark, and the bar wears the ring-tile mark.
+  affects:
+    - web/**
+    - tests/web/**
+    - tests/web-perf/**
+    - specs/epics/openproduct-left-rail/**
+    - tasks/**
+  deps:
+    - LR-1
+  doneWhen:
+    - The light and dark ramps carry the graphite values of design §1 and no kind colour is painted
+    - Cards, panels and tiles are told by a 1px border
+    - No webfont is requested for UI text; titles are sans 600
+    - The bar and the icon show the ring-tile mark
+    - Every text pair still clears WCAG AA in both ramps
+    - Web tests and web-perf lanes pass in CI
+  gates: []

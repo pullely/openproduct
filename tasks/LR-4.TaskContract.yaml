@@ -1,0 +1,25 @@
+# LR-4: milestone LR3, tiled posts with icon actions. A post is a bordered
+# tile with icon-only actions and a shaded Try it tile, wherever posts are
+# listed.
+# The file is the contract; the task itself lives in Orunbase.
+apiVersion: orun.io/v1
+kind: TaskContract
+metadata:
+  name: LR-4
+  title: "LR3: tiled posts with icon actions"
+spec:
+  goal: Posts are bordered tiles with icon-only actions and a shaded Try it tile on the feed, the product page and the post page.
+  affects:
+    - web/**
+    - tests/web/**
+    - tests/web-perf/**
+    - specs/epics/openproduct-left-rail/**
+    - tasks/**
+  deps:
+    - LR-3
+  doneWhen:
+    - A post is a tile with a 1px border, a 16px radius and 12px between tiles
+    - Useful, comments, share, save and follow are icons with accessible names and tooltips
+    - The Try it link is the shaded tile of design §5.3
+    - Web tests and web-perf lanes pass in CI
+  gates: []

@@ -1,0 +1,25 @@
+# LR-5: milestone LR4, posting from the product page. Create post appears
+# only on a product's page, for its crew.
+# The file is the contract; the task itself lives in Orunbase.
+apiVersion: orun.io/v1
+kind: TaskContract
+metadata:
+  name: LR-5
+  title: "LR4: posting from the product page"
+spec:
+  goal: Create post is offered only on a product's Updates tab to a signed-in member of its crew, and the post is for that product.
+  affects:
+    - web/**
+    - tests/web/**
+    - tests/web-perf/**
+    - specs/epics/openproduct-left-rail/**
+    - tasks/**
+  deps:
+    - LR-4
+  doneWhen:
+    - The feed and the bar offer no Create post
+    - A crew member sees Create post on their product's Updates tab; nobody else does
+    - The composer has no product picker and returns to the product page
+    - The epic's status reads complete
+    - Web tests and web-perf lanes pass in CI
+  gates: []

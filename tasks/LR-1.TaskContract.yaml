@@ -1,0 +1,17 @@
+# LR-1: milestone LR0, the openproduct-left-rail spec.
+# The file is the contract; the task itself lives in Orunbase.
+apiVersion: orun.io/v1
+kind: TaskContract
+metadata:
+  name: LR-1
+  title: "LR0: the openproduct-left-rail spec"
+spec:
+  goal: The epic's doc set, the canvas board and the task contracts are on main.
+  affects:
+    - specs/**
+    - tasks/**
+  doneWhen:
+    - specs/epics/openproduct-left-rail/ has README, design, implementation-plan, risks and IMPLEMENTATION-STATUS
+    - The canvas board at version 10 sits under boards/
+    - tasks/LR-1 to LR-5 contracts exist
+  gates: []
