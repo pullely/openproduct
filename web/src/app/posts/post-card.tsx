@@ -134,14 +134,22 @@ function PostTitle({
 }
 
 /** The shell each kind's card is: the SHAPE that says what kind it is. */
+/**
+ * The post tile (openproduct-left-rail LR3, design §5.1): a 1px border, a
+ * 16px radius, and the border one step darker under the pointer. EVERY KIND
+ * WEARS IT. OPR1 gave each kind a shape of its own (the glow, the note, the
+ * ticket); the kind colours are retired (design §1.5), and a kind is told by
+ * its label and its icon, so the shape is one.
+ */
+export const POST_TILE =
+  "relative overflow-hidden rounded-[16px] border border-border bg-card transition-colors hover:border-faint";
+
 export const POST_CARD_SHELL: Record<PublicProductPost["kind"], string> = {
-  feature:
-    "relative overflow-hidden rounded-[16px] bg-card bg-[radial-gradient(520px_200px_at_100%_0%,oklch(var(--brand-amber-inverted)/0.22),transparent_70%)]",
-  version: "relative overflow-hidden rounded-[16px] bg-card",
-  demo: "relative overflow-hidden rounded-[16px] bg-card",
-  idea: "relative overflow-hidden rounded-[4px_16px_16px_16px] bg-idea-wash",
-  // No `overflow-hidden`: the ticket's notches sit half outside it.
-  seat: "relative rounded-[16px] bg-card",
+  feature: POST_TILE,
+  version: POST_TILE,
+  demo: POST_TILE,
+  idea: POST_TILE,
+  seat: POST_TILE,
 };
 
 /** A post's date as a card prints it. Absolute, so a cached page never says
@@ -167,7 +175,6 @@ export function ProductPostCard(props: PostCardProps) {
       data-post-variant={variant}
       className={`${POST_CARD_SHELL[post.kind]} scroll-mt-[80px] ${compact && post.kind !== "seat" ? "flex flex-col gap-3 px-[22px] py-5 max-sm:gap-2.5 max-sm:p-[14px]" : ""}`}
     >
-      {post.kind === "seat" ? <TicketNotches /> : null}
       {compact ? null : <PostHead post={post} returnTo={props.returnTo} />}
       <PostBody {...props} variant={variant} />
       {compact ? (
@@ -226,8 +233,9 @@ export function PostHead({ post, returnTo }: { post: PublicProductPost; returnTo
         followers={0}
         returnTo={returnTo}
         size="regular"
-        tone="ink"
+        tone="plain"
         countHidden
+        glyph
       />
     </div>
   );
@@ -339,11 +347,21 @@ function OutLink({ href, children, className = "" }: { href: string; children: R
 
 // ─── Feature shipped: the launch card ──────────────────────────────────────
 
+/** The host of a link, for a tile that names where it goes; the link itself
+ *  when it does not parse. */
+function linkHost(href: string): string {
+  try {
+    return new URL(href).host.replace(/^www\./, "");
+  } catch {
+    return href;
+  }
+}
+
 function CheckBadge() {
   return (
     <span
       aria-hidden="true"
-      className="grid h-[34px] w-[34px] shrink-0 place-items-center rounded-full bg-[linear-gradient(135deg,oklch(var(--brand-amber-inverted)),oklch(var(--brand-amber)))] text-card max-sm:h-[26px] max-sm:w-[26px]"
+      className="grid h-[34px] w-[34px] shrink-0 place-items-center rounded-full bg-secondary text-foreground max-sm:h-[26px] max-sm:w-[26px]"
     >
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" className="h-4 w-4 max-sm:h-3 max-sm:w-3">
         <path d="M5 12l5 5 9-10" />
@@ -398,14 +416,20 @@ function FeatureBody({ post, variant, milestoneCounts, headingLevel }: PostCardP
         </div>
       ) : null}
       {!compact && tryLink ? (
+        // THE TRY IT TILE (LR3, design §5.3): the stronger fill, no border,
+        // a step darker under the pointer. The label, the address it goes
+        // to, and the mark that says it leaves the site.
         <a
           href={tryLink}
           rel="nofollow noopener"
           data-post-try
-          className={`flex min-h-[40px] items-center justify-center gap-2 rounded-full bg-primary font-semibold text-primary-foreground no-underline hover:opacity-90 max-sm:min-h-[42px] ${FOCUS}`}
+          className={`flex min-h-[52px] items-center justify-between gap-3 rounded-[12px] bg-secondary px-4 py-2.5 text-foreground no-underline transition-colors hover:bg-border ${FOCUS}`}
         >
-          Try it
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" aria-hidden="true">
+          <span className="flex min-w-0 flex-col">
+            <span className="text-[12px] font-semibold text-muted-foreground">Try it</span>
+            <span className="truncate text-[15px]">{linkHost(tryLink)}</span>
+          </span>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true" className="shrink-0">
             <path d="M7 17L17 7M9 7h8v8" />
           </svg>
         </a>
@@ -542,15 +566,6 @@ function IdeaBody({ post, variant, seatHref, headingLevel }: PostCardProps & { v
 // ─── Help wanted: the ticket ───────────────────────────────────────────────
 
 /** The ticket's two notches: the page colour, half outside the card. */
-function TicketNotches() {
-  return (
-    <>
-      <span aria-hidden="true" className="absolute -left-3 top-1/2 -mt-3 h-6 w-6 rounded-full bg-background" />
-      <span aria-hidden="true" className="absolute -right-3 top-1/2 -mt-3 h-6 w-6 rounded-full bg-background" />
-    </>
-  );
-}
-
 function SeatBody({ post, variant, seatHref, headingLevel }: PostCardProps & { variant: PostCardVariant }) {
   const what = blockText(post.blocks, "what");
   const sub = [blockText(post.blocks, "time"), blockText(post.blocks, "return"), blockText(post.blocks, "skills")]
@@ -662,4 +677,4 @@ export function authorHref(post: Pick<PublicProductPost, "author">): string | nu
  * the feed does, then its own footer (React, Comment, Share) and the comment
  * thread inside the same article.
  */
-export { PostBody as PostCardBody, TicketNotches as PostTicketNotches };
+export { PostBody as PostCardBody };

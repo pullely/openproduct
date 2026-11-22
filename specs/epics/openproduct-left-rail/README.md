@@ -3,7 +3,7 @@
 | | |
 |---|---|
 | Epic | `openproduct-left-rail` (EP-6) |
-| Status | In progress: LR0 (#27) and LR1 (#28) landed; LR2 in review; LR3 and LR4 to come |
+| Status | In progress: LR0 (#27), LR1 (#28) and LR2 (#29) landed; LR3 in review; LR4 to come |
 | Came from | Owner requests on 2026-11-23, drawn on the Claude Design canvas the same day |
 | Design | `design.md`; the board in `boards/` (the canvas at version 10) |
 

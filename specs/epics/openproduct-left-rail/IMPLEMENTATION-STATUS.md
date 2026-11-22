@@ -4,8 +4,8 @@
 |---|---|---|---|
 | LR0 — the spec | LR-1 | Done | #27 |
 | LR1 — graphite and system type | LR-2 | Done | #28 |
-| LR2 — the left rail on every page, phone first | LR-3 | In review | this PR |
-| LR3 — tiled posts with icon actions | LR-4 | Not started | |
+| LR2 — the left rail on every page, phone first | LR-3 | Done | #29 |
+| LR3 — tiled posts with icon actions | LR-4 | In review | this PR |
 | LR4 — posting from the product page | LR-5 | Not started | |
 
 ## From LR1
@@ -117,3 +117,43 @@ Departures from the design, said plainly:
 - **Between 640px and 960px there is no tab bar and no pinned rail**: the
   menu button is the navigation at those widths.
 - **Not on the sign-in door**, which keeps the mark and nothing else.
+
+## From LR3
+
+What landed:
+
+- **One tile for every kind.** `POST_TILE` in `posts/post-card.tsx`: a 1px
+  border, a 16px radius, the border a step darker under the pointer. The
+  feature's glow, the idea's note shape and wash, and the seat's ticket
+  notches are gone; `POST_CARD_SHELL` maps all five kinds to the tile. The
+  feed's tiles are 12px apart.
+- **The shaded Try it tile.** The stronger fill, no border, the label over
+  the host the link goes to, and an arrow; darker under the pointer.
+- **Icon actions.** The reaction picker's trigger and the comment link are
+  40px icons (44px on a phone) with no fill until hovered or selected, each
+  with a name and a tooltip; the comment count is a number beside its
+  bubble; what readers have said sits at the row's end. Follow on a post is
+  a plus that becomes a tick (`FollowButton`'s new `glyph` prop).
+- **The check badge** is the selected fill under the text colour, not amber.
+
+- **Four script budgets amended, and recorded.** `FollowButton`'s glyph form
+  costs 189 to 195 bytes on the product page, its About and Crew tabs and
+  `/submit`, against the 100 bytes of room LR2 left; each moves to CI's
+  measurement plus 100 bytes (run 45067595166). Four post-page snapshots
+  move for the icon row.
+
+Tests rewritten to the new rules: `product-post-cards` and `post-page`.
+
+Departures from the design, said plainly:
+
+- **No share and no save on a post in the feed.** The board draws both.
+  Share exists on the post's own page only and saving a post does not
+  exist; neither is added here.
+- **Reactions keep their four choices.** The board draws one Useful arrow
+  with a count. The picker stays, behind one icon; the count is the summary
+  at the row's end.
+- **Compact cards are unchanged inside.** The product page's and a person's
+  post cards take the tile's border but keep their text footer (the count
+  line and the Try it word).
+- **Product rows and seat cards are unchanged.** Their actions are not
+  icons yet.

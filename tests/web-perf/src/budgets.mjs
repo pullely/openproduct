@@ -508,6 +508,18 @@ const BUDGETS = {
  *   /submit                                              js   178_590 →  178_753  (measured 178,653)
  *   /submit                                              doc    8_000 →    9_191  (measured 9,091)
  */
+  /* ─── LR3, 2026-11-23 (openproduct-left-rail): THE FOLLOW GLYPH ─────────────
+ *
+ * `FollowButton` gained its glyph form (design §5.2), and the control is in
+ * these routes' script: 189 to 195 bytes, measured in CI (run 45067595166),
+ * against the 100 bytes of room LR2 left. Amended to the measurement plus
+ * 100 bytes.
+ *
+ *   /product-00                                          js   180_221 →  180_410  (measured 180,310)
+ *   /product-00/about                                    js   180_221 →  180_410  (measured 180,310)
+ *   /product-00/crew                                     js   180_221 →  180_410  (measured 180,310)
+ *   /submit                                              js   178_753 →  178_948  (measured 178,848)
+ */
   "/": { js: 168_100, doc: 17_855, cls: 0.02, lcp: 2000, reads: 2, images: 400_000 },
   // THREE, AND IT HAS BEEN THREE SINCE CB1 — the number here was stale, and
   // it took a lane that failed on one run and passed on the next to notice.
@@ -571,7 +583,7 @@ const BUDGETS = {
   // 178,650, so the two gates stay separate. The new limit is the
   // measurement plus the same 66 bytes of room. The documents did not move
   // past their limits.
-  [`/${SAMPLE_SLUG}`]: { js: 180_221, doc: 26_429, cls: 0.02, lcp: 2000, reads: 3, images: 400_000 },
+  [`/${SAMPLE_SLUG}`]: { js: 180_410, doc: 26_429, cls: 0.02, lcp: 2000, reads: 3, images: 400_000 },
   // OPR-3 — THE PRODUCT PAGE'S OTHER THREE TABS, each an address of its own
   // (design §5), budgeted the day they were added (2026-11-15).
   //
@@ -590,8 +602,8 @@ const BUDGETS = {
   // READS: the listing and the directory on every tab; Updates adds the
   // product's posts and Talk the discussion, so About and Crew read twice
   // and Talk three times — concurrently, as the note above says of Updates.
-  [`/${SAMPLE_SLUG}/about`]: { js: 180_221, doc: 26_454, cls: 0.02, lcp: 2000, reads: 2, images: 400_000 },
-  [`/${SAMPLE_SLUG}/crew`]: { js: 180_221, doc: 23_177, cls: 0.02, lcp: 2000, reads: 2, images: 400_000 },
+  [`/${SAMPLE_SLUG}/about`]: { js: 180_410, doc: 26_454, cls: 0.02, lcp: 2000, reads: 2, images: 400_000 },
+  [`/${SAMPLE_SLUG}/crew`]: { js: 180_410, doc: 23_177, cls: 0.02, lcp: 2000, reads: 2, images: 400_000 },
   //
   // OPR-4 — TALK RE-MEASURED, AND ONLY TALK, WITH THE NUMBERS NAMED
   // (2026-11-15). Talk gained its composer (a field, the thread's kind, the
@@ -730,7 +742,7 @@ const BUDGETS = {
   // rendered from what somebody is typing. A read appearing here would mean
   // this page had started asking the server about a draft — which is the one
   // thing IN0's design is built to prevent.
-  "/submit": { js: 178_753, doc: 9_191, cls: 0.02, lcp: 2000, reads: 0 },
+  "/submit": { js: 178_948, doc: 9_191, cls: 0.02, lcp: 2000, reads: 0 },
 };
 
 /**
