@@ -265,12 +265,6 @@ textarea.in{min-height:96px;resize:vertical}
 <div class="body">
 <main class="main">
 
-<sc-if value="{{isFeed}}" hint-placeholder-val="{{ true }}">
-<div class="tabs" role="tablist" aria-label="Sort the feed">
-<sc-for list="{{feedSorts}}" as="t" hint-placeholder-count="3"><button class="tab {{t.cls}}" onClick="{{t.pick}}">{{t.label}}</button></sc-for>
-</div>
-</sc-if>
-
 <sc-if value="{{isProducts}}" hint-placeholder-val="{{ false }}">
 <div>
 <h1 class="h1">Products</h1>
@@ -538,10 +532,10 @@ textarea.in{min-height:96px;resize:vertical}
 <sc-if value="{{p.hasMs}}" hint-placeholder-val="{{ false }}"><div class="row"><span class="mono mut">Milestone {{p.milestone}}</span><div class="segs grow" style="max-width: 240px"><sc-for list="{{p.segs}}" as="g" hint-placeholder-count="4"><span class="seg {{g.cls}}"></span></sc-for></div></div></sc-if>
 <sc-if value="{{p.hasTry}}" hint-placeholder-val="{{ true }}"><a class="linkbox" href="{{p.tryHref}}" target="_blank" rel="noreferrer"><span><span class="mono mut">Try it</span><br>{{p.tryUrl}}</span><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="{{ic.ext}}"></path></svg></a></sc-if>
 <div class="wrap">
-<button class="btn sm {{p.usefulCls}}" aria-label="Useful" title="Useful" onClick="{{p.toggleUseful}}"><svg class="ic s fillable" viewBox="0 0 24 24" aria-hidden="true"><path d="{{ic.up}}"></path></svg><b>{{p.count}}</b></button>
-<button class="btn sm" aria-label="Comments" onClick="{{p.open}}"><svg class="ic s" viewBox="0 0 24 24" aria-hidden="true"><path d="{{ic.comment}}"></path></svg><b>{{p.commentCount}}</b></button>
-<button class="btn sm" aria-label="Share" title="Share" onClick="{{p.share}}"><svg class="ic s" viewBox="0 0 24 24" aria-hidden="true"><path d="{{ic.share}}"></path></svg></button>
-<button class="btn sm {{p.saveCls}}" aria-label="{{p.saveLabel}}" title="{{p.saveLabel}}" onClick="{{p.save}}"><svg class="ic s fillable" viewBox="0 0 24 24" aria-hidden="true"><path d="{{ic.bookmark}}"></path></svg></button>
+<button class="btn sm {{p.usefulCls}}" aria-label="React" title="React" onClick="{{p.toggleUseful}}"><svg class="ic s fillable" viewBox="0 0 24 24" aria-hidden="true"><path d="{{ic.up}}"></path></svg></button>
+<button class="btn sm" aria-label="Comments" title="Comment" onClick="{{p.open}}"><svg class="ic s" viewBox="0 0 24 24" aria-hidden="true"><path d="{{ic.comment}}"></path></svg><b>{{p.commentCount}}</b></button>
+<span class="grow"></span>
+<span class="mut" style="font-size: 13px">{{p.count}} reactions</span>
 </div>
 </article>
 </sc-for>
@@ -986,9 +980,9 @@ class Component extends DCLogic {
     const item = (route, label, icon, extra) => ({ label: label, icon: icon, hasIcon: true, cls: is(route) && (!extra || s.docTab === extra.docTab) ? 'on' : '', go: go(route, extra) });
     const sections = [];
     const sec = (id, title, items) => sections.push({ title: title, open: !!s.sec[id], cls: s.sec[id] ? '' : 'shut', toggle: () => this.flip('sec', id), items: items });
-    if (s.signedIn) sec('products', 'Your products', prods.map((p) => ({ label: p.name, sub: p.isIdea ? 'Idea' : 'In production', hasLogo: true, logoCls: p.logoCls, logoD: p.logoD, cls: is('product') && s.slug === p.slug ? 'on' : '', go: p.open })).concat([item('submit', 'Open a build', ic.plus)]));
-    sec('topics', 'Topics', D.topicList.map((t) => ({ label: t[0], icon: ic.tag, hasIcon: true, cls: is('products') && s.facet && s.facet.value === t[0] ? 'on' : '', go: openFacet('topic', t[0]) })).concat([item('topics', 'All topics', ic.grid)]));
-    sec('explore', 'Explore', [item('people', 'People', ic.people), item('stack', 'Stacks', ic.layers), item('pricing', 'Pricing', ic.coin), item('collections', 'Collections', ic.folder), item('digest', 'Weekly digest', ic.mail)]);
+    if (s.signedIn) sec('products', 'Your products', [item('profile', 'Your products', ic.user), item('submit', 'Open a build', ic.plus)]);
+    sec('topics', 'Topics', [item('topics', 'All topics', ic.tag)]);
+    sec('explore', 'Explore', [item('people', 'People', ic.people), item('stack', 'Stacks', ic.layers), item('pricing', 'Pricing', ic.coin), item('collections', 'Collections', ic.folder), item('digest', 'Weekly digest', ic.mail), { label: 'RSS', icon: ic.rss, hasIcon: true, cls: '', go: () => this.say('Feed address copied: /digest/feed.xml') }]);
     sec('resources', 'Resources', [item('docs', 'Docs', ic.book, { docTab: 'overview' }), item('docs', 'How posting works', ic.pen, { docTab: 'posting' }), item('docs', 'What runs automatically', ic.bolt, { docTab: 'checks' }), item('transparency', 'Transparency', ic.eye)]);
 
     const kind = D.kinds[s.compose.kind];

@@ -57,7 +57,7 @@ export function ProductCard({ card, returnTo = "/products" }: { card: PublicProf
       data-keyrow
       data-product-card
       data-product-stage={card.stage}
-      className={`flex min-w-0 list-none flex-col overflow-hidden ${idea ? "rounded-[4px_16px_16px_16px] bg-idea-wash" : "rounded-[16px] bg-card"}`}
+      className={`flex min-w-0 list-none flex-col overflow-hidden rounded-[16px] border border-border bg-card`}
     >
       <AppLink
         href={`/${card.slug}`}

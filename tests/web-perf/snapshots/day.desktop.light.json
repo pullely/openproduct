@@ -3,28 +3,28 @@
     "top": 0,
     "left": 0,
     "width": 1270,
-    "height": 56
+    "height": 57
   },
   "sectionBar": null,
   "main": {
-    "top": 56,
-    "left": 259,
+    "top": 57,
+    "left": 267,
     "width": 1000
   },
   "h1": {
-    "top": 170,
-    "left": 303,
+    "top": 171,
+    "left": 311,
     "width": 912,
     "height": 33
   },
   "firstRow": {
-    "left": 303,
+    "left": 311,
     "width": 912,
     "height": 111
   },
   "footer": {
-    "left": 248,
-    "width": 1022,
+    "left": 264,
+    "width": 1006,
     "height": 96
   },
   "themeControl": {
@@ -34,7 +34,7 @@
   "colours": {
     "body": "oklch(1 0 0)",
     "text": "oklch(0.2542 0.0111 254.04)",
-    "header": "rgba(0, 0, 0, 0)",
+    "header": "oklch(1 0 0)",
     "h1": "oklch(0.2542 0.0111 254.04)"
   }
 }

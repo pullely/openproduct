@@ -1073,8 +1073,9 @@
       top: 56px;
       bottom: auto;
       left: auto;
-      width: 248px;
+      width: 264px;
       flex: none;
+      scrollbar-width: thin;
       height: calc(100dvh - 56px);
       border-right: 1px solid oklch(var(--border));
       padding-bottom: 0;
@@ -2047,7 +2048,7 @@
 .section-link:not([aria-current]):hover::after {
   transform: scaleX(1);
 }
-header.bar-frost {
+header.site-bar {
   view-transition-name: site-bar;
 }
 #content {
@@ -2153,38 +2154,6 @@ html:not([data-navigated]) [data-feed-posts] > li:nth-child(n + 5) { animation-d
    with no edge. Light at the top of a page (the glow shows through), deep
    once the page scrolls: a scroll-driven animation over the first 64px.
    Where scroll timelines are not supported the band is the deep frost. */
-.bar-frost {
-  isolation: isolate;
-}
-.bar-frost::before {
-  content: "";
-  position: absolute;
-  inset: 0 0 -10px 0;
-  z-index: -1;
-  pointer-events: none;
-  background-color: oklch(var(--background) / 0.92);
-  background-image: linear-gradient(to bottom, rgb(255 255 255 / 0.4), rgb(255 255 255 / 0));
-  -webkit-backdrop-filter: saturate(170%) blur(24px);
-  backdrop-filter: saturate(170%) blur(24px);
-  -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - 14px), transparent);
-  mask-image: linear-gradient(to bottom, #000 calc(100% - 14px), transparent);
-}
-@supports (animation-timeline: scroll()) {
-  .bar-frost::before {
-    animation: bar-frost linear both;
-    animation-timeline: scroll(root block);
-    animation-range: 0 64px;
-  }
-}
-@keyframes bar-frost {
-  from {
-    background-color: oklch(var(--background) / 0.4);
-    -webkit-backdrop-filter: saturate(140%) blur(8px);
-    backdrop-filter: saturate(140%) blur(8px);
-  }
-  to {
-    background-color: oklch(var(--background) / 0.92);
-    -webkit-backdrop-filter: saturate(170%) blur(24px);
-    backdrop-filter: saturate(170%) blur(24px);
-  }
-}
+/* LR5 (openproduct-left-rail design §4.3): the bar is a plain surface with a
+   bottom border, as the board draws it. UF2's frost — the band that melted
+   into the page — is retired with its scroll animation. */

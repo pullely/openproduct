@@ -432,12 +432,15 @@ describe("the Manage / Visitor switch", () => {
     expect(gate).toMatch(/if \(mode === "visitor"\) \{\s*editing\.delete\(slug\);\s*seatForms\.delete\(slug\);\s*\}/);
   });
 
-  it("is drawn into the header's one named slot, left of the search, by the crew's browser", () => {
+  it("is drawn into the header's one named slot, first on the bar's right, by the crew's browser", () => {
     const panel = code("shell/top-panel.tsx");
     expect(VIEW_SWITCH_SLOT_ID).toBe("page-view-switch");
     // The slot is empty and takes no room for everybody else.
     expect(panel).toContain(`<div id="${VIEW_SWITCH_SLOT_ID}" data-header-slot="view-switch" className="contents" />`);
-    expect(panel.indexOf(`id="${VIEW_SWITCH_SLOT_ID}"`)).toBeLessThan(panel.indexOf("<HeaderSearch />"));
+    // LR5: the search is the bar's centre, so the slot leads the right-hand
+    // group, before the theme control.
+    expect(panel.indexOf(`id="${VIEW_SWITCH_SLOT_ID}"`)).toBeGreaterThan(panel.indexOf("<HeaderSearch />"));
+    expect(panel.indexOf(`id="${VIEW_SWITCH_SLOT_ID}"`)).toBeLessThan(panel.indexOf("<ThemeButton />"));
     // The header knows nothing about crews or products.
     expect(panel).not.toMatch(/useCrewOf|useMaker|ViewSwitch|\[slug\]/);
     const view = code(`${MAKER_DIR}/view-switch.tsx`);

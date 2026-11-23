@@ -552,7 +552,8 @@ describe("OPR-3 — the stage filter is an address, and it composes with the sor
     const card = code("feed/product-card.tsx");
     expect(card).toContain("<StageMark stage={card.stage} counts={card.milestoneCounts} short />");
     expect(card).toContain("data-product-stage={card.stage}");
-    expect(card).toContain('idea ? "rounded-[4px_16px_16px_16px] bg-idea-wash" : "rounded-[16px] bg-card"');
+    // LR5: one bordered card whatever the stage; the mark says "idea".
+    expect(card).toContain("overflow-hidden rounded-[16px] border border-border bg-card`}");
     // THE CARD CARRIES ITS OWN PROGRESS AND CREW COUNT (OPR-3), so a list
     // draws both with no read per card: a built product's "3 OF 4" and
     // its bars, and "Needs a first builder" on an idea whose crew is only

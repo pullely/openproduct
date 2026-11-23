@@ -14,7 +14,7 @@
 /** A prose page: the 900px column the docs use, with the calm frame's room
  *  above (CL-R2). */
 export const PAGE_NARROW =
-  "mx-auto box-border w-full max-w-[900px] px-8 pb-[96px] pt-[64px] max-sm:px-4 max-sm:pb-[72px] max-sm:pt-10";
+  "mx-auto box-border w-full max-w-[900px] px-8 pb-[80px] pt-7 max-sm:px-4 max-sm:pb-[72px] max-sm:pt-5";
 
 /** The page title (LR1, openproduct-left-rail design §2 rule 3): the UI face
  *  at 26px/600, line-height 1.25; 22px on a phone. One size on every page, so a page announces

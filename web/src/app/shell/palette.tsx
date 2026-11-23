@@ -93,9 +93,6 @@ const PalettePanel = dynamic(() => import("./palette-panel"), { ssr: false });
 const CARD_ID = "search-results";
 const rowDomId = (index: number) => `search-row-${index}`;
 
-/** The board's easing for the box and its card. */
-const EASE = "ease-[cubic-bezier(0.2,0.8,0.2,1)]";
-
 export function HeaderSearch() {
   const router = useRouter();
   const [query, setQuery] = React.useState("");
@@ -288,19 +285,17 @@ export function HeaderSearch() {
     <div
       ref={rootRef}
       data-search-open={open ? "" : undefined}
-      className={`relative flex min-w-0 shrink grow-0 transition-[flex-basis] duration-300 ${EASE} motion-reduce:transition-none max-sm:hidden ${
-        open ? "basis-[380px]" : "basis-[268px]"
-      }`}
+      className="relative flex w-full min-w-0 max-sm:hidden"
     >
       <label
         // Above the card (`z-[21]` over its `z-20`): the field is the card's
         // first row. At rest it is the board's translucent white pill with a
         // hairline ring; over the card it sits in the well colour and the
         // ring goes, because the card is its edge now.
-        className={`relative z-[21] flex h-[42px] min-w-0 flex-1 items-center gap-2 rounded-full px-4 transition-colors motion-reduce:transition-none ${
+        className={`relative z-[21] flex h-[40px] min-w-0 flex-1 items-center gap-2 rounded-full px-4 transition-colors motion-reduce:transition-none ${
           open
             ? "bg-well"
-            : "bg-foreground/[0.045] focus-within:ring-2 focus-within:ring-ring"
+            : "bg-muted focus-within:bg-card focus-within:ring-2 focus-within:ring-ring"
         }`}
       >
         <SearchGlyph />

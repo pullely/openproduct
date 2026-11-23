@@ -121,23 +121,27 @@ describe("the section nav", () => {
     expect(chip).not.toMatch(/className="[^"]*\bh-(?:8|10)\b/);
   });
 
-  it("is a sticky frosted bar in the page's column, flat: no border, no shadow", () => {
+  it("is a sticky plain bar with a bottom border and no shadow (LR5)", () => {
     const panel = markupOf("shell/top-panel.tsx");
     const header = panel.match(/<header className="([^"]*)"/)?.[1] ?? "";
     expect(header).toContain("sticky top-0");
-    // The frost is a band behind the bar that fades out below it, not a fill
-    // (openproduct-ui-fixes UF2, design §2 rule 6): `.bar-frost`.
-    expect(header).toContain("bar-frost");
-    expect(header).toContain("font-bar");
-    expect(header).not.toMatch(/\bbg-/);
+    // openproduct-left-rail LR5 (design §4.3): the board's bar is a plain
+    // surface with a bottom border. UF2's frost is retired, with its rules.
+    expect(header).toBe("site-bar sticky top-0 z-40 w-full border-b border-border bg-card font-bar");
     const css = readFileSync(resolve(APP_DIR, "../styles/globals.css"), "utf-8");
-    expect(css).toMatch(/\.bar-frost::before \{[\s\S]*?backdrop-filter: saturate\(170%\) blur\(24px\);[\s\S]*?mask-image: linear-gradient\(to bottom, #000 calc\(100% - 14px\), transparent\);/);
-    expect(css).toMatch(/@media \(prefers-reduced-motion|animation-range: 0 64px;/);
-    // design.md §2 rule 11.
-    expect(header).not.toMatch(/\bborder(?:-|\b)|\bshadow/);
-    // The page's own shell (openproduct-ui-fixes UF1): fluid to 1920px,
-    // 24px gutters, so the mark lines up with the page's edge.
-    expect(panel).toMatch(/max-w-\[1920px\][^"]*\bpx-6\b/);
+    expect(css).not.toContain("bar-frost");
+    expect(css).not.toContain("backdrop-filter: saturate(170%) blur(24px)");
+    expect(css).toContain("header.site-bar {\n  view-transition-name: site-bar;");
+    expect(header).not.toMatch(/\bshadow/);
+    // Three columns from `sm` up, the outer two equal, so the search is in
+    // the bar's centre at up to 560px.
+    expect(panel).toContain("sm:grid sm:grid-cols-[minmax(0,1fr)_minmax(0,560px)_minmax(0,1fr)]");
+    expect(panel).toMatch(/\{door \? null : \(\s*<div className="min-w-0 max-sm:hidden">\s*<HeaderSearch \/>\s*<\/div>\s*\)\}/);
+    // And on its right: the theme control, the bell, the account.
+    expect(panel).toMatch(/<ThemeButton \/>\s*<NotificationBell[^>]*\/>\s*<AccountChip \/>/);
+    // The bar spans the window with 16px at its sides (the board's), not the
+    // page's column.
+    expect(panel).toMatch(/box-border flex h-\[56px\] w-full flex-nowrap items-center gap-x-3 px-4/);
   });
 
   it("lights at most one destination: one `aria-current`, from one function", () => {

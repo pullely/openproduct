@@ -150,7 +150,10 @@ describe('"Worth following" lists products only', () => {
     // The reader's own Following card arrives after load, so it is the LAST
     // thing in the column: nothing public is pushed down when it draws.
     expect(view.indexOf("<FeedFollowing />")).toBeGreaterThan(view.indexOf("data-feed-seats"));
-    expect(view.slice(view.indexOf("<FeedFollowing />"))).toMatch(/^<FeedFollowing \/>\s*<\/aside>/);
+    // LR5: the You block follows it, at the column's very end — the board's
+    // feed has no left column — and nothing public comes after either.
+    expect(view.slice(view.indexOf("<FeedFollowing />"))).toMatch(/^<FeedFollowing \/>\s*(?:\{\}\s*)?<div role="complementary" aria-label="You" className="grid" data-feed-left>[\s\S]*<\/div>\s*<\/aside>/);
+    expect(view).not.toContain("min-[1180px]");
     expect(section).toContain("href={`/${product.slug}`}");
     expect(section).not.toMatch(/@\$\{|makerPath|handle/);
     expect(code(PAGE)).not.toMatch(/fetchPublicPeople|fetchContributorsDirectory/);

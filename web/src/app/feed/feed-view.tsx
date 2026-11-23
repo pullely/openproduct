@@ -70,7 +70,7 @@ export function FeedView({
   const seats = directory ? openSeatProducts(directory) : [];
 
   return (
-    <main className="mx-auto box-border grid w-full max-w-[1920px] grid-cols-[minmax(0,1fr)] items-start gap-4 px-6 pb-8 pt-2 max-sm:gap-3 max-sm:px-3 max-sm:pb-6 max-sm:pt-3 min-[900px]:grid-cols-[minmax(0,1fr)_300px] min-[1180px]:grid-cols-[240px_minmax(0,1fr)_300px]">
+    <main className="mx-auto box-border grid w-full max-w-[1124px] grid-cols-[minmax(0,1fr)] items-start gap-x-10 gap-y-4 px-8 pb-16 pt-7 max-sm:gap-3 max-sm:px-3 max-sm:pb-6 max-sm:pt-3 min-[900px]:grid-cols-[minmax(0,1fr)_300px]">
       <style>{FEED_FOCUS_CSS}</style>
 
       <section aria-labelledby="feed-title" className="flex min-w-0 flex-col gap-3.5 max-sm:gap-3" data-feed>
@@ -95,38 +95,6 @@ export function FeedView({
           </div>
         )}
       </section>
-
-      {/* THE LEFT COLUMN. One grid cell holds both branches, so the column is
-          as tall as the taller one and nothing below it moves when the
-          personal one arrives. The public card wears the shell's own
-          `data-auth-branch`: a browser that knows it has a session hides it
-          before paint, and it keeps its box. */}
-      <aside aria-label="You" className="hidden min-[1180px]:order-first min-[1180px]:grid" data-feed-left>
-        <section
-          aria-label="openproduct"
-          data-auth-branch="anonymous"
-          className="self-start overflow-hidden rounded-[16px] border border-border bg-card [grid-area:1/1]"
-        >
-          <div aria-hidden="true" className="h-[56px] bg-[linear-gradient(120deg,oklch(var(--amber-soft)),oklch(var(--sunken)))]" />
-          <div className="-mt-8 flex flex-col items-center gap-1 px-4 pb-4 text-center">
-            <span aria-hidden="true" className="grid h-16 w-16 place-items-center rounded-full bg-card ring-4 ring-card">
-<svg width="36" height="36" viewBox="0 0 24 24" fill="none">
-                <rect width="24" height="24" rx="6" fill="#17150F" />
-                <circle cx="11.5" cy="12.5" r="4.6" stroke="#FFFFFF" strokeWidth="2.4" />
-                <circle cx="16.8" cy="7.2" r="2.3" fill="#C9952F" />
-              </svg>
-            </span>
-            <span className="mt-1.5 text-[16px] font-semibold text-foreground">openproduct</span>
-            <span className="text-[13px] text-muted-foreground">Products built in the open</span>
-            <a href={signInHref(returnTo)} className={`${BTN_INK} mt-2.5 w-full ${FOCUS}`}>
-              Sign in
-            </a>
-          </div>
-        </section>
-        <div className="min-w-0 [grid-area:1/1]">
-          <FeedYou />
-        </div>
-      </aside>
 
       <aside aria-label="Products" className="hidden min-w-0 flex-col gap-3 min-[900px]:flex" data-feed-right>
         {suggestions.length > 0 ? (
@@ -180,6 +148,41 @@ export function FeedView({
             reader's own (what they follow), drawn after load, and a card
             that appeared above the two public ones would push both down. */}
         <FeedFollowing />
+
+          {/* YOU, LAST IN THE RIGHT COLUMN (LR5: the board's feed has no left
+              column; the rail is the page's left). One grid cell holds both
+              branches, so the block is as tall as the taller one and nothing
+              moves when the personal one arrives; at the column's end, a
+              hidden branch's kept box is room under the last card, not a gap
+              between two. The public card wears the shell's own
+            `data-auth-branch`: a browser that knows it has a session hides it
+            before paint, and it keeps its box. */}
+        <div role="complementary" aria-label="You" className="grid" data-feed-left>
+          <section
+            aria-label="openproduct"
+            data-auth-branch="anonymous"
+            className="self-start overflow-hidden rounded-[16px] border border-border bg-card [grid-area:1/1]"
+          >
+            <div aria-hidden="true" className="h-[56px] bg-[linear-gradient(120deg,oklch(var(--amber-soft)),oklch(var(--sunken)))]" />
+            <div className="-mt-8 flex flex-col items-center gap-1 px-4 pb-4 text-center">
+              <span aria-hidden="true" className="grid h-16 w-16 place-items-center rounded-full bg-card ring-4 ring-card">
+  <svg width="36" height="36" viewBox="0 0 24 24" fill="none">
+                  <rect width="24" height="24" rx="6" fill="#17150F" />
+                  <circle cx="11.5" cy="12.5" r="4.6" stroke="#FFFFFF" strokeWidth="2.4" />
+                  <circle cx="16.8" cy="7.2" r="2.3" fill="#C9952F" />
+                </svg>
+              </span>
+              <span className="mt-1.5 text-[16px] font-semibold text-foreground">openproduct</span>
+              <span className="text-[13px] text-muted-foreground">Products built in the open</span>
+              <a href={signInHref(returnTo)} className={`${BTN_INK} mt-2.5 w-full ${FOCUS}`}>
+                Sign in
+              </a>
+            </div>
+          </section>
+          <div className="min-w-0 [grid-area:1/1]">
+            <FeedYou />
+          </div>
+        </div>
       </aside>
     </main>
   );

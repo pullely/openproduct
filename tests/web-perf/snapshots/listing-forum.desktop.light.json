@@ -3,16 +3,16 @@
     "top": 0,
     "left": 0,
     "width": 1270,
-    "height": 56
+    "height": 57
   },
   "sectionBar": null,
   "main": {
-    "top": 56,
-    "left": 248,
-    "width": 1022
+    "top": 57,
+    "left": 264,
+    "width": 1006
   },
   "h1": {
-    "top": 167,
+    "top": 112,
     "left": 292,
     "width": 584,
     "height": 33
@@ -23,8 +23,8 @@
     "height": 116
   },
   "footer": {
-    "left": 248,
-    "width": 1022,
+    "left": 264,
+    "width": 1006,
     "height": 96
   },
   "themeControl": {
@@ -34,7 +34,7 @@
   "colours": {
     "body": "oklch(1 0 0)",
     "text": "oklch(0.2542 0.0111 254.04)",
-    "header": "rgba(0, 0, 0, 0)",
+    "header": "oklch(1 0 0)",
     "h1": "oklch(0.2542 0.0111 254.04)"
   }
 }

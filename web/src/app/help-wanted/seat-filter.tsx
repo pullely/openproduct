@@ -1,4 +1,4 @@
-import { EYEBROW, FOCUS } from "../ui/design";
+import { FOCUS } from "../ui/design";
 import { AppLink } from "../ui/link";
 
 import { SEAT_STAGE_FILTERS, SEAT_STAGE_FILTER_LABEL, seatsPath, type SeatStageFilter } from "./seats";
@@ -23,22 +23,14 @@ const GLYPH: Record<SeatStageFilter, string> = {
 
 /** A colour here is a KIND (design §3): teal is seats, and each stage wears
  *  its own (SC-2) — lavender, amber, slate, green. */
-const TILE: Record<SeatStageFilter, { off: string; on: string }> = {
-  all: { off: "bg-seat-soft text-seat-ink", on: "bg-seat text-card" },
-  idea: { off: "bg-idea-soft text-idea", on: "bg-idea text-card" },
-  building: { off: "bg-amber-soft text-amber-ink", on: "bg-amber text-card" },
-  stage: { off: "bg-version-soft text-version", on: "bg-version text-card" },
-  production: { off: "bg-success-soft text-success", on: "bg-success text-card" },
-};
-
 export function SeatFilter({ current, counts }: { current: SeatStageFilter; counts: Record<SeatStageFilter, number> }) {
   return (
     <nav
       aria-label="Seat filters"
       data-seat-filters
-      className="flex flex-col gap-0.5 rounded-[16px] bg-card p-2.5 [scrollbar-width:none] max-md:-mx-3 max-md:flex-row max-md:gap-1.5 max-md:overflow-x-auto max-md:rounded-none max-md:bg-transparent max-md:px-3 max-md:py-0"
+      className="flex flex-row flex-wrap gap-1.5 max-sm:-mx-3 max-sm:flex-nowrap max-sm:overflow-x-auto max-sm:px-3 max-sm:[scrollbar-width:none]"
     >
-      <div className={`${EYEBROW} px-2.5 pb-2 pt-1.5 max-md:hidden`}>Open seats</div>
+      <div className="sr-only">Open seats</div>
       {SEAT_STAGE_FILTERS.map((stage) => {
         const on = stage === current;
         return (
@@ -47,19 +39,17 @@ export function SeatFilter({ current, counts }: { current: SeatStageFilter; coun
             href={seatsPath(stage)}
             {...(on ? { "aria-current": "page" as const } : {})}
             data-seat-filter={stage}
-            className={`flex min-h-[40px] items-center gap-3 rounded-[14px] px-2.5 text-[15px] no-underline transition-colors max-md:min-h-[44px] max-md:flex-[1_0_auto] max-md:justify-center max-md:gap-1.5 max-md:whitespace-nowrap max-md:rounded-full max-md:px-3 max-md:text-[13px] ${
-              on
-                ? "font-semibold text-foreground max-md:bg-primary max-md:text-primary-foreground"
-                : "text-copy hover:bg-accent max-md:bg-card max-md:font-medium"
+            className={`flex min-h-[40px] flex-none items-center justify-center gap-1.5 whitespace-nowrap rounded-full px-3.5 text-[14px] no-underline transition-colors max-sm:min-h-[44px] ${
+              on ? "bg-secondary font-semibold text-foreground" : "font-medium text-foreground hover:bg-accent"
             } ${FOCUS}`}
           >
-            <span className={`grid h-8 w-8 shrink-0 place-items-center rounded-[10px] max-md:hidden ${on ? TILE[stage].on : TILE[stage].off}`}>
+            <span aria-hidden="true" className="grid shrink-0 place-items-center text-muted-foreground">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" focusable="false">
                 <path d={GLYPH[stage]} />
               </svg>
             </span>
-            <span className="flex-1 text-left max-md:flex-none">{SEAT_STAGE_FILTER_LABEL[stage]}</span>
-            <span className={`font-mono text-[11px] ${on ? "text-foreground max-md:text-primary-foreground" : "text-muted-foreground"}`}>
+            <span>{SEAT_STAGE_FILTER_LABEL[stage]}</span>
+            <span className={`text-[12px] ${on ? "text-foreground" : "text-muted-foreground"}`}>
               {counts[stage]}
             </span>
           </AppLink>

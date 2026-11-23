@@ -12,6 +12,7 @@ import { SearchGlyph } from "./palette-glyph";
 import { sectionFor } from "./section-for";
 import { RailToggle } from "./rail-toggle";
 import { SIGN_IN_PATH } from "./shell";
+import { ThemeButton } from "./theme-button";
 
 import { AppLink } from "../ui/link";
 
@@ -76,8 +77,13 @@ export function TopPanel() {
   const onSearch = path === SEARCH_PATH;
 
   return (
-    <header className="bar-frost sticky top-0 z-40 w-full font-bar">
-      <div className="mx-auto box-border flex h-[56px] w-full max-w-[1920px] flex-nowrap items-center gap-x-6 px-6 max-lg:gap-x-4 max-sm:h-[68px] max-sm:gap-x-[10px] max-sm:px-[14px]">
+    <header className="site-bar sticky top-0 z-40 w-full border-b border-border bg-card font-bar">
+      {/* THREE COLUMNS FROM `sm` UP (LR5, the board's bar): the mark on the
+          left, the search in the CENTRE at up to 560px, the controls on the
+          right. The outer columns are equal, so the search is centred in
+          the bar whatever stands beside it. One row on a phone. */}
+      <div className="box-border flex h-[56px] w-full flex-nowrap items-center gap-x-3 px-4 max-sm:h-[68px] max-sm:gap-x-[10px] max-sm:px-[14px] sm:grid sm:grid-cols-[minmax(0,1fr)_minmax(0,560px)_minmax(0,1fr)]">
+        <div className="flex min-w-0 items-center gap-1 sm:justify-self-start">
         {/* LR2 — the menu button: below 960px it opens the rail as a drawer.
             Not on the door, which has no rail. */}
         {door ? null : <RailToggle />}
@@ -91,7 +97,7 @@ export function TopPanel() {
           aria-label="openproduct — home"
           // The mark's drawn size is the board's (24px; 26px on a phone); the
           // hit area is what grows, to 40px here and 44px on a phone.
-          className="flex min-h-[40px] shrink-0 items-center gap-[10px] justify-self-start rounded-[8px] text-foreground no-underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring max-lg:min-w-[40px] max-lg:justify-center max-sm:min-h-[44px] max-sm:min-w-[44px]"
+          className="flex min-h-[40px] shrink-0 items-center gap-[10px] rounded-[8px] text-foreground no-underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring max-lg:min-w-[40px] max-lg:justify-center max-sm:min-h-[44px] max-sm:min-w-[44px]"
         >
           <Logomark size={30} className="max-sm:h-[26px] max-sm:w-[26px]" />
           {/* THE WORD STEPS ASIDE BELOW `lg`. At 768px the word, three pills,
@@ -102,13 +108,23 @@ export function TopPanel() {
             openproduct
           </span>
         </AppLink>
+        </div>
+
+        {/* The search that opens in place, in the bar's centre — its own
+            island, so the bar around it stays one static render. Not
+            displayed on a phone, and not on the door. */}
+        {door ? null : (
+          <div className="min-w-0 max-sm:hidden">
+            <HeaderSearch />
+          </div>
+        )}
 
         {door ? null : (
           <>
             {/* The right-hand group takes the row's slack and packs to the right,
                 so the search box, the bell and the profile control sit at the
                 column's edge. `min-w-0` lets the search box shrink inside it. */}
-            <div className="flex min-w-0 flex-1 items-center justify-end gap-2">
+            <div className="flex min-w-0 flex-1 items-center justify-end gap-1 sm:justify-self-end">
               {/* A NAMED, EMPTY SLOT (openproduct-redesign OPR-3). A page may
                   draw one small control here, left of the search — today the
                   product page's Manage / Visitor switch, portalled in by the
@@ -116,10 +132,6 @@ export function TopPanel() {
                   `contents`, so empty it takes no room and no gap: the bar is
                   the same bytes and the same layout for everybody else. */}
               <div id="page-view-switch" data-header-slot="view-switch" className="contents" />
-
-              {/* The search that opens in place — its own island, so the bar
-                  around it stays one static render. Not displayed on a phone. */}
-              <HeaderSearch />
 
               {/* THE PHONE'S SEARCH IS A LINK. The same pill, 44px tall, going
                   to the search page, where the field and its results have the
@@ -136,6 +148,8 @@ export function TopPanel() {
                 </AppLink>
               )}
 
+              {/* The theme control (LR5): light or dark, one press. */}
+              <ThemeButton />
               <NotificationBell current={activeSection === "activity"} />
               <AccountChip />
             </div>

@@ -3,7 +3,7 @@
     "top": 0,
     "left": 0,
     "width": 365,
-    "height": 68
+    "height": 69
   },
   "sectionBar": {
     "top": 736,
@@ -12,12 +12,12 @@
     "height": 62
   },
   "main": {
-    "top": 68,
+    "top": 69,
     "left": 0,
     "width": 365
   },
   "h1": {
-    "top": 165,
+    "top": 141,
     "left": 14,
     "width": 337,
     "height": 28
@@ -39,7 +39,7 @@
   "colours": {
     "body": "oklch(0.1763 0.014 258.36)",
     "text": "oklch(0.9703 0.0103 247.93)",
-    "header": "rgba(0, 0, 0, 0)",
+    "header": "oklch(0.1763 0.014 258.36)",
     "h1": "oklch(0.9703 0.0103 247.93)"
   }
 }
