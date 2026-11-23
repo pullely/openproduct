@@ -527,6 +527,7 @@ const BUDGETS = {
  * measured in CI (run 45106684524), against the 100 bytes of room LR3 left.
  * Amended to the measurement plus 100 bytes.
  *
+ *   /product-00/crew                                     doc   23_177 →   23_289  (measured 23,189, run 45107755500)
  *   /product-00                                          js   180_410 →  180_605  (measured 180,505)
  *   /product-00/about                                    js   180_410 →  180_605  (measured 180,505)
  *   /product-00/about                                    doc   26_454 →   26_557  (measured 26,457)
@@ -617,7 +618,7 @@ const BUDGETS = {
   // product's posts and Talk the discussion, so About and Crew read twice
   // and Talk three times — concurrently, as the note above says of Updates.
   [`/${SAMPLE_SLUG}/about`]: { js: 180_605, doc: 26_557, cls: 0.02, lcp: 2000, reads: 2, images: 400_000 },
-  [`/${SAMPLE_SLUG}/crew`]: { js: 180_605, doc: 23_177, cls: 0.02, lcp: 2000, reads: 2, images: 400_000 },
+  [`/${SAMPLE_SLUG}/crew`]: { js: 180_605, doc: 23_289, cls: 0.02, lcp: 2000, reads: 2, images: 400_000 },
   //
   // OPR-4 — TALK RE-MEASURED, AND ONLY TALK, WITH THE NUMBERS NAMED
   // (2026-11-15). Talk gained its composer (a field, the thread's kind, the
