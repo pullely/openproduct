@@ -3,9 +3,9 @@
 | | |
 |---|---|
 | Epic | `openproduct-left-rail` (EP-6) |
-| Status | Complete when LR4 lands: LR0 #27, LR1 #28, LR2 #29, LR3 #30, LR4 this PR |
+| Status | Complete when LR5 lands: LR0 #27, LR1 #28, LR2 #29, LR3 #30, LR4 #31, LR5 this PR |
 | Came from | Owner requests on 2026-11-23, drawn on the Claude Design canvas the same day |
-| Design | `design.md`; the board in `boards/` (the canvas at version 10) |
+| Design | `design.md`; the board in `boards/` (the canvas at version 11) |
 
 A Reddit-style layout for every page: one left rail that holds the whole
 site's navigation, graphite with no accent hue, the system typeface, tiled
@@ -19,6 +19,7 @@ the phone up.
 | LR2 — the left rail on every page, phone first | LR-3 | One left rail on every page; on a phone the tab bar stays and a menu button opens the rail as a drawer |
 | LR3 — tiled posts with icon actions | LR-4 | Posts as bordered tiles, icon-only actions, the shaded Try it tile |
 | LR4 — posting from the product page | LR-5 | Create post only on a product's page, for its crew |
+| LR5 — closer to the board | LR-6 | The board's bar with the search in its centre, one centred frame on every page, filters as a row |
 
 The epic is done when every milestone is live and the site matches the
 board.

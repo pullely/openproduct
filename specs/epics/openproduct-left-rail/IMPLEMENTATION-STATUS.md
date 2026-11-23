@@ -6,9 +6,12 @@
 | LR1 — graphite and system type | LR-2 | Done | #28 |
 | LR2 — the left rail on every page, phone first | LR-3 | Done | #29 |
 | LR3 — tiled posts with icon actions | LR-4 | Done | #30 |
-| LR4 — posting from the product page | LR-5 | In review | this PR |
+| LR4 — posting from the product page | LR-5 | Done | #31 |
+| LR5 — closer to the board | LR-6 | In review | this PR |
 
-**The epic is complete when this PR lands.** Every milestone has landed;
+**The epic is complete when LR5 lands.** The owner compared the live site
+with the board on 2026-11-23 and asked for the bar and the page frames to be
+the board's; LR5 is that. Every earlier milestone has landed;
 what the build left out of the board is listed under each milestone's
 "Departures", and collected under "Known follow-ups" at the end. Marking
 EP-6 completed in the Orunbase console is the one leftover outside this
@@ -186,14 +189,62 @@ Departures from the design, said plainly:
   going to the full-page composer, is kept: it is the same act with one
   step fewer.
 
+## From LR5
+
+The owner's review of the live site against the board, 2026-11-23: the
+search was on the bar's right, the bar was frosted with no border and no
+theme control, the feed had a column on its left, Products and Help wanted
+put their filters in a second left column, and other pages sat in wide
+frames with 64 to 80px above them.
+
+What landed:
+
+- **The bar is the board's.** A plain surface with a bottom border, the
+  window's full width with 16px at its sides. Three columns from `sm` up,
+  the outer two equal: the menu button, the mark and the word; the search
+  in the centre at up to 560px, on the subtle fill, the same width at rest
+  and open; and the theme control (`shell/theme-button.tsx`, new), the bell
+  and the account. UF2's frost and its scroll animation are removed.
+- **One frame for every page.** `BOARD_PAGE`, `SECTION_PAGE` and `PAGE` are
+  centred at 1124px (the board's 720px column, 40px, and the 300px right
+  column, in 32px gutters) with 28px above; `PAGE_NARROW` keeps its 900px
+  and takes the same room above.
+- **The feed has no left column.** Posts in one column beside the right
+  column, 40px apart. The You block (the sign-in card, or the reader's own)
+  is the last thing in the right column.
+- **Filters are a row.** Products' stages and Help wanted's filters are
+  pills in a row above their lists at every width; `RAIL_LEFT` is the full
+  width. Search's segments follow, since they read the same constant.
+- **Product and seat cards are bordered**, and an idea's card is the same
+  shape as any other.
+- **The rail is 264px**, the board's, with a thin scrollbar.
+- **The board is the canvas at version 11**: its rail lists what the site
+  draws for every visitor (Your products as two links, Topics as All
+  topics, RSS under Explore), the feed has no sort tabs, and a post's row is
+  the reaction icon, the comment icon and the count.
+
+Tests rewritten to the new rules: `shell`, `mobile-shell`, `search-field`,
+`calm-builds`, `feed-of-posts`, `products-and-seats`, `product-maker-view`.
+
+Departures from the design, said plainly:
+
+- **The You block is in the right column**, which the board does not draw.
+  It carries the sign-in door and a maker's own products; removing it would
+  remove both from the feed.
+- **Products is a grid of cards, not the board's rows.** The frame and the
+  filters moved; the card did not.
+- **The footer's theme control stays**, beside the bar's new one. The two
+  do not read each other's state until a reload.
+- **The theme button is not on a phone's bar**, which has no room; the
+  footer's control is.
+
 ## Known follow-ups
 
 None is scheduled; each is a departure recorded above.
 
 - Pages that spell a serif title, a mono uppercase label or an amber
   gradient inline still carry their old size and case (LR1).
-- Products and Help wanted keep their own filter column beside the rail,
-  and page frames are not rewritten phone first (LR2).
+- Page frames are not rewritten phone first (LR2).
 - Between 640px and 960px the menu button is the only navigation (LR2).
 - No share or save on a post in the feed; reactions keep four choices;
   product rows and seat cards keep text actions (LR3).

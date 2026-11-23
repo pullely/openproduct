@@ -1,0 +1,27 @@
+# LR-6: milestone LR5, closer to the board. The owner compared the live site
+# with the canvas on 2026-11-23: the bar, the search's place and the page
+# frames were not the board's. This brings them to it.
+# The file is the contract; the task itself lives in Orunbase.
+apiVersion: orun.io/v1
+kind: TaskContract
+metadata:
+  name: LR-6
+  title: "LR5: closer to the board"
+spec:
+  goal: The bar, the search's place and every page's frame are the board's, a plain bordered bar with the search in its centre and one centred column beside a right column.
+  affects:
+    - web/**
+    - tests/web/**
+    - tests/web-perf/**
+    - specs/epics/openproduct-left-rail/**
+    - tasks/**
+  deps:
+    - LR-5
+  doneWhen:
+    - The bar is a plain surface with a bottom border, the search centred in it, and the theme control, the bell and the account on its right
+    - The feed has no left column, its posts in one centred column beside the right column
+    - Products and Help wanted carry their filters as a row above the list, not as a second left column
+    - Every page's frame is centred beside the rail with the board's room above it
+    - The board in the epic is the canvas at its new version
+    - Web tests and web-perf lanes pass in CI
+  gates: []

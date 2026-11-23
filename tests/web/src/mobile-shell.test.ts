@@ -245,7 +245,7 @@ describe("sectionFor — which cell is lit", () => {
 describe("the header may not grow", () => {
   /** The bar's own row — the element whose height is the bar's. */
   const row = () => {
-    const m = /<div className="(mx-auto[^"]*)"/.exec(read("shell/top-panel.tsx"));
+    const m = /<div className="(box-border flex h-\[56px\][^"]*)"/.exec(read("shell/top-panel.tsx"));
     if (!m) throw new Error("top-panel's row is not where this test expects it");
     return m[1]!;
   };

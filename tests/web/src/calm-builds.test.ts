@@ -22,6 +22,8 @@ import {
   productsShownLine,
 } from "@openproduct-web/app/feed/products";
 
+import * as design from "@openproduct-web/app/ui/design";
+
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const APP_DIR = resolve(__dirname, "../../../web/src/app");
 const code = (file: string) =>
@@ -64,14 +66,15 @@ describe("every list of products draws the one card", () => {
     );
   });
 
-  it("the card is flat: the card colour at a 16px radius, no border and no shadow", () => {
+  it("the card is the bordered card at a 16px radius, whatever its stage, with no shadow (LR5)", () => {
     const card = code("feed/product-card.tsx");
-    // OPR-3 — a shipping product is the flat card; an idea is the idea's own
-    // shape (the lavender wash with one square corner). Both are flat.
+    // openproduct-left-rail: the page and the card are one colour, so the
+    // border is the edge (LR1), and an idea's lavender note shape went with
+    // the kind colours (design §1.5) — its stage mark says it is an idea.
     expect(card).toContain(
-      'className={`flex min-w-0 list-none flex-col overflow-hidden ${idea ? "rounded-[4px_16px_16px_16px] bg-idea-wash" : "rounded-[16px] bg-card"}`}',
+      'className={`flex min-w-0 list-none flex-col overflow-hidden rounded-[16px] border border-border bg-card`}',
     );
-    expect(card).not.toMatch(/border-border|(?:^|\s)shadow/);
+    expect(card).not.toMatch(/bg-idea-wash|(?:^|\s)shadow/);
   });
 });
 
@@ -98,15 +101,20 @@ describe("the Products view is the filter beside the list, on the board's frame"
     expect(code(file)).toContain("<div className={RAIL_LEFT}>");
   });
 
-  it("puts the stage filter beside the list, in the place OPR1 named for it", () => {
-    // The board's two columns: the filter, then the list — one column with
-    // the filter on top on a phone. No margin of anything else.
+  it("puts the stage filter in a row above the list, at every width (LR5)", () => {
+    // openproduct-left-rail LR5: the site's rail is the page's left, so a
+    // filter is a row of pills over its list — never a second left column.
     const products = code("feed/products-view.tsx");
-    expect(products).toMatch(/<div data-products-body className="flex items-start gap-4 [^"]*max-md:flex-col[^"]*">/);
+    expect(products).toContain('<div data-products-body className="flex flex-col items-stretch gap-4 max-sm:gap-2.5">');
+    expect(design.RAIL_LEFT).toBe("w-full min-w-0");
+    for (const file of ["feed/products-stage.tsx", "help-wanted/seat-filter.tsx"]) {
+      expect([file, code(file).includes('className="flex flex-row flex-wrap gap-1.5 ')]).toEqual([file, true]);
+      expect([file, /max-md:|md:hidden/.test(code(file))]).toEqual([file, false]);
+    }
     expect(products.indexOf("<StageFilter ")).toBeGreaterThan(products.indexOf("data-products-body"));
     expect(products.indexOf("<StageFilter ")).toBeLessThan(products.indexOf("<ProductList"));
     const seats = code("help-wanted/seats-view.tsx");
-    expect(seats).toMatch(/<div data-seats-body className="flex items-start gap-4 [^"]*max-md:flex-col[^"]*">/);
+    expect(seats).toContain('<div data-seats-body className="flex flex-col items-stretch gap-4 max-sm:gap-2.5">');
     expect(seats.indexOf("<SeatFilter ")).toBeGreaterThan(seats.indexOf("data-seats-body"));
     expect(seats.indexOf("<SeatFilter ")).toBeLessThan(seats.indexOf("<SeatList"));
   });

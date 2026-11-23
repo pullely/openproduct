@@ -347,26 +347,28 @@ describe("one search, and the shortcut focuses it", () => {
     expect(box).toMatch(/input\.offsetParent === null\) \{[\s\S]{0,200}?router\.push\(SEARCH_PATH\)/);
   });
 
-  it("is a 42px pill with 16px text and the board's placeholder", () => {
+  it("is a 40px pill with 16px text and the board's placeholder", () => {
     const box = code("shell/palette.tsx");
     expect(SEARCH_PLACEHOLDER).toBe("Search products and people");
     expect(box).toContain("placeholder={SEARCH_PLACEHOLDER}");
-    // 42px and borderless on a faint fill since openproduct-ui-fixes UF2.
-    expect(box).toMatch(/<label[\s\S]*?className=\{`[^`]*\bh-\[42px\][^`]*rounded-full/);
+    // 40px and borderless on the subtle fill (openproduct-left-rail LR5).
+    expect(box).toMatch(/<label[\s\S]*?className=\{`[^`]*\bh-\[40px\][^`]*rounded-full/);
+    expect(box).toContain(': "bg-muted focus-within:bg-card focus-within:ring-2 focus-within:ring-ring"');
     expect(box).toMatch(/<input[\s\S]*?className="[^"]*text-\[16px\]/);
   });
 });
 
 describe("the box becomes the card: one surface, not a dropdown", () => {
-  it("widens from 268px to 380px, eased, and holds still for reduced motion", () => {
+  it("fills the bar's centre column and does not change width when it opens (LR5)", () => {
     // 268px, not the board's 260px: the board's own placeholder is one
     // letter wider than a 260px box at 16px (seen in a browser, cut at the
     // last "e"), so the box is the 8px wider that shows the whole of it.
     const box = code("shell/palette.tsx");
-    expect(box).toMatch(/open \? "basis-\[380px\]" : "basis-\[268px\]"/);
-    expect(box).toContain("transition-[flex-basis]");
-    expect(box).toContain("duration-300");
-    expect(box).toContain("ease-[cubic-bezier(0.2,0.8,0.2,1)]");
+    // The bar gives the search its centre column, up to 560px
+    // (`top-panel.tsx`); the box is that column's width at rest and open,
+    // so nothing eases and nothing beside it moves.
+    expect(box).toContain('className="relative flex w-full min-w-0 max-sm:hidden"');
+    expect(box).not.toMatch(/basis-\[\d+px\]|transition-\[flex-basis\]/);
     expect(box).toContain("motion-reduce:transition-none");
     // The card's entrance is an animation, and reduced motion drops it.
     const card = code("shell/palette-panel.tsx");
@@ -439,7 +441,7 @@ describe("the bar holds still", () => {
     expect(panel).not.toContain("min-h-[56px]");
     expect(panel).toContain("max-sm:h-[68px]");
     // The box may shrink rather than push the bell out of the row.
-    expect(code("shell/palette.tsx")).toMatch(/relative flex min-w-0 shrink grow-0/);
+    expect(code("shell/palette.tsx")).toContain("relative flex w-full min-w-0 max-sm:hidden");
   });
 
   it("opening the search moves nothing else in the bar", () => {
@@ -447,7 +449,9 @@ describe("the bar holds still", () => {
     // the box widening eats slack to its LEFT; the bell and the profile
     // control stay where they are.
     const panel = code("shell/top-panel.tsx");
-    expect(panel).toMatch(/<div className="flex min-w-0 flex-1 items-center justify-end gap-2">\s*(?:\{\}\s*)?(?:<div id="page-view-switch" data-header-slot="view-switch" className="contents" \/>\s*)?(?:\{\}\s*)?<HeaderSearch \/>/);
+    // LR5: the search has a column of its own, so it cannot move them at all.
+    expect(panel).toMatch(/<div className="min-w-0 max-sm:hidden">\s*<HeaderSearch \/>\s*<\/div>/);
+    expect(panel).toContain('<div className="flex min-w-0 flex-1 items-center justify-end gap-1 sm:justify-self-end">');
   });
 
   it("keeps the account control one disc wide in both of its branches", () => {

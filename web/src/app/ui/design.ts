@@ -21,7 +21,7 @@ export { BTN_OUTLINE, BTN_PRIMARY, BTN_SOFT, FOCUS, PAGE_NARROW, PAGE_TITLE } fr
 /** The page column (CL-R2): 1200px, 44px gutters, 80px above the title and
  *  104px under the page; `16px` gutters and 48px above on a phone. */
 export const PAGE =
-  "mx-auto box-border w-full max-w-[1200px] px-[44px] pb-[104px] pt-[80px] max-lg:px-7 max-sm:px-4 max-sm:pb-[72px] max-sm:pt-12";
+  "mx-auto box-border w-full max-w-[1124px] px-8 pb-[80px] pt-7 max-lg:px-7 max-sm:px-4 max-sm:pb-[72px] max-sm:pt-5";
 
 /** The line under a page title (CL-R2): 17.5px/1.55 in `--muted`, 14px below,
  *  60ch wide; 16px on a phone. */
@@ -158,18 +158,18 @@ export const BADGE_SEAT =
  *  the columns; `10px 12px` with 10px between on a phone. Only past 1920px
  *  does a page stop growing, so lines never run across an ultrawide screen. */
 export const BOARD_PAGE =
-  "mx-auto box-border flex w-full max-w-[1920px] flex-col gap-6 px-6 pb-16 pt-7 max-sm:gap-2.5 max-sm:px-3 max-sm:pb-6 max-sm:pt-2.5";
+  "mx-auto box-border flex w-full max-w-[1124px] flex-col gap-6 px-8 pb-16 pt-7 max-sm:gap-2.5 max-sm:px-3 max-sm:pb-6 max-sm:pt-2.5";
 
 /** The three section pages' shell (UF1, design §1 rule 5): Feed, Products and
  *  Help wanted share one layout, with no visible title row, their columns 8px
  *  under the bar and 16px between, so moving between them swaps only the
  *  content. The phone keeps the board shell's own spacing. */
 export const SECTION_PAGE =
-  "mx-auto box-border flex w-full max-w-[1920px] flex-col gap-4 px-6 pb-8 pt-2 max-sm:gap-2.5 max-sm:px-3 max-sm:pb-6 max-sm:pt-2.5";
+  "mx-auto box-border flex w-full max-w-[1124px] flex-col gap-5 px-8 pb-16 pt-7 max-sm:gap-2.5 max-sm:px-3 max-sm:pb-6 max-sm:pt-2.5";
 
 /** A left rail (UF1, design §1 rule 2): 240px, full width once the columns
  *  stack. Filters, sections and steps live here, never as pills over a list. */
-export const RAIL_LEFT = "w-[240px] shrink-0 max-md:w-auto";
+export const RAIL_LEFT = "w-full min-w-0";
 
 /** The boards' two columns: the main column beside a 300px side column, 24px
  *  between; one column once the pair no longer fits (the boards wrap). */

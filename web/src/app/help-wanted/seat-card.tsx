@@ -42,7 +42,7 @@ export function SeatCard({ seat, action }: { seat: Seat; action: SeatAction }) {
       aria-label={`Open seat on ${seat.product.slug}`}
       data-seat-card
       data-seat-state={action.state}
-      className="relative flex h-full flex-wrap items-center gap-4 overflow-hidden rounded-[16px] bg-card px-[26px] py-[18px] max-sm:flex-col max-sm:flex-nowrap max-sm:items-stretch max-sm:gap-0 max-sm:p-0"
+      className="relative flex h-full flex-wrap items-center gap-4 overflow-hidden rounded-[16px] border border-border bg-card px-[26px] py-[18px] max-sm:flex-col max-sm:flex-nowrap max-sm:items-stretch max-sm:gap-0 max-sm:p-0"
     >
       {/* The ticket's two notches: the page colour, half outside the card. */}
       <span aria-hidden="true" className="absolute -left-3 top-1/2 -mt-3 h-6 w-6 rounded-full bg-background max-sm:-left-[11px] max-sm:bottom-[53px] max-sm:top-auto max-sm:mt-0 max-sm:h-[22px] max-sm:w-[22px]" />

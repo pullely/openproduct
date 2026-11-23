@@ -162,7 +162,7 @@ export async function ProductsView({
 
       {/* The board's two columns: the stage filter beside the list; on a
           phone the filter is a row of three pills over it. */}
-      <div data-products-body className="flex items-start gap-4 max-md:flex-col max-md:items-stretch max-md:gap-2.5">
+      <div data-products-body className="flex flex-col items-stretch gap-4 max-sm:gap-2.5">
         <div className={RAIL_LEFT}>
           <StageFilter current={stage} sort={sort} counts={products.stages} />
         </div>
