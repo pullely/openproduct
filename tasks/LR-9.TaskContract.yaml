@@ -1,0 +1,25 @@
+# LR-9: milestone LR8, plain links and a straight door. A product's links are
+# plain addresses in its header card, the workspace is one ink button there,
+# and /{slug}/workspace sends every visitor straight to Orunbase.
+# The file is the contract; the task itself lives in Orunbase.
+apiVersion: orun.io/v1
+kind: TaskContract
+metadata:
+  name: LR-9
+  title: "LR8: plain links and a straight door to the workspace"
+spec:
+  goal: A product's links read as plain addresses in its header card, its workspace is one ink button, and the workspace address takes any visitor straight to Orunbase's sign-in.
+  affects:
+    - web/**
+    - tests/**
+    - seam-fixtures/**
+    - specs/epics/openproduct-left-rail/**
+    - tasks/**
+  deps:
+    - LR-8
+  doneWhen:
+    - The header card shows each link as its address alone, with no tile around it
+    - The workspace is one ink button in the header card's actions
+    - /{slug}/workspace redirects to the console's landing, signed in to this site or not, and 404s a listing with no workspace
+    - Every lane passes in CI
+  gates: []

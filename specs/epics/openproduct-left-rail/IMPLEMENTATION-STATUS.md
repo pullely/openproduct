@@ -9,7 +9,8 @@
 | LR4 — posting from the product page | LR-5 | Done | #31 |
 | LR5 — closer to the board | LR-6 | Done | #32 |
 | LR6 — a calmer People page, links in the header card | LR-7 | Done | #33 |
-| LR7 — any link on a product | LR-8 | In review | this PR |
+| LR7 — any link on a product | LR-8 | Done | #34 |
+| LR8 — plain links and a straight door | LR-9 | In review | this PR |
 
 **The epic is complete when LR7 lands.** The owner's second review, the same
 day, added LR6 and LR7. Before that: The owner compared the live site
@@ -335,6 +336,39 @@ Departures, said plainly:
 - **Not checked signed in.** Edit details is drawn for a product's crew
   after sign-in; the form was not exercised in a browser before this PR,
   only by its tests.
+
+## From LR8
+
+Built from the owner's notes on the live site after LR7: the links are just
+their addresses, the workspace is one ink button like "Open it", and
+`/{slug}/workspace` goes straight to Orunbase's sign-in for everyone.
+
+- **Links are their addresses** (`where-it-runs-strip.tsx`): the shaded
+  tiles are gone. Each link is its host and path in the muted ink after a
+  small link glyph, in a wrapping row (a column on a phone). What the link
+  is (Stage, Production, Repository, the crew's label) is its accessible
+  name and its hover title, not drawn.
+- **One address, once**: a link to the same address as an earlier one folds
+  into it, so a product whose stage and production are one place shows one
+  line that answers to both names.
+- **The workspace is an ink button** (`WorkspaceDoor`): "Open on Orunbase"
+  on the pill "Open it" wears, in the header's actions on both the product
+  and the idea page, drawn on `workspaceRef` alone.
+- **The door is a redirect** (`[slug]/workspace/page.tsx`): no session read,
+  no consent page. Any visitor is sent to
+  `{console}/view/{workspaceRef}?from=openproduct`, which shows Orunbase's
+  sign-in to a visitor not signed in there. A listing with no workspace
+  still 404s. The seam's two addresses and query (S12) are unchanged.
+
+Departures, said plainly:
+
+- **The consent sentence is gone.** OPR5 put one sentence of why before the
+  second sign-in; the owner's rule replaces it. `WORKSPACE_VIEW_CONSENT` is
+  removed.
+- **A crew's label is not drawn.** A link added from Edit details shows its
+  address; the label is the hover title and the screen-reader name.
+- **The repository shows its full address**, `github.com/owner/repo`, not
+  `owner/repo`.
 
 ## Known follow-ups
 

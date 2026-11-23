@@ -1,10 +1,11 @@
 // The workspace view door (openproduct-reader OPR5, seam edge S12).
 //
 // What is pinned: the two addresses and the query the seam fixture names —
-// the consent page on this origin, the console's landing — the one decision
-// the listing makes (an anchor on `workspaceRef` alone, to the consent page
-// and never straight to the console), and, by source, that the consent page
-// reads the session the way `/me` does and sends nothing anywhere.
+// the door on this origin, the console's landing — the one decision the
+// listing makes (an ink button on `workspaceRef` alone, to the door on this
+// origin and never spelling the console's address), and, by source, that the
+// door is a redirect for every visitor: no session read, no page drawn
+// (openproduct-left-rail LR-9).
 
 import { readFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
@@ -13,7 +14,7 @@ import {
   WORKSPACE_VIEW_FROM,
   WORKSPACE_VIEW_LABEL,
   consoleWorkspaceViewUrl,
-  workspaceConsentPath,
+  workspaceDoorPath,
 } from "@openproduct-web/app/[slug]/workspace-view";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -31,10 +32,10 @@ const card = JSON.parse(readFileSync(resolve(FIXTURES, "webhook-contract.json"),
 const edge = card.urlEdges.workspaceView;
 
 describe("the addresses are the seam's (S12)", () => {
-  it("the consent path is the fixture's, with the slug encoded", () => {
+  it("the door's path is the fixture's, with the slug encoded", () => {
     expect(edge.productConsentPath).toBe("/{slug}/workspace");
-    expect(workspaceConsentPath("acme-thing")).toBe("/acme-thing/workspace");
-    expect(workspaceConsentPath("a b/c")).toBe("/a%20b%2Fc/workspace");
+    expect(workspaceDoorPath("acme-thing")).toBe("/acme-thing/workspace");
+    expect(workspaceDoorPath("a b/c")).toBe("/a%20b%2Fc/workspace");
   });
 
   it("the console landing is the fixture's, carrying the ref and the provenance", () => {
@@ -55,48 +56,51 @@ describe("the addresses are the seam's (S12)", () => {
   });
 });
 
-describe("the listing renders the door on workspaceRef alone, to the consent page", () => {
-  // openproduct-left-rail LR6: the door is a tile of the header card's links
-  // (`where-it-runs-strip.tsx`), no longer a row of the side column.
+describe("the listing renders the door on workspaceRef alone, to this origin", () => {
+  // openproduct-left-rail LR-9: the door is the header's second ink button
+  // (`WorkspaceDoor`), no longer a tile among the links.
   const page = code("[slug]/where-it-runs-strip.tsx");
+  const door = page.slice(page.indexOf("export function WorkspaceDoor("));
 
-  it("one link, gated on the ref, pointing at this origin", () => {
-    expect(page).toContain("if (profile.workspaceRef) {");
-    expect(page).toContain("href: workspaceConsentPath(profile.slug),");
-    expect(page).toContain("shown: WORKSPACE_VIEW_LABEL,");
-    expect(code("[slug]/product-page.tsx")).not.toContain("workspaceConsentPath(");
-    // Never straight to the console from the anonymous page: the consent
-    // sentence comes first, and the page stays one document with no actor.
+  it("one button, gated on the ref, pointing at this origin", () => {
+    expect(door).toContain("if (!profile.workspaceRef) return null;");
+    expect(door).toContain("<a href={workspaceDoorPath(profile.slug)}");
+    expect(code("[slug]/product-page.tsx")).not.toContain("workspaceDoorPath(");
+    // The cached page never spells the console's address: it stays one
+    // document with no actor, and the door does the sending.
     expect(page).not.toContain("consoleWorkspaceViewUrl(");
   });
 
-  it("says what the door is, as the Workspace tile's words", () => {
+  it("says what the door is, on the pill Open it wears", () => {
     expect(WORKSPACE_VIEW_LABEL).toBe("Open on Orunbase");
-    expect(page).toMatch(/key: "workspace",\s*label: "Workspace",\s*shown: WORKSPACE_VIEW_LABEL,/);
-    // An address on this site, so the client router takes it.
-    expect(page).toMatch(/return tile\.internal \? \(\s*<AppLink key=\{tile\.key\} href=\{tile\.href\}/);
+    expect(door).toMatch(/data-workspace-door className=\{BTN_INK\}>\s*\{WORKSPACE_VIEW_LABEL\}/);
+    // The address answers with a redirect off this site, so the browser
+    // follows it: a plain anchor, never the client router.
+    expect(door).not.toContain("<AppLink");
   });
 });
 
-describe("the consent page", () => {
+describe("the door", () => {
   const page = code("[slug]/workspace/page.tsx");
 
-  it("reads the session like /me and bounces signed-out to sign-in with itself as the return", () => {
-    expect(page).toContain("const session = await readSession();");
-    expect(page).toContain("if (!session) redirect(`/signin?return_to=${encodeURIComponent(workspaceConsentPath(slug))}`);");
+  it("is a redirect to the console's landing, for every visitor", () => {
+    expect(page).toContain("redirect(consoleWorkspaceViewUrl(consoleOrigin(), profile.workspaceRef));");
     expect(page).toContain('export const dynamic = "force-dynamic";');
+    // Signed in to this site or not: no session is read and no sign-in of
+    // this site stands in the way.
+    expect(page).not.toContain("readSession");
+    expect(page).not.toContain("/signin");
+    // And nothing is drawn — no consent page, no second button.
+    expect(page).not.toMatch(/<main|<a |Continue to Orunbase/);
   });
 
-  it("404s a listing with no door, exactly as the listing renders no anchor", () => {
+  it("404s a listing with no door, exactly as the listing renders no button", () => {
     expect(page).toContain("if (!profile || !profile.workspaceRef) notFound();");
+    expect(page.indexOf("notFound();")).toBeLessThan(page.indexOf("redirect("));
   });
 
-  it("hands over with a plain anchor to the console's landing, and speaks to nothing else", () => {
-    expect(page).toContain("consoleWorkspaceViewUrl(consoleOrigin(), profile.workspaceRef)");
-    expect(page).toContain("<a href={href}");
+  it("speaks to nothing but the listing read", () => {
     expect(page).not.toMatch(/fetch\(|platformApiBase|gatewayBase/);
-    // Only the listing read — the same anonymous, cached read the product
-    // page makes — reaches the network from here.
     expect(page.match(/await fetch[A-Z]\w*\(/g)).toEqual(["await fetchListing("]);
   });
 });
