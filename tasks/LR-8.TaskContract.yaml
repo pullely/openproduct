@@ -1,0 +1,29 @@
+# LR-8: milestone LR7, any link on a product. The crew adds links of their
+# own from Edit details, each a label and an address, and they show in the
+# header card beside the stage and production links.
+# The file is the contract; the task itself lives in Orunbase.
+apiVersion: orun.io/v1
+kind: TaskContract
+metadata:
+  name: LR-8
+  title: "LR7: any link on a product"
+spec:
+  goal: A product's crew can add up to six labelled links from Edit details, and every visitor sees them in the product's header card.
+  affects:
+    - web/**
+    - core/**
+    - gateway/**
+    - packages/**
+    - tests/**
+    - seam-fixtures/**
+    - specs/epics/openproduct-left-rail/**
+    - tasks/**
+  deps:
+    - LR-7
+  doneWhen:
+    - A migration adds the links to a product's profile
+    - Edit details saves up to six links, each a label and an http(s) address, refusing anything else
+    - The public profile carries the links and the API changelog records the field
+    - The header card shows them beside the stage and production links
+    - Every lane passes in CI
+  gates: []

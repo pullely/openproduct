@@ -10,7 +10,7 @@ import { readFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { ASKING_HEADING, ASKING_NOTE, OPEN_TO_PROJECT_LABEL } from "@openproduct/contracts";
+import { OPEN_TO_PROJECT_LABEL } from "@openproduct/contracts";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const APP_DIR = resolve(__dirname, "../../../web/src/app");
@@ -68,61 +68,31 @@ describe("one tick, described once (OPC-2)", () => {
   });
 });
 
-describe("two sides, and no edge between them (OPC-5)", () => {
+// openproduct-left-rail LR6: the owner asked for a calmer People page, and the
+// "Listings asking for people" section left it — the builds asking for people
+// are the Help wanted section, in the rail on every page. OPC-5's rule still
+// holds, and holds more simply: the page draws one side only.
+describe("the People page is people only (LR6; OPC-5)", () => {
   const src = code(DIRECTORY);
 
-  it("shows what is asking, from the catalogue the page reads", () => {
-    expect(src).toContain("listingsAsking(cards ?? [])");
-    expect(src).toContain("ASKING_HEADING");
+  it("draws no asking section and no count of one", () => {
+    expect(src).not.toMatch(/listingsAsking|askingPreview|ASKING_HEADING|asking\.length/);
+    expect(src).not.toContain("#people-wanted");
+    expect(src).not.toContain("with a role open");
   });
 
-  it("reads both sides concurrently, and neither takes the other down", () => {
-    // A failed directory read leaves the asking half standing, and the other
-    // way round — the treatment the feed gives its own two documents.
+  it("still reads the catalogue beside the directory, for the topic filter", () => {
     expect(src).toMatch(/Promise\.all\(\[\s*fetchContributorsDirectory\(\),\s*fetchPublicDirectory\(\),?\s*\]\)/);
+    expect(src).toContain("(cards ?? []).map((card) => [card.slug, card.category])");
   });
 
   it("draws no line between a person and a listing", () => {
-    // The obvious reading of "matched" is exactly what OPC-5 exists to
-    // prevent: an edge rendered without both sides is a claim about a
-    // relationship neither of them made, and a "suggested match" is that claim
-    // with a hedge on it.
     expect(src).not.toMatch(/match|suggest|recommend|couldWorkOn|fitFor/i);
   });
 
-  it("says so on the page rather than leaving it to be inferred", () => {
-    expect(ASKING_NOTE).toContain("not pairs");
-  });
-
-  it("gives the section a heading that promises nothing", () => {
-    expect(ASKING_HEADING).toBe("Listings asking for people");
-  });
-
-  it("counts what it is about to render", () => {
-    // WC-7: the number and the list are ONE ARRAY. The subtitle reads
-    // `asking.length` and the section below maps `asking` — there is no second
-    // query that could drift from the first and print a count nobody can
-    // reconcile against the rows beneath it. Since openproduct-calm CL4 the
-    // rows are a preview of the same array (`askingPreview`) and the link
-    // beside the count carries the whole of it to the Help wanted section
-    // (it was the Roles order, at `/builds/roles`, until openproduct-redesign
-    // OPR1 gave the section its own address and its own name).
-    expect(src).toContain(
-      '{asking.length} {asking.length === 1 ? "listing" : "listings"} with a role open',
-    );
-    expect(src).toContain("{askingPreview(asking).map((listing) => (");
-    expect(src).toContain('{asking.length === 1 ? "See it in Help wanted" : `See all ${asking.length} in Help wanted`} →');
-    expect(src).toContain('<AppLink href="/help-wanted"');
-    expect(src).not.toMatch(/buildOrderPath|askingAllLabel|in Roles/);
-  });
-
-  it("draws nothing when nobody is asking", () => {
-    expect(src).toContain("{asking.length > 0 ? (");
-  });
-
-  it("sends a reader to the listing's own roles, not to a form", () => {
-    // The page's job ends at "these two exist". What happens next happens on
-    // the listing, where the maintainers wrote what they want.
-    expect(src).toContain("#people-wanted");
+  it("says the count to a screen reader only", () => {
+    // The line that read "1 person · 0 open to one more project" is not
+    // drawn; a filter's effect is still announced.
+    expect(code(LIST)).toMatch(/<p className="sr-only" aria-live="polite">\s*\{peopleCountLine\(visible\.length, openCount, state\)\}/);
   });
 });

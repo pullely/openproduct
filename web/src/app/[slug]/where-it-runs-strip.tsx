@@ -1,59 +1,109 @@
 import type { PublicProfile } from "@openproduct/contracts";
 
-import { CARD, FOCUS } from "../ui/design";
-import { STAGE_TONE } from "../ui/stage-tone";
+import { FOCUS } from "../ui/design";
+import { AppLink } from "../ui/link";
 
-import { WHERE_IT_RUNS_LABEL, whereItRunsOfProfile, whereItRunsRows } from "./where-it-runs";
+import { WHERE_IT_RUNS_LABEL, repositoryLabel, whereItRunsOfProfile, whereItRunsRows } from "./where-it-runs";
+import { WORKSPACE_VIEW_LABEL, workspaceConsentPath } from "./workspace-view";
+
+/** One link of a product, as the header card draws it. */
+interface LinkTile {
+  readonly key: string;
+  readonly label: string;
+  readonly shown: string;
+  readonly meta: string | null;
+  readonly href: string;
+  /** An address on this site, taken by the client router. */
+  readonly internal: boolean;
+}
+
+/** A tile's skin: the shaded tile a post's Try it wears (LR3, design §5.3). */
+const TILE = `flex min-h-[52px] min-w-[220px] flex-1 items-center justify-between gap-3 rounded-[12px] bg-secondary px-4 py-2 text-foreground no-underline transition-colors hover:bg-border max-sm:min-w-0 max-sm:basis-full ${FOCUS}`;
 
 /**
- * Where it runs (openproduct-stages-crew SC-2, design §1.5; board
- * `Product`): the strip under the product's header, for everyone — two rows,
- * STAGE and PRODUCTION, each a mono tag in its stage's colour, the address
- * (a link, when there is one) and a quiet line saying what it is and who set
- * it and when. A row with nothing there says so ("Not on stage yet", "Not in
- * production yet") on the sunken ground.
+ * A product's links, INSIDE its header card (openproduct-left-rail LR6): one
+ * shaded tile per address a visitor can open — where it runs
+ * (openproduct-stages-crew SC-2), its repository, and its workspace.
  *
- * A SERVER COMPONENT, the same bytes for every visitor (I6): every word comes
- * off the public document.
+ * ONLY WHAT IS THERE. Where it runs was a card of its own with a row for the
+ * stage and a row for production whether or not either existed, each saying
+ * "Not on stage yet"; the repository and the workspace were rows of the side
+ * column's "In the open". The owner's rule is that a product's links belong
+ * in its main card and that the page says less: a link that does not exist
+ * draws nothing, and a product with none draws no strip at all. The stage
+ * badge under the name already says where the product has got to.
+ *
+ * THE WORKSPACE IS THE DOOR, NOT THE WORKSPACE: a plain link to the consent
+ * page on this origin, drawn on `workspaceRef` alone, so the page is the same
+ * bytes signed in and out (OPC-1, I6) and no listing without a door shows one
+ * (openproduct-reader OPR5, seam S12).
+ *
+ * The same markup for every visitor, on the server.
  */
-export function WhereItRunsStrip({ profile }: { profile: Pick<PublicProfile, "whereItRuns"> }) {
-  const rows = whereItRunsRows(whereItRunsOfProfile(profile));
+export function WhereItRunsStrip({
+  profile,
+}: {
+  profile: Pick<PublicProfile, "whereItRuns" | "repoUrl" | "workspaceRef" | "slug">;
+}) {
+  const tiles: LinkTile[] = whereItRunsRows(whereItRunsOfProfile(profile))
+    .filter((row) => row.url !== null)
+    .map((row) => ({
+      key: row.env,
+      label: row.label,
+      shown: row.shown ?? "",
+      meta: row.meta,
+      href: row.url!,
+      internal: false,
+    }));
+  if (profile.repoUrl) {
+    tiles.push({
+      key: "repository",
+      label: "Repository",
+      shown: repositoryLabel(profile.repoUrl),
+      meta: null,
+      href: profile.repoUrl,
+      internal: false,
+    });
+  }
+  if (profile.workspaceRef) {
+    tiles.push({
+      key: "workspace",
+      label: "Workspace",
+      shown: WORKSPACE_VIEW_LABEL,
+      meta: null,
+      href: workspaceConsentPath(profile.slug),
+      internal: true,
+    });
+  }
+  if (tiles.length === 0) return null;
+
   return (
     <section
       aria-label={WHERE_IT_RUNS_LABEL}
       data-where-it-runs
-      className={`${CARD} flex flex-col px-[22px] py-1.5 max-sm:px-[14px]`}
+      className="flex flex-wrap gap-2 px-[22px] pb-4 max-sm:px-[14px] max-sm:pb-3"
     >
-      {rows.map((row, index) => {
-        const tone = STAGE_TONE[row.env];
-        const live = row.url !== null;
-        return (
-          <div
-            key={row.env}
-            data-where-row={row.env}
-            className={`flex flex-wrap items-center gap-x-3.5 gap-y-2 py-3 ${index > 0 ? "border-t border-foreground/[0.06]" : ""}`}
-          >
-            <span
-              className={`inline-flex h-[26px] min-w-[120px] shrink-0 items-center gap-1.5 rounded-full px-2.5 font-mono text-mono-label uppercase ${
-                live ? `${tone.soft} ${tone.ink}` : "bg-sunken text-muted-foreground"
-              }`}
-            >
-              <span aria-hidden="true" className={`h-[7px] w-[7px] shrink-0 rounded-full ${live ? tone.dot : "bg-border-strong"}`} />
-              {row.label}
+      {tiles.map((tile) => {
+        const body = (
+          <>
+            <span className="flex min-w-0 flex-col leading-[1.35]">
+              <span className="text-[12px] font-semibold lowercase text-muted-foreground first-letter:uppercase">{tile.label}</span>
+              <span className="truncate text-[15px] font-medium">{tile.shown}</span>
+              {tile.meta ? <span className="truncate text-[12px] text-muted-foreground">{tile.meta}</span> : null}
             </span>
-            <span className="flex min-w-0 flex-[1_1_240px] flex-col leading-[1.35]">
-              {live ? (
-                <a
-                  href={row.url!}
-                  rel="noreferrer noopener"
-                  className={`tap-h flex min-w-0 font-semibold text-foreground no-underline hover:underline hover:underline-offset-[3px] ${FOCUS}`}
-                >
-                  <span className="truncate">{row.shown}</span>
-                </a>
-              ) : null}
-              <span className="text-[13px] text-muted-foreground">{row.meta}</span>
-            </span>
-          </div>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true" focusable="false" className="shrink-0">
+              <path d={tile.internal ? "M9 6l6 6-6 6" : "M7 17L17 7M9 7h8v8"} />
+            </svg>
+          </>
+        );
+        return tile.internal ? (
+          <AppLink key={tile.key} href={tile.href} data-where-row={tile.key} className={TILE}>
+            {body}
+          </AppLink>
+        ) : (
+          <a key={tile.key} href={tile.href} rel="noreferrer noopener" data-where-row={tile.key} className={TILE}>
+            {body}
+          </a>
         );
       })}
     </section>

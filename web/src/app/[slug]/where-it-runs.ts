@@ -145,3 +145,16 @@ export function stageStartOf(profile: Pick<PublicProfile, "stage" | "repoUrl" | 
     whereItRuns: whereItRunsOfProfile(profile),
   };
 }
+
+/** `owner/repo` out of a repository address; the host and path when it is
+ *  not that shape, and the address itself when it does not parse. */
+export function repositoryLabel(url: string): string {
+  try {
+    const parsed = new URL(url);
+    const parts = parsed.pathname.split("/").filter((part) => part.length > 0);
+    if (parts.length >= 2) return `${parts[0]}/${parts[1]!.replace(/\.git$/, "")}`;
+    return `${parsed.hostname.replace(/^www\./, "")}${parsed.pathname.replace(/\/$/, "")}`;
+  } catch {
+    return url;
+  }
+}

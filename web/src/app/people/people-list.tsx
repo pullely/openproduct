@@ -80,10 +80,11 @@ export function PeopleList({
 
   return (
     <>
-      {/* WC-7 — THE COUNT IS THE FILTERED LIST'S OWN. Computed from what is
-          shown, and it says which filter made it so; the server render, with
-          nothing filtered, is the whole directory's line. */}
-      <p className="m-0 mb-4 text-[15px] leading-[1.5] text-muted-foreground" aria-live="polite">
+      {/* WC-7 — THE COUNT IS THE FILTERED LIST'S OWN, and it is for a screen
+          reader only (openproduct-left-rail LR6: the page says less). A
+          sighted reader sees the list change; somebody who cannot is told
+          what a filter did. */}
+      <p className="sr-only" aria-live="polite">
         {peopleCountLine(visible.length, openCount, state)}
       </p>
       <div className="flex flex-wrap items-center gap-2">
