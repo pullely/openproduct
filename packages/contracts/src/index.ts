@@ -3,6 +3,7 @@ import type { Demand } from "./demand.js";
 import type { Change } from "./snapshots.js";
 import type { MilestoneCounts, ProductStage, PublicMilestone } from "./product-posts.js";
 import type { WhereItRuns } from "./stage-change.js";
+import type { ProductLink } from "./product-links.js";
 
 // The public plane's wire contracts (saas-openproduct OD0).
 //
@@ -288,6 +289,12 @@ export interface PublicProfile {
    * says "Not on stage yet" and "Not in production yet".
    */
   whereItRuns?: WhereItRuns;
+  /**
+   * LR-8 — the crew's own links, in their order, for the header card.
+   * Optional on the wire, like `whereItRuns`: a document cached before LR-8
+   * has no such key, and the page then draws none.
+   */
+  links?: ProductLink[];
   /** OPR-3 — the product's milestones, in the crew's order. */
   milestones: PublicMilestone[];
   /** OPR-3 — "3 of 4": how many of them have shipped. */
@@ -509,6 +516,9 @@ export const PUBLIC_PROFILE_KEYS = [
   // PP5 — the history. Always present; `[]` when there is none.
   "launches",
   "licence",
+  // LR-8 — the crew's own links. This literal edit is the reviewable act
+  // the exact-key-set test forces.
+  "links",
   "liveUrl",
   "maintainers",
   // MD2 — the media rows. This literal edit IS the reviewable act the
@@ -630,6 +640,8 @@ export interface MaintainerProfile {
   stage?: ProductStage;
   /** OPR-3 — the stage link. */
   tryUrl?: string | null;
+  /** LR-8 — the crew's own links. */
+  links?: ProductLink[];
   /** SC-2 — what each step wrote, so the Change stage popup starts from the
    *  crew's own words. */
   stageNote?: string | null;
@@ -667,6 +679,8 @@ export type UpdateProfileRequest = Partial<Omit<CreateProfileRequest, "projectId
   /** OPR-3 — the address of the running product; an absolute http(s) URL, or
    *  null to clear it. */
   tryUrl?: string | null;
+  /** LR-8 — the crew's own links, replaced whole; `[]` clears them. */
+  links?: ProductLink[];
 };
 
 export interface UpsertRoleOpeningRequest {
@@ -1218,6 +1232,8 @@ export * from "./product-posts.js";
 export * from "./product-post-blocks.js";
 /** SC-2 (openproduct-stages-crew) — one step at a time, and where it runs. */
 export * from "./stage-change.js";
+// LR-8 — a product's own links: the shape, the bounds and the one parser.
+export * from "./product-links.js";
 /** SC-3 (openproduct-stages-crew) — crew roles, and the crew's own list. */
 export * from "./crew-roles.js";
 export * from "./orunbase-sync.js";

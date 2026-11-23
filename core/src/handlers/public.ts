@@ -461,6 +461,8 @@ function profileOf(
     // two cannot disagree.
     stage: profile.stage,
     tryUrl: profile.tryUrl,
+    // LR-8 — the crew's own links, for the header card.
+    links: profile.links ?? [],
     // SC-2 — Where it runs. Who set a row is named THROUGH THE PUBLIC ROSTER
     // (the same rows `maintainers` below lists): a crew member who has not
     // agreed to be shown is "the crew", never a subject id.

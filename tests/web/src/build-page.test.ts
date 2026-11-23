@@ -197,6 +197,11 @@ describe("the header card is the board's", () => {
     expect(tiles).toContain(".filter((row) => row.url !== null)");
     expect(tiles).toContain("if (tiles.length === 0) return null;");
     expect(tiles).toMatch(/key: "repository",\s*label: "Repository",\s*shown: repositoryLabel\(profile\.repoUrl\),/);
+    // LR-8 — and the crew's own links, last and in their order, each under
+    // the label they gave it.
+    expect(tiles).toContain("for (const [index, link] of (profile.links ?? []).entries()) {");
+    expect(tiles).toMatch(/label: link\.label,\s*shown: shownAddress\(link\.url\),/);
+    expect(tiles.indexOf("profile.links ?? []")).toBeGreaterThan(tiles.indexOf('key: "workspace"'));
     const strip = code("[slug]/where-it-runs-strip.tsx");
     expect(strip).not.toContain('"use client"');
     expect(strip).toContain("aria-label={WHERE_IT_RUNS_LABEL}");
@@ -212,7 +217,7 @@ describe("the header card is the board's", () => {
     // The pitch is the listing's one line, and the same paragraph for
     // everybody on the server.
     expect(header).toContain(
-      '<ProductPitch slug={slug} tagline={profile.tagline} tryUrl={profile.tryUrl} start={stageStartOf(profile)} look="shipping" />',
+      '<ProductPitch slug={slug} tagline={profile.tagline} tryUrl={profile.tryUrl} links={profile.links ?? []} start={stageStartOf(profile)} look="shipping" />',
     );
     // The band is decoration and the desktop board's alone.
     expect(header).toContain('<div aria-hidden="true" className={COVER_PRODUCT} />');
@@ -352,7 +357,7 @@ describe("the idea page is the lavender note", () => {
 
   it("quotes the idea in one line, in the serif italic, from the tagline", () => {
     expect(note).toContain(
-      '<ProductPitch slug={slug} tagline={profile.tagline} tryUrl={profile.tryUrl} start={stageStartOf(profile)} look="idea" />',
+      '<ProductPitch slug={slug} tagline={profile.tagline} tryUrl={profile.tryUrl} links={profile.links ?? []} start={stageStartOf(profile)} look="idea" />',
     );
     const pitch = code("[slug]/maker/details.tsx");
     expect(pitch).toMatch(/idea: "[^"]*font-serif text-title italic/);

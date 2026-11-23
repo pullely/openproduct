@@ -45,17 +45,19 @@ describe("CS-2 — generated from the pinned key sets, then annotated", () => {
 
   it("is newest first, and the API's version is the newest release", () => {
     expect(changelogVersion()).toBe(CATALOG_API_VERSION);
-    expect(CATALOG_API_VERSION).toBe("1.5.0");
+    expect(CATALOG_API_VERSION).toBe("1.6.0");
     const dates = API_CHANGELOG.map((r) => r.date);
     expect([...dates].sort().reverse()).toEqual(dates);
     // The first four entries the plan named are in 1.1.0; 1.2.0 is OS5's moment
     // on the page; 1.3.0 is OPR5's door into the workspace; 1.4.0 is OPR2's
-    // stage, milestones and Try it address; 1.5.0 is SC1's Where it runs.
+    // stage, milestones and Try it address; 1.5.0 is SC1's Where it runs;
+    // 1.6.0 is LR7's links (openproduct-left-rail).
     const second = API_CHANGELOG.find((r) => r.version === "1.1.0")!.entries.map((e) => e.key);
     for (const key of ["installLine", "cleanVotes", "changes", "media"]) expect(second).toContain(key);
     expect(API_CHANGELOG.find((r) => r.version === "1.2.0")!.entries.map((e) => `${e.shape}.${e.key}`)).toEqual(["page.computedAt"]);
     expect(API_CHANGELOG.find((r) => r.version === "1.3.0")!.entries.map((e) => `${e.shape}.${e.key}`)).toEqual(["product.workspaceRef"]);
-    expect(API_CHANGELOG[0]!.entries.map((e) => `${e.shape}.${e.key}`)).toEqual(["product.whereItRuns"]);
+    expect(API_CHANGELOG[0]!.entries.map((e) => `${e.shape}.${e.key}`)).toEqual(["product.links"]);
+    expect(API_CHANGELOG.find((r) => r.version === "1.5.0")!.entries.map((e) => `${e.shape}.${e.key}`)).toEqual(["product.whereItRuns"]);
     expect(API_CHANGELOG.find((r) => r.version === "1.4.0")!.entries.map((e) => `${e.shape}.${e.key}`)).toEqual([
       "card.stage",
       "product.tryUrl",

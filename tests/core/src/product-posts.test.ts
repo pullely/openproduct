@@ -488,7 +488,7 @@ function harness(overrides: Partial<ProfileRecord> = {}) {
     async updateProfile(
       _o: string,
       _p: string,
-      input: { tryUrl?: string | null; tagline?: string | null; slug?: string; repoUrl?: string | null },
+      input: { tryUrl?: string | null; tagline?: string | null; slug?: string; repoUrl?: string | null; links?: Array<{ label: string; url: string }> },
     ) {
       store.calls.push(
         `updateProfile:${JSON.stringify({ tryUrl: input.tryUrl, tagline: input.tagline, slug: input.slug, repoUrl: input.repoUrl })}`,
@@ -496,6 +496,7 @@ function harness(overrides: Partial<ProfileRecord> = {}) {
       store.profile = {
         ...store.profile,
         ...(input.repoUrl !== undefined ? { repoUrl: input.repoUrl } : {}),
+        ...(input.links !== undefined ? { links: input.links } : {}),
         ...(input.tryUrl !== undefined ? { tryUrl: input.tryUrl } : {}),
         ...(input.tagline !== undefined ? { tagline: input.tagline } : {}),
         ...(input.slug !== undefined ? { slug: input.slug } : {}),
@@ -1424,6 +1425,48 @@ describe("Needs you — pending requests and drafts, in one read", () => {
     expect(needsYou.drafts.map((d) => `${d.kind}:${d.state}`)).toEqual(["idea:draft"]);
     // No requester's subject id crosses the wire.
     expect(JSON.stringify(needsYou)).not.toContain("usr_");
+  });
+});
+
+// openproduct-left-rail LR-8 — the crew's own links.
+describe("the profile PATCH takes the crew's own links", () => {
+  it("stores up to six, each a trimmed label and a normalised http(s) address, and the maintainer shape carries them", async () => {
+    const h = harness();
+    const res = await call(h, "PATCH", BASE, ADA, {
+      links: [
+        { label: "  Docs ", url: "https://DOCS.example.com" },
+        { label: "Demo", url: "http://demo.example.com/watch" },
+      ],
+    });
+    expect(res.status).toBe(200);
+    expect((res.data.profile as { links: unknown }).links).toEqual([
+      { label: "Docs", url: "https://docs.example.com/" },
+      { label: "Demo", url: "http://demo.example.com/watch" },
+    ]);
+  });
+
+  it("clears them with an empty list, and leaves them alone when the body does not name them", async () => {
+    const h = harness();
+    await call(h, "PATCH", BASE, ADA, { links: [{ label: "Docs", url: "https://docs.example.com/" }] });
+    const kept = await call(h, "PATCH", BASE, ADA, { tagline: "A better line" });
+    expect((kept.data.profile as { links: unknown[] }).links).toHaveLength(1);
+    const cleared = await call(h, "PATCH", BASE, ADA, { links: [] });
+    expect((cleared.data.profile as { links: unknown[] }).links).toEqual([]);
+  });
+
+  it.each([
+    "Docs | https://docs.example.com",
+    [{ label: "", url: "https://docs.example.com" }],
+    [{ label: "Docs", url: "javascript:alert(1)" }],
+    [{ label: "Docs", url: "/relative" }],
+    [{ label: "x".repeat(41), url: "https://docs.example.com" }],
+    Array.from({ length: 7 }, (_, i) => ({ label: `L${i}`, url: "https://docs.example.com" })),
+  ])("refuses %j, and writes nothing", async (value) => {
+    const h = harness();
+    const res = await call(h, "PATCH", BASE, ADA, { links: value });
+    expect(res.status).toBe(422);
+    expect(Object.keys(res.fields)).toEqual(["links"]);
+    expect(h.store.calls.some((c) => c.startsWith("updateProfile:"))).toBe(false);
   });
 });
 

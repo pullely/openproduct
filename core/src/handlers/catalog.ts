@@ -508,6 +508,9 @@ export async function handleCatalogProduct(
       }),
       BY_MAINTAINER,
     ),
+    // LR-8 — the crew's own links, as the page shows them: authored, and
+    // nothing here checked that an address answers.
+    links: authored(profile.links ?? [], BY_MAINTAINER),
     // OPR5 (seam S12) — the console ref of the attested public workspace,
     // exactly as the website's projection carries it; null without a grant.
     workspaceRef: profile.linkGrant ? orgPublicId(profile.orgId) : null,

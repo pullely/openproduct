@@ -29,6 +29,7 @@ import {
   tombstoneSql,
   type SubjectColumn,
 } from "./subject-registry.js";
+import type { ProfileLink } from "./types.js";
 import type {
   ActivityEventRecord,
   AppendActivityInput,
@@ -281,10 +282,36 @@ function parseFacets(value: unknown): Record<string, string[]> {
   return out;
 }
 
+/**
+ * A profile's links, from the stored JSON (2300): whatever is a `{ label,
+ * url }` pair of strings, in order. Core validated what it wrote; this only
+ * refuses to hand a caller a shape the column was never meant to hold.
+ */
+function linksOf(value: unknown): ProfileLink[] {
+  const parsed = typeof value === "string" ? safeJson(value) : value;
+  if (!Array.isArray(parsed)) return [];
+  const out: ProfileLink[] = [];
+  for (const entry of parsed) {
+    if (entry && typeof entry === "object") {
+      const { label, url } = entry as { label?: unknown; url?: unknown };
+      if (typeof label === "string" && typeof url === "string") out.push({ label, url });
+    }
+  }
+  return out;
+}
+
+function safeJson(text: string): unknown {
+  try {
+    return JSON.parse(text);
+  } catch {
+    return null;
+  }
+}
+
 /** Every column of a profile, in one place, named once. */
 const PROFILE_COLUMNS = `
   id, org_id, project_id, slug, visibility, tagline,
-  pitch_body, pitch_digest, repo_url, live_url, try_url, stage, install_line, stack,
+  pitch_body, pitch_digest, repo_url, live_url, try_url, links, stage, install_line, stack,
   stage_note, production_url, production_since, production_version, production_access,
   stage_changed_at, stage_changed_by,
   stack_canonical, category, hosting, pricing,
@@ -317,6 +344,8 @@ type ProfileRow = {
   // applied 2265 has no such columns: `idea` and no address, which is what
   // every listing held before it.
   try_url?: string | null;
+  // LR-8 — optional, against a database before 2300: no links.
+  links?: unknown;
   stage?: string | null;
   // SC-2 — optional for the same reason, against a database before 2285.
   stage_note?: string | null;
@@ -522,6 +551,8 @@ function profileOf(row: ProfileRow): ProfileRecord {
     // OPR-3, SC-2 — the stage is set by hand; the address is authored.
     stage: stageOf(row.stage),
     tryUrl: row.try_url ?? null,
+    // LR-8 — the crew's own links, as stored.
+    links: linksOf(row.links),
     // SC-2 — what each step wrote.
     stageNote: row.stage_note ?? null,
     productionUrl: row.production_url ?? null,
@@ -3727,6 +3758,8 @@ export function createOpenproductRepository(sql: SqlExecutor): OpenproductReposi
            pricing      = CASE WHEN $22::boolean THEN $23 ELSE pricing END,
            -- OPR-3 — the "Try it" address, explicitly clearable.
            try_url      = CASE WHEN $24::boolean THEN $25 ELSE try_url END,
+           -- LR-8 — the crew's own links, replaced whole.
+           links        = CASE WHEN $26::boolean THEN $27::text::jsonb ELSE links END,
            updated_by   = $19,
            updated_at   = now()
          WHERE org_id = $1 AND id = $2
@@ -3757,6 +3790,8 @@ export function createOpenproductRepository(sql: SqlExecutor): OpenproductReposi
           input.pricing ?? null,
           input.tryUrl !== undefined,
           input.tryUrl ?? null,
+          input.links !== undefined,
+          JSON.stringify(input.links ?? []),
         ],
       );
     },

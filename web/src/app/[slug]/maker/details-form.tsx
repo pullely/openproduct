@@ -3,6 +3,8 @@
 import * as React from "react";
 import { useRouter } from "next/navigation";
 
+import { PRODUCT_LINKS_HINT } from "@openproduct/contracts";
+
 import { BTN_INK, FOCUS } from "../../ui/design";
 import { AppLink } from "../../ui/link";
 
@@ -26,24 +28,29 @@ export function DetailsForm({
   slug,
   tagline,
   tryUrl,
+  links,
   start,
   look,
 }: {
   slug: string;
   tagline: string;
   tryUrl: string;
+  /** LR-8 — the crew's own links, one `Label | address` per line. */
+  links: string;
   start: StageStart;
   look: Look;
 }) {
   const router = useRouter();
   const [pitch, setPitch] = React.useState(tagline);
   const [address, setAddress] = React.useState(tryUrl);
+  const [linkLines, setLinkLines] = React.useState(links);
   const [busy, setBusy] = React.useState(false);
   const [errors, setErrors] = React.useState<Record<string, string[]>>({});
   const [failed, setFailed] = React.useState<string | null>(null);
   const count = taglineCount(pitch);
   const pitchError = fieldError(errors, "tagline");
   const addressError = fieldError(errors, "tryUrl");
+  const linksError = fieldError(errors, "links");
 
   const onSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -51,7 +58,7 @@ export function DetailsForm({
     setBusy(true);
     setFailed(null);
     void (async () => {
-      const result = await crewWrite<unknown>(slug, "profile", { tagline: pitch.trim(), tryUrl: address.trim() });
+      const result = await crewWrite<unknown>(slug, "profile", { tagline: pitch.trim(), tryUrl: address.trim(), links: linkLines });
       setBusy(false);
       if (!result.ok) {
         setErrors(result.fields);
@@ -104,6 +111,23 @@ export function DetailsForm({
           className={`box-border h-[44px] w-full rounded-[14px] border-0 px-3.5 text-nozoom text-foreground outline-none ring-1 ring-inset ring-foreground/[0.08] focus:ring-2 focus:ring-ring ${look === "idea" ? "bg-well" : "bg-card max-sm:bg-well"}`}
         />
         {addressError ? <FieldError>{addressError}</FieldError> : null}
+      </label>
+      {/* LR-8 — any link (openproduct-left-rail): docs, a demo, a changelog.
+          One per line; they show as tiles in the header card, after where
+          the product runs. An emptied box clears them. */}
+      <label className="flex flex-col gap-1.5">
+        <span className="text-[13px] font-semibold text-foreground">Links</span>
+        <textarea
+          name="links"
+          rows={3}
+          value={linkLines}
+          onChange={(event) => setLinkLines(event.target.value)}
+          aria-invalid={linksError !== null}
+          placeholder="Docs | https://docs.example.com"
+          className={`box-border w-full resize-y rounded-[14px] border-0 px-3.5 py-2.5 text-nozoom leading-[1.5] text-foreground outline-none ring-1 ring-inset ring-foreground/[0.08] placeholder:text-muted-foreground focus:ring-2 focus:ring-ring ${look === "idea" ? "bg-well" : "bg-card max-sm:bg-well"}`}
+        />
+        <span className="text-[13px] text-muted-foreground">{PRODUCT_LINKS_HINT}</span>
+        {linksError ? <FieldError>{linksError}</FieldError> : null}
       </label>
       {/* SC-2 — the Stage row (board `Product`): the badge, what is next,
           and Change stage, which opens the popup. Its own act: it moves the

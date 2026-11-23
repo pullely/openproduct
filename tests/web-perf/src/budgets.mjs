@@ -546,6 +546,15 @@ const BUDGETS = {
  *   /product-00/posts/ppo_00000000000000000000000000000001 doc   16_083 →   16_293  (measured 16,193)
  *   /submit                                              doc    9_191 →    9_395  (measured 9,295)
  */
+  /* ─── LR7, 2026-11-23 (openproduct-left-rail): THE CREW'S LINKS ───
+ *
+ * The product page's script carries the links prop through the pitch to Edit details. Measured in CI (run 45129215088); each limit
+ * moves to the measurement plus 100 bytes.
+ *
+ *   /product-00                                          js   180_605 →  180_796  (measured 180,696)
+ *   /product-00/about                                    js   180_605 →  180_796  (measured 180,696)
+ *   /product-00/crew                                     js   180_605 →  180_796  (measured 180,696)
+ */
   "/": { js: 168_100, doc: 17_855, cls: 0.02, lcp: 2000, reads: 2, images: 400_000 },
   // THREE, AND IT HAS BEEN THREE SINCE CB1 — the number here was stale, and
   // it took a lane that failed on one run and passed on the next to notice.
@@ -609,7 +618,7 @@ const BUDGETS = {
   // 178,650, so the two gates stay separate. The new limit is the
   // measurement plus the same 66 bytes of room. The documents did not move
   // past their limits.
-  [`/${SAMPLE_SLUG}`]: { js: 180_605, doc: 26_429, cls: 0.02, lcp: 2000, reads: 3, images: 400_000 },
+  [`/${SAMPLE_SLUG}`]: { js: 180_796, doc: 26_429, cls: 0.02, lcp: 2000, reads: 3, images: 400_000 },
   // OPR-3 — THE PRODUCT PAGE'S OTHER THREE TABS, each an address of its own
   // (design §5), budgeted the day they were added (2026-11-15).
   //
@@ -628,8 +637,8 @@ const BUDGETS = {
   // READS: the listing and the directory on every tab; Updates adds the
   // product's posts and Talk the discussion, so About and Crew read twice
   // and Talk three times — concurrently, as the note above says of Updates.
-  [`/${SAMPLE_SLUG}/about`]: { js: 180_605, doc: 26_740, cls: 0.02, lcp: 2000, reads: 2, images: 400_000 },
-  [`/${SAMPLE_SLUG}/crew`]: { js: 180_605, doc: 23_478, cls: 0.02, lcp: 2000, reads: 2, images: 400_000 },
+  [`/${SAMPLE_SLUG}/about`]: { js: 180_796, doc: 26_740, cls: 0.02, lcp: 2000, reads: 2, images: 400_000 },
+  [`/${SAMPLE_SLUG}/crew`]: { js: 180_796, doc: 23_478, cls: 0.02, lcp: 2000, reads: 2, images: 400_000 },
   //
   // OPR-4 — TALK RE-MEASURED, AND ONLY TALK, WITH THE NUMBERS NAMED
   // (2026-11-15). Talk gained its composer (a field, the thread's kind, the

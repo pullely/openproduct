@@ -21,6 +21,7 @@ import type { Fact } from "./provenance.js";
 import type { Change } from "./snapshots.js";
 import type { MilestoneCounts, ProductStage, PublicMilestone } from "./product-posts.js";
 import type { WhereItRuns } from "./stage-change.js";
+import type { ProductLink } from "./product-links.js";
 
 /** One row of the catalog, as a machine reads it. */
 export interface CatalogCard {
@@ -166,6 +167,9 @@ export interface CatalogProduct extends CatalogCard {
   /** SC-2 — Where it runs: the stage and production rows, as the crew set
    *  them. I8: the product page shows it. */
   whereItRuns: Fact<WhereItRuns>;
+  /** LR-8 — the crew's own links, in their order: a label and an address
+   *  each. I8: the product page shows them. */
+  links: Fact<ProductLink[]>;
   /** OPR-3 — the product's milestones in the crew's order: a code, a title,
    *  a summary, and the moment each shipped (null until it has). */
   milestones: Fact<PublicMilestone[]>;
@@ -241,7 +245,7 @@ export interface CatalogFacetGroup {
 // CS0 — bumped with the changelog: `api-changelog.ts` is the record of what
 // changed under which version, and a test holds this literal to its newest
 // release. `1.1.0` is everything the worldclass epic added to `1.0.0`.
-export const CATALOG_API_VERSION = "1.5.0";
+export const CATALOG_API_VERSION = "1.6.0";
 
 /**
  * The keys `/v1/products` and `/v1/products/{slug}` serialize.
@@ -321,6 +325,8 @@ export const CATALOG_PRODUCT_KEYS = [
   "milestones",
   // SC-2 — Where it runs; I8, the product page shows it.
   "whereItRuns",
+  // LR-8 — the crew's own links; I8, the product page shows them.
+  "links",
 ]
   .slice()
   .sort() as readonly string[];

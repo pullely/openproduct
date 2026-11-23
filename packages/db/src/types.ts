@@ -21,6 +21,12 @@ export type ProductPostReactionName = "useful" | "would_use" | "impressive" | "c
 /** A profile as this schema stores it. Ids are UUIDs; actors are opaque text. */
 /** One curated snapshot entry (OH4). Name and kind, nothing else — an
  *  architecture map is exactly what the projection must not become. */
+/** One link the crew wrote for a product (LR-8, migration 2300). */
+export interface ProfileLink {
+  label: string;
+  url: string;
+}
+
 export interface ProfileComponent {
   name: string;
   kind: string | null;
@@ -62,6 +68,9 @@ export interface ProfileRecord {
   stage: ProductStageName;
   /** OPR-3 — the stage link, shown as "Try it". Authored. */
   tryUrl: string | null;
+  /** LR-8 — the crew's own links (migration 2300), in their order. Optional,
+   *  like the stage's later columns: a record built before 2300 has none. */
+  links?: ProfileLink[] | undefined;
   /**
    * SC-2 — what each step wrote (migration 2285). Optional, because a row
    * read against a database that has not applied 2285 has none of them: no
@@ -605,6 +614,8 @@ export interface UpdateProfileInput {
   /** OPR-3 — the address of the running product. `null` clears; omitted
    *  leaves unchanged. */
   tryUrl?: string | null | undefined;
+  /** LR-8 — the crew's own links, replaced whole. Omitted leaves unchanged. */
+  links?: ProfileLink[] | undefined;
   updatedBy: string;
 }
 
