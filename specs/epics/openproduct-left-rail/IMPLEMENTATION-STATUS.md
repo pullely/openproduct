@@ -8,7 +8,7 @@
 | LR3 — tiled posts with icon actions | LR-4 | Done | #30 |
 | LR4 — posting from the product page | LR-5 | Done | #31 |
 | LR5 — closer to the board | LR-6 | Done | #32 |
-| LR6 — a calmer People page, links in the header card | LR-7 | In review | this PR |
+| LR6 — a calmer People page, links in the header card | LR-7 | Done | #33 |
 | LR7 — any link on a product | LR-8 | In review | this PR |
 
 **The epic is complete when LR7 lands.** The owner's second review, the same
