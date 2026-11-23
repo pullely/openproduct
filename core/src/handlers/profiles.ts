@@ -34,7 +34,9 @@ import {
   installLineRefusal,
   normaliseInstallLine,
   parseHandle,
+  parseProductLinks,
   postUrl,
+  type ProductLink,
   promotionAfterReview,
   publishDecision,
   type PublishBlocker,
@@ -249,6 +251,8 @@ function toMaintainerProfile(
     // the "Try it" address is the crew's to write.
     stage: profile.stage,
     tryUrl: profile.tryUrl,
+    // LR-8 — the crew's own links.
+    links: profile.links ?? [],
     // SC-2 — what each step wrote, so the Change stage popup starts from the
     // crew's own words. Never who moved it: that is the audit log's.
     stageNote: profile.stageNote ?? null,
@@ -703,6 +707,15 @@ export async function handleUpdateProfile(
     }
   }
 
+  // LR-8 — the crew's own links, replaced whole. Omitted leaves them; `[]`
+  // clears them. The contract's parser is the only judge of what a link is.
+  let links: ProductLink[] | undefined;
+  if (body.links !== undefined) {
+    const parsed = parseProductLinks(body.links);
+    if ("error" in parsed) fields.links = [parsed.error];
+    else links = parsed.links;
+  }
+
   const stack = parseStack(body.stack, fields);
   const category = parseFacet("category", body.category, fields);
   const hosting = parseFacet("hosting", body.hosting, fields);
@@ -712,6 +725,7 @@ export async function handleUpdateProfile(
   const updated = await deps.repo
     .updateProfile(orgId, profileId, {
       tryUrl,
+      links,
       slug,
       tagline,
       pitchBody,

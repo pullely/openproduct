@@ -374,7 +374,7 @@ describe("no maker element is in any server render", () => {
     ]);
     expect(page).toContain("<EditPostLink slug={slug} postId={post.id} />");
     expect(page).toContain(
-      '<ProductPitch slug={slug} tagline={profile.tagline} tryUrl={profile.tryUrl} start={stageStartOf(profile)} look="shipping" />',
+      '<ProductPitch slug={slug} tagline={profile.tagline} tryUrl={profile.tryUrl} links={profile.links ?? []} start={stageStartOf(profile)} look="shipping" />',
     );
     // The one wrapper that does take children wraps what a VISITOR sees
     // (Follow, Take a seat) and only hides it for the crew.
@@ -396,7 +396,7 @@ describe("no maker element is in any server render", () => {
     // Editing: the form, fetched when it is opened — and the pitch stays
     // where it is until the form has arrived.
     expect(pitch).toContain("<React.Suspense fallback={pitch}>");
-    expect(pitch).toContain('<DetailsForm slug={slug} tagline={shown ?? ""} tryUrl={tryUrl ?? ""} start={start} look={look} />');
+    expect(pitch).toContain('<DetailsForm slug={slug} tagline={shown ?? ""} tryUrl={tryUrl ?? ""} links={productLinksToText(links)} start={start} look={look} />');
     expect(code(`${MAKER_DIR}/use-maker.ts`)).toContain("savedTagline: crew === null ? undefined : savedTaglines.get(slug),");
   });
 });
@@ -583,9 +583,15 @@ describe("Needs you: a seat request is reviewed on Orunbase", () => {
 
 describe("Edit details: the pitch and the Try it address, never the name", () => {
   it("sends the tagline and tryUrl, and no slug", () => {
-    expect([...PROFILE_FORM_FIELDS]).toEqual(["tagline", "tryUrl"]);
+    // LR-8 — and the crew's own links, as lines.
+    expect([...PROFILE_FORM_FIELDS]).toEqual(["tagline", "tryUrl", "links"]);
     const details = code(`${MAKER_DIR}/details-form.tsx`);
-    expect(details).toContain('crewWrite<unknown>(slug, "profile", { tagline: pitch.trim(), tryUrl: address.trim() })');
+    expect(details).toContain('crewWrite<unknown>(slug, "profile", { tagline: pitch.trim(), tryUrl: address.trim(), links: linkLines })');
+    // LR-8 — the Links box: one `Label | address` per line, with the
+    // contract's own sentence under it and core's refusal beside it.
+    expect(details).toContain('name="links"');
+    expect(details).toContain("{PRODUCT_LINKS_HINT}");
+    expect(details).toContain('const linksError = fieldError(errors, "links");');
     expect(details).toContain('action={manageRoute(slug, "profile")}');
     expect(details).toContain('name="tagline"');
     expect(details).toContain('name="tryUrl"');

@@ -55,7 +55,7 @@ export function taglineCount(value: string): { label: string; over: boolean } {
 
 /** What the edit form sends to `POST /{slug}/manage/profile`. NEVER `slug`:
  *  the name is the address, and renaming is not offered from the page. */
-export const PROFILE_FORM_FIELDS = ["tagline", "tryUrl"] as const;
+export const PROFILE_FORM_FIELDS = ["tagline", "tryUrl", "links"] as const;
 
 /** Whether Save is available: a pitch, inside the limit. */
 export function canSaveDetails(tagline: string): boolean {

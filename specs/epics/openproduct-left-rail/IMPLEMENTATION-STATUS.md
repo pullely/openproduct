@@ -9,7 +9,7 @@
 | LR4 — posting from the product page | LR-5 | Done | #31 |
 | LR5 — closer to the board | LR-6 | Done | #32 |
 | LR6 — a calmer People page, links in the header card | LR-7 | In review | this PR |
-| LR7 — any link on a product | LR-8 | Not started | |
+| LR7 — any link on a product | LR-8 | In review | this PR |
 
 **The epic is complete when LR7 lands.** The owner's second review, the same
 day, added LR6 and LR7. Before that: The owner compared the live site
@@ -291,6 +291,45 @@ Departures from the design, said plainly:
   product has got to.
 - **`/favicon.ico` is a PNG**, not an ICO container: every browser that
   asks for that address takes one.
+
+## From LR7
+
+The owner's rule, 2026-11-23: a link in the header card does not have to be
+the stage's or production's; the crew adds any link from Edit details.
+
+What landed:
+
+- **Migration 2300**: `profiles.links`, a JSON array, empty for every
+  existing listing. Additive and idempotent.
+- **One parser** (`packages/contracts/src/product-links.ts`): at most six
+  links, each a label of 1 to 40 characters and an absolute http(s) address
+  of at most 200. Anything else is refused with a sentence naming the first
+  thing wrong; nothing is silently dropped.
+- **Core**: the profile PATCH takes `links`, replaced whole (`[]` clears,
+  omitted leaves them); the maintainer shape and the public projection
+  carry them.
+- **The catalog API is 1.6.0**: `product.links`, an authored fact, with its
+  OpenAPI description and changelog entry (I8: the API returns everything
+  the website shows).
+- **Edit details** has a Links box, one `Label | https://address` per line;
+  the form's lines become the list core judges.
+- **The header card** draws them as tiles after Stage, Production,
+  Repository and Workspace, each under the label the crew gave it.
+- **Publish disclosure** names "Your links" among what a published page
+  shows.
+
+Tests: `product-links` (contracts), the profile PATCH's links (core), and
+the form, the patch and the tiles (web); `api-changelog` moves to 1.6.0.
+
+Departures, said plainly:
+
+- **A text box, not a row per link.** One line per link keeps the form a
+  form that works without script; the hint under it says the shape.
+- **No link is observed.** Nothing checks that an address answers, as with
+  the Try it address.
+- **Not checked signed in.** Edit details is drawn for a product's crew
+  after sign-in; the form was not exercised in a browser before this PR,
+  only by its tests.
 
 ## Known follow-ups
 

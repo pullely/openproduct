@@ -436,7 +436,7 @@ async function ShippingPage({
             </div>
             {/* The one-line pitch — and, for the crew, the form that edits
                 it in place. */}
-            <ProductPitch slug={slug} tagline={profile.tagline} tryUrl={profile.tryUrl} start={stageStartOf(profile)} look="shipping" />
+            <ProductPitch slug={slug} tagline={profile.tagline} tryUrl={profile.tryUrl} links={profile.links ?? []} start={stageStartOf(profile)} look="shipping" />
             {/* The line of facts: category · licence · hosting · followers ·
                 open seats. Each is what the data holds and is absent when it
                 holds nothing (TP0, CT1). */}
@@ -837,7 +837,7 @@ async function IdeaPage({ read, profile }: { read: ListingRead; profile: PublicP
         </div>
         {/* The idea in one line, as the serif quote — and, for the crew, the
             form that edits it in place. */}
-        <ProductPitch slug={slug} tagline={profile.tagline} tryUrl={profile.tryUrl} start={stageStartOf(profile)} look="idea" />
+        <ProductPitch slug={slug} tagline={profile.tagline} tryUrl={profile.tryUrl} links={profile.links ?? []} start={stageStartOf(profile)} look="idea" />
         <HeroFacts tone="idea">
           {maker ? (
             <span>

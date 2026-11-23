@@ -114,6 +114,11 @@ const PROFILE_COPY: Record<string, Omit<DisclosureLine, "key">> = {
     label: "Where it runs",
     note: "Your stage link and what people can try there, and once it is in production its link, the day it went live, its version and who can use it — with the name of whoever on the crew set it, if they are shown on your page",
   },
+  // LR-8 — the crew's own links, in the product's header card.
+  links: {
+    label: "Your links",
+    note: "The links you add in Edit details, each with the label you gave it, shown in your product's main card",
+  },
   milestones: {
     label: "Your milestones",
     note: "Each one's code, title and summary, in your order, and the date it shipped",

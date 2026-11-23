@@ -22,6 +22,7 @@ import {
   isProductPostKind,
   isProductStage,
   parsePostBlocks,
+  productLinksFromText,
   type AuthoredProductPostKind,
   type ChangeStageRequest,
   type MilestoneRequest,
@@ -317,7 +318,7 @@ export function readStageChange(fields: Fields): ChangeStageRequest | FormError 
 // ─── the listing's own fields ──────────────────────────────────────────────
 
 /**
- * Fields: any of `tryUrl`, `tagline`, `pitch`, `slug`. Only a field the form
+ * Fields: any of `tryUrl`, `tagline`, `pitch`, `links`, `slug`. Only a field the form
  * SENT is in the patch — an absent field is left as it is, and an empty
  * `tryUrl`, `tagline` or `pitch` clears it. `slug` is the product's name and
  * its address; an empty one is refused here rather than sent.
@@ -329,6 +330,9 @@ export function readProfilePatch(fields: Fields): CrewProfilePatch | FormError {
     if (typeof value === "string") patch[name] = value.trim().length > 0 ? value.trim() : null;
     else if (value === null) patch[name] = null;
   }
+  // LR-8 — the crew's own links: the form's lines, read into the list core
+  // validates. A sent, empty box is `[]`, which clears them.
+  if (typeof fields.links === "string") patch.links = productLinksFromText(fields.links);
   const slug = text(fields, "slug");
   if (slug !== null) {
     if (slug.trim().length === 0) return invalid("slug", "A product needs a name");

@@ -557,5 +557,14 @@ export const manifest: MigrationManifest = {
       description:
         "openproduct: product_deploys (the last stage and production deploy per listing from seam S14, newer deployed_at wins, first_deployed_at kept), product_syncs (the last applied roster's issuedAt and event id, and when anything last synced) and listing_maintainers.synced_name, crew-only (openproduct-stages-crew SC-4)",
     },
+    {
+      id: "2300_openproduct_profile_links",
+      context: "openproduct",
+      path: "2300_openproduct_profile_links/up.sql",
+      checksum:
+        "33dafe679634153a01ca0f01d1019d11a0acf48445d854b6b5176d58f7d17801",
+      description:
+        "openproduct: profiles.links, a JSON array of at most six labelled http(s) links the crew writes from Edit details, shown in the product's header card (openproduct-left-rail LR-8)",
+    },
   ],
 };

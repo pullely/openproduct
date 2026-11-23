@@ -234,6 +234,15 @@ describe("a form is read into an act, or into field errors", () => {
   it("patches only the listing fields the form sent, and clears with an empty one", () => {
     expect(readProfilePatch({ tryUrl: " https://example.com " })).toEqual({ tryUrl: "https://example.com" });
     expect(readProfilePatch({ tryUrl: "", tagline: "A line" })).toEqual({ tryUrl: null, tagline: "A line" });
+    // LR-8 — the Links box's lines become the list core validates; a sent,
+    // empty box is an empty list, which clears them.
+    expect(readProfilePatch({ links: "Docs | https://docs.example.com\nDemo|https://demo.example.com" })).toEqual({
+      links: [
+        { label: "Docs", url: "https://docs.example.com" },
+        { label: "Demo", url: "https://demo.example.com" },
+      ],
+    });
+    expect(readProfilePatch({ links: "" })).toEqual({ links: [] });
     expect(readProfilePatch({ slug: "renamed" })).toEqual({ slug: "renamed" });
     expect(readProfilePatch({ slug: " " })).toEqual({ kind: "invalid", fields: { slug: ["A product needs a name"] } });
     expect(readProfilePatch({ return_to: "/ackstack" })).toEqual({ kind: "invalid", fields: { form: ["Nothing to change"] } });

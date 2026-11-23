@@ -406,6 +406,8 @@ export function fetchNeedsYou(
  *  renaming changes the address. */
 export interface CrewProfilePatch {
   tryUrl?: string | null;
+  /** LR-8 — the crew's own links, as the form's lines read; core judges them. */
+  links?: Array<{ label: string; url: string }>;
   slug?: string;
   tagline?: string | null;
   pitch?: string | null;

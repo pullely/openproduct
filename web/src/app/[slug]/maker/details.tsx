@@ -2,7 +2,7 @@
 
 import * as React from "react";
 
-import { composePostPagePath } from "@openproduct/contracts";
+import { composePostPagePath, productLinksToText, type ProductLink } from "@openproduct/contracts";
 
 import { BTN_INK, BTN_SOFT, FOCUS } from "../../ui/design";
 import { PlusIcon } from "../../ui/icons";
@@ -47,12 +47,15 @@ export function ProductPitch({
   slug,
   tagline,
   tryUrl,
+  links,
   start,
   look,
 }: {
   slug: string;
   tagline: string | null;
   tryUrl: string | null;
+  /** LR-8 — the crew's own links, as the page read them. */
+  links: readonly ProductLink[];
   /** SC-2 — where the product is, for the Stage row and Change stage. */
   start: StageStart;
   look: Look;
@@ -70,7 +73,7 @@ export function ProductPitch({
     // The pitch stays where it is until the form has arrived.
     return (
       <React.Suspense fallback={pitch}>
-        <DetailsForm slug={slug} tagline={shown ?? ""} tryUrl={tryUrl ?? ""} start={start} look={look} />
+        <DetailsForm slug={slug} tagline={shown ?? ""} tryUrl={tryUrl ?? ""} links={productLinksToText(links)} start={start} look={look} />
       </React.Suspense>
     );
   }

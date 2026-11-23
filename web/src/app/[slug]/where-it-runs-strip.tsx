@@ -3,7 +3,7 @@ import type { PublicProfile } from "@openproduct/contracts";
 import { FOCUS } from "../ui/design";
 import { AppLink } from "../ui/link";
 
-import { WHERE_IT_RUNS_LABEL, repositoryLabel, whereItRunsOfProfile, whereItRunsRows } from "./where-it-runs";
+import { WHERE_IT_RUNS_LABEL, repositoryLabel, shownAddress, whereItRunsOfProfile, whereItRunsRows } from "./where-it-runs";
 import { WORKSPACE_VIEW_LABEL, workspaceConsentPath } from "./workspace-view";
 
 /** One link of a product, as the header card draws it. */
@@ -23,7 +23,8 @@ const TILE = `flex min-h-[52px] min-w-[220px] flex-1 items-center justify-betwee
 /**
  * A product's links, INSIDE its header card (openproduct-left-rail LR6): one
  * shaded tile per address a visitor can open — where it runs
- * (openproduct-stages-crew SC-2), its repository, and its workspace.
+ * (openproduct-stages-crew SC-2), its repository, its workspace, and any
+ * link the crew wrote themselves (LR-8).
  *
  * ONLY WHAT IS THERE. Where it runs was a card of its own with a row for the
  * stage and a row for production whether or not either existed, each saying
@@ -43,13 +44,14 @@ const TILE = `flex min-h-[52px] min-w-[220px] flex-1 items-center justify-betwee
 export function WhereItRunsStrip({
   profile,
 }: {
-  profile: Pick<PublicProfile, "whereItRuns" | "repoUrl" | "workspaceRef" | "slug">;
+  profile: Pick<PublicProfile, "whereItRuns" | "repoUrl" | "workspaceRef" | "slug" | "links">;
 }) {
   const tiles: LinkTile[] = whereItRunsRows(whereItRunsOfProfile(profile))
     .filter((row) => row.url !== null)
     .map((row) => ({
       key: row.env,
-      label: row.label,
+      // The model's labels are capitals (STAGE, PRODUCTION); a tile's is a word.
+      label: `${row.label.charAt(0)}${row.label.slice(1).toLowerCase()}`,
       shown: row.shown ?? "",
       meta: row.meta,
       href: row.url!,
@@ -75,6 +77,19 @@ export function WhereItRunsStrip({
       internal: true,
     });
   }
+  // LR-8 — the crew's own links, last and in their order: a label and an
+  // address each, with no stage attached. The address shown is the host and
+  // path, as the stage and production tiles show theirs.
+  for (const [index, link] of (profile.links ?? []).entries()) {
+    tiles.push({
+      key: `link-${index}`,
+      label: link.label,
+      shown: shownAddress(link.url),
+      meta: null,
+      href: link.url,
+      internal: false,
+    });
+  }
   if (tiles.length === 0) return null;
 
   return (
@@ -87,7 +102,7 @@ export function WhereItRunsStrip({
         const body = (
           <>
             <span className="flex min-w-0 flex-col leading-[1.35]">
-              <span className="text-[12px] font-semibold lowercase text-muted-foreground first-letter:uppercase">{tile.label}</span>
+              <span className="truncate text-[12px] font-semibold text-muted-foreground">{tile.label}</span>
               <span className="truncate text-[15px] font-medium">{tile.shown}</span>
               {tile.meta ? <span className="truncate text-[12px] text-muted-foreground">{tile.meta}</span> : null}
             </span>

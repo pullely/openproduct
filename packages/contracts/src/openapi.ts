@@ -155,6 +155,12 @@ export function propsFor(keys: readonly string[], deprecations: readonly ApiDepr
         description:
           "Where the product runs: `{stage, production}`. `stage` is `{url, note, version, source, setBy, at}` while the product is on stage or in production and has a stage link, else `null`; `production` is `{url, since, version, access, source, setBy, at}` while it is in production, else `null`. Each link, version and `since` is the crew's own value, else the one its last Orunbase deploy reported (SC3); `source` says which per field (`crew` or `synced`; a crew value equal to the synced one is `synced`), and the stage `version` is always the stage deploy's. `since` is a `YYYY-MM-DD` day, `access` is `everyone`, `waitlist` or `invite`. `setBy` is `{kind: \"crew\", name, handle}` — name and handle `null` for a crew member who is not on the public roster — `{kind: \"orun\", name: null, handle: null}` when the row's link is the synced one (then `at` is the deploy's moment), or `null` when nobody is recorded. ALWAYS `authored`: nothing here has checked that an address answers.",
       };
+    } else if (key === "links") {
+      out[key] = {
+        $ref: "#/components/schemas/Fact",
+        description:
+          "The links the crew wrote for the product, in their order: an array of at most six `{label, url}`. `label` is 1 to 40 characters; `url` is an absolute http(s) address of at most 200. ALWAYS `authored` — nothing here has checked that an address answers. `[]` means the crew gave none. Not an ordering input.",
+      };
     } else if (key === "tryUrl") {
       out[key] = {
         $ref: "#/components/schemas/Fact",
