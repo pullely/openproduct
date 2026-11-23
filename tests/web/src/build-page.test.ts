@@ -183,25 +183,39 @@ describe("the header card is the board's", () => {
   });
 
   it("draws a product's links INSIDE the header card, for everyone, on both pages (SC-2, LR6)", () => {
-    // openproduct-left-rail LR6: where it runs, the repository and the
-    // workspace are tiles in the header card, before its tabs — not a card
-    // of their own under it, and not rows of the side column.
+    // openproduct-left-rail LR6: where it runs and the repository sit in
+    // the header card, before its tabs — not a card of their own under it,
+    // and not rows of the side column. LR-9: each is its address alone, with
+    // no tile round it.
     const hero = shipping.slice(shipping.indexOf("id={HERO_ID}"));
     const card = hero.slice(0, hero.indexOf("</section>"));
     expect(card).toContain("<WhereItRunsStrip profile={profile} />");
     expect(card.indexOf("<WhereItRunsStrip profile={profile} />")).toBeLessThan(card.indexOf("<nav aria-label={PRODUCT_TABS_LABEL}"));
     expect(hero.slice(hero.indexOf("</section>"))).not.toContain("<WhereItRunsStrip");
     expect(ideaOf(page)).toMatch(/<WhereItRunsStrip profile=\{profile\} \/>\s*<\/section>/);
-    const tiles = code("[slug]/where-it-runs-strip.tsx");
+    const links = code("[slug]/where-it-runs-strip.tsx");
     // Only what is there: no row for an environment with no address.
-    expect(tiles).toContain(".filter((row) => row.url !== null)");
-    expect(tiles).toContain("if (tiles.length === 0) return null;");
-    expect(tiles).toMatch(/key: "repository",\s*label: "Repository",\s*shown: repositoryLabel\(profile\.repoUrl\),/);
-    // LR-8 — and the crew's own links, last and in their order, each under
-    // the label they gave it.
-    expect(tiles).toContain("for (const [index, link] of (profile.links ?? []).entries()) {");
-    expect(tiles).toMatch(/label: link\.label,\s*shown: shownAddress\(link\.url\),/);
-    expect(tiles.indexOf("profile.links ?? []")).toBeGreaterThan(tiles.indexOf('key: "workspace"'));
+    expect(links).toContain(".filter((row) => row.url !== null)");
+    expect(links).toContain("if (found.length === 0) return null;");
+    // One address, once: a later link to the same place folds into the first.
+    expect(links).toContain("const at = links.findIndex((earlier) => earlier.href === link.href);");
+    // LR-9 — the address is what is drawn; what the link is, is its
+    // accessible name and its title. No shaded tile.
+    expect(links).toMatch(/key: "repository",\s*label: "Repository",\s*shown: shownAddress\(profile\.repoUrl\),/);
+    expect(links).toContain('<span className="sr-only">{link.label}: </span>');
+    expect(links).toContain('<span className="truncate">{link.shown}</span>');
+    expect(links).toContain("title={link.meta ? `${link.label} · ${link.meta}` : link.label}");
+    expect(links).not.toContain("bg-secondary");
+    // LR-8 — and the crew's own links, last and in their order.
+    expect(links).toContain("for (const [index, link] of (profile.links ?? []).entries()) {");
+    expect(links).toMatch(/label: link\.label,\s*shown: shownAddress\(link\.url\),/);
+    expect(links.indexOf("profile.links ?? []")).toBeGreaterThan(links.indexOf('key: "repository"'));
+    // LR-9 — the workspace is not a link of the strip: it is the header's
+    // second ink button, on both pages.
+    expect(links).not.toContain('key: "workspace"');
+    expect(card).toMatch(/data-try-it className=\{BTN_INK\}[\s\S]*?<WorkspaceDoor profile=\{profile\} \/>/);
+    expect(card.indexOf("<WorkspaceDoor profile={profile} />")).toBeLessThan(card.indexOf("<WhereItRunsStrip"));
+    expect(ideaOf(page)).toMatch(/<MakerHeaderActions slug=\{slug\} look="idea" \/>\s*<WorkspaceDoor profile=\{profile\} \/>/);
     const strip = code("[slug]/where-it-runs-strip.tsx");
     expect(strip).not.toContain('"use client"');
     expect(strip).toContain("aria-label={WHERE_IT_RUNS_LABEL}");

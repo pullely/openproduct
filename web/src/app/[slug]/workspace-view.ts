@@ -3,17 +3,18 @@
 //
 // A listing that holds a link grant carries `workspaceRef`, the console
 // address of the PUBLIC workspace its maker attested. The page renders one
-// plain anchor on that fact — to a consent page on THIS origin, never
-// straight to the console — and the consent page, signed in, hands the
-// reader to the console's landing with `from=openproduct` as provenance.
+// plain anchor on that fact — to `/{slug}/workspace` on THIS origin, so the
+// cached page never spells a console address — and that address redirects
+// every visitor, signed in here or not, to the console's landing with
+// `from=openproduct` as provenance (LR-9). The console signs the visitor in.
 // Both paths and the query are the seam contract, pinned by fixture on both
 // sides (`seam-fixtures/webhook-contract.json`, `urlEdges.workspaceView`).
 
 /** The provenance the console landing records; the S5 door uses the same word. */
 export const WORKSPACE_VIEW_FROM = "openproduct";
 
-/** The consent page's address on this origin. */
-export function workspaceConsentPath(slug: string): string {
+/** The door's address on this origin: a redirect to the console (LR-9). */
+export function workspaceDoorPath(slug: string): string {
   return `/${encodeURIComponent(slug)}/workspace`;
 }
 
@@ -29,7 +30,3 @@ export function consoleWorkspaceViewUrl(consoleOrigin: string, workspaceRef: str
 
 /** The anchor's label on the listing. */
 export const WORKSPACE_VIEW_LABEL = "Open on Orunbase";
-
-/** The consent page's one sentence of why there is a second sign-in. */
-export const WORKSPACE_VIEW_CONSENT =
-  "The workspace behind this product is public and read-only. To open it you'll sign in to Orunbase with the same account you use here — Orunbase is where this product is built. You'll be added as a reader; you can leave at any time.";

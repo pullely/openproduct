@@ -123,7 +123,7 @@ import { ObservedRow } from "./observed-row";
 import { SECTION_ATTRIBUTE, SECTION_CARD, SECTION_PROSE } from "./sections";
 import { ShareControl } from "./share-control";
 import { liveAction, stageStartOf } from "./where-it-runs";
-import { WhereItRunsStrip } from "./where-it-runs-strip";
+import { WhereItRunsStrip, WorkspaceDoor } from "./where-it-runs-strip";
 import {
   PRODUCT_TABS_LABEL,
   PRODUCT_TAB_LABELS,
@@ -502,6 +502,9 @@ async function ShippingPage({
                   <Glyph d="M4.5 11.5 11.5 4.5M6 4.5h5.5V10" />
                 </a>
               ) : null}
+              {/* The workspace behind it, as the second ink button (LR-9):
+                  drawn on `workspaceRef` alone, for every visitor. */}
+              <WorkspaceDoor profile={profile} />
             </div>
             {/* THE ENDORSEMENT LIVES ONLY HERE, not on a directory row
                 (OPC-3, UV0): the box carries the count, so a reader can see
@@ -889,6 +892,7 @@ async function IdeaPage({ read, profile }: { read: ListingRead; profile: PublicP
               />
             </VisitorOnly>
             <MakerHeaderActions slug={slug} look="idea" />
+            <WorkspaceDoor profile={profile} />
           </div>
           <ol aria-label="Where this idea stands" data-idea-track className="m-0 flex list-none flex-wrap items-center gap-1.5 p-0">
             {IDEA_STEPS.map((step, index) => (
