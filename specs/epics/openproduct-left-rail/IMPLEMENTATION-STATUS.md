@@ -275,6 +275,12 @@ What landed:
   them, and the layout's metadata names them beside `/icon.svg`. Before
   this the site answered 404 at `/favicon.ico` and had no home-screen icon.
 
+- **Five document budgets amended, and recorded.** The icon and manifest
+  links are in every document and the link tiles in every product page;
+  the product's About, Crew and Talk tabs, the post page and `/submit` were
+  within that of their limits, and each moves to CI's measurement plus
+  100 bytes (run 45116197230). Eight snapshots move for the header card.
+
 Tests rewritten to the new rules: `open-to-project`, `build-page`,
 `workspace-view`, `redesign-foundations`.
 
