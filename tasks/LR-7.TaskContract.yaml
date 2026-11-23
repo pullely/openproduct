@@ -1,0 +1,24 @@
+# LR-7: milestone LR6, a calmer People page and the links in the header card.
+# The owner's review of 2026-11-23: the People page says too much, and a
+# product's links belong inside its main card.
+# The file is the contract; the task itself lives in Orunbase.
+apiVersion: orun.io/v1
+kind: TaskContract
+metadata:
+  name: LR-7
+  title: "LR6: a calmer People page, and links in the header card"
+spec:
+  goal: The People page is the title, the filters and the people, and a product's stage and production links sit inside its header card.
+  affects:
+    - web/**
+    - tests/web/**
+    - tests/web-perf/**
+    - specs/epics/openproduct-left-rail/**
+    - tasks/**
+  deps:
+    - LR-6
+  doneWhen:
+    - The People page shows no count line and no Listings asking for people section
+    - A product's where-it-runs rows are inside its header card, not a card of their own
+    - Web tests and web-perf lanes pass in CI
+  gates: []

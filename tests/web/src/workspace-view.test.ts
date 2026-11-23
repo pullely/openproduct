@@ -56,24 +56,25 @@ describe("the addresses are the seam's (S12)", () => {
 });
 
 describe("the listing renders the door on workspaceRef alone, to the consent page", () => {
-  const page = code("[slug]/product-page.tsx");
+  // openproduct-left-rail LR6: the door is a tile of the header card's links
+  // (`where-it-runs-strip.tsx`), no longer a row of the side column.
+  const page = code("[slug]/where-it-runs-strip.tsx");
 
-  it("one anchor, gated on the ref, pointing at this origin", () => {
-    expect(page).toContain("profile.workspaceRef ? (");
-    expect(page).toContain("href={workspaceConsentPath(profile.slug)}");
-    expect(page).toContain("{WORKSPACE_VIEW_LABEL}");
+  it("one link, gated on the ref, pointing at this origin", () => {
+    expect(page).toContain("if (profile.workspaceRef) {");
+    expect(page).toContain("href: workspaceConsentPath(profile.slug),");
+    expect(page).toContain("shown: WORKSPACE_VIEW_LABEL,");
+    expect(code("[slug]/product-page.tsx")).not.toContain("workspaceConsentPath(");
     // Never straight to the console from the anonymous page: the consent
     // sentence comes first, and the page stays one document with no actor.
     expect(page).not.toContain("consoleWorkspaceViewUrl(");
   });
 
-  it("says what the door is, as the value of the board's Workspace row", () => {
-    // openproduct-redesign OPR1 — the door moved from a pill in the header to
-    // the In the open card's `Workspace` row, whose value is these words.
+  it("says what the door is, as the Workspace tile's words", () => {
     expect(WORKSPACE_VIEW_LABEL).toBe("Open on Orunbase");
-    expect(page).toMatch(
-      /<span className="text-muted-foreground">Workspace<\/span>\s*<AppLink\s+href=\{workspaceConsentPath\(profile\.slug\)\}/,
-    );
+    expect(page).toMatch(/key: "workspace",\s*label: "Workspace",\s*shown: WORKSPACE_VIEW_LABEL,/);
+    // An address on this site, so the client router takes it.
+    expect(page).toMatch(/return tile\.internal \? \(\s*<AppLink key=\{tile\.key\} href=\{tile\.href\}/);
   });
 });
 

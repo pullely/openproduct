@@ -182,11 +182,21 @@ describe("the header card is the board's", () => {
     expect(badge).toContain("${tone.soft} ${tone.ink}");
   });
 
-  it("draws Where it runs under the header, for everyone, on both pages (SC-2)", () => {
-    const after = shipping.slice(shipping.indexOf("</section>", shipping.indexOf("id={HERO_ID}")));
-    expect(after.indexOf("<WhereItRunsStrip profile={profile} />")).toBeGreaterThan(-1);
-    expect(after.indexOf("<WhereItRunsStrip profile={profile} />")).toBeLessThan(after.indexOf("<MakerChrome slug={slug} />"));
-    expect(ideaOf(page)).toContain("<WhereItRunsStrip profile={profile} />");
+  it("draws a product's links INSIDE the header card, for everyone, on both pages (SC-2, LR6)", () => {
+    // openproduct-left-rail LR6: where it runs, the repository and the
+    // workspace are tiles in the header card, before its tabs — not a card
+    // of their own under it, and not rows of the side column.
+    const hero = shipping.slice(shipping.indexOf("id={HERO_ID}"));
+    const card = hero.slice(0, hero.indexOf("</section>"));
+    expect(card).toContain("<WhereItRunsStrip profile={profile} />");
+    expect(card.indexOf("<WhereItRunsStrip profile={profile} />")).toBeLessThan(card.indexOf("<nav aria-label={PRODUCT_TABS_LABEL}"));
+    expect(hero.slice(hero.indexOf("</section>"))).not.toContain("<WhereItRunsStrip");
+    expect(ideaOf(page)).toMatch(/<WhereItRunsStrip profile=\{profile\} \/>\s*<\/section>/);
+    const tiles = code("[slug]/where-it-runs-strip.tsx");
+    // Only what is there: no row for an environment with no address.
+    expect(tiles).toContain(".filter((row) => row.url !== null)");
+    expect(tiles).toContain("if (tiles.length === 0) return null;");
+    expect(tiles).toMatch(/key: "repository",\s*label: "Repository",\s*shown: repositoryLabel\(profile\.repoUrl\),/);
     const strip = code("[slug]/where-it-runs-strip.tsx");
     expect(strip).not.toContain('"use client"');
     expect(strip).toContain("aria-label={WHERE_IT_RUNS_LABEL}");
@@ -291,7 +301,7 @@ describe("the side column is the board's three cards, then what the repository s
     expect([...order].sort((a, b) => a - b)).toEqual(order);
     expect(page).toContain("if (maintainers.length === 0 && openRoles.length === 0 && !needsBuilder) return null;");
     expect(page).toContain("if (entries.length === 0) return null;");
-    expect(page).toContain("if (!lead && !profile.repoUrl && !profile.workspaceRef && !profile.pricing) return null;");
+    expect(page).toContain("if (!lead && !(emptyRepository && !profile.repoUrl) && !profile.pricing) return null;");
   });
 
   it("lists the people, then every open seat as a teal row whose door is the seat's own control", () => {
@@ -315,13 +325,13 @@ describe("the side column is the board's three cards, then what the repository s
     expect(page).toContain("className={STACK_PILL}");
   });
 
-  it("names the repository, the workspace and the pricing as label and value rows", () => {
+  it("names the pricing as a label and value row; the repository and workspace are the header's tiles (LR6)", () => {
     const open = between(page, "export function InTheOpenCard(", "export function shippedMark(");
-    for (const label of ["Repository", "Workspace", "Pricing"]) {
-      expect([label, open.includes(`<span className="text-muted-foreground">${label}</span>`)]).toEqual([label, true]);
-    }
-    expect(open).toContain("{repositoryLabel(profile.repoUrl)}");
-    expect(open).toContain('rel="noreferrer noopener"');
+    expect(open).toContain('<span className="text-muted-foreground">Pricing</span>');
+    // What is left of Repository here is the sentence for a product with none.
+    expect(open).toContain("{!profile.repoUrl && emptyRepository ? (");
+    expect(open).not.toContain("Workspace</span>");
+    expect(open).not.toContain("repositoryLabel(profile.repoUrl)");
   });
 });
 

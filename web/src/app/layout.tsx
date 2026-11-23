@@ -117,7 +117,17 @@ export const metadata: Metadata = {
     template: "%s · openproduct",
   },
   description: "Products built in the open, looking for people.",
-  icons: { icon: "/icon.svg" },
+  // The logo, at every address a browser or a phone asks for one (LR6): the
+  // SVG for a tab, a PNG at `/favicon.ico` for whatever asks unprompted, and
+  // the square PNG for a home screen.
+  icons: {
+    icon: [
+      { url: "/icon.svg", type: "image/svg+xml" },
+      { url: "/favicon.ico", sizes: "48x48", type: "image/png" },
+    ],
+    apple: "/apple-icon.png",
+  },
+  manifest: "/manifest.webmanifest",
   appleWebApp: { capable: true, title: "openproduct", statusBarStyle: "default" },
   ...(SITE_CARD
     ? {

@@ -7,9 +7,12 @@
 | LR2 — the left rail on every page, phone first | LR-3 | Done | #29 |
 | LR3 — tiled posts with icon actions | LR-4 | Done | #30 |
 | LR4 — posting from the product page | LR-5 | Done | #31 |
-| LR5 — closer to the board | LR-6 | In review | this PR |
+| LR5 — closer to the board | LR-6 | Done | #32 |
+| LR6 — a calmer People page, links in the header card | LR-7 | In review | this PR |
+| LR7 — any link on a product | LR-8 | Not started | |
 
-**The epic is complete when LR5 lands.** The owner compared the live site
+**The epic is complete when LR7 lands.** The owner's second review, the same
+day, added LR6 and LR7. Before that: The owner compared the live site
 with the board on 2026-11-23 and asked for the bar and the page frames to be
 the board's; LR5 is that. Every earlier milestone has landed;
 what the build left out of the board is listed under each milestone's
@@ -247,6 +250,41 @@ Departures from the design, said plainly:
   do not read each other's state until a reload.
 - **The theme button is not on a phone's bar**, which has no room; the
   footer's control is.
+
+## From LR6
+
+The owner's second review, 2026-11-23: the People page says too much; a
+product's links, the workspace's among them, belong inside its main card;
+and the logo should be the site's icon everywhere a browser asks for one.
+
+What landed:
+
+- **The People page is the title, the filters and the people.** The count
+  line ("1 person · 0 open to one more project") is for a screen reader
+  only, and the "Listings asking for people" section is gone: those
+  listings are the Help wanted section, in the rail on every page.
+- **A product's links are tiles in its header card**
+  (`[slug]/where-it-runs-strip.tsx`): Stage, Production, Repository and
+  Workspace, each only when it exists, in the shaded tile a post's Try it
+  wears. The separate "Where it runs" card is gone, and with it the rows
+  that said "Not on stage yet". The side column's "In the open" keeps the
+  pricing, and the sentence for a product with no repository yet.
+- **The logo is the icon at every address.** `/favicon.ico`,
+  `/apple-icon.png`, `/icon-192.png` and `/icon-512.png` are PNGs of the
+  same three shapes (`shell/mark-image.tsx`), `/manifest.webmanifest` lists
+  them, and the layout's metadata names them beside `/icon.svg`. Before
+  this the site answered 404 at `/favicon.ico` and had no home-screen icon.
+
+Tests rewritten to the new rules: `open-to-project`, `build-page`,
+`workspace-view`, `redesign-foundations`.
+
+Departures from the design, said plainly:
+
+- **An environment with no address draws nothing**, where the board shows
+  "Not on stage yet". The stage badge under the name says where the
+  product has got to.
+- **`/favicon.ico` is a PNG**, not an ICO container: every browser that
+  asks for that address takes one.
 
 ## Known follow-ups
 

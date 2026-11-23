@@ -329,6 +329,35 @@ describe("the logo is the ring tile", () => {
     expect(icon).toContain('<rect width="24" height="24" rx="6" fill="#17150F"/>');
     expect(icon).toContain('<circle cx="11.5" cy="12.5" r="4.6" stroke="#FFFFFF" stroke-width="2.4"/>');
     expect(icon).toContain('<circle cx="16.8" cy="7.2" r="2.3" fill="#C9952F"/>');
-    expect(code(LAYOUT)).toContain('icons: { icon: "/icon.svg" }');
+    expect(code(LAYOUT)).toContain('{ url: "/icon.svg", type: "image/svg+xml" },');
+  });
+
+  it("wears it at every address a browser or a phone asks for one (LR6)", () => {
+    // A PNG of the same three shapes, in the same 24-unit box, for the
+    // places that will not take an SVG.
+    const png = code(read("src/app/shell/mark-image.tsx"));
+    expect(png).toContain('background: "#17150F"');
+    expect(png).toContain("border: `${2.4 * u}px solid #FFFFFF`");
+    expect(png).toContain('background: "#C9952F"');
+    expect(png).toContain("left: (11.5 - 5.8) * u,");
+    expect(png).toContain("left: (16.8 - 2.3) * u,");
+    const routes: Array<[string, string]> = [
+      ["favicon.ico", "markImage(48)"],
+      ["apple-icon.png", "markImage(180, false)"],
+      ["icon-192.png", "markImage(192)"],
+      ["icon-512.png", "markImage(512)"],
+    ];
+    for (const [route, call] of routes) {
+      const source = code(read(`src/app/${route}/route.tsx`));
+      expect([route, source.includes(call)]).toEqual([route, true]);
+      expect([route, source.includes('export const dynamic = "force-static";')]).toEqual([route, true]);
+    }
+    const layout = code(LAYOUT);
+    expect(layout).toContain('{ url: "/favicon.ico", sizes: "48x48", type: "image/png" },');
+    expect(layout).toContain('apple: "/apple-icon.png",');
+    expect(layout).toContain('manifest: "/manifest.webmanifest",');
+    const manifest = code(read("src/app/manifest.webmanifest/route.ts"));
+    for (const src of ["/icon.svg", "/icon-192.png", "/icon-512.png"]) expect(manifest).toContain(`src: "${src}"`);
+    expect(manifest).toContain('theme_color: "#ffffff"');
   });
 });

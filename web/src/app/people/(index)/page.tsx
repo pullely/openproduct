@@ -2,18 +2,13 @@ import type { Metadata } from "next";
 
 import {
   collectionPageJsonLd,
-  ASKING_HEADING,
   DIRECTORY_ELIGIBILITY_NOTE,
-  askingPreview,
-  listingsAsking,
 } from "@openproduct/contracts";
 
 import { fetchContributorsDirectory, fetchPublicDirectory, publicApexOrigin } from "../../public-api";
 import { JsonLd } from "../../ui/json-ld";
 import { LIST_CARDS, listOpenGraph } from "../../ui/og";
-import { CARD, EMPTY_NOTE, H2, HEAD_META, PAGE, PAGE_HEAD, PAGE_TITLE } from "../../ui/design";
-import { RoleIcon } from "../../ui/icons";
-import { AppLink } from "../../ui/link";
+import { EMPTY_NOTE, PAGE, PAGE_HEAD, PAGE_TITLE } from "../../ui/design";
 import { PeopleList } from "../people-list";
 
 /**
@@ -62,7 +57,6 @@ export default async function ContributorsPage() {
     fetchContributorsDirectory(),
     fetchPublicDirectory(),
   ]);
-  const asking = listingsAsking(cards ?? []);
   // PE3 — a listing's category, for the topic filter: the directory the page
   // already reads, keyed by slug. The people document carries slugs only.
   const topicOf: Record<string, string | null> = Object.fromEntries(
@@ -95,7 +89,7 @@ export default async function ContributorsPage() {
           reader and in the page's description — and the rule they state is
           enforced in the read, not by being printed. */}
 
-      <div className="mt-[48px] min-w-0 max-sm:mt-8">
+      <div className="mt-6 min-w-0">
         {contributors === null ? (
           // THE READ FAILED. Not "nobody is here" — an empty room and a locked
           // door look nothing alike to a visitor, and this page should not have
@@ -115,73 +109,6 @@ export default async function ContributorsPage() {
           <PeopleList people={contributors} topicOf={topicOf} />
         )}
       </div>
-
-      {/* AG3 — THE OTHER SIDE, AND NO EDGE BETWEEN THEM.
-          
-          The obvious reading of "matched to listings with open roles" is a
-          line drawn from each open maker to each listing that wants people,
-          and that is exactly what OPC-5 exists to prevent. `product_people` is
-          two-sided BY CONSTRUCTION because an edge rendered without both
-          sides is a claim about a relationship neither of them made — and a
-          "suggested match" is that claim with a hedge on it.
-          
-          So the page holds the two SIDES and the reader makes the connection,
-          which is the only party entitled to. `ASKING_NOTE` says so out loud
-          rather than leaving it to be inferred from an absence. */}
-      {/* CL4 — A PREVIEW, AND THE DOOR TO THE WHOLE LIST. The page is about
-          people; every build with an open role is the Roles order, one click
-          away, so this shows the first few in the document's own order and
-          links there (`askingPreview`, `ASKING_PREVIEW_LIMIT`). */}
-      {asking.length > 0 ? (
-        <section aria-labelledby="asking" className="mt-16 max-sm:mt-12">
-          {/* The group head: the heading with its meta beside it. */}
-          <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 pb-4">
-            <div className="flex items-baseline gap-2.5">
-              <h2 id="asking" className={H2}>
-                {ASKING_HEADING}
-              </h2>
-              <span className={HEAD_META}>
-                {asking.length} {asking.length === 1 ? "listing" : "listings"} with a role open
-              </span>
-            </div>
-            {/* OPR1 — the builds asking for people are the Help wanted
-                section, at its own address; the link says where it goes in
-                the site's word for it (the contract's label still says
-                "Roles", the order's old name). */}
-            <AppLink href="/help-wanted" className="tap text-[13px] font-semibold text-link no-underline hover:underline hover:underline-offset-[3px]">
-              {asking.length === 1 ? "See it in Help wanted" : `See all ${asking.length} in Help wanted`} →
-            </AppLink>
-          </div>
-          <ul className={`m-0 list-none p-0 ${CARD}`}>
-            {askingPreview(asking).map((listing) => (
-              <li
-                key={listing.slug}
-                className="relative flex items-center gap-4 border-t border-line px-[22px] py-4 transition-colors first:border-t-0 hover:bg-accent max-sm:px-[14px]"
-              >
-                <span className="min-w-0 flex-1">
-                  <AppLink
-                    href={`/${listing.slug}/crew#people-wanted`}
-                    className="block text-[15px] font-semibold text-foreground after:absolute after:inset-0 after:content-[''] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
-                  >
-                    {listing.slug}
-                  </AppLink>
-                  {listing.tagline ? (
-                    <span className="mt-0.5 block truncate text-[15px] text-muted-foreground">{listing.tagline}</span>
-                  ) : null}
-                </span>
-                {/* The count is the maintainers' own — authored, and nothing
-                    observes whether a role is still needed. The seat is the
-                    site's one glyph for an open role. */}
-                <span className="inline-flex shrink-0 items-center gap-1.5 text-[15px] font-medium tabular-nums text-seat-ink">
-                  <RoleIcon className="h-4 w-4 shrink-0" />
-                  {listing.roleOpeningCount}
-                  <span className="sr-only">{listing.roleOpeningCount === 1 ? " role open" : " roles open"}</span>
-                </span>
-              </li>
-            ))}
-          </ul>
-        </section>
-      ) : null}
     </main>
   );
 }

@@ -122,7 +122,6 @@ import { MediaPanel } from "./media-panel";
 import { ObservedRow } from "./observed-row";
 import { SECTION_ATTRIBUTE, SECTION_CARD, SECTION_PROSE } from "./sections";
 import { ShareControl } from "./share-control";
-import { WORKSPACE_VIEW_LABEL, workspaceConsentPath } from "./workspace-view";
 import { liveAction, stageStartOf } from "./where-it-runs";
 import { WhereItRunsStrip } from "./where-it-runs-strip";
 import {
@@ -514,6 +513,9 @@ async function ShippingPage({
           </div>
         </div>
 
+        {/* ── where it runs (SC-2), inside the header card (LR6) ───── */}
+        <WhereItRunsStrip profile={profile} />
+
         {/* ── the tabs ─────────────────────────────────────────────── */}
         {/* LINKS, NOT BUTTONS: each tab is an address of its own and a
             cached document of its own (`tabs.ts`), so a tab can be shared,
@@ -536,9 +538,6 @@ async function ShippingPage({
           </ul>
         </nav>
       </section>
-
-      {/* ── where it runs (SC-2, board `Product`) ─────────────────────── */}
-      <WhereItRunsStrip profile={profile} />
 
       <MakerChrome slug={slug} />
 
@@ -909,10 +908,10 @@ async function IdeaPage({ read, profile }: { read: ListingRead; profile: PublicP
         {/* On an idea the upvote IS "I'd use this", above; Save and Share
             stay in the header's secondary row. */}
         <SecondaryActs profile={profile} upvote={null} />
+        {/* Where it runs (SC-2), inside the card (LR6): an idea usually runs
+            nowhere yet, and then this draws nothing. */}
+        <WhereItRunsStrip profile={profile} />
       </section>
-
-      {/* ── where it runs (SC-2): an idea runs nowhere yet, and says so ── */}
-      <WhereItRunsStrip profile={profile} />
 
       <MakerChrome slug={slug} />
 
@@ -1597,18 +1596,7 @@ export function BuiltWithCard({ entries }: { entries: readonly string[] }) {
   );
 }
 
-/** `owner/repo` out of a repository address; the host and path when it is
- *  not that shape, and the address itself when it does not parse. */
-export function repositoryLabel(url: string): string {
-  try {
-    const parsed = new URL(url);
-    const parts = parsed.pathname.split("/").filter((part) => part.length > 0);
-    if (parts.length >= 2) return `${parts[0]}/${parts[1]!.replace(/\.git$/, "")}`;
-    return `${parsed.hostname.replace(/^www\./, "")}${parsed.pathname.replace(/\/$/, "")}`;
-  } catch {
-    return url;
-  }
-}
+export { repositoryLabel } from "./where-it-runs";
 
 /**
  * IN THE OPEN (boards `Product`, `ProductIdea`): where the work is, as
@@ -1626,7 +1614,7 @@ export function InTheOpenCard({
   lead?: ReactNode;
   emptyRepository?: boolean;
 }) {
-  if (!lead && !profile.repoUrl && !profile.workspaceRef && !profile.pricing) return null;
+  if (!lead && !(emptyRepository && !profile.repoUrl) && !profile.pricing) return null;
   return (
     <section className={SIDE_CARD} aria-labelledby="open-heading">
       <h2 id="open-heading" className={SIDE_TITLE}>
@@ -1634,33 +1622,13 @@ export function InTheOpenCard({
       </h2>
       <div className="grid gap-2.5">
         {lead}
-        {profile.repoUrl ? (
-          <div className={SIDE_ROW}>
-            <span className="text-muted-foreground">Repository</span>
-            <a
-              href={profile.repoUrl}
-              rel="noreferrer noopener"
-              className="tap-h min-w-0 break-all text-right text-link underline-offset-[3px] hover:underline"
-            >
-              {repositoryLabel(profile.repoUrl)}
-            </a>
-          </div>
-        ) : emptyRepository ? (
+        {/* LR6: the repository and the workspace are tiles in the header
+            card now (`where-it-runs-strip.tsx`); what is left here is the
+            sentence for a product with no repository yet. */}
+        {!profile.repoUrl && emptyRepository ? (
           <div className={SIDE_ROW}>
             <span className="text-muted-foreground">Repository</span>
             <span className="text-right text-foreground">Not started</span>
-          </div>
-        ) : null}
-        {/* The workspace view door (openproduct-reader OPR5, seam S12). A
-            PLAIN ANCHOR to the consent page on THIS origin, rendered on
-            `workspaceRef` alone, so the page stays the same bytes signed in
-            and out (OPC-1/I6) and no listing without a door shows one. */}
-        {profile.workspaceRef ? (
-          <div className={SIDE_ROW}>
-            <span className="text-muted-foreground">Workspace</span>
-            <AppLink href={workspaceConsentPath(profile.slug)} className="tap-h text-right text-link underline-offset-[3px] hover:underline">
-              {WORKSPACE_VIEW_LABEL}
-            </AppLink>
           </div>
         ) : null}
         {/* PP3 — pricing, authored, and the hover says so (WC-3). */}
