@@ -318,6 +318,11 @@ What landed:
 - **Publish disclosure** names "Your links" among what a published page
   shows.
 
+- **Three script budgets amended, and recorded.** The product page, its
+  About and Crew tabs carry the links through to Edit details: 91 bytes
+  over the room LR5 left, each moved to CI's measurement plus 100 bytes
+  (run 45129215088).
+
 Tests: `product-links` (contracts), the profile PATCH's links (core), and
 the form, the patch and the tiles (web); `api-changelog` moves to 1.6.0.
 
