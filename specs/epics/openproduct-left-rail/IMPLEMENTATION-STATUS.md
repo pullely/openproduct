@@ -223,6 +223,15 @@ What landed:
   topics, RSS under Explore), the feed has no sort tabs, and a post's row is
   the reaction icon, the comment icon and the count.
 
+- **Search's segments are a row above its results**, as the filters are;
+  left as a column they squeezed the results, which the axe lane caught.
+- **Six budgets amended, and recorded.** The theme button and the bar's
+  frame cost 95 to 196 bytes of script on the product page, its About and
+  Crew tabs and `/submit`, and a few bytes of document on About and Talk,
+  against the 100 bytes of room LR3 left; each moves to CI's measurement
+  plus 100 bytes (run 45106684524). All forty snapshots move: every frame
+  changed, and the bar is 57px with its border.
+
 Tests rewritten to the new rules: `shell`, `mobile-shell`, `search-field`,
 `calm-builds`, `feed-of-posts`, `products-and-seats`, `product-maker-view`.
 

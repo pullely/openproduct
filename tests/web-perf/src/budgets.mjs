@@ -520,6 +520,20 @@ const BUDGETS = {
  *   /product-00/crew                                     js   180_221 →  180_410  (measured 180,310)
  *   /submit                                              js   178_753 →  178_948  (measured 178,848)
  */
+  /* ─── LR5, 2026-11-23 (openproduct-left-rail): THE BAR'S THEME BUTTON ───────
+ *
+ * The bar gained a theme button and its three-column frame (design §4.3):
+ * 95 to 196 bytes of script and a few bytes of document on these routes,
+ * measured in CI (run 45106684524), against the 100 bytes of room LR3 left.
+ * Amended to the measurement plus 100 bytes.
+ *
+ *   /product-00                                          js   180_410 →  180_605  (measured 180,505)
+ *   /product-00/about                                    js   180_410 →  180_605  (measured 180,505)
+ *   /product-00/about                                    doc   26_454 →   26_557  (measured 26,457)
+ *   /product-00/crew                                     js   180_410 →  180_605  (measured 180,505)
+ *   /product-00/talk                                     doc   27_565 →   27_668  (measured 27,568)
+ *   /submit                                              js   178_948 →  179_144  (measured 179,044)
+ */
   "/": { js: 168_100, doc: 17_855, cls: 0.02, lcp: 2000, reads: 2, images: 400_000 },
   // THREE, AND IT HAS BEEN THREE SINCE CB1 — the number here was stale, and
   // it took a lane that failed on one run and passed on the next to notice.
@@ -583,7 +597,7 @@ const BUDGETS = {
   // 178,650, so the two gates stay separate. The new limit is the
   // measurement plus the same 66 bytes of room. The documents did not move
   // past their limits.
-  [`/${SAMPLE_SLUG}`]: { js: 180_410, doc: 26_429, cls: 0.02, lcp: 2000, reads: 3, images: 400_000 },
+  [`/${SAMPLE_SLUG}`]: { js: 180_605, doc: 26_429, cls: 0.02, lcp: 2000, reads: 3, images: 400_000 },
   // OPR-3 — THE PRODUCT PAGE'S OTHER THREE TABS, each an address of its own
   // (design §5), budgeted the day they were added (2026-11-15).
   //
@@ -602,8 +616,8 @@ const BUDGETS = {
   // READS: the listing and the directory on every tab; Updates adds the
   // product's posts and Talk the discussion, so About and Crew read twice
   // and Talk three times — concurrently, as the note above says of Updates.
-  [`/${SAMPLE_SLUG}/about`]: { js: 180_410, doc: 26_454, cls: 0.02, lcp: 2000, reads: 2, images: 400_000 },
-  [`/${SAMPLE_SLUG}/crew`]: { js: 180_410, doc: 23_177, cls: 0.02, lcp: 2000, reads: 2, images: 400_000 },
+  [`/${SAMPLE_SLUG}/about`]: { js: 180_605, doc: 26_557, cls: 0.02, lcp: 2000, reads: 2, images: 400_000 },
+  [`/${SAMPLE_SLUG}/crew`]: { js: 180_605, doc: 23_177, cls: 0.02, lcp: 2000, reads: 2, images: 400_000 },
   //
   // OPR-4 — TALK RE-MEASURED, AND ONLY TALK, WITH THE NUMBERS NAMED
   // (2026-11-15). Talk gained its composer (a field, the thread's kind, the
@@ -631,7 +645,7 @@ const BUDGETS = {
   // ~2.8% this table carries. The wire budget did not move.
   // SC-2 — Talk's document gained Where it runs too: 26,418 B (was 25,744),
   // so 26,250 → 26,900, the same room. Its JS did not move past its limit.
-  [`/${SAMPLE_SLUG}/talk`]: { js: 184_900, doc: 27_565, cls: 0.02, lcp: 2000, reads: 3, images: 400_000 },
+  [`/${SAMPLE_SLUG}/talk`]: { js: 184_900, doc: 27_668, cls: 0.02, lcp: 2000, reads: 3, images: 400_000 },
   // OPR-3 — A POST'S OWN PAGE (design §5: `/{slug}/posts/{id}`), budgeted the
   // day it was added. 183,214 B across 19 chunks: the full card with its
   // reaction controls, and the live thread under it (the comment field, the
@@ -742,7 +756,7 @@ const BUDGETS = {
   // rendered from what somebody is typing. A read appearing here would mean
   // this page had started asking the server about a draft — which is the one
   // thing IN0's design is built to prevent.
-  "/submit": { js: 178_948, doc: 9_191, cls: 0.02, lcp: 2000, reads: 0 },
+  "/submit": { js: 179_144, doc: 9_191, cls: 0.02, lcp: 2000, reads: 0 },
 };
 
 /**

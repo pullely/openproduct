@@ -60,12 +60,12 @@ export function SearchView({
   const shown = visibleSections(segment, counts);
 
   return (
-    <div className="flex items-start gap-6 max-md:flex-col max-md:items-stretch max-md:gap-[26px] max-sm:gap-[10px]">
+    <div className="flex flex-col items-stretch gap-5 max-sm:gap-[10px]">
       <div className={RAIL_LEFT}>
       <div
         role="group"
         aria-label="Show results"
-        className="box-border flex max-w-full flex-wrap gap-[2px] self-start rounded-full bg-foreground/[0.06] p-1 max-sm:flex-nowrap max-sm:self-stretch max-sm:p-[3px] md:flex-col md:flex-nowrap md:rounded-[16px] md:bg-card md:p-2.5"
+        className="box-border inline-flex max-w-full flex-wrap gap-[2px] rounded-full bg-foreground/[0.06] p-1 max-sm:flex max-sm:flex-nowrap max-sm:p-[3px]"
       >
         {searchSegments(counts).map((item) => {
           const on = item.key === segment;
@@ -75,9 +75,9 @@ export function SearchView({
               type="button"
               onClick={() => setSegment(item.key)}
               aria-pressed={on}
-              className={`flex min-h-[40px] items-center gap-2 rounded-full border-0 px-4 text-[15px] transition-colors md:justify-between md:rounded-[14px] md:px-2.5 md:text-left max-sm:min-h-[44px] max-sm:min-w-0 max-sm:flex-auto max-sm:justify-center max-sm:gap-[5px] max-sm:px-2 max-sm:text-[13px] ${FOCUS} ${
+              className={`flex min-h-[40px] items-center gap-2 rounded-full border-0 px-4 text-[15px] transition-colors max-sm:min-h-[44px] max-sm:min-w-0 max-sm:flex-auto max-sm:justify-center max-sm:gap-[5px] max-sm:px-2 max-sm:text-[13px] ${FOCUS} ${
                 on
-                  ? "bg-card font-semibold text-foreground md:bg-foreground/[0.05]"
+                  ? "bg-card font-semibold text-foreground"
                   : "bg-transparent font-medium text-copy hover:text-foreground"
               }`}
             >
