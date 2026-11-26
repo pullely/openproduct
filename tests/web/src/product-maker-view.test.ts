@@ -796,7 +796,7 @@ describe("seats and the quiet line", () => {
       { label: "Settings", href: "/studio/org_1/opp_1/settings" },
       { label: "Details", href: "/studio/org_1/opp_1/details" },
       { label: "Media", href: "/studio/org_1/opp_1/media" },
-      { label: "Topics", href: "/studio/org_1/opp_1/topics" },
+      { label: "Category and stack", href: "/studio/org_1/opp_1/topics" },
       { label: "People", href: "/studio/org_1/opp_1/people" },
       { label: "Launches", href: "/studio/org_1/opp_1/launches" },
     ]);
