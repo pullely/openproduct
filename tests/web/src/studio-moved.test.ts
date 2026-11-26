@@ -172,7 +172,7 @@ describe("a step is redirected only when the product page can do its job", () =>
     expect(code("studio/[org]/[profile]/step-strip.tsx")).not.toContain("/discussions");
     expect(
       moreSettingsLinks({ org: "org_1", profile: "opp_1" }).map((link) => link.label),
-    ).toEqual(["Settings", "Details", "Media", "Topics", "People", "Launches"]);
+    ).toEqual(["Settings", "Details", "Media", "Category and stack", "People", "Launches"]);
   });
 
   it("a published listing's base address goes to its product page; a draft's to its settings", () => {
