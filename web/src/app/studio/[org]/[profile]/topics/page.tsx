@@ -49,7 +49,7 @@ export default async function ListingTopicsPage(props: {
   return (
     <StudioLive vocabulary={LISTING_VOCABULARY} notice={notice} blockers={blockers} flush>
       <EditorColumns rail={<CompletenessPanel org={org} profileId={profileId} subject={profile} />}>
-        <SectionCard id="topics" title="Topics and stack">
+        <SectionCard id="topics" title="Category and stack">
           {/* Posts in the background (OPP15) — see the note on the Details
               form: a save here changes what was typed into what was typed. */}
           <form method="post" action={action} data-live="stay" className={CARD_FORM}>
@@ -128,6 +128,13 @@ export default async function ListingTopicsPage(props: {
                       </option>
                     ))}
                   </select>
+                  {facetId === "category" ? (
+                    // LR9 — the one facet the products list requires, said
+                    // where it is picked.
+                    <p className="m-0 mt-1.5 text-[13px] leading-[1.5] text-muted-foreground">
+                      Needed to appear on the products list.
+                    </p>
+                  ) : null}
                 </div>
               ))}
             </div>
