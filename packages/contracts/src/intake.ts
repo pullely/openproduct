@@ -160,9 +160,9 @@ export const LISTING_STEPS: readonly ListingStep[] = [
   },
   {
     id: "topics",
-    label: "Topics and stack",
+    label: "Category and stack",
     segment: "topics",
-    holds: "Where this listing sits in the catalogue, and what it is built with.",
+    holds: "The category that puts this listing on the products list, and what it is built with.",
     awaits: null,
   },
   {

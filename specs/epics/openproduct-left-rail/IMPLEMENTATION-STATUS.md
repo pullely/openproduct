@@ -370,6 +370,28 @@ Departures, said plainly:
 - **The repository shows its full address**, `github.com/owner/repo`, not
   `owner/repo`.
 
+## From LR9
+
+A maker could not find where to set Cookpool's category: the listing sat
+below the products list's floor (it needs a tagline and a category), and the
+only way to the picker was a chip labelled "+ Stack" on a step called
+"Topics and stack".
+
+- **The step is named for the field.** `LISTING_STEPS` labels it "Category
+  and stack", and its `holds` sentence says the category puts the listing on
+  the products list. The step's page title matches.
+- **The gap is a link.** The listing card's "No topic yet" is now "Add a
+  category", linking to the step (`editor.tsx`).
+- **The picker says why.** Under Category: "Needed to appear on the products
+  list."
+
+Departures, said plainly:
+
+- The public site still says "Topics" for the category pages (`/topics`);
+  only the studio's words changed.
+- Not checked in a signed-in browser; the source-reading test
+  `category-in-reach.test.ts` and the web-perf studio lane cover it.
+
 ## Known follow-ups
 
 None is scheduled; each is a departure recorded above.

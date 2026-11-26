@@ -126,7 +126,7 @@ const STEPS = [
   { id: "details", segment: "details", label: "Details" },
   // MD2 — the step that used to be a span with a title.
   { id: "media", segment: "media", label: "Media" },
-  { id: "topics", segment: "topics", label: "Topics and stack" },
+  { id: "topics", segment: "topics", label: "Category and stack" },
   { id: "people", segment: "people", label: "People and roles" },
 ];
 

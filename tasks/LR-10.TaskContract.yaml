@@ -1,0 +1,25 @@
+# LR-10: milestone LR9, the category in reach. A listing with no category is
+# held below the products list's floor; the studio now names the step after
+# the category and links the gap on the listing card straight to it.
+# The file is the contract; the task itself lives in Orunbase.
+apiVersion: orun.io/v1
+kind: TaskContract
+metadata:
+  name: LR-10
+  title: "LR9: the category in reach"
+spec:
+  goal: A maker whose listing has no category finds the category picker from the listing card in one click, under a step named for it.
+  affects:
+    - web/**
+    - packages/contracts/**
+    - tests/**
+    - specs/epics/openproduct-left-rail/**
+    - tasks/**
+  deps:
+    - LR-9
+  doneWhen:
+    - A listing without a category shows Add a category on its studio card, linking to the step that sets it
+    - The step reads Category and stack in the strip and on its page
+    - The category picker says it is needed to appear on the products list
+    - Every lane passes in CI
+  gates: []

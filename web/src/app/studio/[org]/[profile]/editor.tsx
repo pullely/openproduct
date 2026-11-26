@@ -194,7 +194,14 @@ export function ListingHero({
                     {labelOf("category", profile.category) ?? profile.category}
                   </AppLink>
                 ) : (
-                  <span className="text-warning-strong">No topic yet</span>
+                  // LR9 — the gap that keeps a listing off the products list
+                  // is one click from its fix, in the words the field uses.
+                  <AppLink
+                    href={hrefs.topics}
+                    className="font-medium text-warning-strong underline underline-offset-[3px] hover:text-foreground"
+                  >
+                    Add a category
+                  </AppLink>
                 )}
                 {profile.repoLicence ? (
                   <>
