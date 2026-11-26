@@ -253,7 +253,7 @@ export function moreSettingsLinks(crew: Pick<OverlayCrew, "org" | "profile">): R
     { label: "Settings", href: listingSettingsPath(crew.org, crew.profile) },
     { label: "Details", href: `${base}/details` },
     { label: "Media", href: `${base}/media` },
-    { label: "Topics", href: `${base}/topics` },
+    { label: "Category and stack", href: `${base}/topics` },
     { label: "People", href: `${base}/people` },
     { label: "Launches", href: `${base}/launches` },
     // OPR-4 — no Discussions entry: it only led to a page that is Talk now,
