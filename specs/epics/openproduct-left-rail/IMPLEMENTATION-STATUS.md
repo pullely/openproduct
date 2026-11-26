@@ -413,8 +413,12 @@ Topics, pick, save), and nothing said the listing was hidden.
   saved with the pitch through `POST /{slug}/manage/profile`, which now
   passes `category`, `hosting` and `pricing` on to core (an empty choice
   clears it). Core already validated them.
-- **Settings is a button** beside Edit details, to the listing's settings
-  page in the studio, whose tabs reach the rest. The folded "More settings"
+- **All settings is a plain link** inside Edit details, always shown, to
+  the listing's settings page in the studio, whose tabs reach the rest. It
+  was first a button beside Edit details; a third crew button widened the
+  header's action row past the visitor's two (Follow, Take a seat), the row
+  wrapped after the overlay answered, and the page moved (signed-in CLS up
+  to 1.46). The header row keeps its two-for-two swap. The folded "More settings"
   list at the bottom of Edit details is gone (`moreSettingsLinks` removed;
   `settingsHref` and the `Facets` type live in `gate.ts`, which the eager
   files may import).

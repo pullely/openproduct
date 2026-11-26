@@ -6,13 +6,14 @@ import { useRouter } from "next/navigation";
 import { PRODUCT_LINKS_HINT, facet } from "@openproduct/contracts";
 
 import { BTN_INK, FOCUS } from "../../ui/design";
+import { AppLink } from "../../ui/link";
 
 import type { StageStart } from "../where-it-runs";
 
 import { crewWrite, fieldError } from "./act";
 import type { Look } from "./details";
 import { StageRow } from "./stage-row";
-import { CATEGORY_HINT, FACET_FIELDS, TAGLINE_LIMIT, canSaveDetails, manageRoute, taglineCount, type Facets } from "./model";
+import { CATEGORY_HINT, FACET_FIELDS, TAGLINE_LIMIT, canSaveDetails, manageRoute, settingsHref, taglineCount, type Facets } from "./model";
 import { rememberTagline, setEditing, useMaker } from "./use-maker";
 
 /**
@@ -44,7 +45,7 @@ export function DetailsForm({
 }) {
   const router = useRouter();
   const [picked, setPicked] = React.useState<Facets>(facets);
-  const { managing } = useMaker(slug);
+  const { managing, crew } = useMaker(slug);
   const [pitch, setPitch] = React.useState(tagline);
   const [address, setAddress] = React.useState(tryUrl);
   const [linkLines, setLinkLines] = React.useState(links);
@@ -179,6 +180,19 @@ export function DetailsForm({
           stage at once, and Save below saves the fields above it. */}
       <StageRow slug={slug} start={start} look={look} />
       {failed ? <FieldError>{failed}</FieldError> : null}
+      {/* LR-11 — the rest of the listing's settings, one plain link, always
+          shown (it replaces the folded "More settings" list). Not a button
+          in the header's actions: there it widened the crew's row past the
+          visitor's, the row wrapped after load, and the page moved. */}
+      {crew ? (
+        <AppLink
+          href={settingsHref(crew)}
+          data-settings-link
+          className={`tap-h self-start text-[13px] font-semibold text-link no-underline hover:underline hover:underline-offset-[3px] ${FOCUS}`}
+        >
+          All settings →
+        </AppLink>
+      ) : null}
       <div className="flex flex-wrap items-center justify-end gap-2 max-sm:grid max-sm:grid-cols-2">
         <button
           type="button"

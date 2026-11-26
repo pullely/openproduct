@@ -798,18 +798,21 @@ describe("seats and the quiet line", () => {
     expect(page).toContain("if (openRoles.length === 0 && !always) return <SeatsStarter slug={slug} />;");
   });
 
-  it("Settings is a visible button beside Edit details, built in the crew's browser from the overlay's ids (LR-11)", () => {
+  it("All settings is a plain link in Edit details, built in the crew's browser from the overlay's ids (LR-11)", () => {
     expect(settingsHref(CREW)).toBe("/studio/org_1/opp_1/settings");
     expect(stackStepHref(CREW)).toBe("/studio/org_1/opp_1/topics");
     const model = code(`${MAKER_DIR}/model.ts`);
     // No literal studio address in the page's source: the routes suite
     // forbids one on a public page, and the ids are the overlay's.
     expect(model).not.toMatch(/["`]\/studio/);
-    const details = code(`${MAKER_DIR}/details.tsx`);
-    expect(details).toContain("href={settingsHref(crew)}");
-    expect(details).toContain("Settings");
-    // The folded list inside Edit details is gone.
-    expect(code(`${MAKER_DIR}/details-form.tsx`)).not.toContain("More settings");
+    // A plain link inside Edit details, always shown; the folded list is gone.
+    const form = code(`${MAKER_DIR}/details-form.tsx`);
+    expect(form).toContain("href={settingsHref(crew)}");
+    expect(form).toContain("All settings");
+    expect(form).not.toContain("More settings");
+    // Not in the header's actions: a third crew button widened the row past
+    // the visitor's two, it wrapped after load, and the page moved.
+    expect(code(`${MAKER_DIR}/details.tsx`)).not.toContain("settingsHref");
   });
 
   it("turns ?notice= and ?error= into one sentence from the handlers' vocabulary, in the browser", () => {
