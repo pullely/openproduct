@@ -22,7 +22,6 @@ import {
   ROLE_OPENING_TITLE_MAX,
   composePostPagePath,
   listingBasePath,
-  listingSettingsPath,
   type AuthoredProductPostKind,
   type CrewNeedsYou,
   type CrewProductPost,
@@ -239,27 +238,56 @@ export function canSaveSeat(values: SeatValues): boolean {
   return values.title.trim().length > 0 && SEAT_FIELDS.every((field) => values[field.name].length <= field.max);
 }
 
-// ─── more settings ─────────────────────────────────────────────────────────
+import type { Facets } from "./gate";
+
+// ─── settings in reach (LR-11) ─────────────────────────────────────────────
+
+/** The studio step that holds the stack (and the category, too). */
+export function stackStepHref(crew: Pick<OverlayCrew, "org" | "profile">): string {
+  return `${listingBasePath(crew.org, crew.profile)}/topics`;
+}
+
+/** The facets as Edit details draws them, category first. */
+export const FACET_FIELDS = [
+  ["category", "Category"],
+  ["pricing", "Pricing"],
+  ["hosting", "Hosting"],
+] as const;
+
+/** Said under an empty Category, wherever it is picked. */
+export const CATEGORY_HINT = "Needed to appear on the products list.";
+
+/** What "Finish your listing" asks for. */
+export interface FinishPlan {
+  /** The listing is held off the products list (no pitch or no category). */
+  hidden: boolean;
+  missingPitch: boolean;
+  missingCategory: boolean;
+  /** The other gaps, in the words the card uses. */
+  also: ReadonlyArray<"pricing" | "hosting" | "stack">;
+}
 
 /**
- * What the product page does not do, and where each is done: the listing's
- * own settings pages. A compact list behind "More settings", built in the
- * crew's own browser from the ids the overlay answered — never in the cached
- * page, which carries no address of a maintainer's surface.
+ * What the crew still has to fill, from what the page already holds. Null
+ * when there is nothing left — the card is then not drawn at all.
  */
-export function moreSettingsLinks(crew: Pick<OverlayCrew, "org" | "profile">): ReadonlyArray<{ label: string; href: string }> {
-  const base = listingBasePath(crew.org, crew.profile);
-  return [
-    { label: "Settings", href: listingSettingsPath(crew.org, crew.profile) },
-    { label: "Details", href: `${base}/details` },
-    { label: "Media", href: `${base}/media` },
-    { label: "Category and stack", href: `${base}/topics` },
-    { label: "People", href: `${base}/people` },
-    { label: "Launches", href: `${base}/launches` },
-    // OPR-4 — no Discussions entry: it only led to a page that is Talk now,
-    // and Talk is this page's own tab.
+export function finishPlanOf(subject: Facets & { tagline: string | null; stackCount: number }): FinishPlan | null {
+  const missingPitch = !subject.tagline || subject.tagline.trim().length === 0;
+  const missingCategory = !subject.category;
+  const also = [
+    ...(subject.pricing ? [] : (["pricing"] as const)),
+    ...(subject.hosting ? [] : (["hosting"] as const)),
+    ...(subject.stackCount > 0 ? [] : (["stack"] as const)),
   ];
+  if (!missingPitch && !missingCategory && also.length === 0) return null;
+  return { hidden: missingPitch || missingCategory, missingPitch, missingCategory, also };
 }
+
+export const FINISH_LABEL: Record<"pricing" | "hosting" | "stack", string> = {
+  pricing: "Pricing",
+  hosting: "Hosting",
+  stack: "Stack",
+};
 
 // ─── the crew routes ───────────────────────────────────────────────────────
 

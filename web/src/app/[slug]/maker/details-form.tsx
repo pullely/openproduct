@@ -3,7 +3,7 @@
 import * as React from "react";
 import { useRouter } from "next/navigation";
 
-import { PRODUCT_LINKS_HINT } from "@openproduct/contracts";
+import { PRODUCT_LINKS_HINT, facet } from "@openproduct/contracts";
 
 import { BTN_INK, FOCUS } from "../../ui/design";
 import { AppLink } from "../../ui/link";
@@ -13,12 +13,12 @@ import type { StageStart } from "../where-it-runs";
 import { crewWrite, fieldError } from "./act";
 import type { Look } from "./details";
 import { StageRow } from "./stage-row";
-import { TAGLINE_LIMIT, canSaveDetails, manageRoute, moreSettingsLinks, taglineCount } from "./model";
+import { CATEGORY_HINT, FACET_FIELDS, TAGLINE_LIMIT, canSaveDetails, manageRoute, settingsHref, taglineCount, type Facets } from "./model";
 import { rememberTagline, setEditing, useMaker } from "./use-maker";
 
 /**
  * The form "Edit details" opens (boards `Product`, `ProductIdea`), with
- * "More settings" inside it.
+ * the category, pricing and hosting beside it (LR-11).
  *
  * ITS OWN FILE, FETCHED WHEN THE CREW PRESSES "Edit details"
  * (`details.tsx` imports it with `React.lazy`): a visitor's browser never
@@ -31,6 +31,7 @@ export function DetailsForm({
   links,
   start,
   look,
+  facets,
 }: {
   slug: string;
   tagline: string;
@@ -39,8 +40,12 @@ export function DetailsForm({
   links: string;
   start: StageStart;
   look: Look;
+  /** LR-11 — the listing's category, hosting and pricing, as the page read them. */
+  facets: Facets;
 }) {
   const router = useRouter();
+  const [picked, setPicked] = React.useState<Facets>(facets);
+  const { managing, crew } = useMaker(slug);
   const [pitch, setPitch] = React.useState(tagline);
   const [address, setAddress] = React.useState(tryUrl);
   const [linkLines, setLinkLines] = React.useState(links);
@@ -58,7 +63,14 @@ export function DetailsForm({
     setBusy(true);
     setFailed(null);
     void (async () => {
-      const result = await crewWrite<unknown>(slug, "profile", { tagline: pitch.trim(), tryUrl: address.trim(), links: linkLines });
+      const result = await crewWrite<unknown>(slug, "profile", {
+        tagline: pitch.trim(),
+        tryUrl: address.trim(),
+        links: linkLines,
+        category: picked.category ?? "",
+        hosting: picked.hosting ?? "",
+        pricing: picked.pricing ?? "",
+      });
       setBusy(false);
       if (!result.ok) {
         setErrors(result.fields);
@@ -71,6 +83,10 @@ export function DetailsForm({
       router.refresh();
     })();
   };
+
+  // The crew's, on Manage, like every maker element (`editing` already
+  // implies it; said here so the form holds its own gate).
+  if (!managing) return null;
 
   return (
     <form
@@ -129,12 +145,54 @@ export function DetailsForm({
         <span className="text-[13px] text-muted-foreground">{PRODUCT_LINKS_HINT}</span>
         {linksError ? <FieldError>{linksError}</FieldError> : null}
       </label>
+      {/* LR-11 — the three facets, so the category that puts a listing on
+          the products list is set where a crew edits everything else. */}
+      <div className="grid grid-cols-3 gap-2.5 max-sm:grid-cols-1">
+        {FACET_FIELDS.map(([facetId, label]) => {
+          const error = fieldError(errors, facetId);
+          return (
+            <label key={facetId} className="flex min-w-0 flex-col gap-1.5">
+              <span className="text-[13px] font-semibold text-foreground">{label}</span>
+              <select
+                name={facetId}
+                value={picked[facetId] ?? ""}
+                onChange={(event) => setPicked({ ...picked, [facetId]: event.target.value || null })}
+                aria-invalid={error !== null}
+                className={`box-border h-[44px] w-full rounded-[14px] border-0 px-3 text-nozoom text-foreground outline-none ring-1 ring-inset ring-foreground/[0.08] focus:ring-2 focus:ring-ring ${look === "idea" ? "bg-well" : "bg-card max-sm:bg-well"}`}
+              >
+                <option value="">Not stated</option>
+                {(facet(facetId)?.values ?? []).map((value) => (
+                  <option key={value.value} value={value.value}>
+                    {value.label}
+                  </option>
+                ))}
+              </select>
+              {facetId === "category" && !picked.category ? (
+                <span className="text-[13px] text-muted-foreground">{CATEGORY_HINT}</span>
+              ) : null}
+              {error ? <FieldError>{error}</FieldError> : null}
+            </label>
+          );
+        })}
+      </div>
       {/* SC-2 — the Stage row (board `Product`): the badge, what is next,
           and Change stage, which opens the popup. Its own act: it moves the
           stage at once, and Save below saves the fields above it. */}
       <StageRow slug={slug} start={start} look={look} />
       {failed ? <FieldError>{failed}</FieldError> : null}
-      <MoreSettings slug={slug} />
+      {/* LR-11 — the rest of the listing's settings, one plain link, always
+          shown (it replaces the folded "More settings" list). Not a button
+          in the header's actions: there it widened the crew's row past the
+          visitor's, the row wrapped after load, and the page moved. */}
+      {crew ? (
+        <AppLink
+          href={settingsHref(crew)}
+          data-settings-link
+          className={`tap-h self-start text-[13px] font-semibold text-link no-underline hover:underline hover:underline-offset-[3px] ${FOCUS}`}
+        >
+          All settings →
+        </AppLink>
+      ) : null}
       <div className="flex flex-wrap items-center justify-end gap-2 max-sm:grid max-sm:grid-cols-2">
         <button
           type="button"
@@ -152,47 +210,6 @@ export function DetailsForm({
         </button>
       </div>
     </form>
-  );
-}
-
-/**
- * "More settings": what this page does not do, and where each is done — the
- * listing's own settings pages (publish and unpublish, the details beyond
- * the pitch, media, topics, the roster, launches, discussions).
- *
- * ONE ENTRY, CLOSED UNTIL PRESSED, inside the form "Edit details" opens. The
- * links are built here, in the crew's own browser, from the ids the overlay
- * answered: the cached page carries no address of a maintainer's surface.
- */
-function MoreSettings({ slug }: { slug: string }) {
-  const { crew } = useMaker(slug);
-  const [open, setOpen] = React.useState(false);
-  if (crew === null) return null;
-  return (
-    <div data-more-settings className="flex flex-col gap-2">
-      <button
-        type="button"
-        aria-expanded={open}
-        onClick={() => setOpen(!open)}
-        className={`tap-h inline-flex cursor-pointer items-center gap-1.5 self-start border-0 bg-transparent p-0 text-[13px] font-semibold text-link hover:underline hover:underline-offset-[3px] ${FOCUS}`}
-      >
-        More settings
-      </button>
-      {open ? (
-        <ul className="m-0 flex list-none flex-wrap gap-1.5 p-0">
-          {moreSettingsLinks(crew).map((link) => (
-            <li key={link.href}>
-              <AppLink
-                href={link.href}
-                className={`inline-flex h-[40px] items-center rounded-full bg-foreground/[0.06] px-4 text-[13px] font-semibold text-copy no-underline hover:bg-foreground/[0.1] max-sm:h-[44px] ${FOCUS}`}
-              >
-                {link.label}
-              </AppLink>
-            </li>
-          ))}
-        </ul>
-      ) : null}
-    </div>
   );
 }
 

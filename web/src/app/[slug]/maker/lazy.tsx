@@ -2,6 +2,7 @@
 
 import * as React from "react";
 
+import type { Facets } from "./gate";
 import { useMaker } from "./use-maker";
 
 // The maker view's crew-only pieces, as gates (openproduct-redesign OPR-3,
@@ -29,6 +30,8 @@ const EditPostLinkBody = React.lazy(() => import("./new-post").then((module) => 
 const CrewRolesBody = React.lazy(() => import("./crew-roles").then((module) => ({ default: module.CrewRoles })));
 // SC-4 — the Orunbase card at the top of the right rail.
 const OrunbaseCardBody = React.lazy(() => import("./orunbase-card").then((module) => ({ default: module.OrunbaseCard })));
+// LR-11 — "Finish your listing", above the pitch.
+const FinishListingBody = React.lazy(() => import("./finish-listing").then((module) => ({ default: module.FinishListing })));
 const MilestonesManagerBody = React.lazy(() =>
   import("./milestones").then((module) => ({ default: module.MilestonesManager })),
 );
@@ -111,6 +114,22 @@ export function OrunbaseCard({ slug }: { slug: string }) {
   return (
     <React.Suspense fallback={null}>
       <OrunbaseCardBody slug={slug} />
+    </React.Suspense>
+  );
+}
+
+/** LR-11 — "Finish your listing": the crew who write, on Manage. */
+export function FinishListing(props: {
+  slug: string;
+  tagline: string | null;
+  facets: Facets;
+  stackCount: number;
+}) {
+  const { managing, writes } = useMaker(props.slug);
+  if (!managing || !writes) return null;
+  return (
+    <React.Suspense fallback={null}>
+      <FinishListingBody {...props} />
     </React.Suspense>
   );
 }

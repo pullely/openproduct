@@ -65,7 +65,8 @@ import {
   seatRequesterName,
   SEAT_FIELDS,
   canSaveSeat,
-  moreSettingsLinks,
+  settingsHref,
+  stackStepHref,
   MAKER_SLOTS,
   makerReserveBoot,
   makerReserveKey,
@@ -115,6 +116,8 @@ describe("no maker element is in any server render", () => {
       // The form "Edit details" opens, fetched when it is opened.
       "details-form.tsx",
       "details.tsx",
+      // LR-11 — "Finish your listing", fetched for the crew only.
+      "finish-listing.tsx",
       // The gates a visitor's bundle carries for the crew-only pieces.
       "lazy.tsx",
       "milestones.tsx",
@@ -140,7 +143,7 @@ describe("no maker element is in any server render", () => {
   it("a visitor's bundle carries the gates and never the pieces: each crew-only piece is fetched for the crew", () => {
     const page = code(PAGE);
     // The page takes the crew-only pieces through the gates…
-    expect(page).toContain('import { CrewRoles, EditPostLink, MilestonesManager, NeedsYou, NewPostRow, OrunbaseCard, ViewSwitch } from "./maker/lazy";');
+    expect(page).toContain('import { CrewRoles, EditPostLink, FinishListing, MilestonesManager, NeedsYou, NewPostRow, OrunbaseCard, ViewSwitch } from "./maker/lazy";');
     for (const file of ["view-switch", "needs-you", "new-post", "milestones", "details-form", "seat-form", "crew-roles", "crew-dialog", "crew-model", "orunbase-card", "orunbase-model", "model", "act"]) {
       expect([file, new RegExp(`from "\\./maker/${file}"`).test(page)]).toEqual([file, false]);
     }
@@ -154,7 +157,9 @@ describe("no maker element is in any server render", () => {
     expect(gates).toContain("if (!writes) return null;");
     expect(gates).toContain("if (crew === null) return null;");
     expect(gates).toContain('if (mode !== "manage") return null;');
-    expect(gates.match(/<React\.Suspense fallback=\{null\}>/g)).toHaveLength(7);
+    // LR-11 — "Finish your listing": the crew who write, on Manage.
+    expect(gates).toContain("if (!managing || !writes) return null;");
+    expect(gates.match(/<React\.Suspense fallback=\{null\}>/g)).toHaveLength(8);
     // Edit crew's popup is fetched from inside the roles card, when pressed.
     expect(code(`${MAKER_DIR}/crew-roles.tsx`)).toContain('React.lazy(() => import("./crew-dialog")');
     // The two files that draw something for a visitor as well (the pitch,
@@ -287,6 +292,8 @@ describe("no maker element is in any server render", () => {
       "seats.tsx": ["if (!managing) return null;", "if (managing) {"],
       "notice.tsx": ["if (!isCrew || line === null) return null;"],
       "details.tsx": ["if (!managing || editing) return null;", "if (editing) {"],
+      "details-form.tsx": ["if (!managing) return null;"],
+      "finish-listing.tsx": ["if (!managing || editing || crew === null || closed) return null;"],
     };
     for (const [file, wanted] of Object.entries(gates)) {
       const source = code(`${MAKER_DIR}/${file}`);
@@ -374,7 +381,7 @@ describe("no maker element is in any server render", () => {
     ]);
     expect(page).toContain("<EditPostLink slug={slug} postId={post.id} />");
     expect(page).toContain(
-      '<ProductPitch slug={slug} tagline={profile.tagline} tryUrl={profile.tryUrl} links={profile.links ?? []} start={stageStartOf(profile)} look="shipping" />',
+      '<ProductPitch slug={slug} tagline={profile.tagline} tryUrl={profile.tryUrl} links={profile.links ?? []} start={stageStartOf(profile)} look="shipping" facets={facetsOf(profile)} />',
     );
     // The one wrapper that does take children wraps what a VISITOR sees
     // (Follow, Take a seat) and only hides it for the crew.
@@ -396,7 +403,7 @@ describe("no maker element is in any server render", () => {
     // Editing: the form, fetched when it is opened — and the pitch stays
     // where it is until the form has arrived.
     expect(pitch).toContain("<React.Suspense fallback={pitch}>");
-    expect(pitch).toContain('<DetailsForm slug={slug} tagline={shown ?? ""} tryUrl={tryUrl ?? ""} links={productLinksToText(links)} start={start} look={look} />');
+    expect(pitch).toContain('<DetailsForm slug={slug} tagline={shown ?? ""} tryUrl={tryUrl ?? ""} links={productLinksToText(links)} start={start} look={look} facets={facets} />');
     expect(code(`${MAKER_DIR}/use-maker.ts`)).toContain("savedTagline: crew === null ? undefined : savedTaglines.get(slug),");
   });
 });
@@ -586,7 +593,7 @@ describe("Edit details: the pitch and the Try it address, never the name", () =>
     // LR-8 — and the crew's own links, as lines.
     expect([...PROFILE_FORM_FIELDS]).toEqual(["tagline", "tryUrl", "links"]);
     const details = code(`${MAKER_DIR}/details-form.tsx`);
-    expect(details).toContain('crewWrite<unknown>(slug, "profile", { tagline: pitch.trim(), tryUrl: address.trim(), links: linkLines })');
+    expect(details).toContain('tagline: pitch.trim(),\n        tryUrl: address.trim(),\n        links: linkLines,');
     // LR-8 — the Links box: one `Label | address` per line, with the
     // contract's own sentence under it and core's refusal beside it.
     expect(details).toContain('name="links"');
@@ -791,30 +798,21 @@ describe("seats and the quiet line", () => {
     expect(page).toContain("if (openRoles.length === 0 && !always) return <SeatsStarter slug={slug} />;");
   });
 
-  it("More settings is one entry, closed until pressed, built in the crew's browser from the overlay's ids", () => {
-    expect(moreSettingsLinks(CREW)).toEqual([
-      { label: "Settings", href: "/studio/org_1/opp_1/settings" },
-      { label: "Details", href: "/studio/org_1/opp_1/details" },
-      { label: "Media", href: "/studio/org_1/opp_1/media" },
-      { label: "Category and stack", href: "/studio/org_1/opp_1/topics" },
-      { label: "People", href: "/studio/org_1/opp_1/people" },
-      { label: "Launches", href: "/studio/org_1/opp_1/launches" },
-    ]);
-    // OPR-4 — no Discussions entry: that address is Talk now, and Talk is
-    // this page's own tab.
-    expect(moreSettingsLinks(CREW).some((link) => /discussions/i.test(link.label + link.href))).toBe(false);
+  it("All settings is a plain link in Edit details, built in the crew's browser from the overlay's ids (LR-11)", () => {
+    expect(settingsHref(CREW)).toBe("/studio/org_1/opp_1/settings");
+    expect(stackStepHref(CREW)).toBe("/studio/org_1/opp_1/topics");
     const model = code(`${MAKER_DIR}/model.ts`);
-    expect(model).toContain("const base = listingBasePath(crew.org, crew.profile);");
     // No literal studio address in the page's source: the routes suite
     // forbids one on a public page, and the ids are the overlay's.
     expect(model).not.toMatch(/["`]\/studio/);
-    const details = code(`${MAKER_DIR}/details-form.tsx`);
-    expect(details).toContain("More settings");
-    expect(details).toContain("aria-expanded={open}");
-    expect(details).toContain("if (crew === null) return null;");
-    expect(details).toContain("{open ? (");
-    expect(details).toContain("moreSettingsLinks(crew).map((link) => (");
-    expect(details.match(/<MoreSettings slug=\{slug\} \/>/g)).toHaveLength(1);
+    // A plain link inside Edit details, always shown; the folded list is gone.
+    const form = code(`${MAKER_DIR}/details-form.tsx`);
+    expect(form).toContain("href={settingsHref(crew)}");
+    expect(form).toContain("All settings");
+    expect(form).not.toContain("More settings");
+    // Not in the header's actions: a third crew button widened the row past
+    // the visitor's two, it wrapped after load, and the page moved.
+    expect(code(`${MAKER_DIR}/details.tsx`)).not.toContain("settingsHref");
   });
 
   it("turns ?notice= and ?error= into one sentence from the handlers' vocabulary, in the browser", () => {

@@ -325,7 +325,7 @@ export function readStageChange(fields: Fields): ChangeStageRequest | FormError 
  */
 export function readProfilePatch(fields: Fields): CrewProfilePatch | FormError {
   const patch: CrewProfilePatch = {};
-  for (const name of ["tryUrl", "tagline", "pitch"] as const) {
+  for (const name of ["tryUrl", "tagline", "pitch", "category", "hosting", "pricing"] as const) {
     const value = fields[name];
     if (typeof value === "string") patch[name] = value.trim().length > 0 ? value.trim() : null;
     else if (value === null) patch[name] = null;

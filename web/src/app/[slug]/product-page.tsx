@@ -112,7 +112,7 @@ import { TalkSection } from "../talk/talk-section";
 import { InstallLine } from "./install-line";
 import { LaunchHealth } from "./launch-health";
 import { MakerHeaderActions, ProductPitch, VisitorOnly } from "./maker/details";
-import { CrewRoles, EditPostLink, MilestonesManager, NeedsYou, NewPostRow, OrunbaseCard, ViewSwitch } from "./maker/lazy";
+import { CrewRoles, EditPostLink, FinishListing, MilestonesManager, NeedsYou, NewPostRow, OrunbaseCard, ViewSwitch } from "./maker/lazy";
 import { makerSlotProperty, type MakerSlotName } from "./maker/gate";
 import { CrewNoticeLine } from "./maker/notice";
 import { MakerReserve } from "./maker/reserve";
@@ -186,6 +186,11 @@ function longDate(iso: string | null): string | null {
  * The brand is NOT here: `layout.tsx`'s template appends it, and a title that
  * carries its own brand is how `/signin` came to serve it twice.
  */
+/** LR-11 — the three facets the crew edits from this page. */
+function facetsOf(profile: PublicProfile): { category: string | null; hosting: string | null; pricing: string | null } {
+  return { category: profile.category ?? null, hosting: profile.hosting ?? null, pricing: profile.pricing ?? null };
+}
+
 export function listingTitle(slug: string, tagline: string | null): string {
   const trimmed = (tagline ?? "").trim();
   if (trimmed === "") return slug;
@@ -436,7 +441,7 @@ async function ShippingPage({
             </div>
             {/* The one-line pitch — and, for the crew, the form that edits
                 it in place. */}
-            <ProductPitch slug={slug} tagline={profile.tagline} tryUrl={profile.tryUrl} links={profile.links ?? []} start={stageStartOf(profile)} look="shipping" />
+            <ProductPitch slug={slug} tagline={profile.tagline} tryUrl={profile.tryUrl} links={profile.links ?? []} start={stageStartOf(profile)} look="shipping" facets={facetsOf(profile)} />
             {/* The line of facts: category · licence · hosting · followers ·
                 open seats. Each is what the data holds and is absent when it
                 holds nothing (TP0, CT1). */}
@@ -464,6 +469,8 @@ async function ShippingPage({
                 </AppLink>
               ) : null}
             </HeroFacts>
+            {/* LR-11 — the crew's "Finish your listing", after load. */}
+            <FinishListing slug={slug} tagline={profile.tagline} facets={facetsOf(profile)} stackCount={profile.stack.length} />
           </div>
 
           <div className="flex flex-col items-end gap-2 max-sm:items-stretch">
@@ -840,7 +847,7 @@ async function IdeaPage({ read, profile }: { read: ListingRead; profile: PublicP
         </div>
         {/* The idea in one line, as the serif quote — and, for the crew, the
             form that edits it in place. */}
-        <ProductPitch slug={slug} tagline={profile.tagline} tryUrl={profile.tryUrl} links={profile.links ?? []} start={stageStartOf(profile)} look="idea" />
+        <ProductPitch slug={slug} tagline={profile.tagline} tryUrl={profile.tryUrl} links={profile.links ?? []} start={stageStartOf(profile)} look="idea" facets={facetsOf(profile)} />
         <HeroFacts tone="idea">
           {maker ? (
             <span>
@@ -863,6 +870,8 @@ async function IdeaPage({ read, profile }: { read: ListingRead; profile: PublicP
             </a>
           ) : null}
         </HeroFacts>
+        {/* LR-11 — the crew's "Finish your listing", after load. */}
+        <FinishListing slug={slug} tagline={profile.tagline} facets={facetsOf(profile)} stackCount={profile.stack.length} />
         <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-3.5 max-sm:flex-col max-sm:items-stretch max-sm:gap-2.5">
           {/* THE BOARD'S ACTIONS. Take a seat (when one is open), "I'd use
               this" — the product upvote, relabelled, its count only above

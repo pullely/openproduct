@@ -9,6 +9,7 @@ import { PlusIcon } from "../../ui/icons";
 import { AppLink } from "../../ui/link";
 import type { StageStart } from "../where-it-runs";
 
+import type { Facets } from "./gate";
 import { setEditing, useMaker } from "./use-maker";
 
 /** The form, fetched when it is opened: nobody but the crew can open it. */
@@ -50,6 +51,7 @@ export function ProductPitch({
   links,
   start,
   look,
+  facets,
 }: {
   slug: string;
   tagline: string | null;
@@ -59,6 +61,8 @@ export function ProductPitch({
   /** SC-2 — where the product is, for the Stage row and Change stage. */
   start: StageStart;
   look: Look;
+  /** LR-11 — category, hosting and pricing, edited in the same form. */
+  facets: Facets;
 }) {
   const { editing, savedTagline } = useMaker(slug);
   // `undefined` is "nothing saved from this page": the document's own value.
@@ -73,7 +77,7 @@ export function ProductPitch({
     // The pitch stays where it is until the form has arrived.
     return (
       <React.Suspense fallback={pitch}>
-        <DetailsForm slug={slug} tagline={shown ?? ""} tryUrl={tryUrl ?? ""} links={productLinksToText(links)} start={start} look={look} />
+        <DetailsForm slug={slug} tagline={shown ?? ""} tryUrl={tryUrl ?? ""} links={productLinksToText(links)} start={start} look={look} facets={facets} />
       </React.Suspense>
     );
   }

@@ -231,7 +231,7 @@ describe("the header card is the board's", () => {
     // The pitch is the listing's one line, and the same paragraph for
     // everybody on the server.
     expect(header).toContain(
-      '<ProductPitch slug={slug} tagline={profile.tagline} tryUrl={profile.tryUrl} links={profile.links ?? []} start={stageStartOf(profile)} look="shipping" />',
+      '<ProductPitch slug={slug} tagline={profile.tagline} tryUrl={profile.tryUrl} links={profile.links ?? []} start={stageStartOf(profile)} look="shipping" facets={facetsOf(profile)} />',
     );
     // The band is decoration and the desktop board's alone.
     expect(header).toContain('<div aria-hidden="true" className={COVER_PRODUCT} />');
@@ -371,7 +371,7 @@ describe("the idea page is the lavender note", () => {
 
   it("quotes the idea in one line, in the serif italic, from the tagline", () => {
     expect(note).toContain(
-      '<ProductPitch slug={slug} tagline={profile.tagline} tryUrl={profile.tryUrl} links={profile.links ?? []} start={stageStartOf(profile)} look="idea" />',
+      '<ProductPitch slug={slug} tagline={profile.tagline} tryUrl={profile.tryUrl} links={profile.links ?? []} start={stageStartOf(profile)} look="idea" facets={facetsOf(profile)} />',
     );
     const pitch = code("[slug]/maker/details.tsx");
     expect(pitch).toMatch(/idea: "[^"]*font-serif text-title italic/);

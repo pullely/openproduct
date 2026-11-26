@@ -3,7 +3,7 @@
 | | |
 |---|---|
 | Epic | `openproduct-left-rail` (EP-6) |
-| Status | Complete when LR9 lands: LR0 to LR5 #27 to #32, LR6 #33, LR7 #34, LR8 #35, LR9 this PR |
+| Status | Complete when LR9 lands: LR0 to LR5 #27 to #32, LR6 #33, LR7 #34, LR8 #35, LR9 #37 and #38, LR10 this PR |
 | Came from | Owner requests on 2026-11-23, drawn on the Claude Design canvas the same day |
 | Design | `design.md`; the board in `boards/` (the canvas at version 11) |
 
@@ -24,6 +24,7 @@ the phone up.
 | LR7 — any link on a product | LR-8 | The crew adds labelled links from Edit details |
 | LR8 — plain links and a straight door | LR-9 | Links are their addresses; the workspace is one ink button that goes straight to Orunbase |
 | LR9 — the category in reach | LR-10 | The studio step is Category and stack; a missing category is an Add a category link on the listing card |
+| LR10 — settings in reach from the product page | LR-11 | Finish your listing card for the crew; Category, Pricing and Hosting in Edit details; a Settings button |
 
 The epic is done when every milestone is live and the site matches the
 board.
