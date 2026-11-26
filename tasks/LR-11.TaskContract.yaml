@@ -1,0 +1,25 @@
+# LR-11: milestone LR10, settings in reach from the product page. The crew
+# sees when a listing is hidden from the products list and sets its category
+# in place; Edit details holds the three facets; Settings is a button.
+# The file is the contract; the task itself lives in Orunbase.
+apiVersion: orun.io/v1
+kind: TaskContract
+metadata:
+  name: LR-11
+  title: "LR10: settings in reach from the product page"
+spec:
+  goal: The crew sets a listing's category, pricing and hosting from its product page in at most two clicks, and the page tells them when the listing is hidden from the products list.
+  affects:
+    - web/**
+    - packages/contracts/**
+    - tests/**
+    - specs/epics/openproduct-left-rail/**
+    - tasks/**
+  deps:
+    - LR-10
+  doneWhen:
+    - A crew member on Manage sees Finish your listing when a floor field or facet is missing, and can set the category from it
+    - Edit details has Category, Pricing and Hosting selects that save with the pitch
+    - A Settings button beside Edit details opens the listing's settings page
+    - Visitors download none of it and every lane passes in CI
+  gates: []

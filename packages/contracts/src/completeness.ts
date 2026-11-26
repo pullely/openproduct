@@ -87,7 +87,7 @@ export type CompletenessField = (typeof COMPLETENESS_FIELDS)[number];
 export const COMPLETENESS_LABEL: Record<CompletenessField, string> = {
   tagline: "A one-line description",
   pitch: "The pitch",
-  category: "A topic",
+  category: "A category",
   hosting: "How it runs",
   pricing: "What it costs to use",
   stack: "What it is built with",

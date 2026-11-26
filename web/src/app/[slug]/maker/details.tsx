@@ -9,6 +9,7 @@ import { PlusIcon } from "../../ui/icons";
 import { AppLink } from "../../ui/link";
 import type { StageStart } from "../where-it-runs";
 
+import { settingsHref, type Facets } from "./gate";
 import { setEditing, useMaker } from "./use-maker";
 
 /** The form, fetched when it is opened: nobody but the crew can open it. */
@@ -50,6 +51,7 @@ export function ProductPitch({
   links,
   start,
   look,
+  facets,
 }: {
   slug: string;
   tagline: string | null;
@@ -59,6 +61,8 @@ export function ProductPitch({
   /** SC-2 — where the product is, for the Stage row and Change stage. */
   start: StageStart;
   look: Look;
+  /** LR-11 — category, hosting and pricing, edited in the same form. */
+  facets: Facets;
 }) {
   const { editing, savedTagline } = useMaker(slug);
   // `undefined` is "nothing saved from this page": the document's own value.
@@ -73,7 +77,7 @@ export function ProductPitch({
     // The pitch stays where it is until the form has arrived.
     return (
       <React.Suspense fallback={pitch}>
-        <DetailsForm slug={slug} tagline={shown ?? ""} tryUrl={tryUrl ?? ""} links={productLinksToText(links)} start={start} look={look} />
+        <DetailsForm slug={slug} tagline={shown ?? ""} tryUrl={tryUrl ?? ""} links={productLinksToText(links)} start={start} look={look} facets={facets} />
       </React.Suspense>
     );
   }
@@ -82,13 +86,14 @@ export function ProductPitch({
 
 /**
  * The maker's header actions (boards `Product`, `ProductIdea`): "Edit
- * details" opens the form above; "New post" goes to the kind pills on the
+ * details" opens the form above; "Settings" (LR-11) opens the listing's
+ * settings in the studio, where its tabs reach everything else; "New post" goes to the kind pills on the
  * Updates tab of a shipping product, and straight to the builder on an idea.
  * Crew only, on Manage; hidden while the form is open (it has its own Save
  * and Cancel).
  */
 export function MakerHeaderActions({ slug, look }: { slug: string; look: Look }) {
-  const { managing, editing } = useMaker(slug);
+  const { managing, editing, crew } = useMaker(slug);
   if (!managing || editing) return null;
   return (
     <>
@@ -99,6 +104,15 @@ export function MakerHeaderActions({ slug, look }: { slug: string; look: Look })
       >
         Edit details
       </button>
+      {crew ? (
+        <AppLink
+          href={settingsHref(crew)}
+          data-settings-link
+          className={`${BTN_SOFT} ${look === "idea" ? "!bg-idea-deep/[0.08] !text-idea-deep" : ""} ${FOCUS}`}
+        >
+          Settings
+        </AppLink>
+      ) : null}
       <AppLink
         href={look === "idea" ? composePostPagePath(slug) : `/${slug}#post`}
         className={`${BTN_INK} ${look === "idea" ? "!bg-idea-deep !text-idea-wash" : ""} ${FOCUS}`}

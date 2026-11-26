@@ -392,6 +392,36 @@ Departures, said plainly:
 - Not checked in a signed-in browser; the source-reading test
   `category-in-reach.test.ts` and the web-perf studio lane cover it.
 
+## From LR10
+
+Owner: "make the flow to these settings more easy". Setting a category took
+six steps from the product page (Manage, Edit details, More settings,
+Topics, pick, save), and nothing said the listing was hidden.
+
+- **Finish your listing** (`maker/finish-listing.tsx`, fetched through
+  `lazy.tsx`): the crew who write, on Manage, see it under the line of facts
+  on both looks of the product page. With no pitch or no category it says
+  "<slug> is hidden from the products list" and sets the category in place
+  (one select, Save). Other gaps (Pricing, Hosting, Stack) are links: the
+  first two open Edit details, Stack goes to the studio step. Nothing
+  missing, no card. A category saved here counts at once, though the cached
+  page can be a minute behind.
+- **Edit details holds the facets**: Category, Pricing and Hosting selects,
+  saved with the pitch through `POST /{slug}/manage/profile`, which now
+  passes `category`, `hosting` and `pricing` on to core (an empty choice
+  clears it). Core already validated them.
+- **Settings is a button** beside Edit details, to the listing's settings
+  page in the studio, whose tabs reach the rest. The folded "More settings"
+  list at the bottom of Edit details is gone (`moreSettingsLinks` removed;
+  `settingsHref` and the `Facets` type live in `gate.ts`, which the eager
+  files may import).
+- The completeness label for `category` is "A category" (was "A topic").
+
+Departures, said plainly:
+
+- Not checked in a signed-in browser; source-reading tests and the
+  web-perf lanes cover it.
+
 ## Known follow-ups
 
 None is scheduled; each is a departure recorded above.

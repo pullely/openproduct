@@ -42,7 +42,7 @@ import { fileURLToPath } from "node:url";
 
 import { LISTING_SETTINGS_SEGMENT, listingBasePath, listingSettingsPath } from "@openproduct/contracts";
 
-import { moreSettingsLinks } from "@openproduct-web/app/[slug]/maker/model";
+import { settingsHref } from "@openproduct-web/app/[slug]/maker/model";
 import { LISTING_BASE_STATUS, listingBaseDestination, listingDiscussionsDestination } from "@openproduct-web/app/studio/moved";
 import { GET, STUDIO_MOVED_TO } from "@openproduct-web/app/studio/route";
 
@@ -168,11 +168,9 @@ describe("a step is redirected only when the product page can do its job", () =>
     expect(code("studio/[org]/[profile]/discussions/actions/route.ts")).toContain("#discussions");
     expect(code("studio/[org]/[profile]/settings/page.tsx")).toContain("<DiscussionsCard");
     // Nothing offers the address as a place to go: not the strip, not
-    // "More settings".
+    // the Settings button.
     expect(code("studio/[org]/[profile]/step-strip.tsx")).not.toContain("/discussions");
-    expect(
-      moreSettingsLinks({ org: "org_1", profile: "opp_1" }).map((link) => link.label),
-    ).toEqual(["Settings", "Details", "Media", "Category and stack", "People", "Launches"]);
+    expect(settingsHref({ org: "org_1", profile: "opp_1" })).toBe("/studio/org_1/opp_1/settings");
   });
 
   it("a published listing's base address goes to its product page; a draft's to its settings", () => {

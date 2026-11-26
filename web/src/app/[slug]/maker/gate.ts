@@ -11,7 +11,7 @@
 //
 // PURE, AND NO JSX: the web test lane is module-level.
 
-import { composePostPagePath, crewRoleWrites, type OverlayCrew } from "@openproduct/contracts";
+import { composePostPagePath, crewRoleWrites, listingSettingsPath, type OverlayCrew } from "@openproduct/contracts";
 
 // ─── the Manage / Visitor switch ───────────────────────────────────────────
 
@@ -140,3 +140,24 @@ export function makerReserveBoot(slug: string): string {
   const slots = JSON.stringify(MAKER_SLOTS);
   return `try{var r=document.documentElement,m=JSON.parse(localStorage.getItem(${key})||"null");if(m&&r.classList.contains("op-signed-in")){var s=${slots},n=0;for(var i=0;s.length>i;i++){var h=m[s[i]];if(typeof h==="number"&&h>0&&4000>h){r.style.setProperty("--maker-"+s[i],Math.round(h)+"px");n++}}if(n)r.setAttribute("${MAKER_RESERVE_ATTRIBUTE}",${JSON.stringify(slug)})}}catch(e){}`;
 }
+
+// ─── settings in reach (LR-11) ─────────────────────────────────────────────
+
+/** The three facets a listing is filed under. */
+export interface Facets {
+  category: string | null;
+  hosting: string | null;
+  pricing: string | null;
+}
+
+/**
+ * Where the listing's settings live: the studio page with its tabs. The
+ * crew's Settings button, built in the crew's own browser from the ids the
+ * overlay answered — never in the cached page, which carries no address of a
+ * maintainer's surface. (It replaces the "More settings" list that sat
+ * folded at the bottom of Edit details.)
+ */
+export function settingsHref(crew: { org: string; profile: string }): string {
+  return listingSettingsPath(crew.org, crew.profile);
+}
+

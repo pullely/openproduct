@@ -411,6 +411,10 @@ export interface CrewProfilePatch {
   slug?: string;
   tagline?: string | null;
   pitch?: string | null;
+  /** LR-11 — the three facets, set from the product page. `null` clears. */
+  category?: string | null;
+  hosting?: string | null;
+  pricing?: string | null;
 }
 
 /** The fields of the answer these pages read. The full maintainer profile
