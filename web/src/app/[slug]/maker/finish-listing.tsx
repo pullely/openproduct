@@ -21,6 +21,12 @@ import { setEditing, useMaker } from "./use-maker";
  * plain words, sets the category in place, and points each other gap at the
  * one control that fills it. When nothing is missing it is not drawn.
  *
+ * PINNED TO THE BOTTOM OF THE WINDOW, NOT IN THE FLOW. It arrives after the
+ * overlay answers, on a page already painted; drawn in the flow it pushed
+ * everything under the header down (signed-in CLS above 0.5 in web-perf).
+ * Fixed, it moves nothing. Above the phone's tab bar; closable for the rest
+ * of the session.
+ *
  * CREW ONLY, ON MANAGE, AFTER LOAD. It is fetched through `lazy.tsx`, so a
  * visitor's browser never downloads it; the facts it reads are the public
  * ones the page already drew.
@@ -42,8 +48,16 @@ export function FinishListing({
   const [savedCategory, setSavedCategory] = React.useState<string | null>(null);
   const [busy, setBusy] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
+  const [closed, setClosed] = React.useState(false);
+  React.useEffect(() => {
+    try {
+      if (window.sessionStorage.getItem(closedKey(slug)) === "1") setClosed(true);
+    } catch {
+      // No storage: the card stays closable for this page only.
+    }
+  }, [slug]);
 
-  if (!managing || editing || crew === null) return null;
+  if (!managing || editing || crew === null || closed) return null;
   // The cached page can be a minute behind a save: what was just saved here
   // counts as filled.
   const plan = finishPlanOf({ ...facets, category: facets.category ?? savedCategory, tagline, stackCount });
@@ -75,13 +89,30 @@ export function FinishListing({
         ? "Add a one-line pitch to show it."
         : "A few details help people find it.";
 
+  const close = () => {
+    setClosed(true);
+    try {
+      window.sessionStorage.setItem(closedKey(slug), "1");
+    } catch {
+      // No storage: closed for this page only.
+    }
+  };
+
   return (
     <section
       aria-label="Finish your listing"
       data-finish-listing
-      className="flex flex-col gap-3 rounded-[16px] bg-well p-4 ring-1 ring-inset ring-foreground/[0.08] max-sm:p-3.5"
+      className="fixed inset-x-0 bottom-[calc(16px+env(safe-area-inset-bottom))] z-40 mx-auto box-border flex w-[min(640px,calc(100%-20px))] flex-col gap-3 rounded-[16px] bg-card p-4 shadow-[0_8px_32px_rgba(0,0,0,0.16)] ring-1 ring-inset ring-foreground/[0.08] max-sm:bottom-[calc(88px+env(safe-area-inset-bottom))] max-sm:p-3.5"
     >
-      <div className="flex flex-col gap-1">
+      <div className="flex flex-col gap-1 pr-8">
+        <button
+          type="button"
+          onClick={close}
+          aria-label="Close"
+          className={`absolute right-2.5 top-2.5 inline-flex h-[32px] w-[32px] cursor-pointer items-center justify-center rounded-full border-0 bg-transparent text-[18px] leading-none text-muted-foreground hover:bg-foreground/[0.06] hover:text-foreground max-sm:h-[44px] max-sm:w-[44px] ${FOCUS}`}
+        >
+          ×
+        </button>
         <h2 className="m-0 text-[15px] font-semibold leading-[1.35] text-foreground">{title}</h2>
         <p className="m-0 text-[13px] leading-[1.5] text-muted-foreground">
           {savedCategory && !plan.hidden ? "Saved. It shows on the products list within a minute. " : null}
@@ -98,7 +129,7 @@ export function FinishListing({
               value={category}
               onChange={(event) => setCategory(event.target.value)}
               aria-invalid={error !== null}
-              className="box-border h-[40px] w-full rounded-full border-0 bg-card px-3.5 text-nozoom text-foreground outline-none ring-1 ring-inset ring-foreground/[0.08] focus:ring-2 focus:ring-ring max-sm:h-[44px]"
+              className="box-border h-[40px] w-full rounded-full border-0 bg-well px-3.5 text-nozoom text-foreground outline-none ring-1 ring-inset ring-foreground/[0.08] focus:ring-2 focus:ring-ring max-sm:h-[44px]"
             >
               <option value="">Pick a category</option>
               {(facet("category")?.values ?? []).map((value) => (
@@ -161,4 +192,9 @@ function FixButton({ onClick, children }: { onClick: () => void; children: React
       {children}
     </button>
   );
+}
+
+/** Where "closed for this session" is remembered, per product. */
+function closedKey(slug: string): string {
+  return `op-finish-closed:${slug}`;
 }

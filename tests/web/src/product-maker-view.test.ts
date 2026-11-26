@@ -293,7 +293,7 @@ describe("no maker element is in any server render", () => {
       "notice.tsx": ["if (!isCrew || line === null) return null;"],
       "details.tsx": ["if (!managing || editing) return null;", "if (editing) {"],
       "details-form.tsx": ["if (!managing) return null;"],
-      "finish-listing.tsx": ["if (!managing || editing || crew === null) return null;"],
+      "finish-listing.tsx": ["if (!managing || editing || crew === null || closed) return null;"],
     };
     for (const [file, wanted] of Object.entries(gates)) {
       const source = code(`${MAKER_DIR}/${file}`);

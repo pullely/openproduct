@@ -51,7 +51,7 @@ describe("Finish your listing", () => {
     expect(lazy).toContain('import("./finish-listing")');
     expect(lazy).toMatch(/if \(!managing \|\| !writes\) return null;\s*return \(\s*<React\.Suspense fallback=\{null\}>\s*<FinishListingBody/);
     const card = code("[slug]/maker/finish-listing.tsx");
-    expect(card).toContain("if (!managing || editing || crew === null) return null;");
+    expect(card).toContain("if (!managing || editing || crew === null || closed) return null;");
     expect(card).toContain('crewWrite<unknown>(slug, "profile", { category })');
   });
 

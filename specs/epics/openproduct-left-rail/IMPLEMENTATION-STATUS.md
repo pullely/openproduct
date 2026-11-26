@@ -399,8 +399,11 @@ six steps from the product page (Manage, Edit details, More settings,
 Topics, pick, save), and nothing said the listing was hidden.
 
 - **Finish your listing** (`maker/finish-listing.tsx`, fetched through
-  `lazy.tsx`): the crew who write, on Manage, see it under the line of facts
-  on both looks of the product page. With no pitch or no category it says
+  `lazy.tsx`): the crew who write, on Manage, see it as a bar pinned to the
+  bottom of the window (above the phone's tab bar), closable for the
+  session. Pinned, not in the flow: it arrives after the overlay answers,
+  and in the flow it pushed the page down (signed-in CLS 0.57 to 1.46 in
+  web-perf). With no pitch or no category it says
   "<slug> is hidden from the products list" and sets the category in place
   (one select, Save). Other gaps (Pricing, Hosting, Stack) are links: the
   first two open Edit details, Stack goes to the studio step. Nothing
@@ -416,6 +419,8 @@ Topics, pick, save), and nothing said the listing was hidden.
   `settingsHref` and the `Facets` type live in `gate.ts`, which the eager
   files may import).
 - The completeness label for `category` is "A category" (was "A topic").
+- JS budgets: product pages +938 bytes, /talk +1,020, /submit +355 (CI
+  plus 300), recorded in `budgets.mjs`.
 
 Departures, said plainly:
 
