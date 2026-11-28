@@ -6042,6 +6042,46 @@ export function createOpenproductRepository(sql: SqlExecutor): OpenproductReposi
       return res.rows.length > 0;
     },
 
+    async getAgentIdempotency(credentialId, key, since) {
+      const res = await sql.execute<{
+        method: string;
+        path: string;
+        status: number;
+        body: unknown;
+        created_at: string | Date;
+      }>(
+        `SELECT method, path, status, body, created_at FROM openproduct.agent_idempotency
+          WHERE credential_id = $1 AND key = $2 AND created_at > $3`,
+        [credentialId, key, since],
+      );
+      const row = res.rows[0];
+      if (!row) return null;
+      let body: unknown = row.body;
+      if (typeof body === "string") {
+        try {
+          body = JSON.parse(body);
+        } catch {
+          // kept as text
+        }
+      }
+      return { credentialId, key, method: row.method, path: row.path, status: Number(row.status), body, createdAt: iso(row.created_at)! };
+    },
+
+    async putAgentIdempotency(input) {
+      await sql.execute(
+        `INSERT INTO openproduct.agent_idempotency (credential_id, key, method, path, status, body, created_at)
+         VALUES ($1, $2, $3, $4, $5, $6::text::jsonb, $7)
+         ON CONFLICT (credential_id, key) DO NOTHING`,
+        [input.credentialId, input.key, input.method, input.path, input.status, JSON.stringify(input.body ?? null), input.at],
+      );
+      await sql.execute(
+        `DELETE FROM openproduct.agent_idempotency
+          WHERE (credential_id, key) IN (SELECT credential_id, key FROM openproduct.agent_idempotency
+                                          WHERE created_at < $1 LIMIT 200)`,
+        [input.olderThan],
+      );
+    },
+
     async revokeAgentCredentialByTokenHash(tokenHash, at) {
       await sql.execute(
         `UPDATE openproduct.agent_credentials

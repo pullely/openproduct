@@ -56,6 +56,6 @@ describe("MC2 — every route is a tool, an exclusion, or a milestone still to c
   it("says plainly how much is still to come", () => {
     const pending = catalogueUses().filter(({ use }) => "notYet" in use);
     // The number only ever goes down; MC7 takes it to zero and MC8 deletes it.
-    expect(pending.length).toBeLessThanOrEqual(76);
+    expect(pending.length).toBeLessThanOrEqual(70);
   });
 });

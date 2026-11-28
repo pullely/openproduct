@@ -584,5 +584,14 @@ export const manifest: MigrationManifest = {
       description:
         "openproduct: agent_refresh_history keeps every refresh hash a rotation replaced, so any of them coming back revokes the credential; oauth_codes.credential_id, so a replayed code revokes what it produced (openproduct-mcp MC1, after its security review)",
     },
+    {
+      id: "2310_openproduct_agent_idempotency",
+      context: "openproduct",
+      path: "2310_openproduct_agent_idempotency/up.sql",
+      checksum:
+        "0f28cd22c15f7e5d14d1f22c13e430dd66f4c2749bdd6ad166ecd9e86ed89a64",
+      description:
+        "openproduct: agent_idempotency keeps a creating call's first answer for a day under (credential, key), so an agent's retry gets that answer back rather than a second listing, post or image (openproduct-mcp MC3)",
+    },
   ],
 };

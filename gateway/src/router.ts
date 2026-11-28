@@ -1119,6 +1119,21 @@ export interface WriteContext {
   cache?: { purge(options: { tags: string[] }): Promise<{ success: boolean; errors?: unknown }> };
 }
 
+/** POST a JSON body to core and read its `data`; null on anything but an answer. */
+async function askCoreJson(core: Fetcher, path: string, body: unknown): Promise<Record<string, unknown> | null> {
+  try {
+    const res = await core.fetch(new URL(path, "https://openproduct.internal").toString(), {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(body),
+    });
+    if (!res.ok) return null;
+    return (((await res.json()) as { data?: Record<string, unknown> }).data ?? null);
+  } catch {
+    return null;
+  }
+}
+
 /** Does a crew path name a listing outside the agent's restriction? */
 function outsideRestriction(pathname: string, agent: ResolvedAgentCredential): boolean {
   if (agent.listingIds === null) return false;
@@ -1143,11 +1158,29 @@ function signedInContext(
   return {
     agent,
     publicGet: (pathAndQuery) => route(new Request(`${origin}${pathAndQuery}`, { method: "GET" }), env),
-    asPerson: async (method, path, body) => {
+    siteOrigin: (env.SITE_ORIGIN ?? "").trim().replace(/\/+$/, ""),
+    asPerson: async (method, path, body, opts) => {
       const pathname = new URL(`${origin}${path}`).pathname;
       if (!isAuthenticatedRoute(pathname)) return errorResponse("not_found", "Not found", 404, requestId);
       // THE LISTING RESTRICTION, at the one door every crew route goes through.
       if (outsideRestriction(pathname, agent)) return errorResponse("not_found", "Not found", 404, requestId);
+      // MC3 — THE SAME KEY GETS THE FIRST ANSWER. Asked before anything else
+      // costs: a retry neither spends a token nor writes twice. A key reused
+      // for a different call is refused, never answered with the wrong thing.
+      const key = method !== "GET" ? opts?.idempotencyKey : undefined;
+      if (key && env.CORE) {
+        const kept = await askCoreJson(env.CORE, "/internal/openproduct/agent-idempotency/lookup", {
+          credentialId: agent.credentialId,
+          key,
+        });
+        const hit = kept?.kept as { method: string; path: string; status: number; body: unknown } | null | undefined;
+        if (hit) {
+          if (hit.method !== method || hit.path !== path) {
+            return errorResponse("conflict", "That idempotencyKey was used for a different call. Use a fresh one.", 409, requestId);
+          }
+          return Response.json(hit.body, { status: hit.status, headers: { "cache-control": "no-store", "x-idempotent-replay": "true" } });
+        }
+      }
       // THE AGENT'S OWN BUCKET, on top of the person's: a runaway loop stops at
       // the credential before it spends what the person has (design §7.2).
       if (method !== "GET") {
@@ -1156,7 +1189,19 @@ function signedInContext(
       }
       const init: RequestInit = { method, headers: { "content-type": "application/json" } };
       if (body !== undefined) init.body = JSON.stringify(body);
-      return handleAuthenticated(new Request(`${origin}${path}`, init), env, requestId, pathname, ctx, { subject, agent });
+      const response = await handleAuthenticated(new Request(`${origin}${path}`, init), env, requestId, pathname, ctx, { subject, agent });
+      if (key && env.CORE && response.ok) {
+        const copy = await response.clone().json().catch(() => null);
+        await askCoreJson(env.CORE, "/internal/openproduct/agent-idempotency/store", {
+          credentialId: agent.credentialId,
+          key,
+          method,
+          path,
+          status: response.status,
+          body: copy,
+        });
+      }
+      return response;
     },
   };
 }

@@ -4,8 +4,8 @@
 |---|---|---|---|
 | MC0 — the spec | MC-1 | Done | #40 |
 | MC1 — connecting an agent | MC-2 | Done | #41 |
-| MC2 — the signed-in endpoint and the parity guard | MC-3 | In review | this PR |
-| MC3 — listings and their words | MC-4 | Not started | |
+| MC2 — the signed-in endpoint and the parity guard | MC-3 | Done | #42 |
+| MC3 — listings and their words | MC-4 | In review | this PR |
 | MC4 — images | MC-5 | Not started | |
 | MC5 — posts, milestones, launches | MC-6 | Not started | |
 | MC6 — seats, crew and the product's discussions | MC-7 | Not started | |
@@ -142,3 +142,37 @@ Departures from the design, said plainly:
 - **`list_workspaces` moves to MC3** beside `create_listing`, the one tool
   that needs it. **Idempotency keys and `via` in audit entries** move to
   MC3 too, with the first writes.
+
+## From MC3
+
+What landed:
+
+- **Tools**: `list_workspaces`, `create_listing`, `update_listing` (tagline,
+  description, install line, repository, try and live addresses, links,
+  stack, category, hosting, pricing, slug), `change_stage`,
+  `get_publish_checklist`, `publish_listing`, `unpublish_listing`,
+  `get_listing_sync`. Each sends exactly the request the website's own
+  control sends, to the same route, with only the fields named.
+- **Creating needs the workspace's link grant**, as on the website. Without
+  one, `create_listing` says where the person links a workspace; an agent
+  limited to named listings cannot create one at all.
+- **Publishing asks the person first**: `publish_listing` is refused unless
+  `acknowledged: true`, and its refusal sends the agent to
+  `get_publish_checklist`, which says in plain words what becomes public
+  (owner decision Q3).
+- **Idempotency keys** (migration 2310, `agent_idempotency`): a creating
+  call may carry one; the first 2xx answer is kept for a day under
+  (credential, key), and the same key gets it back without a second write
+  or a rate-limit token. A key kept for a different call is a 409. The
+  check sits inside the one door every agent write goes through
+  (`asPerson`), so every creating tool from here on has it.
+- **`via` in the audit**: core's request scope learns the credential from
+  the gateway's `x-actor-agent-credential`, and `repoFor` stamps
+  `payload.via = {kind: "agent", credentialId}` into every audit entry the
+  request writes (`withVia`), so no handler can forget.
+
+Departures from the design, said plainly:
+
+- **The publish checklist names the public keys and says them in one
+  paragraph**, rather than the website's line-by-line disclosure, which
+  lives in the web app and is not importable by the gateway.
