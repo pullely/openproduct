@@ -78,9 +78,58 @@ describe("openproduct — agent credentials (openproduct-mcp MC1)", () => {
       at: AT,
       expiresAt: LATER,
     });
-    const first = await repo.consumeOAuthCode("code-1", AT);
+    expect(await repo.consumeOAuthCode("code-1", "ocl_other", AT)).toBeNull();
+    const first = await repo.consumeOAuthCode("code-1", "ocl_test", AT);
     expect(first).toMatchObject({ clientId: "ocl_test", subjectId: ACTOR, scopes: ["read"], listingIds: ["prf_one"] });
-    expect(await repo.consumeOAuthCode("code-1", AT)).toBeNull();
+    expect(await repo.consumeOAuthCode("code-1", "ocl_test", AT)).toBeNull();
+  });
+
+  it("revokes what a code produced when the code comes back", async () => {
+    await oauthCredential();
+    await repo.issueOAuthCode({
+      codeHash: "code-2",
+      clientId: "ocl_test",
+      subjectId: ACTOR,
+      redirectUri: "https://client.example/cb",
+      codeChallenge: "E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM",
+      scopes: ["read"],
+      listingIds: null,
+      at: AT,
+      expiresAt: LATER,
+    });
+    expect(await repo.consumeOAuthCode("code-2", "ocl_test", AT)).not.toBeNull();
+    await repo.linkOAuthCode("code-2", "agc_one");
+    expect(await repo.consumeOAuthCode("code-2", "ocl_test", LATER)).toBeNull();
+    expect((await repo.resolveAgentCredential("access-agc_one"))?.revokedAt).toBe(LATER);
+  });
+
+  it("revokes when ANY replaced refresh token returns, not only the last", async () => {
+    await oauthCredential();
+    const rotate = (from: string, to: string) =>
+      repo.rotateAgentCredential({
+        refreshHash: from,
+        clientId: "ocl_test",
+        newTokenHash: `access-${to}`,
+        newRefreshHash: to,
+        tokenExpiresAt: HOUR,
+        expiresAt: MONTH,
+        at: LATER,
+      });
+    // The thief refreshes twice before the real client does.
+    expect((await rotate("refresh-agc_one", "r2")).kind).toBe("rotated");
+    expect((await rotate("r2", "r3")).kind).toBe("rotated");
+    // The real client's token is two rotations old.
+    expect(await rotate("refresh-agc_one", "r4")).toEqual({ kind: "reused" });
+    expect((await repo.resolveAgentCredential("access-r3"))?.revokedAt).toBe(LATER);
+  });
+
+  it("prunes expired codes and clients that never connected anybody", async () => {
+    await client("ocl_stale");
+    await oauthCredential();
+    const pruned = await repo.pruneOAuthStore("2026-11-30T12:00:00.000Z");
+    expect(pruned.clients).toBe(1);
+    expect(await repo.getOAuthClient("ocl_stale")).toBeNull();
+    expect(await repo.getOAuthClient("ocl_test")).not.toBeNull();
   });
 
   it("resolves by access-token hash, and rotates a refresh in place", async () => {

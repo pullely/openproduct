@@ -35,7 +35,6 @@ import {
   OAUTH_STATE_MAX,
   OAUTH_TOKEN_PATH,
   PROTECTED_RESOURCE_METADATA_PATH,
-  authorizationRedirect,
   authorizationServerMetadata,
   isPkceChallenge,
   parseScopeParam,
@@ -46,7 +45,7 @@ import {
 
 import type { Env } from "./env.js";
 import { errorResponse } from "./http.js";
-import { anonKey, takeToken, withRetryAfter } from "./ratelimit.js";
+import { anonKey, networkKey, takeToken, withRetryAfter } from "./ratelimit.js";
 
 const CLIENT_READ_RE = /^\/v1\/openproduct\/oauth\/clients\/(ocl_[A-Za-z0-9_-]{1,64})$/;
 
@@ -142,9 +141,13 @@ function postJson(body: unknown, requestId: string): RequestInit {
 }
 
 async function gate(bucket: "oauthRegister" | "oauthToken", request: Request, env: Env): Promise<Response | null> {
-  const verdict = await takeToken(bucket, anonKey(request), env);
-  if (verdict.ok) return null;
-  return withRetryAfter(oauthErrorResponse("slow_down", "Too many requests from this address. Retry-After says when."), verdict);
+  const verdicts =
+    bucket === "oauthRegister"
+      ? [await takeToken("oauthRegister", networkKey(request), env), await takeToken("oauthRegisterAll", "all", env)]
+      : [await takeToken("oauthToken", anonKey(request), env)];
+  const refused = verdicts.find((v) => !v.ok);
+  if (!refused || refused.ok) return null;
+  return withRetryAfter(oauthErrorResponse("temporarily_unavailable", "Too many requests. Retry-After says when.", 429), refused);
 }
 
 interface StoredClient {
@@ -255,20 +258,23 @@ export async function handleOAuth(request: Request, env: Env, requestId: string)
     if (!redirectUriMatches(client.redirectUris, redirectUri)) {
       return authorizeRefusal("This app asked to come back to an address it did not register.");
     }
+    // NOTHING HERE REDIRECTS ON A REFUSAL (RFC 9700 §4.11.2, security
+    // review): a client registers itself, so a redirect URI that "matches"
+    // may be an attacker's own, and a 302 there with no person involved
+    // would make this origin a trusted-looking hop to anywhere. Every refusal
+    // is a page; only the person's own Allow or Cancel goes back.
     const state = q.get("state");
-    const back = (error: string, description: string) =>
-      redirectTo(authorizationRedirect(redirectUri, { error, errorDescription: description, state }));
-    if (state !== null && state.length > OAUTH_STATE_MAX) return back("invalid_request", "state is too long.");
-    if (q.get("response_type") !== "code") return back("unsupported_response_type", "Only response_type=code is supported.");
+    if (state !== null && state.length > OAUTH_STATE_MAX) return authorizeRefusal("This app sent a state that is too long.");
+    if (q.get("response_type") !== "code") return authorizeRefusal("This app asked for a kind of sign-in openproduct does not offer.");
     if (q.get("code_challenge_method") !== "S256" || !isPkceChallenge(q.get("code_challenge"))) {
-      return back("invalid_request", "PKCE with code_challenge_method=S256 is required.");
+      return authorizeRefusal("This app did not protect its sign-in with PKCE (S256), which openproduct requires.");
     }
     const resource = q.get("resource");
     if (resource !== null && resource.replace(/\/+$/, "") !== `${origin}${MCP_SIGNED_IN_PATH}` && resource.replace(/\/+$/, "") !== origin) {
-      return back("invalid_target", `This server issues tokens for ${origin}${MCP_SIGNED_IN_PATH}.`);
+      return authorizeRefusal(`This app asked for a token for another server. openproduct issues tokens for ${origin}${MCP_SIGNED_IN_PATH}.`);
     }
     const scopes = parseScopeParam(q.get("scope"));
-    if ("error" in scopes) return back("invalid_scope", scopes.error);
+    if ("error" in scopes) return authorizeRefusal(scopes.error);
     const site = (env.SITE_ORIGIN ?? "").trim().replace(/\/+$/, "");
     if (!site) return authorizeRefusal("openproduct is unavailable right now. Try again in a minute.");
     const consent = new URL(`${site}${CONSENT_PAGE_PATH}`);

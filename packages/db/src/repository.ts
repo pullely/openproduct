@@ -5860,9 +5860,10 @@ export function createOpenproductRepository(sql: SqlExecutor): OpenproductReposi
       );
     },
 
-    async consumeOAuthCode(codeHash, at) {
-      // ONE STATEMENT: the row is marked and returned together, so two
-      // redemptions of one code racing each other cannot both see it unused.
+    async consumeOAuthCode(codeHash, clientId, at) {
+      // ONE STATEMENT, and only for the client the code was issued to: two
+      // redemptions racing cannot both see it unused, and somebody else
+      // holding a leaked code cannot spoil it for the real client.
       const res = await sql.execute<{
         client_id: string;
         subject_id: string;
@@ -5873,13 +5874,24 @@ export function createOpenproductRepository(sql: SqlExecutor): OpenproductReposi
         expires_at: string | Date;
       }>(
         `UPDATE openproduct.oauth_codes
-            SET consumed_at = $2
-          WHERE code_hash = $1 AND consumed_at IS NULL
+            SET consumed_at = $3
+          WHERE code_hash = $1 AND client_id = $2 AND consumed_at IS NULL
         RETURNING client_id, subject_id, redirect_uri, code_challenge, scopes, listing_ids, expires_at`,
-        [codeHash, at],
+        [codeHash, clientId, at],
       );
       const row = res.rows[0];
-      if (!row) return null;
+      if (!row) {
+        // A CODE PRESENTED AGAIN by its own client: whatever it produced was
+        // produced for whoever won the race, so it is revoked (RFC 6749 §4.1.2).
+        await sql.execute(
+          `UPDATE openproduct.agent_credentials c
+              SET revoked_at = COALESCE(c.revoked_at, $3)
+             FROM openproduct.oauth_codes o
+            WHERE o.code_hash = $1 AND o.client_id = $2 AND o.consumed_at IS NOT NULL AND c.id = o.credential_id`,
+          [codeHash, clientId, at],
+        );
+        return null;
+      }
       return {
         clientId: row.client_id,
         subjectId: row.subject_id,
@@ -5924,20 +5936,27 @@ export function createOpenproductRepository(sql: SqlExecutor): OpenproductReposi
     },
 
     async rotateAgentCredential(input) {
-      // THE LIVE REFRESH TOKEN: rotate both hashes in one guarded statement.
-      // The guard is the hash itself, so two refreshes racing with one token
-      // rotate once; the loser finds the hash already moved and lands below.
+      // THE LIVE REFRESH TOKEN: rotate both hashes in one guarded statement,
+      // and remember the hash it replaced. The guard is the hash itself, so
+      // two refreshes racing with one token rotate once; the loser lands below.
       const rotated = await sql.execute<AgentCredentialRow>(
-        `UPDATE openproduct.agent_credentials
-            SET previous_refresh_hash = refresh_hash,
-                refresh_hash = $3,
-                token_hash = $4,
-                token_expires_at = $5,
-                expires_at = $6,
-                last_used_at = $7
-          WHERE refresh_hash = $1 AND client_id = $2 AND kind = 'oauth'
-            AND revoked_at IS NULL AND expires_at > $7
-        RETURNING ${AGENT_CREDENTIAL_COLUMNS}`,
+        `WITH moved AS (
+           UPDATE openproduct.agent_credentials
+              SET previous_refresh_hash = refresh_hash,
+                  refresh_hash = $3,
+                  token_hash = $4,
+                  token_expires_at = $5,
+                  expires_at = $6,
+                  last_used_at = $7
+            WHERE refresh_hash = $1 AND client_id = $2 AND kind = 'oauth'
+              AND revoked_at IS NULL AND expires_at > $7
+          RETURNING ${AGENT_CREDENTIAL_COLUMNS}
+         ), kept AS (
+           INSERT INTO openproduct.agent_refresh_history (refresh_hash, credential_id, replaced_at)
+           SELECT $1, id, $7 FROM moved
+           ON CONFLICT (refresh_hash) DO NOTHING
+         )
+         SELECT * FROM moved`,
         [
           input.refreshHash,
           input.clientId,
@@ -5949,16 +5968,47 @@ export function createOpenproductRepository(sql: SqlExecutor): OpenproductReposi
         ],
       );
       if (rotated.rows[0]) return { kind: "rotated", credential: agentCredentialOf(rotated.rows[0]) };
-      // A TOKEN A ROTATION ALREADY REPLACED was copied: whoever holds the live
-      // one and whoever holds this one cannot both be the client. Revoke.
+      // ANY TOKEN A ROTATION ALREADY REPLACED was copied: whoever holds the
+      // live one and whoever holds this one cannot both be the client.
       const reused = await sql.execute<{ id: string }>(
-        `UPDATE openproduct.agent_credentials
-            SET revoked_at = COALESCE(revoked_at, $2)
-          WHERE previous_refresh_hash = $1
-        RETURNING id`,
+        `UPDATE openproduct.agent_credentials c
+            SET revoked_at = COALESCE(c.revoked_at, $2)
+           FROM openproduct.agent_refresh_history h
+          WHERE h.refresh_hash = $1 AND h.credential_id = c.id
+        RETURNING c.id`,
         [input.refreshHash, input.at],
       );
       return reused.rows.length > 0 ? { kind: "reused" } : { kind: "unknown" };
+    },
+
+    async linkOAuthCode(codeHash, credentialId) {
+      await sql.execute(`UPDATE openproduct.oauth_codes SET credential_id = $2 WHERE code_hash = $1`, [codeHash, credentialId]);
+    },
+
+    async pruneOAuthStore(now) {
+      // Bounded, and only what nobody can use: codes a day past their
+      // window, and clients that registered a day ago and never connected
+      // anybody (no credential, no code). Revoked credentials are KEPT, a
+      // session's reasoning: "this ended at 14:02" is an answer.
+      const codes = await sql.execute<{ code_hash: string }>(
+        `DELETE FROM openproduct.oauth_codes
+          WHERE code_hash IN (SELECT code_hash FROM openproduct.oauth_codes
+                               WHERE expires_at < $1::timestamptz - interval '1 day' LIMIT 500)
+        RETURNING code_hash`,
+        [now],
+      );
+      const clients = await sql.execute<{ client_id: string }>(
+        `DELETE FROM openproduct.oauth_clients
+          WHERE client_id IN (
+            SELECT c.client_id FROM openproduct.oauth_clients c
+             WHERE c.registered_at < $1::timestamptz - interval '1 day'
+               AND NOT EXISTS (SELECT 1 FROM openproduct.agent_credentials a WHERE a.client_id = c.client_id)
+               AND NOT EXISTS (SELECT 1 FROM openproduct.oauth_codes o WHERE o.client_id = c.client_id)
+             LIMIT 500)
+        RETURNING client_id`,
+        [now],
+      );
+      return { codes: codes.rows.length, clients: clients.rows.length };
     },
 
     async touchAgentCredential(id, at, granularitySeconds) {

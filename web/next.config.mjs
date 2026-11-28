@@ -43,13 +43,21 @@ const nextConfig = {
   //
   // A rewrite, not a redirect: the address bar keeps the link the person
   // handed out.
-  // MC1 (openproduct-mcp) — THE CONSENT SCREEN IS NEVER FRAMED. Allow is the
-  // one button on this site that hands somebody else authority, so another
+  // MC1 (openproduct-mcp) — THE CONSENT SCREEN AND CONNECTED AGENTS ARE NEVER
+  // FRAMED. Allow and Make token are the buttons on this site that hand
+  // somebody else authority, so another
   // page must not be able to draw it under a decoy and catch the click.
   async headers() {
     return [
       {
         source: "/me/connect",
+        headers: [
+          { key: "X-Frame-Options", value: "DENY" },
+          { key: "Content-Security-Policy", value: "frame-ancestors 'none'" },
+        ],
+      },
+      {
+        source: "/me/settings/agents",
         headers: [
           { key: "X-Frame-Options", value: "DENY" },
           { key: "Content-Security-Policy", value: "frame-ancestors 'none'" },

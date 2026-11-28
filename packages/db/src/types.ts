@@ -2682,10 +2682,15 @@ export interface OpenproductRepository {
 
   /** MC1 — the person said Allow: remember the code by hash. */
   issueOAuthCode(input: IssueOAuthCodeInput): Promise<void>;
-  /** MC1 — redeem a code: ONE statement marks it consumed and returns it,
-   *  so two redemptions racing cannot both win. Null when it is unknown or
-   *  already used; an expired code is returned and the caller refuses it. */
-  consumeOAuthCode(codeHash: string, at: string): Promise<ConsumedOAuthCode | null>;
+  /** MC1 — redeem a code for its own client: ONE statement marks it consumed
+   *  and returns it. Null when it is unknown, another client's, or already
+   *  used — and a reuse revokes the credential it produced. An expired code
+   *  is returned and the caller refuses it. */
+  consumeOAuthCode(codeHash: string, clientId: string, at: string): Promise<ConsumedOAuthCode | null>;
+  /** MC1 — remember which credential a code produced, so a replay can revoke it. */
+  linkOAuthCode(codeHash: string, credentialId: string): Promise<void>;
+  /** MC1 — drop expired codes and clients that never connected anybody. Bounded. */
+  pruneOAuthStore(now: string): Promise<{ codes: number; clients: number }>;
 
   createAgentCredential(input: CreateAgentCredentialInput): Promise<void>;
   /** MC1 — the hot-path read, by access-token hash. The row as stored,

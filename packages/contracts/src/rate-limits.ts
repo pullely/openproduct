@@ -65,6 +65,9 @@ export const AUTH_RATE_LIMITS = {
   // connected agent and on every refresh, so its ceiling only has to clear a
   // household of clients behind one address.
   oauthRegister: { limit: 20, windowSec: 3600, keyedBy: "address", guards: "registering an MCP client" },
+  // ONE BUCKET FOR EVERYBODY, keyed by the constant "all": an address bucket
+  // alone is 2^64 buckets to one host with an IPv6 /64 (security review).
+  oauthRegisterAll: { limit: 500, windowSec: 3600, keyedBy: "address", guards: "registering MCP clients, everybody together" },
   oauthToken: { limit: 120, windowSec: 3600, keyedBy: "address", guards: "the OAuth token endpoint" },
 } as const satisfies Record<string, RateBucket>;
 

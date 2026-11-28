@@ -248,6 +248,21 @@ export function anonKey(request: Request): string {
   return request.headers.get("cf-connecting-ip") ?? "unknown";
 }
 
+/**
+ * MC1 — an address as a NETWORK: IPv4 whole, IPv6 by its /64, which is what
+ * one host is usually handed. Used where a per-address bucket guards a
+ * table's growth (OAuth registration), so one host cannot spread across
+ * 2^64 buckets.
+ */
+export function networkKey(request: Request): string {
+  const ip = anonKey(request);
+  if (!ip.includes(":")) return ip;
+  const head = ip.split("::")[0] ?? "";
+  const groups = head.split(":").filter((g) => g.length > 0);
+  const full = ip.includes("::") ? [...groups, "0", "0", "0", "0"].slice(0, 4) : ip.split(":").slice(0, 4);
+  return `${full.map((g) => g.toLowerCase()).join(":")}::/64`;
+}
+
 /** Test seam — a cold isolate: no buckets, nothing logged yet. */
 export function resetBuckets(): void {
   buckets.clear();

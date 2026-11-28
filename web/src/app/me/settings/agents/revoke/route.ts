@@ -15,6 +15,6 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   const form = await request.formData();
   const result = await revokeAgentCredential(session.accessToken, String(form.get("id") ?? ""));
   if (result.kind === "unauthorized") return NextResponse.redirect(new URL(signInFor(NEW_TOKEN_PATH), request.url), 303);
-  const suffix = result.kind === "ok" ? "?revoked=1" : `?error=${encodeURIComponent("That agent could not be revoked. Try again.")}`;
+  const suffix = result.kind === "ok" ? "?revoked=1" : "?error=revoke";
   return NextResponse.redirect(new URL(`${NEW_TOKEN_PATH}${suffix}`, request.url), 303);
 }

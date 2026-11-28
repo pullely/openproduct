@@ -28,6 +28,7 @@ import {
 import { fetchAgentCredentials } from "../../agents-api";
 import { signInFor } from "../../section";
 import { MeUnavailable } from "../../unavailable";
+import { ForgetNewToken } from "./forget-new-token";
 import { NEW_TOKEN_COOKIE, readNewToken } from "./new-token";
 
 /**
@@ -47,6 +48,12 @@ export const dynamic = "force-dynamic";
 export const metadata: Metadata = { title: "Connected agents", robots: { index: false } };
 
 const HERE = "/me/settings/agents";
+
+/** Fixed sentences by code, never text from the query (see the consent page). */
+const AGENT_ERRORS: Record<string, string> = {
+  mint: "openproduct could not make that token. Give it a name and at least one thing it may do, then try again.",
+  revoke: "That agent could not be revoked. Try again.",
+};
 
 function day(iso: string | null): string {
   if (!iso) return "—";
@@ -112,9 +119,9 @@ export default async function ConnectedAgentsPage(props: {
           </p>
         </header>
 
-        {q.error ? (
+        {q.error && AGENT_ERRORS[q.error] ? (
           <p role="alert" className={NOTICE_WARN}>
-            {q.error.slice(0, 240)}
+            {AGENT_ERRORS[q.error]}
           </p>
         ) : null}
         {q.revoked ? <p className={NOTICE}>Revoked. That agent can no longer act for you.</p> : null}
@@ -142,6 +149,7 @@ export default async function ConnectedAgentsPage(props: {
           </h2>
           {fresh ? (
             <div className="flex flex-col gap-2">
+              <ForgetNewToken />
               <p role="status" className="m-0 font-semibold">
                 Copy it now. It is shown this once.
               </p>

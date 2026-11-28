@@ -31,8 +31,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   });
   if (result.kind === "unauthorized") return NextResponse.redirect(new URL(signInFor(NEW_TOKEN_PATH), request.url), 303);
   if (result.kind !== "ok") {
-    const message = result.kind === "refused" ? result.message : "openproduct could not make the token. Try again.";
-    return NextResponse.redirect(new URL(`${NEW_TOKEN_PATH}?error=${encodeURIComponent(message)}#new-token`, request.url), 303);
+    return NextResponse.redirect(new URL(`${NEW_TOKEN_PATH}?error=mint#new-token`, request.url), 303);
   }
   const response = NextResponse.redirect(new URL(`${NEW_TOKEN_PATH}?minted=1#new-token`, request.url), 303);
   response.cookies.set(newTokenCookie(result.data.token));

@@ -216,6 +216,7 @@ export type AgentResult =
   | { ok: true; credential: ResolvedAgentCredential }
   | { ok: false; status: 401 | 503 };
 
+const AGENT_CACHE_MAX = 1000;
 const agentCache = new Map<string, { credential: ResolvedAgentCredential; expiresAt: number }>();
 
 /**
@@ -253,6 +254,9 @@ export async function resolveAgent(request: Request, core: Fetcher | undefined):
     credential = null;
   }
   if (!credential) return { ok: false, status: 401 };
+  // Bounded: an isolate that has seen many agents starts again rather than
+  // growing for ever (security review). A miss costs one core read.
+  if (agentCache.size >= AGENT_CACHE_MAX) agentCache.clear();
   agentCache.set(key, { credential, expiresAt: Date.now() + AGENT_RESOLVE_CACHE_SECONDS * 1000 });
   return { ok: true, credential };
 }

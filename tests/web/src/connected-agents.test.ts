@@ -21,6 +21,7 @@ describe("MC1 — the consent screen", () => {
   it("is never framed", () => {
     const config = read("next.config.mjs");
     expect(config).toContain('source: "/me/connect"');
+    expect(config).toContain('source: "/me/settings/agents"');
     expect(config).toContain('{ key: "X-Frame-Options", value: "DENY" }');
     expect(config).toContain(`{ key: "Content-Security-Policy", value: "frame-ancestors 'none'" }`);
   });
@@ -32,6 +33,18 @@ describe("MC1 — the consent screen", () => {
     expect(page).toContain("unverified: the app named itself");
   });
 
+  it("says only fixed sentences, never text from its own address", () => {
+    for (const file of ["src/app/me/connect/page.tsx", "src/app/me/settings/agents/page.tsx"]) {
+      expect([file, /\{q\.error\.slice/.test(read(file))]).toEqual([file, false]);
+    }
+    expect(read("src/app/me/connect/decide/route.ts")).not.toContain("result.message");
+  });
+
+  it("forgets a new token once it has been shown", () => {
+    expect(read("src/app/me/settings/agents/page.tsx")).toContain("<ForgetNewToken />");
+    expect(read("src/app/auth/agent-token-seen/route.ts")).toContain("maxAge: 0");
+  });
+
   it("sends the browser only where the gateway names, and refuses a cross-site post", () => {
     const route = read("src/app/me/connect/decide/route.ts");
     expect(route).toContain("if (!sameOriginPost(request))");
@@ -41,8 +54,8 @@ describe("MC1 — the consent screen", () => {
 });
 
 describe("MC1 — Connected agents", () => {
-  it("guards mint and revoke against a cross-site post", () => {
-    for (const file of ["src/app/me/settings/agents/mint/route.ts", "src/app/me/settings/agents/revoke/route.ts"]) {
+  it("guards mint, revoke and seen against a cross-site post", () => {
+    for (const file of ["src/app/me/settings/agents/mint/route.ts", "src/app/me/settings/agents/revoke/route.ts", "src/app/auth/agent-token-seen/route.ts"]) {
       expect([file, read(file).includes("if (!sameOriginPost(request))")]).toEqual([file, true]);
     }
   });

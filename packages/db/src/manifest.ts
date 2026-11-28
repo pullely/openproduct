@@ -575,5 +575,14 @@ export const manifest: MigrationManifest = {
       description:
         "openproduct: oauth_clients (public clients that registered themselves, no secrets), oauth_codes (one-time authorization codes by hash) and agent_credentials (an agent's own OAuth or personal credential, by hash only, with its scopes and listings, refresh rotation with reuse detection, revoked by timestamp) for connecting agents over MCP (openproduct-mcp MC1)",
     },
+    {
+      id: "2306_openproduct_agent_refresh_history",
+      context: "openproduct",
+      path: "2306_openproduct_agent_refresh_history/up.sql",
+      checksum:
+        "10ad0e15d031334fa8b865a1b6a201583e6acb59dac174d52230632e465a90c2",
+      description:
+        "openproduct: agent_refresh_history keeps every refresh hash a rotation replaced, so any of them coming back revokes the credential; oauth_codes.credential_id, so a replayed code revokes what it produced (openproduct-mcp MC1, after its security review)",
+    },
   ],
 };

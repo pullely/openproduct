@@ -448,7 +448,8 @@ export function authorizationRedirect(
   if (params.code) url.searchParams.set("code", params.code);
   if (params.error) url.searchParams.set("error", params.error);
   if (params.errorDescription) url.searchParams.set("error_description", params.errorDescription);
-  if (params.state) url.searchParams.set("state", params.state);
+  // An empty state is still the client's state, and goes back as sent.
+  if (params.state !== undefined && params.state !== null) url.searchParams.set("state", params.state);
   return url.toString();
 }
 

@@ -170,6 +170,22 @@ describe("MC1 — registration (RFC 7591)", () => {
     expect(await res.json()).toEqual({ error: "invalid_redirect_uri", error_description: "no" });
   });
 
+  it("is rate limited per network: an IPv6 /64 is one bucket", async () => {
+    const e = env();
+    let last: Response | null = null;
+    for (let i = 0; i < 21; i += 1) {
+      last = await route(
+        new Request(`${API}/oauth/register`, {
+          method: "POST",
+          headers: { "cf-connecting-ip": `2001:db8:1:2::${(i + 1).toString(16)}` },
+          body: JSON.stringify({ redirect_uris: [REDIRECT] }),
+        }),
+        e,
+      );
+    }
+    expect(last!.status).toBe(429);
+  });
+
   it("is rate limited per address", async () => {
     const e = env();
     let last: Response | null = null;
@@ -183,8 +199,8 @@ describe("MC1 — registration (RFC 7591)", () => {
         e,
       );
     }
-    expect(last!.status).toBe(400);
-    expect(((await last!.json()) as { error: string }).error).toBe("slow_down");
+    expect(last!.status).toBe(429);
+    expect(((await last!.json()) as { error: string }).error).toBe("temporarily_unavailable");
     expect(last!.headers.get("retry-after")).not.toBeNull();
   });
 });
@@ -224,20 +240,11 @@ describe("MC1 — the authorization endpoint", () => {
     }
   });
 
-  it("sends the other refusals back to the client", async () => {
-    const cases: Array<[Record<string, string>, string]> = [
-      [{ response_type: "token" }, "unsupported_response_type"],
-      [{ code_challenge_method: "plain" }, "invalid_request"],
-      [{ scope: "read admin" }, "invalid_scope"],
-      [{ resource: "https://elsewhere.example/mcp" }, "invalid_target"],
-    ];
-    for (const [over, error] of cases) {
+  it("shows every other refusal as a page and never redirects (RFC 9700 §4.11.2)", async () => {
+    for (const over of [{ response_type: "token" }, { code_challenge_method: "plain" }, { scope: "read admin" }, { resource: "https://elsewhere.example/mcp" }]) {
       const res = await authorize({ ...(await good()), ...over });
-      expect(res.status).toBe(302);
-      const to = new URL(res.headers.get("location")!);
-      expect(`${to.origin}${to.pathname}`).toBe(REDIRECT);
-      expect(to.searchParams.get("error")).toBe(error);
-      expect(to.searchParams.get("state")).toBe("abc");
+      expect(res.status).toBe(400);
+      expect(res.headers.get("location")).toBeNull();
     }
   });
 

@@ -27,7 +27,7 @@ describe("the published buckets", () => {
     expect(RATE_LIMIT_SENTENCE).toContain("429 with a Retry-After header");
   });
 
-  it("keeps the auth plane's six beside them, per hour, and off the sentence", () => {
+  it("keeps the auth plane's seven beside them, per hour, and off the sentence", () => {
     // MC1 added the OAuth door's two: registration and the token endpoint.
     expect(Object.keys(AUTH_RATE_LIMITS).sort()).toEqual([
       "authSignIn",
@@ -35,6 +35,7 @@ describe("the published buckets", () => {
       "authSignUp",
       "authVerify",
       "oauthRegister",
+      "oauthRegisterAll",
       "oauthToken",
     ]);
     for (const bucket of Object.values(AUTH_RATE_LIMITS)) expect(bucket.windowSec).toBe(3600);

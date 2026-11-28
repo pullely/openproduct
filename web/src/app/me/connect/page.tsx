@@ -49,6 +49,19 @@ type Query = {
   error?: string;
 };
 
+/**
+ * What the page may say about the last attempt. FIXED SENTENCES, chosen by a
+ * code: anybody can put anything in this page's query, and a sentence copied
+ * from it ("this app is verified by openproduct") would be theirs, in our
+ * voice, on the one page where it matters most (security review).
+ */
+const ERRORS: Record<string, string> = {
+  scopes: "Choose at least one thing the agent may do.",
+  listings: "Choose the listings, or All my listings.",
+  refused: "openproduct could not connect this app with those choices. Check them and try again.",
+  unavailable: "openproduct could not finish that. Try again.",
+};
+
 function hereOf(q: Query): string {
   const params = new URLSearchParams();
   for (const key of ["client_id", "redirect_uri", "code_challenge", "scope", "state"] as const) {
@@ -116,9 +129,9 @@ export default async function ConnectPage(props: { searchParams: Promise<Query> 
           </p>
         </header>
 
-        {q.error ? (
+        {q.error && ERRORS[q.error] ? (
           <p role="alert" className={NOTICE_WARN}>
-            {q.error.slice(0, 240)}
+            {ERRORS[q.error]}
           </p>
         ) : null}
 

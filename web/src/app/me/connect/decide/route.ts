@@ -19,7 +19,10 @@ import { createGrant } from "../../agents-api";
 import { sameOriginPost } from "../../pending";
 import { signInFor } from "../../section";
 
-function back(request: NextRequest, form: FormData, error?: string): NextResponse {
+/** The consent page shows fixed sentences chosen by these codes, never text from a URL. */
+export type ConsentError = "scopes" | "listings" | "refused" | "unavailable";
+
+function back(request: NextRequest, form: FormData, error?: ConsentError): NextResponse {
   const params = new URLSearchParams();
   for (const key of ["client_id", "redirect_uri", "code_challenge", "state"]) {
     const value = form.get(key);
@@ -41,8 +44,8 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   const scopes = normaliseScopes(form.getAll("scope").filter((v): v is string => typeof v === "string" && isAgentScope(v)));
   const only = form.get("listings") === "only";
   const listingIds = only ? form.getAll("listing").filter((v): v is string => typeof v === "string") : null;
-  if (decision === "allow" && scopes.length === 0) return back(request, form, "Choose at least one thing the agent may do.");
-  if (decision === "allow" && only && (listingIds ?? []).length === 0) return back(request, form, "Choose the listings, or All my listings.");
+  if (decision === "allow" && scopes.length === 0) return back(request, form, "scopes");
+  if (decision === "allow" && only && (listingIds ?? []).length === 0) return back(request, form, "listings");
 
   const result = await createGrant(session.accessToken, {
     clientId: String(form.get("client_id") ?? ""),
@@ -54,8 +57,8 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     decision,
   });
   if (result.kind === "unauthorized") return NextResponse.redirect(new URL(signInFor("/me/connect"), request.url), 303);
-  if (result.kind === "refused") return back(request, form, result.message);
-  if (result.kind === "unavailable") return back(request, form, "openproduct could not finish that. Try again.");
+  if (result.kind === "refused") return back(request, form, "refused");
+  if (result.kind === "unavailable") return back(request, form, "unavailable");
   // The gateway's own answer: the client's registered redirect, checked twice.
   // Built by hand: a native client's own scheme (com.example.app:) is not a
   // URL `NextResponse.redirect` will take.

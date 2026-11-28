@@ -58,6 +58,8 @@ export interface AgentCredentialDeps {
     | "getOAuthClient"
     | "issueOAuthCode"
     | "consumeOAuthCode"
+    | "linkOAuthCode"
+    | "pruneOAuthStore"
     | "createAgentCredential"
     | "resolveAgentCredential"
     | "rotateAgentCredential"
@@ -161,6 +163,10 @@ export async function handleRegisterOAuthClient(
   if ("error" in reg) return oauthError(reg.error, reg.description, requestId);
   const clientId = mintOpaqueToken(OAUTH_CLIENT_PREFIX, 16);
   const registeredAt = isoAt(nowOf(deps));
+  // REGISTRATION IS SELF-SERVICE, so it is also where the tables are kept
+  // bounded: each one sweeps a bounded batch of codes nobody can redeem and
+  // clients that never connected anybody (security review, MC1).
+  await deps.repo.pruneOAuthStore(registeredAt);
   await deps.repo.registerOAuthClient({
     clientId,
     clientName: reg.clientName,
@@ -301,7 +307,8 @@ export async function handleOAuthToken(
 
   if (grantType === "authorization_code") {
     const code = typeof body.code === "string" ? body.code : "";
-    const consumed = code ? await deps.repo.consumeOAuthCode(await agentTokenHash(code), isoAt(now)) : null;
+    const codeHash = code ? await agentTokenHash(code) : "";
+    const consumed = code ? await deps.repo.consumeOAuthCode(codeHash, client.clientId, isoAt(now)) : null;
     const good =
       consumed !== null &&
       consumed.clientId === client.clientId &&
@@ -312,8 +319,9 @@ export async function handleOAuthToken(
 
     const access = mintOpaqueToken(AGENT_TOKEN_PREFIX);
     const refresh = mintOpaqueToken(AGENT_REFRESH_PREFIX);
+    const credentialId = mintOpaqueToken(AGENT_CREDENTIAL_ID_PREFIX, 12);
     await deps.repo.createAgentCredential({
-      id: mintOpaqueToken(AGENT_CREDENTIAL_ID_PREFIX, 12),
+      id: credentialId,
       subjectId: consumed.subjectId,
       kind: "oauth",
       clientId: client.clientId,
@@ -326,6 +334,8 @@ export async function handleOAuthToken(
       at: isoAt(now),
       expiresAt: isoAt(now + OAUTH_REFRESH_TTL_SECONDS * 1000),
     });
+    // So that the code, presented again, revokes what it produced.
+    await deps.repo.linkOAuthCode(codeHash, credentialId);
     return tokenAnswer(requestId, access, refresh, consumed.scopes);
   }
 

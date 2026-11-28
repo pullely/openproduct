@@ -41,6 +41,7 @@ function harness() {
   const clients = new Map<string, OAuthClientRecord>();
   const codes = new Map<string, ConsumedOAuthCode & { consumed: boolean }>();
   const creds: StoredCredential[] = [];
+  const links = new Map<string, string>();
   const strip = (c: StoredCredential): AgentCredentialRecord => ({
     id: c.id,
     subjectId: c.subjectId,
@@ -71,9 +72,14 @@ function harness() {
           expiresAt: c.expiresAt,
           consumed: false,
         }),
-      consumeOAuthCode: async (hash) => {
+      consumeOAuthCode: async (hash, clientId) => {
         const c = codes.get(hash);
-        if (!c || c.consumed) return null;
+        if (!c || c.clientId !== clientId) return null;
+        if (c.consumed) {
+          const made = creds.find((x) => x.id === links.get(hash));
+          if (made) made.revokedAt = made.revokedAt ?? new Date(now).toISOString();
+          return null;
+        }
         c.consumed = true;
         return {
           clientId: c.clientId,
@@ -85,6 +91,8 @@ function harness() {
           expiresAt: c.expiresAt,
         };
       },
+      linkOAuthCode: async (hash, id) => void links.set(hash, id),
+      pruneOAuthStore: async () => ({ codes: 0, clients: 0 }),
       createAgentCredential: async (i) =>
         void creds.push({
           id: i.id,
@@ -276,8 +284,9 @@ describe("MC1 — the token endpoint", () => {
     expect(h.creds).toHaveLength(1);
     expect(h.creds[0]!.tokenHash).toBe(await agentTokenHash(token.accessToken));
     expect(JSON.stringify(h.creds)).not.toContain(token.accessToken);
-    // A second redemption of the same code fails.
+    // A second redemption of the same code fails, and revokes what the first made.
     expect((await data(await exchange(h, id, code))).oauthError.error).toBe("invalid_grant");
+    expect(h.creds[0]!.revokedAt).not.toBeNull();
   });
 
   it("answers invalid_grant for a wrong verifier, redirect, client or an expired code", async () => {
