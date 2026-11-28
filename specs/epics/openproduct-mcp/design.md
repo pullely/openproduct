@@ -82,12 +82,15 @@ screen. Each tool declares the one scope it needs.
 
 ## 3. The endpoint
 
-1. **One endpoint.** `POST /mcp`, stateless and JSON-only as today. With no
-   bearer, `tools/list` answers the public read tools. With a valid bearer
-   it answers the public tools plus every tool the credential's scopes allow.
-   An invalid or expired bearer answers 401 with `WWW-Authenticate` pointing
-   at the resource metadata, so a client re-authorises instead of silently
-   falling back to anonymous.
+1. **Two addresses, one server** (amended at MC1). `POST /mcp` stays
+   anonymous and answers the public read tools. `POST /mcp/me` is the
+   signed-in endpoint: it answers 401 with `WWW-Authenticate` pointing at the
+   resource metadata until an agent's own credential arrives, and then the
+   public tools plus every tool the credential's scopes allow. Stateless and
+   JSON-only, both. The second address exists because a client that gets a
+   200 from `/mcp` never starts OAuth: the endpoint a person connects an agent
+   to has to be one that always asks. A person's `ops_` session is refused
+   on `/mcp/me`; an `opa_` token is refused everywhere else.
 2. **The registry lives in contracts.** `AGENT_TOOLS` grows into a typed
    registry: name, title, description, input schema, scope, the gateway route
    it stands for (method and path pattern), and MCP annotations
@@ -207,7 +210,9 @@ line someone wrote down with a reason, not a route that was forgotten.
 
 ## 6. Screens to draw
 
-1. **The consent screen** at `/oauth/authorize`: the client's name and the
+1. **The consent screen** at `/me/connect` (the gateway's `/oauth/authorize`
+   checks the request and hands the browser there; it lives under `/me`
+   because only `/me` and `auth/` pages may read a session): the client's name and the
    address it came from, "unverified" when it registered itself, the scopes
    in plain words, the listing restriction (All my listings / Only these),
    and Allow / Cancel. Phone first, the graphite ramp.
