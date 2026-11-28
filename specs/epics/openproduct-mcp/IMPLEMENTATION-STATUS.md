@@ -2,7 +2,7 @@
 
 | Milestone | Task | State | PR |
 |---|---|---|---|
-| MC0 — the spec | MC-1 | In review | this PR |
+| MC0 — the spec | MC-1 | Done | #40 |
 | MC1 — connecting an agent | MC-2 | Not started | |
 | MC2 — the signed-in endpoint and the parity guard | MC-3 | Not started | |
 | MC3 — listings and their words | MC-4 | Not started | |
@@ -12,7 +12,7 @@
 | MC7 — the contributor's side | MC-8 | Not started | |
 | MC8 — documented and connectable | MC-9 | Not started | |
 
-Waiting on the owner's review of the doc set and answers to Q1 to Q3 in
-`risks-and-open-questions.md`. The two screens in design §6 are to be
-drawn before MC1 starts. The epic and its tasks are to be created in
-Orunbase as EP-7 once the spec is accepted.
+The owner accepted the spec on 2026-11-28 and took the recommendation on
+Q1 to Q3. The two screens in design §6 had no board when MC1 started; MC1
+builds them from design §6 in the left-rail epic's graphite frame, and the
+status entry says so. Console only: create EP-7 and its tasks in Orunbase.

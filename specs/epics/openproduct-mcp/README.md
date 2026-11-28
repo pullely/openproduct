@@ -3,7 +3,7 @@
 | | |
 |---|---|
 | Epic | `openproduct-mcp` (EP-7) |
-| Status | In review: MC0, the spec |
+| Status | MC0 done (#40); MC1 next |
 | Came from | Owner request on 2026-11-28: "everything should be available as MCP" |
 | Design | `design.md`; no board yet (two screens to draw, design §6) |
 

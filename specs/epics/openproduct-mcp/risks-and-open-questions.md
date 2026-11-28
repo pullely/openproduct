@@ -28,19 +28,25 @@
   credential works for up to 60 seconds. Stated on the page; shortened only
   if it matters in practice.
 
-## Open questions for the owner
+## Questions for the owner
+
+Q1 to Q3 were answered on 2026-11-28: the owner accepted each
+recommendation. They stand below as decisions.
 
 - **Q1 — OAuth now, or tokens first?** The plan builds OAuth and personal
   tokens together in MC1, because hosted clients (Claude's connectors) need
   dynamic registration to connect at all. A smaller first step is personal
   tokens only, which works for Claude Code and scripts but not for claude.ai.
-  Recommendation: both in MC1.
+  **Decided: both in MC1** (owner, 2026-11-28).
 - **Q2 — should agent posts be labelled publicly?** The design says no: the
   person is the author and answers for it, the audit records how it
   arrived. The alternative is a small "via <client>" on the post.
+  **Decided: no public label** (owner, 2026-11-28).
 - **Q3 — can an agent publish a listing?** The design allows it behind an
   explicit acknowledgement of the publish disclosure. The stricter option is
   to keep publishing human, like the link grant.
+  **Decided: an agent may publish, behind the acknowledgement** (owner,
+  2026-11-28).
 - **Q4 — appeals.** Excluded for now (design §5). Allow if owners ask.
 - **Q5 — MCP resources and prompts.** This epic is tools only. Exposing
   listings as resources (`openproduct://products/{slug}`) and a "describe my
