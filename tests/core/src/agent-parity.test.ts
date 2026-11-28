@@ -30,7 +30,7 @@ function routeConstants(): string[] {
   return out.sort();
 }
 
-describe("MC2 — every route is a tool, an exclusion, or a milestone still to come", () => {
+describe("every route is a tool or a stated exclusion", () => {
   it("catalogues every internal route the router declares", () => {
     const missing = routeConstants().filter((name) => !(name in AGENT_ROUTE_CATALOGUE));
     expect(missing).toEqual([]);
@@ -53,9 +53,9 @@ describe("MC2 — every route is a tool, an exclusion, or a milestone still to c
     for (const [route, entry] of Object.entries(AGENT_ROUTE_CATALOGUE)) expect([route, Object.keys(entry).length > 0]).toEqual([route, true]);
   });
 
-  it("says plainly how much is still to come", () => {
-    const pending = catalogueUses().filter(({ use }) => "notYet" in use);
-    // The number only ever goes down; MC7 takes it to zero and MC8 deletes it.
-    expect(pending.length).toBe(0);
+  it("is every method a tool or a stated exclusion — nothing is still to come (MC8)", () => {
+    for (const { route, method, use } of catalogueUses()) {
+      expect([route, method, "tool" in use || "excluded" in use]).toEqual([route, method, true]);
+    }
   });
 });

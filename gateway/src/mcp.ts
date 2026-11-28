@@ -55,7 +55,7 @@ import { CATALOG_FACETS_TARGET, CATALOG_LIST_TARGET, catalogProductTarget } from
 /** The version this server reports. The CATALOG's version, not the worker's:
  *  what a client is talking to is the catalog API, and its compatibility is
  *  the only one an agent can act on. */
-export const AGENT_SERVER_VERSION = "1";
+export const AGENT_SERVER_VERSION = "2";
 
 /** A tool answer, in the one shape the protocol has for "here is some data".
  *  `structuredContent` is what a machine reads; the text is the same JSON, so

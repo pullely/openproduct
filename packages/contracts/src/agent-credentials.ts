@@ -391,6 +391,8 @@ export const PROTECTED_RESOURCE_METADATA_PATH = "/.well-known/oauth-protected-re
 export const AUTHORIZATION_SERVER_METADATA_PATH = "/.well-known/oauth-authorization-server";
 /** Where the website shows the consent screen. */
 export const CONSENT_PAGE_PATH = "/me/connect";
+/** Where the website documents all of this (MC8). */
+export const MCP_DOCS_PATH = "/docs/mcp";
 /** Where the website lists and revokes credentials. */
 export const CONNECTED_AGENTS_PAGE_PATH = "/me/settings/agents";
 
