@@ -12,6 +12,8 @@
 // the listing restriction, and the shape of an answer an agent can act on.
 
 import {
+  AUTHORED_PRODUCT_POST_KINDS,
+  POST_BLOCK_CATALOGUE,
   AGENT_INLINE_MEDIA_MAX_BYTES,
   AGENT_UNTRUSTED_NOTE,
   AUTHORED_MEDIA_KINDS,
@@ -509,6 +511,146 @@ const MEDIA_HANDLERS: Record<string, Handler> = {
 };
 
 Object.assign(HANDLERS, MEDIA_HANDLERS);
+
+// ── MC5: posts, milestones, launches ──
+
+const POST_ID_RE = /^ppo_[0-9a-f]{32}$/;
+const ID_RE = /^[A-Za-z0-9_-]{1,80}$/;
+
+function blocksOf(value: unknown): unknown[] | CallToolResult {
+  if (!Array.isArray(value)) return refusal("blocks must be a list of {block, value}. See describe_post_kinds.");
+  return value;
+}
+
+function idArg(args: Record<string, unknown>, key: string, re = ID_RE): string | CallToolResult {
+  const v = text(args, key) ?? "";
+  return re.test(v) ? v : refusal(`${key} must be an id from the listing's own list.`);
+}
+
+const POST_HANDLERS: Record<string, Handler> = {
+  describe_post_kinds: async () =>
+    result({
+      kinds: AUTHORED_PRODUCT_POST_KINDS.map((kind) => ({ kind, blocks: POST_BLOCK_CATALOGUE[kind] })),
+      note: "A post is a list of {block, value}, each block from its kind's list, each at most once.",
+    }),
+  list_posts: async (args, ctx) => {
+    const listing = await listingBySlug(ctx, args.slug);
+    if (isRefusal(listing)) return listing;
+    return answer(await ctx.asPerson("GET", crewPath(listing, "/product-posts")), true);
+  },
+  create_post: async (args, ctx) => {
+    const listing = await listingBySlug(ctx, args.slug);
+    if (isRefusal(listing)) return listing;
+    const kind = text(args, "kind") ?? "";
+    if (!(AUTHORED_PRODUCT_POST_KINDS as readonly string[]).includes(kind)) return refusal(`kind must be one of: ${AUTHORED_PRODUCT_POST_KINDS.join(", ")}.`);
+    const blocks = blocksOf(args.blocks);
+    if (isRefusal(blocks)) return blocks;
+    const keyed = idempotencyOf(args);
+    if (isRefusal(keyed)) return keyed;
+    return answer(await ctx.asPerson("POST", crewPath(listing, "/product-posts"), { kind, blocks }, keyed));
+  },
+  update_post: async (args, ctx) => {
+    const listing = await listingBySlug(ctx, args.slug);
+    if (isRefusal(listing)) return listing;
+    const id = idArg(args, "postId", POST_ID_RE);
+    if (isRefusal(id)) return id;
+    const blocks = blocksOf(args.blocks);
+    if (isRefusal(blocks)) return blocks;
+    return answer(await ctx.asPerson("PATCH", crewPath(listing, `/product-posts/${id}`), { blocks }));
+  },
+  publish_post: async (args, ctx) => {
+    const listing = await listingBySlug(ctx, args.slug);
+    if (isRefusal(listing)) return listing;
+    const id = idArg(args, "postId", POST_ID_RE);
+    if (isRefusal(id)) return id;
+    return answer(await ctx.asPerson("POST", crewPath(listing, `/product-posts/${id}/publish`), pick(args, ["blocks", "milestoneId", "roleOpeningId"])));
+  },
+  delete_post: async (args, ctx) => {
+    const listing = await listingBySlug(ctx, args.slug);
+    if (isRefusal(listing)) return listing;
+    const id = idArg(args, "postId", POST_ID_RE);
+    if (isRefusal(id)) return id;
+    return answer(await ctx.asPerson("DELETE", crewPath(listing, `/product-posts/${id}`)));
+  },
+  list_milestones: async (args, ctx) => {
+    const listing = await listingBySlug(ctx, args.slug);
+    if (isRefusal(listing)) return listing;
+    return answer(await ctx.asPerson("GET", crewPath(listing, "/milestones")), true);
+  },
+  create_milestone: async (args, ctx) => {
+    const listing = await listingBySlug(ctx, args.slug);
+    if (isRefusal(listing)) return listing;
+    if (!text(args, "title")) return refusal("title is required.");
+    const keyed = idempotencyOf(args);
+    if (isRefusal(keyed)) return keyed;
+    return answer(await ctx.asPerson("POST", crewPath(listing, "/milestones"), pick(args, ["title", "summary", "code"]), keyed));
+  },
+  update_milestone: async (args, ctx) => {
+    const listing = await listingBySlug(ctx, args.slug);
+    if (isRefusal(listing)) return listing;
+    const id = idArg(args, "milestoneId");
+    if (isRefusal(id)) return id;
+    const body = pick(args, ["title", "summary", "code"]);
+    if (Object.keys(body).length === 0) return refusal("Send a title, summary or code to change.");
+    return answer(await ctx.asPerson("PATCH", crewPath(listing, `/milestones/${id}`), body));
+  },
+  reorder_milestones: async (args, ctx) => {
+    const listing = await listingBySlug(ctx, args.slug);
+    if (isRefusal(listing)) return listing;
+    if (!Array.isArray(args.order) || args.order.some((v) => typeof v !== "string" || !ID_RE.test(v))) {
+      return refusal("order must be every milestone id, in order.");
+    }
+    return answer(await ctx.asPerson("PUT", crewPath(listing, "/milestones"), { order: args.order }));
+  },
+  ship_milestone: async (args, ctx) => {
+    const listing = await listingBySlug(ctx, args.slug);
+    if (isRefusal(listing)) return listing;
+    const id = idArg(args, "milestoneId");
+    if (isRefusal(id)) return id;
+    if (typeof args.shipped !== "boolean") return refusal("shipped must be true or false.");
+    return answer(await ctx.asPerson(args.shipped ? "PUT" : "DELETE", crewPath(listing, `/milestones/${id}/shipped`), args.shipped ? {} : undefined));
+  },
+  delete_milestone: async (args, ctx) => {
+    const listing = await listingBySlug(ctx, args.slug);
+    if (isRefusal(listing)) return listing;
+    const id = idArg(args, "milestoneId");
+    if (isRefusal(id)) return id;
+    return answer(await ctx.asPerson("DELETE", crewPath(listing, `/milestones/${id}`)));
+  },
+  list_listing_launches: async (args, ctx) => {
+    const listing = await listingBySlug(ctx, args.slug);
+    if (isRefusal(listing)) return listing;
+    return answer(await ctx.asPerson("GET", crewPath(listing, "/launches")), true);
+  },
+  schedule_launch: async (args, ctx) => {
+    const listing = await listingBySlug(ctx, args.slug);
+    if (isRefusal(listing)) return listing;
+    const keyed = idempotencyOf(args);
+    if (isRefusal(keyed)) return keyed;
+    return answer(await ctx.asPerson("POST", crewPath(listing, "/launches"), pick(args, ["versionLabel", "scheduledFor"]), keyed));
+  },
+  reschedule_launch: async (args, ctx) => {
+    const listing = await listingBySlug(ctx, args.slug);
+    if (isRefusal(listing)) return listing;
+    const id = idArg(args, "launchId");
+    if (isRefusal(id)) return id;
+    return answer(await ctx.asPerson("PATCH", crewPath(listing, `/launches/${id}`), pick(args, ["versionLabel", "scheduledFor"])));
+  },
+  cancel_launch: async (args, ctx) => {
+    const listing = await listingBySlug(ctx, args.slug);
+    if (isRefusal(listing)) return listing;
+    const id = idArg(args, "launchId");
+    if (isRefusal(id)) return id;
+    return answer(await ctx.asPerson("DELETE", crewPath(listing, `/launches/${id}`)));
+  },
+  get_needs_you: async (args, ctx) => {
+    const listing = await listingBySlug(ctx, args.slug);
+    if (isRefusal(listing)) return listing;
+    return answer(await ctx.asPerson("GET", crewPath(listing, "/needs-you")), true);
+  },
+};
+
+Object.assign(HANDLERS, POST_HANDLERS);
 
 /** Call a signed-in tool, or say why not. */
 export async function callSignedInTool(name: string, args: Record<string, unknown>, ctx: SignedInContext): Promise<CallToolResult | null> {
