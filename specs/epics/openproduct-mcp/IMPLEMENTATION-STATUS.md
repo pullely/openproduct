@@ -10,7 +10,12 @@
 | MC5 — posts, milestones, launches | MC-6 | Done | #45 |
 | MC6 — seats, crew and the product's discussions | MC-7 | Done | #46 |
 | MC7 — the contributor's side | MC-8 | Done | #47 |
-| MC8 — documented and connectable | MC-9 | In review | this PR |
+| MC8 — documented and connectable | MC-9 | Done | #48 |
+
+**The epic is complete** (2026-11-28): every milestone has landed, #40 to
+#48. Left outside this repository: the owner's recorded connector run on
+stage (MC8), and, in the console, creating EP-7 and its tasks in Orunbase
+and marking them done.
 
 The owner accepted the spec on 2026-11-28 and took the recommendation on
 Q1 to Q3. The two screens in design §6 had no board when MC1 started; MC1
