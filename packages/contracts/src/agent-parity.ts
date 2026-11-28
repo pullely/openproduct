@@ -45,7 +45,6 @@ export type RouteEntry = Partial<Record<RouteMethod, RouteUse>>;
 
 const tool = (name: string): RouteUse => ({ tool: name });
 const excluded = (reason: AgentExclusion): RouteUse => ({ excluded: reason });
-const notYet = (milestone: AgentMilestone): RouteUse => ({ notYet: milestone });
 
 /** Keyed by the route's constant in `core/src/router.ts`. */
 export const AGENT_ROUTE_CATALOGUE: Record<string, RouteEntry> = {
