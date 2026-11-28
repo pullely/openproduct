@@ -1611,6 +1611,17 @@ export interface AgentIdempotencyRecord {
   createdAt: string;
 }
 
+/** MC4 — an image an agent will PUT, by ticket. */
+export interface AgentUploadTicket {
+  credentialId: string;
+  orgId: string;
+  profileId: string;
+  kind: "logo" | "hero" | "gallery";
+  alt: string;
+  position: number;
+  byteLength: number;
+}
+
 export interface WriteCredentialInput {
   readonly subjectId: string;
   readonly verifier: string;
@@ -2719,6 +2730,12 @@ export interface OpenproductRepository {
   getAgentIdempotency(credentialId: string, key: string, since: string): Promise<AgentIdempotencyRecord | null>;
   /** MC3 — keep a first answer (the first one wins) and drop a bounded batch of old ones. */
   putAgentIdempotency(input: Omit<AgentIdempotencyRecord, "createdAt"> & { at: string; olderThan: string }): Promise<void>;
+  /** MC4 — remember a ticket by hash, and drop a bounded batch of dead ones. */
+  issueAgentUploadTicket(input: AgentUploadTicket & { ticketHash: string; at: string; expiresAt: string }): Promise<void>;
+  /** MC4 — consume a live ticket in one statement; null when unknown, used or expired. */
+  consumeAgentUploadTicket(ticketHash: string, at: string): Promise<AgentUploadTicket | null>;
+  /** MC4 — a credential by id, as resolution would answer it (for a ticket's PUT). */
+  getAgentCredential(id: string): Promise<AgentCredentialRecord | null>;
   /** MC1 — RFC 7009: revoke the credential an access or refresh token belongs to. */
   revokeAgentCredentialByTokenHash(tokenHash: string, at: string): Promise<void>;
 

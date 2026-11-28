@@ -26,6 +26,7 @@ export type {
   // openproduct-mcp MC1 — agent credentials and the OAuth door
   AgentCredentialRecord,
   AgentIdempotencyRecord,
+  AgentUploadTicket,
   ConsumedOAuthCode,
   CreateAgentCredentialInput,
   IssueOAuthCodeInput,

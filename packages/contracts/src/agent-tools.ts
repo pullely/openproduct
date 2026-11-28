@@ -274,6 +274,94 @@ export const AGENT_SIGNED_IN_TOOLS: readonly SignedInAgentTool[] = [
     scope: "read",
     annotations: READ,
   },
+  // ── MC4: images ──
+  {
+    name: "list_media",
+    title: "List a listing's images",
+    description: "A listing's logo, hero, gallery and screenshot, with their ids, alt text and addresses.",
+    inputSchema: obj({ slug: SLUG }, ["slug"]),
+    scope: "read",
+    annotations: READ,
+  },
+  {
+    name: "request_media_upload",
+    title: "Get an image upload address",
+    description:
+      "The recommended way to add an image. Returns a one-time address, valid ten minutes: PUT exactly byteLength bytes of a PNG, JPEG or WebP there (Content-Length must match), with no other credential. The answer is the new image. Logo at least 128 px and near-square; hero and gallery at least 400×200; at most 5 MB.",
+    inputSchema: obj(
+      {
+        slug: SLUG,
+        kind: str("logo, hero or gallery."),
+        alt: str("What the image shows, for people who cannot see it. 1 to 300 characters."),
+        byteLength: { type: "number", description: "The image's exact size in bytes." },
+        position: { type: "number", description: "Gallery only: where it goes, from 0." },
+      },
+      ["slug", "kind", "alt", "byteLength"],
+    ),
+    scope: "media",
+    annotations: WRITE,
+  },
+  {
+    name: "upload_media",
+    title: "Upload a small image inline",
+    description: "Add an image sent inline as base64, at most 1 MB decoded. For anything larger use request_media_upload.",
+    inputSchema: obj(
+      {
+        slug: SLUG,
+        kind: str("logo, hero or gallery."),
+        alt: str("What the image shows. 1 to 300 characters."),
+        dataBase64: str("The image's bytes, base64."),
+        position: { type: "number", description: "Gallery only: where it goes, from 0." },
+        idempotencyKey: IDEMPOTENCY,
+      },
+      ["slug", "kind", "alt", "dataBase64"],
+    ),
+    scope: "media",
+    annotations: WRITE,
+  },
+  {
+    name: "add_media_from_url",
+    title: "Add an image from the web",
+    description:
+      "Fetch a public https image (no IP addresses, ports, credentials or private names) and add it. The image goes through the same checks as an upload.",
+    inputSchema: obj(
+      {
+        slug: SLUG,
+        kind: str("logo, hero or gallery."),
+        alt: str("What the image shows. 1 to 300 characters."),
+        url: str("A public https address of a PNG, JPEG or WebP."),
+        position: { type: "number", description: "Gallery only: where it goes, from 0." },
+        idempotencyKey: IDEMPOTENCY,
+      },
+      ["slug", "kind", "alt", "url"],
+    ),
+    scope: "media",
+    annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: true },
+  },
+  {
+    name: "update_media",
+    title: "Change an image's alt text",
+    description: "Change the alt text of one of a listing's images.",
+    inputSchema: obj({ slug: SLUG, mediaId: str("The image's id from list_media."), alt: str("1 to 300 characters.") }, ["slug", "mediaId", "alt"]),
+    scope: "media",
+    annotations: EDIT,
+  },
+  {
+    name: "reorder_gallery",
+    title: "Reorder the gallery",
+    description: "Put the gallery in a new order: every gallery image id, each once, in the order wanted.",
+    inputSchema: obj({ slug: SLUG, gallery: { type: "array", items: { type: "string" }, description: "Every gallery image id, in order." } }, ["slug", "gallery"]),
+    scope: "media",
+    annotations: EDIT,
+  },
+  {
+    name: "remove_media",
+    title: "Remove an image",
+    description: "Remove one of a listing's images.",
+    inputSchema: obj({ slug: SLUG, mediaId: str("The image's id from list_media.") }, ["slug", "mediaId"]),
+    scope: "media",
+    annotations: DESTROY,
+  },
 ];
 
 export function signedInTool(name: string): SignedInAgentTool | undefined {

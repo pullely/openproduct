@@ -92,9 +92,12 @@ function harness() {
         };
       },
       linkOAuthCode: async (hash, id) => void links.set(hash, id),
-      // MC3 — not exercised here (agent-writes.test.ts covers them).
+      // MC3/MC4 — not exercised here (agent-writes.test.ts covers them).
       getAgentIdempotency: async () => null,
       putAgentIdempotency: async () => undefined,
+      issueAgentUploadTicket: async () => undefined,
+      consumeAgentUploadTicket: async () => null,
+      getAgentCredential: async () => null,
       pruneOAuthStore: async () => ({ codes: 0, clients: 0 }),
       createAgentCredential: async (i) =>
         void creds.push({

@@ -5,8 +5,8 @@
 | MC0 — the spec | MC-1 | Done | #40 |
 | MC1 — connecting an agent | MC-2 | Done | #41 |
 | MC2 — the signed-in endpoint and the parity guard | MC-3 | Done | #42 |
-| MC3 — listings and their words | MC-4 | In review | this PR |
-| MC4 — images | MC-5 | Not started | |
+| MC3 — listings and their words | MC-4 | Done | #43 |
+| MC4 — images | MC-5 | In review | this PR |
 | MC5 — posts, milestones, launches | MC-6 | Not started | |
 | MC6 — seats, crew and the product's discussions | MC-7 | Not started | |
 | MC7 — the contributor's side | MC-8 | Not started | |
@@ -176,3 +176,64 @@ Departures from the design, said plainly:
 - **The publish checklist names the public keys and says them in one
   paragraph**, rather than the website's line-by-line disclosure, which
   lives in the web app and is not importable by the gateway.
+
+## From MC4
+
+What landed:
+
+- **Three ways in, one handler.** Every image an agent adds ends in the
+  website's own `handleMediaUpload` — the length ceiling, the sniff, the
+  dimension rules, the content-addressed store, core's row and its
+  authorisation — as the agent's person, carrying the credential so the
+  audit entry says how it arrived.
+  - `request_media_upload` (the recommended way): a one-time address on the
+    gateway (`PUT /v1/agent-uploads/{ticket}`), valid ten minutes, bound to
+    the credential, listing, kind, alt text and exact byte length
+    (migration 2315, `agent_upload_tickets`, by hash). The ticket is the
+    authority for that one PUT, so no bearer is read; a Content-Length other
+    than the declared one is refused before the body is read; a used,
+    expired or unknown ticket, or one whose credential was revoked, is the
+    same 404.
+  - `upload_media`: base64 inline, at most 1 MB decoded.
+  - `add_media_from_url`: a public https image, checked by the screenshot
+    sweep's own `captureTarget` (no IP literal, port, credentials or private
+    name); every redirect (at most three) is checked again; the body is read
+    with a hard 5 MB cap.
+- **Describing, ordering, removing**: `list_media`, `update_media` (alt
+  text), `reorder_gallery`, `remove_media`, on the website's media item and
+  gallery routes.
+- The one-time upload address answers any origin (CORS), like the OAuth
+  door: it reads no cookie.
+
+Departures from the design, said plainly:
+
+- **Tickets live in core** (a table), not in the rate-limit Durable Object:
+  single use needs one atomic statement, and core already has the
+  credential to check against.
+
+Second security review (an independent reviewer read MC2 to MC7 as built;
+nothing high; what it found and what was done, in this PR):
+
+- *Medium — every agent's public reads shared one bucket*: the inner
+  request carried no address, so all of them were "unknown". Fixed: each
+  credential's public reads have a bucket of their own.
+- *Medium — an agent could spend its person's website budget*: requests made
+  as the person spent the person's own `identity` bucket. Fixed: an agent's
+  requests spend an `identity` bucket keyed by its credential, beside its
+  `agentWrite` bucket, so a busy agent never locks its person out; the
+  listing lookup a crew tool makes is read once per MCP request.
+- *Medium — `add_media_from_url` fetched without a limit*: failing fetches
+  spent nothing. Fixed: every fetch spends a write first; one deadline
+  covers every hop; a non-image answer is refused before its body is read.
+  Its safety from private addresses is `captureTarget`'s names-only rule
+  plus the Workers runtime, which cannot reach private networks; that is
+  stated where the fetch happens.
+- *Low* — minting an upload ticket spends a write; the anonymous ticket PUT
+  is bounded per address before it can cost core a statement; every read
+  that carries words other people wrote (a listing, its images, its sync
+  state, and later posts, milestones, launches and the person's own lists)
+  comes back marked as data.
+- *Accepted*: two concurrent calls with one new idempotency key can both
+  write (no reservation row); an upload ticket is a bearer address for its
+  ten minutes; core's ticket endpoints trust the gateway for the scope and
+  the restriction, as every internal route trusts the binding.

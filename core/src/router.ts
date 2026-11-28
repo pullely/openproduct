@@ -25,6 +25,8 @@ import {
   handleRevokeMyAgentCredential,
   handleIdempotencyLookup,
   handleIdempotencyStore,
+  handleIssueUploadTicket,
+  handleConsumeUploadTicket,
   type AgentCredentialDeps,
 } from "./handlers/agent-credentials.js";
 import { repoFor } from "./db.js";
@@ -417,6 +419,9 @@ const AGENT_RESOLVE_PATH = "/internal/openproduct/agent-credentials/resolve";
 // MC3 — an agent's retry gets the first answer. The gateway's alone.
 const AGENT_IDEMPOTENCY_LOOKUP_PATH = "/internal/openproduct/agent-idempotency/lookup";
 const AGENT_IDEMPOTENCY_STORE_PATH = "/internal/openproduct/agent-idempotency/store";
+// MC4 — an image an agent PUTs, by one-time ticket. The gateway's alone.
+const AGENT_UPLOAD_TICKETS_PATH = "/internal/openproduct/agent-upload-tickets";
+const AGENT_UPLOAD_TICKET_CONSUME_PATH = "/internal/openproduct/agent-upload-tickets/consume";
 const ME_OAUTH_GRANTS_PATH = "/internal/openproduct/me/oauth-grants";
 const ME_AGENT_CREDENTIALS_PATH = "/internal/openproduct/me/agent-credentials";
 const ME_AGENT_CREDENTIAL_RE = /^\/internal\/openproduct\/me\/agent-credentials\/(agc_[A-Za-z0-9_-]{1,64})$/;
@@ -797,7 +802,9 @@ async function dispatch(
     url.pathname === OAUTH_REVOKE_INTERNAL_PATH ||
     url.pathname === AGENT_RESOLVE_PATH ||
     url.pathname === AGENT_IDEMPOTENCY_LOOKUP_PATH ||
-    url.pathname === AGENT_IDEMPOTENCY_STORE_PATH
+    url.pathname === AGENT_IDEMPOTENCY_STORE_PATH ||
+    url.pathname === AGENT_UPLOAD_TICKETS_PATH ||
+    url.pathname === AGENT_UPLOAD_TICKET_CONSUME_PATH
   ) {
     if (!env.PLATFORM_DB && !injected) {
       return errorResponse("internal_error", "Service unavailable", 503, requestId);
@@ -814,6 +821,8 @@ async function dispatch(
     if (url.pathname === OAUTH_REVOKE_INTERNAL_PATH) return handleOAuthRevoke(env, request, requestId, deps);
     if (url.pathname === AGENT_IDEMPOTENCY_LOOKUP_PATH) return handleIdempotencyLookup(env, request, requestId, deps);
     if (url.pathname === AGENT_IDEMPOTENCY_STORE_PATH) return handleIdempotencyStore(env, request, requestId, deps);
+    if (url.pathname === AGENT_UPLOAD_TICKETS_PATH) return handleIssueUploadTicket(env, request, requestId, deps);
+    if (url.pathname === AGENT_UPLOAD_TICKET_CONSUME_PATH) return handleConsumeUploadTicket(env, request, requestId, deps);
     return handleResolveAgentCredential(env, request, requestId, deps);
   }
 

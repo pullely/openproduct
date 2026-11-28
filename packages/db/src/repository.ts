@@ -6082,6 +6082,59 @@ export function createOpenproductRepository(sql: SqlExecutor): OpenproductReposi
       );
     },
 
+    async issueAgentUploadTicket(input) {
+      await sql.execute(
+        `INSERT INTO openproduct.agent_upload_tickets
+           (ticket_hash, credential_id, org_id, profile_id, kind, alt, position, byte_length, created_at, expires_at)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
+        [input.ticketHash, input.credentialId, input.orgId, input.profileId, input.kind, input.alt, input.position, input.byteLength, input.at, input.expiresAt],
+      );
+      await sql.execute(
+        `DELETE FROM openproduct.agent_upload_tickets
+          WHERE ticket_hash IN (SELECT ticket_hash FROM openproduct.agent_upload_tickets
+                                 WHERE expires_at < $1::timestamptz - interval '1 day' LIMIT 200)`,
+        [input.at],
+      );
+    },
+
+    async consumeAgentUploadTicket(ticketHash, at) {
+      const res = await sql.execute<{
+        credential_id: string;
+        org_id: string;
+        profile_id: string;
+        kind: "logo" | "hero" | "gallery";
+        alt: string;
+        position: number;
+        byte_length: number;
+      }>(
+        `UPDATE openproduct.agent_upload_tickets
+            SET consumed_at = $2
+          WHERE ticket_hash = $1 AND consumed_at IS NULL AND expires_at > $2
+        RETURNING credential_id, org_id, profile_id, kind, alt, position, byte_length`,
+        [ticketHash, at],
+      );
+      const row = res.rows[0];
+      if (!row) return null;
+      return {
+        credentialId: row.credential_id,
+        orgId: row.org_id,
+        profileId: row.profile_id,
+        kind: row.kind,
+        alt: row.alt,
+        position: Number(row.position),
+        byteLength: Number(row.byte_length),
+      };
+    },
+
+    async getAgentCredential(id) {
+      const res = await sql.execute<AgentCredentialRow>(
+        `SELECT ${AGENT_CREDENTIAL_COLUMNS} FROM openproduct.agent_credentials WHERE id = $1`,
+        [id],
+      );
+      const row = res.rows[0];
+      return row ? agentCredentialOf(row) : null;
+    },
+
     async revokeAgentCredentialByTokenHash(tokenHash, at) {
       await sql.execute(
         `UPDATE openproduct.agent_credentials

@@ -41,7 +41,7 @@ export function handlePreflight(request: Request, env: Env): Response | null {
       status: 204,
       headers: {
         "access-control-allow-origin": "*",
-        "access-control-allow-methods": "GET, POST, OPTIONS",
+        "access-control-allow-methods": "GET, POST, PUT, OPTIONS",
         "access-control-allow-headers": OPEN_ALLOWED_HEADERS,
         "access-control-expose-headers": OPEN_EXPOSED_HEADERS,
         "access-control-max-age": "600",

@@ -215,6 +215,8 @@ export interface UploadDeps {
   readonly waitUntil?: (p: Promise<unknown>) => void;
   /** This worker's own public origin, for the resize fetch. */
   readonly origin: string;
+  /** MC4 — the agent credential, when an agent uploads for its person. */
+  readonly agentCredentialId?: string;
 }
 
 /**
@@ -309,6 +311,7 @@ export async function handleMediaUpload(
         "x-request-id": requestId,
         "x-actor-subject-id": deps.subject.subjectId,
         "x-actor-subject-type": deps.subject.subjectType,
+        ...(deps.agentCredentialId ? { "x-actor-agent-credential": deps.agentCredentialId } : {}),
         "content-type": "application/json",
       },
       body: JSON.stringify({
