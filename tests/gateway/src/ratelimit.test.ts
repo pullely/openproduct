@@ -17,7 +17,7 @@ import { route } from "@openproduct-gateway/router";
 import type { Env } from "@openproduct-gateway/env";
 import { LIMITS, RateLimitBucket, resetBuckets, takeToken } from "@openproduct-gateway/ratelimit";
 import { resetSubjectCache } from "@openproduct-gateway/subject";
-import { AUTH_RATE_LIMITS, RATE_LIMITS, retryAfterSeconds } from "@openproduct/contracts";
+import { AGENT_RATE_LIMITS, AUTH_RATE_LIMITS, RATE_LIMITS, retryAfterSeconds } from "@openproduct/contracts";
 
 function core(): Fetcher {
   return {
@@ -209,7 +209,11 @@ describe("4 — the numbers on the page are the numbers enforced", () => {
     expect(LIMITS.identity).toBe(RATE_LIMITS.identity);
     expect(LIMITS.org).toBe(RATE_LIMITS.org);
     expect(LIMITS.authSignUp).toBe(AUTH_RATE_LIMITS.authSignUp);
-    expect(Object.keys(LIMITS).sort()).toEqual([...Object.keys(RATE_LIMITS), ...Object.keys(AUTH_RATE_LIMITS)].sort());
+    // MC2 — and the agent's own write bucket, from the same contract.
+    expect(LIMITS.agentWrite).toBe(AGENT_RATE_LIMITS.agentWrite);
+    expect(Object.keys(LIMITS).sort()).toEqual(
+      [...Object.keys(RATE_LIMITS), ...Object.keys(AUTH_RATE_LIMITS), ...Object.keys(AGENT_RATE_LIMITS)].sort(),
+    );
   });
 });
 

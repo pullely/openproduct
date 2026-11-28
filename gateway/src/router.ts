@@ -25,7 +25,7 @@
 // epic's status doc), and the Durable-Object rate counter (see ratelimit.ts).
 
 import type { WriteAction } from "@openproduct/contracts";
-import { MCP_SIGNED_IN_PATH, mcpChallenge } from "@openproduct/contracts";
+import { MCP_SIGNED_IN_PATH, mcpChallenge, type ResolvedAgentCredential } from "@openproduct/contracts";
 
 import type { Env } from "./env.js";
 import { errorResponse, methodNotAllowed, notFound, resolveRequestId, successResponse } from "./http.js";
@@ -54,7 +54,8 @@ import { hashPassword } from "./password.js";
 import { anonKey, rateLimitGate } from "./ratelimit.js";
 import { checkVelocity } from "./velocity.js";
 import { verifySeamSignature } from "./seam.js";
-import { resolveAgent, resolveSubject } from "./subject.js";
+import { resolveAgent, resolveSubject, type ResolvedSubject } from "./subject.js";
+import type { SignedInContext } from "./agent-tools.js";
 import { handleMcp } from "./mcp.js";
 import { apiOriginOf, handleOAuth, isOAuthPath } from "./oauth.js";
 import {
@@ -904,12 +905,24 @@ async function handleSeamDelivery(
   }
 }
 
+/**
+ * MC2 — a request an AGENT makes for its person. The person was resolved from
+ * the agent's own credential at `/mcp/me`; everything after that is the
+ * website's path, unchanged, with two more headers to core naming the
+ * credential, so core can record how a write arrived.
+ */
+export interface AgentActor {
+  readonly subject: ResolvedSubject;
+  readonly agent: ResolvedAgentCredential;
+}
+
 async function handleAuthenticated(
   request: Request,
   env: Env,
   requestId: string,
   pathname: string,
   ctx?: WriteContext,
+  as?: AgentActor,
 ): Promise<Response> {
   const allowed = ["GET", "POST", "PATCH", "PUT", "DELETE"];
   if (!allowed.includes(request.method)) return methodNotAllowed(requestId);
@@ -919,6 +932,9 @@ async function handleAuthenticated(
 
   const repoCheck = REPO_CHECK_RE.exec(pathname);
   if (repoCheck) {
+    // MC2 — an agent reaches the repo read through `get_listing`'s own route,
+    // not this one: it resolves the subject itself, from a person's bearer.
+    if (as) return errorResponse("not_found", "Not found", 404, requestId);
     return handleRepoCheck(request, env, requestId, repoCheck[1]!, repoCheck[2]!);
   }
 
@@ -931,7 +947,7 @@ async function handleAuthenticated(
   if (mediaUpload && request.method === "POST") {
     const refused = preflightUpload(request, env, requestId);
     if (refused) return refused;
-    const session = await resolveSubject(request, env, fetch, env.CORE);
+    const session = as ? ({ ok: true, subject: as.subject } as const) : await resolveSubject(request, env, fetch, env.CORE);
     if (!session.ok) return errorResponse(session.code, session.message, session.status, requestId);
     const limited = await rateLimitGate("identity", session.subject.subjectId, env, requestId);
     if (limited) return limited;
@@ -946,7 +962,7 @@ async function handleAuthenticated(
     });
   }
 
-  const session = await resolveSubject(request, env, fetch, env.CORE);
+  const session = as ? ({ ok: true, subject: as.subject } as const) : await resolveSubject(request, env, fetch, env.CORE);
   if (!session.ok) {
     // OPR-4 — nobody signed in is "anybody else": the same 404, with the
     // same body, that core gives a signed-in stranger and a missing id.
@@ -1009,6 +1025,8 @@ async function handleAuthenticated(
     "x-actor-subject-id": session.subject.subjectId,
     "x-actor-subject-type": session.subject.subjectType,
   });
+  // MC2 — and an agent's request says which credential, never more.
+  if (as) headers.set("x-actor-agent-credential", as.agent.credentialId);
   for (const name of FORWARDED_HEADERS) {
     const value = request.headers.get(name);
     if (value) headers.set(name, value);
@@ -1099,6 +1117,48 @@ export interface RouteOptions {
 export interface WriteContext {
   waitUntil(promise: Promise<unknown>): void;
   cache?: { purge(options: { tags: string[] }): Promise<{ success: boolean; errors?: unknown }> };
+}
+
+/** Does a crew path name a listing outside the agent's restriction? */
+function outsideRestriction(pathname: string, agent: ResolvedAgentCredential): boolean {
+  if (agent.listingIds === null) return false;
+  const match = /^\/v1\/organizations\/[^/]+\/openproduct\/profiles\/([^/]+)/.exec(pathname);
+  return match !== null && !agent.listingIds.includes(match[1]!);
+}
+
+/**
+ * MC2 — what `/mcp/me` hands the MCP server: the agent, and two doors that
+ * are the website's own. `asPerson` is the authenticated plane with the
+ * person already resolved; `publicGet` is the public plane.
+ */
+function signedInContext(
+  request: Request,
+  env: Env,
+  requestId: string,
+  agent: ResolvedAgentCredential,
+  ctx?: WriteContext,
+): SignedInContext {
+  const origin = new URL(request.url).origin;
+  const subject: ResolvedSubject = { subjectId: agent.subjectId, subjectType: "user" };
+  return {
+    agent,
+    publicGet: (pathAndQuery) => route(new Request(`${origin}${pathAndQuery}`, { method: "GET" }), env),
+    asPerson: async (method, path, body) => {
+      const pathname = new URL(`${origin}${path}`).pathname;
+      if (!isAuthenticatedRoute(pathname)) return errorResponse("not_found", "Not found", 404, requestId);
+      // THE LISTING RESTRICTION, at the one door every crew route goes through.
+      if (outsideRestriction(pathname, agent)) return errorResponse("not_found", "Not found", 404, requestId);
+      // THE AGENT'S OWN BUCKET, on top of the person's: a runaway loop stops at
+      // the credential before it spends what the person has (design §7.2).
+      if (method !== "GET") {
+        const limited = await rateLimitGate("agentWrite", agent.credentialId, env, requestId);
+        if (limited) return limited;
+      }
+      const init: RequestInit = { method, headers: { "content-type": "application/json" } };
+      if (body !== undefined) init.body = JSON.stringify(body);
+      return handleAuthenticated(new Request(`${origin}${path}`, init), env, requestId, pathname, ctx, { subject, agent });
+    },
+  };
 }
 
 export async function route(
@@ -1233,7 +1293,7 @@ export async function route(
     if (request.method !== "POST") {
       return new Response(null, { status: 405, headers: { allow: "POST" } });
     }
-    return handleMcp(request, env);
+    return handleMcp(request, env, signedInContext(request, env, requestId, agent.credential, options?.ctx));
   }
 
   if (pathname === MCP_PATH) {

@@ -33,6 +33,7 @@
 
 import {
   AGENT_SERVER_NAME,
+  AGENT_SIGNED_IN_TOOLS,
   AGENT_TOOLS,
   agentQueryRefusal,
   filterCatalog,
@@ -47,6 +48,7 @@ import {
   type CallToolResult,
 } from "@modelcontextprotocol/sdk/types.js";
 
+import { callSignedInTool, signedInToolNames, type SignedInContext } from "./agent-tools.js";
 import type { Env } from "./env.js";
 import { CATALOG_FACETS_TARGET, CATALOG_LIST_TARGET, catalogProductTarget } from "./targets.js";
 
@@ -149,24 +151,42 @@ async function callTool(env: Env, name: string, args: Record<string, unknown>): 
  * survives the isolate, so there is nothing for one caller's request to leave
  * behind for another's.
  */
-export async function handleMcp(request: Request, env: Env): Promise<Response> {
+export async function handleMcp(request: Request, env: Env, signedIn?: SignedInContext): Promise<Response> {
   const server = new Server(
     { name: AGENT_SERVER_NAME, version: AGENT_SERVER_VERSION },
     { capabilities: { tools: {} } },
   );
 
+  // MC2 — signed in (`/mcp/me`), the catalogue tools plus the registry's,
+  // filtered by what this credential was given. Anonymous, the catalogue alone.
+  const allowed = signedIn ? new Set(signedInToolNames(signedIn.agent)) : new Set<string>();
   server.setRequestHandler(ListToolsRequestSchema, () => ({
-    tools: AGENT_TOOLS.map((tool) => ({
-      name: tool.name,
-      title: tool.title,
-      description: tool.description,
-      inputSchema: tool.inputSchema as { type: "object" },
-    })),
+    tools: [
+      ...AGENT_TOOLS.map((tool) => ({
+        name: tool.name,
+        title: tool.title,
+        description: tool.description,
+        inputSchema: tool.inputSchema as { type: "object" },
+        annotations: { readOnlyHint: true, openWorldHint: false },
+      })),
+      ...AGENT_SIGNED_IN_TOOLS.filter((tool) => allowed.has(tool.name)).map((tool) => ({
+        name: tool.name,
+        title: tool.title,
+        description: tool.description,
+        inputSchema: tool.inputSchema as { type: "object" },
+        annotations: { title: tool.title, ...tool.annotations },
+      })),
+    ],
   }));
 
-  server.setRequestHandler(CallToolRequestSchema, async (req) =>
-    callTool(env, req.params.name, (req.params.arguments ?? {}) as Record<string, unknown>),
-  );
+  server.setRequestHandler(CallToolRequestSchema, async (req) => {
+    const args = (req.params.arguments ?? {}) as Record<string, unknown>;
+    if (signedIn) {
+      const answered = await callSignedInTool(req.params.name, args, signedIn);
+      if (answered) return answered;
+    }
+    return callTool(env, req.params.name, args);
+  });
 
   const transport = new WebStandardStreamableHTTPServerTransport({ enableJsonResponse: true });
   await server.connect(transport);

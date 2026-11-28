@@ -19,8 +19,8 @@ spec:
   doneWhen:
     - The tool registry in contracts carries name, schema, scope, route and annotations; mcp.ts dispatches from it
     - Anonymous tools/list is unchanged plus the public reads; a bearer adds the tools its scopes allow; a bad bearer answers 401 with WWW-Authenticate
-    - Core checks the scope and records via agent in audit entries; creating calls honour idempotencyKey
+    - The gateway checks the scope from the registry before any call, and core receives the credential id
     - The agent bucket (30 writes a minute per credential) is enforced
-    - whoami, list_my_listings, get_listing, list_workspaces and the public read tools work
-    - mcp-parity.test.ts walks every gateway write route against tools, exclusions and NOT_YET
+    - whoami, list_my_listings, get_listing and the public read tools work
+    - agent-parity.test.ts walks every core route constant against tools, exclusions and not-yet milestones
   gates: []
