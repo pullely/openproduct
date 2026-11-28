@@ -439,6 +439,8 @@ describe("AC3 — the reset, on the surface that has the two tabs", () => {
       .filter((e) => e.isDirectory())
       .map((e) => e.name)
       .sort();
-    expect(routes).toEqual(["callback", "password", "session", "signout", "start"]);
+    // MC1 added `agent-token-seen`: it clears the one-minute cookie a new
+    // personal token rode in on, and has nothing to do with a reset.
+    expect(routes).toEqual(["agent-token-seen", "callback", "password", "session", "signout", "start"]);
   });
 });

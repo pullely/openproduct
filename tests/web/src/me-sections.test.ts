@@ -403,7 +403,9 @@ describe("nothing here is cached for anybody else", () => {
   it("every page under /me and /activity is force-dynamic, with no revalidate and nothing prerendered", () => {
     expect([...OWN_PAGES].sort()).toEqual([
       "activity/page.tsx",
+      "me/connect/page.tsx",
       "me/page.tsx",
+      "me/settings/agents/page.tsx",
       "me/settings/page.tsx",
     ]);
     for (const file of OWN_PAGES) {
@@ -420,7 +422,7 @@ describe("nothing here is cached for anybody else", () => {
     // `me-api.ts` is the one client (and `listings.ts` its second caller of
     // one read): every request it sends says `no-store`, and none says
     // anything else.
-    for (const file of ["me/me-api.ts", "me/listings.ts"]) {
+    for (const file of ["me/me-api.ts", "me/listings.ts", "me/agents-api.ts"]) {
       const src = markupOf(file);
       expect([file, (src.match(/cache: "no-store"/g) ?? []).length > 0]).toEqual([file, true]);
       expect([file, /cache: "(?!no-store)|next: \{\s*revalidate/.test(src)]).toEqual([file, false]);

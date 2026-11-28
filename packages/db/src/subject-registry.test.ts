@@ -171,7 +171,7 @@ describe("the three classes", () => {
     const tables = exportTables();
     // Theirs, except the three secret stores and the mail queue.
     for (const t of ["contributors", "saved_products", "follows", "notifications", "trust_levels", "collections"]) expect(tables).toContain(t);
-    for (const t of ["auth_sessions", "credentials", "credential_tokens", "notification_outbox"]) expect(tables).not.toContain(t);
+    for (const t of ["auth_sessions", "credentials", "credential_tokens", "notification_outbox", "agent_credentials", "oauth_codes"]) expect(tables).not.toContain(t);
     // Their own words and acts, kept without them by the exit, exported before it.
     for (const t of ["posts", "threads", "endorsements", "handles"]) expect(tables).toContain(t);
     // Records and other people's context: not theirs to take.

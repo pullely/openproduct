@@ -25,6 +25,7 @@
 // epic's status doc), and the Durable-Object rate counter (see ratelimit.ts).
 
 import type { WriteAction } from "@openproduct/contracts";
+import { MCP_SIGNED_IN_PATH, mcpChallenge } from "@openproduct/contracts";
 
 import type { Env } from "./env.js";
 import { errorResponse, methodNotAllowed, notFound, resolveRequestId, successResponse } from "./http.js";
@@ -53,8 +54,9 @@ import { hashPassword } from "./password.js";
 import { anonKey, rateLimitGate } from "./ratelimit.js";
 import { checkVelocity } from "./velocity.js";
 import { verifySeamSignature } from "./seam.js";
-import { resolveSubject } from "./subject.js";
+import { resolveAgent, resolveSubject } from "./subject.js";
 import { handleMcp } from "./mcp.js";
+import { apiOriginOf, handleOAuth, isOAuthPath } from "./oauth.js";
 import {
   handleMediaServe,
   handleMediaUpload,
@@ -1206,6 +1208,34 @@ export async function route(
   // server owes a client: `GET /mcp` is how a client opens the SSE stream a
   // stateful server would offer, and answering it with a 404 would read as
   // "no server here" rather than "this one does not stream".
+  // MC1 — the OAuth door (discovery, registration, authorize, token, revoke).
+  // Before the public branch: none of it is cacheable, and none of it is a
+  // person's request until the consent page, which lives on the website.
+  if (isOAuthPath(pathname)) {
+    return handleOAuth(request, env, requestId);
+  }
+
+  // MC1 — the signed-in MCP endpoint. It ALWAYS asks for an agent's own
+  // credential: a 401 with WWW-Authenticate is how an MCP client learns to
+  // start OAuth, and `/mcp` answering anonymously is why this is a second
+  // address (contracts' MCP_SIGNED_IN_PATH). A person's session is refused.
+  if (pathname === MCP_SIGNED_IN_PATH) {
+    if (!env.CORE) return errorResponse("internal_error", "Service unavailable", 503, requestId);
+    const origin = apiOriginOf(request, env);
+    const agent = await resolveAgent(request, env.CORE);
+    if (!agent.ok) {
+      if (agent.status === 503) return errorResponse("internal_error", "Service unavailable", 503, requestId);
+      const presented = (request.headers.get("authorization") ?? "").startsWith("Bearer ");
+      const challenged = errorResponse("unauthorized", "Connect an agent to openproduct to use this endpoint", 401, requestId);
+      challenged.headers.set("www-authenticate", mcpChallenge(origin, presented ? "invalid_token" : undefined));
+      return challenged;
+    }
+    if (request.method !== "POST") {
+      return new Response(null, { status: 405, headers: { allow: "POST" } });
+    }
+    return handleMcp(request, env);
+  }
+
   if (pathname === MCP_PATH) {
     if (request.method !== "POST") {
       return new Response(null, { status: 405, headers: { allow: "POST" } });

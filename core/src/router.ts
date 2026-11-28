@@ -13,6 +13,18 @@
 // deployed. Going dark is a deploy — delete api-edge's facade branch
 // (teardown.md) — and retracting one listing is unpublish + the cache TTL.
 
+import {
+  handleCreateOAuthGrant,
+  handleGetOAuthClient,
+  handleListAgentCredentials,
+  handleMintPersonalToken,
+  handleOAuthRevoke,
+  handleOAuthToken,
+  handleRegisterOAuthClient,
+  handleResolveAgentCredential,
+  handleRevokeMyAgentCredential,
+  type AgentCredentialDeps,
+} from "./handlers/agent-credentials.js";
 import { repoFor } from "./db.js";
 import { startRequestScope, type RequestScope } from "./request.js";
 
@@ -392,6 +404,17 @@ const CAPTURES_PATH = "/internal/openproduct/media/captures";
 // the platform, so the address is typed by a person, forwarded upstream, and
 // gone when that request ends. It never arrives here.
 const AUTH_SIGN_UP_PATH = "/internal/openproduct/auth/sign-up";
+// MC1 (openproduct-mcp) — the OAuth door and agent credentials. No actor
+// rides the first five: a client registering, redeeming or revoking has no
+// person attached, and the token is the thing being asked about.
+const OAUTH_CLIENTS_PATH = "/internal/openproduct/oauth/clients";
+const OAUTH_CLIENT_RE = /^\/internal\/openproduct\/oauth\/clients\/(ocl_[A-Za-z0-9_-]{1,64})$/;
+const OAUTH_TOKEN_INTERNAL_PATH = "/internal/openproduct/oauth/token";
+const OAUTH_REVOKE_INTERNAL_PATH = "/internal/openproduct/oauth/revoke";
+const AGENT_RESOLVE_PATH = "/internal/openproduct/agent-credentials/resolve";
+const ME_OAUTH_GRANTS_PATH = "/internal/openproduct/me/oauth-grants";
+const ME_AGENT_CREDENTIALS_PATH = "/internal/openproduct/me/agent-credentials";
+const ME_AGENT_CREDENTIAL_RE = /^\/internal\/openproduct\/me\/agent-credentials\/(agc_[A-Za-z0-9_-]{1,64})$/;
 const AUTH_VERIFY_PATH = "/internal/openproduct/auth/verify";
 // AC2b — openproduct's own sessions. A POST for the read too, because the
 // token is the input and a token in a URL is a token in an access log.
@@ -753,6 +776,31 @@ async function dispatch(
       decodeURIComponent(credentialMatch[1]!),
       deps,
     );
+  }
+
+  // MC1 — the OAuth door's actorless half.
+  const oauthClient = OAUTH_CLIENT_RE.exec(url.pathname);
+  if (
+    url.pathname === OAUTH_CLIENTS_PATH ||
+    oauthClient ||
+    url.pathname === OAUTH_TOKEN_INTERNAL_PATH ||
+    url.pathname === OAUTH_REVOKE_INTERNAL_PATH ||
+    url.pathname === AGENT_RESOLVE_PATH
+  ) {
+    if (!env.PLATFORM_DB && !injected) {
+      return errorResponse("internal_error", "Service unavailable", 503, requestId);
+    }
+    const deps: AgentCredentialDeps =
+      (injected as unknown as AgentCredentialDeps) ?? ({ repo: repoFor(env, scope) } as AgentCredentialDeps);
+    if (oauthClient) {
+      if (request.method !== "GET") return methodNotAllowed(requestId);
+      return handleGetOAuthClient(env, oauthClient[1]!, requestId, deps);
+    }
+    if (request.method !== "POST") return methodNotAllowed(requestId);
+    if (url.pathname === OAUTH_CLIENTS_PATH) return handleRegisterOAuthClient(env, request, requestId, deps);
+    if (url.pathname === OAUTH_TOKEN_INTERNAL_PATH) return handleOAuthToken(env, request, requestId, deps);
+    if (url.pathname === OAUTH_REVOKE_INTERNAL_PATH) return handleOAuthRevoke(env, request, requestId, deps);
+    return handleResolveAgentCredential(env, request, requestId, deps);
   }
 
   // AC2b — the session plane, and no actor rides these either: the token IS
@@ -1423,6 +1471,21 @@ async function meRoutes(
     injected ?? { repo: repoFor(env, scope) };
 
   const path = url.pathname;
+  // MC1 — the person's own agents, and their Allow on the consent screen.
+  if (path === ME_OAUTH_GRANTS_PATH || path === ME_AGENT_CREDENTIALS_PATH || ME_AGENT_CREDENTIAL_RE.test(path)) {
+    const agentDeps = (injected as unknown as AgentCredentialDeps) ?? ({ repo: deps.repo } as unknown as AgentCredentialDeps);
+    if (path === ME_OAUTH_GRANTS_PATH) {
+      if (request.method !== "POST") return methodNotAllowed(requestId);
+      return handleCreateOAuthGrant(env, request, requestId, actor, agentDeps);
+    }
+    if (path === ME_AGENT_CREDENTIALS_PATH) {
+      if (request.method === "GET") return handleListAgentCredentials(env, requestId, actor, agentDeps);
+      if (request.method === "POST") return handleMintPersonalToken(env, request, requestId, actor, agentDeps);
+      return methodNotAllowed(requestId);
+    }
+    if (request.method !== "DELETE") return methodNotAllowed(requestId);
+    return handleRevokeMyAgentCredential(env, ME_AGENT_CREDENTIAL_RE.exec(path)![1]!, requestId, actor, agentDeps);
+  }
   if (path === ME_PATH) {
     if (request.method === "GET") return handleGetMe(env, requestId, actor, deps);
     if (request.method === "PUT") return handleUpsertMe(env, request, requestId, actor, deps);

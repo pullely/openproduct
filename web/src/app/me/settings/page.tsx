@@ -395,6 +395,11 @@ export default async function SettingsPage(props: {
                 Download your data
                 <span className="text-[13px] font-normal text-muted-foreground">JSON</span>
               </a>
+              {/* MC1 — the agents this person connected over MCP, and their
+                  personal tokens: see them, revoke them, mint one. */}
+              <a href="/me/settings/agents" data-me-agents className={BTN_SOFT}>
+                Connected agents
+              </a>
             </div>
           </section>
         </div>

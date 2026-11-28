@@ -35,6 +35,7 @@ export const LOG_MESSAGES = {
   velocity_config_rejected: { level: "warn", means: "An OPENPRODUCT_VELOCITY override did not parse and the defaults apply.", fields: ["problem"] },
   rate_limit_unavailable: { level: "warn", means: "The rate-limit Durable Object could not be asked; the request was allowed (CS1 fails open) and the in-isolate bucket stood in. At most once a minute per isolate.", fields: ["bucket", "reason"] },
   identity_unreachable: { level: "error", means: "The platform's identity read could not be reached.", fields: ["base", "error"] },
+  agent_refresh_reused: { level: "warn", means: "An OAuth refresh token a rotation had already replaced came back, and the grant it belonged to was revoked (MC1): it was copied.", fields: ["clientId", "requestId"] },
   identity_failed: { level: "error", means: "The platform's identity read answered a non-2xx.", fields: ["base", "status"] },
   // ── the sweep ──
   sweep_phase_failed: { level: "warn", means: "A sweep phase did not do the thing, and why (RS5); the status where core refused.", fields: ["phase", "reason", "status"] },
