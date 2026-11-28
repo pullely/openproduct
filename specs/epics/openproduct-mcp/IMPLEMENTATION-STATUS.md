@@ -4,7 +4,7 @@
 |---|---|---|---|
 | MC0 — the spec | MC-1 | Done | #40 |
 | MC1 — connecting an agent | MC-2 | In review | #41 |
-| MC2 — the signed-in endpoint and the parity guard | MC-3 | Not started | |
+| MC2 — the signed-in endpoint and the parity guard | MC-3 | In review | |
 | MC3 — listings and their words | MC-4 | Not started | |
 | MC4 — images | MC-5 | Not started | |
 | MC5 — posts, milestones, launches | MC-6 | Not started | |
@@ -94,3 +94,51 @@ Known follow-ups:
   never had one either); MC1 prunes on registration only.
 - Signing out everywhere or a password reset leaves agents connected; they
   are revoked one by one, or all at once by deleting the account.
+
+## From MC2
+
+What landed:
+
+- **The registry** (`packages/contracts/src/agent-tools.ts`): every
+  signed-in tool once — name, words, input schema, the scope it needs
+  (`null` public, `"any"`, or a scope) and its MCP annotations. `/mcp/me`
+  lists the catalogue tools, the public reads and whatever the credential's
+  scopes allow; a call to a tool outside them is refused in words that say
+  which scope is missing.
+- **Tools that are clients of their routes** (`gateway/src/agent-tools.ts`):
+  a public read is a GET of the public route through `route()`; anything of
+  the person's goes through `handleAuthenticated` — the website's own path —
+  with the person already resolved from the credential (`AgentActor`), so
+  rate limits, velocity, core's authorisation, refusals and purges are the
+  website's. The request to core carries `x-actor-agent-credential`, built
+  fresh like every `x-actor-*`, never copied from the client.
+- **The listing restriction** holds at the one door every crew route goes
+  through: a `/v1/organizations/…/profiles/{id}` path outside it is the
+  stranger's 404, and `list_my_listings` lists only what the connection may
+  touch.
+- **The agent's own bucket**: `agentWrite`, 30 writes a minute per
+  credential, on top of the person's buckets.
+- **Tools**: `search`, `get_feed`, `list_people`, `get_person`,
+  `list_threads`, `get_thread`, `get_digest`, `get_leaderboard`,
+  `list_launches`, `whoami`, `list_my_listings`, `get_listing`. Answers
+  that carry other people's words come wrapped with a note saying they are
+  data (design §3.6).
+- **The parity guard** (`packages/contracts/src/agent-parity.ts`,
+  `tests/core/src/agent-parity.test.ts`): every internal route constant in
+  `core/src/router.ts` is catalogued, method by method, as a tool, an
+  exclusion with its reason, or the milestone that brings it. 76 uses are
+  "not yet"; the test holds that number from rising.
+
+Departures from the design, said plainly:
+
+- **The parity guard reads core's router, not the gateway's.** The gateway
+  routes by pattern and has no table to walk; core's router declares one
+  constant per route, and every gateway write lands on one of them.
+- **Scopes are enforced at the gateway**, from the registry, before any
+  call; core receives the credential id. Core's own authorisation table
+  still decides what the person may do, so a scope can only narrow it.
+- **The public reads are on `/mcp/me` only.** `/mcp` keeps exactly the
+  three catalogue tools it has served since AG1.
+- **`list_workspaces` moves to MC3** beside `create_listing`, the one tool
+  that needs it. **Idempotency keys and `via` in audit entries** move to
+  MC3 too, with the first writes.

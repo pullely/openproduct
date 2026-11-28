@@ -1102,6 +1102,13 @@ export * from "./sessions.js";
 export * from "./agent-credentials.js";
 
 /**
+ * MC2 (openproduct-mcp) — the signed-in tool registry, and the catalogue that
+ * says for every route what an agent does with it.
+ */
+export * from "./agent-tools.js";
+export * from "./agent-parity.js";
+
+/**
  * SR0 — the search results page. Three sections, three mechanisms: launches
  * come from the DS0 index, TOPICS from this package's own vocabulary, and
  * MAKERS from a live read — because an index is a cache, and caching an

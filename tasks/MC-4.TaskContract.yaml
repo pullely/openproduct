@@ -18,7 +18,8 @@ spec:
     - MC-3
   doneWhen:
     - create_listing, update_listing (links included), change_stage, get_publish_checklist, publish_listing and unpublish_listing are in the registry and off NOT_YET
-    - create_listing on an unlinked workspace refuses with the console address that starts the link
+    - create_listing on an unlinked workspace refuses with the console address that starts the link; list_workspaces lists the linked ones
+    - Creating calls honour idempotencyKey, and an agent's writes say how they arrived in the audit entry
     - publish_listing requires the publish disclosure to be acknowledged
     - Each tool's test asserts the same core request as its website route; a Member's agent gets the stranger's 404
   gates: []

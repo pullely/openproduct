@@ -39,6 +39,7 @@
 // the caller's behaviour) and gains the header.
 
 import {
+  AGENT_RATE_LIMITS,
   AUTH_RATE_LIMITS,
   RATE_LIMITS,
   rateLimitRefusal,
@@ -50,7 +51,7 @@ import type { Env } from "./env.js";
 import { errorResponse } from "./http.js";
 
 /** Every bucket this gateway takes from — the published three and the auth four, one map. */
-export const LIMITS = { ...RATE_LIMITS, ...AUTH_RATE_LIMITS } as const;
+export const LIMITS = { ...RATE_LIMITS, ...AUTH_RATE_LIMITS, ...AGENT_RATE_LIMITS } as const;
 
 export type BucketName = keyof typeof LIMITS;
 

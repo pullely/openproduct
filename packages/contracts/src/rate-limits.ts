@@ -17,7 +17,7 @@
 // "60 seconds" when it is actually 3 makes them wait 57 seconds for nothing.
 
 /** How a bucket is keyed — what "one caller" means to it. */
-export type RateLimitKey = "address" | "subject" | "organisation";
+export type RateLimitKey = "address" | "subject" | "organisation" | "credential";
 
 export interface RateBucket {
   /** Requests allowed per window. */
@@ -55,6 +55,15 @@ export const RATE_LIMIT_NAMES: readonly RateLimitName[] = ["anon", "identity", "
  * plane is not that API. Its refusal is `AUTH_TOO_FAST`, which now carries
  * `Retry-After` like every other 429 this gateway answers.
  */
+/**
+ * MC2 (openproduct-mcp) — an agent's own bucket, on top of its person's
+ * (design §7.2): a runaway loop stops at the credential before it spends
+ * what the person has. Writes only.
+ */
+export const AGENT_RATE_LIMITS = {
+  agentWrite: { limit: 30, windowSec: 60, keyedBy: "credential", guards: "an agent's writes" },
+} as const satisfies Record<string, RateBucket>;
+
 export const AUTH_RATE_LIMITS = {
   authSignUp: { limit: 10, windowSec: 3600, keyedBy: "address", guards: "sign-up" },
   authVerify: { limit: 30, windowSec: 3600, keyedBy: "address", guards: "verification" },
