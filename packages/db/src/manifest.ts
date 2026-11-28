@@ -593,5 +593,14 @@ export const manifest: MigrationManifest = {
       description:
         "openproduct: agent_idempotency keeps a creating call's first answer for a day under (credential, key), so an agent's retry gets that answer back rather than a second listing, post or image (openproduct-mcp MC3)",
     },
+    {
+      id: "2315_openproduct_agent_upload_tickets",
+      context: "openproduct",
+      path: "2315_openproduct_agent_upload_tickets/up.sql",
+      checksum:
+        "ebbf06dcee79ca16e57f78e1b16b90b3238ab84ac04d865ff76aba261f3794a6",
+      description:
+        "openproduct: agent_upload_tickets, one-time ten-minute tickets by hash naming the listing, kind, alt text and byte length of an image an agent will PUT, consumed by the one statement that reads them (openproduct-mcp MC4)",
+    },
   ],
 };

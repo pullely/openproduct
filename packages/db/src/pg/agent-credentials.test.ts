@@ -278,4 +278,26 @@ describe("openproduct — agent credentials (openproduct-mcp MC1)", () => {
     await repo.revokeAgentCredentialByTokenHash("refresh-agc_one", LATER);
     expect((await repo.resolveAgentCredential("access-agc_one"))?.revokedAt).toBe(LATER);
   });
+
+  it("keeps a first answer per (credential, key), and only the first", async () => {
+    await oauthCredential();
+    const keep = (status: number, body: unknown) =>
+      repo.putAgentIdempotency({ credentialId: "agc_one", key: "k1", method: "POST", path: "/v1/x", status, body, at: AT, olderThan: "2026-11-27T12:00:00.000Z" });
+    await keep(201, { data: { id: 1 } });
+    await keep(201, { data: { id: 2 } });
+    expect(await repo.getAgentIdempotency("agc_one", "k1", "2026-11-28T00:00:00.000Z")).toMatchObject({ status: 201, body: { data: { id: 1 } } });
+    expect(await repo.getAgentIdempotency("agc_one", "k1", "2026-11-28T13:00:00.000Z")).toBeNull();
+  });
+
+  it("consumes an upload ticket once, and never after it expired", async () => {
+    await oauthCredential();
+    const ticket = (hash: string, expiresAt: string) =>
+      repo.issueAgentUploadTicket({ ticketHash: hash, credentialId: "agc_one", orgId: "org_a", profileId: "opp_one", kind: "hero", alt: "A screen", position: 0, byteLength: 1234, at: AT, expiresAt });
+    await ticket("t1", LATER);
+    expect(await repo.consumeAgentUploadTicket("t1", AT)).toEqual({ credentialId: "agc_one", orgId: "org_a", profileId: "opp_one", kind: "hero", alt: "A screen", position: 0, byteLength: 1234 });
+    expect(await repo.consumeAgentUploadTicket("t1", AT)).toBeNull();
+    await ticket("t2", LATER);
+    expect(await repo.consumeAgentUploadTicket("t2", HOUR)).toBeNull();
+    expect((await repo.getAgentCredential("agc_one"))?.subjectId).toBe(ACTOR);
+  });
 });

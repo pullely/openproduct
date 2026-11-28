@@ -60,8 +60,8 @@ export const AGENT_ROUTE_CATALOGUE: Record<string, RouteEntry> = {
   PROFILE_ORUNBASE_RE: { GET: tool("get_listing_sync") },
   PROFILE_NEEDS_YOU_RE: { GET: notYet("MC5") },
   // ── images ──
-  PROFILE_MEDIA_RE: { GET: notYet("MC4"), POST: notYet("MC4"), PUT: notYet("MC4") },
-  PROFILE_MEDIA_ITEM_RE: { PATCH: notYet("MC4"), DELETE: notYet("MC4") },
+  PROFILE_MEDIA_RE: { GET: tool("list_media"), POST: tool("upload_media"), PUT: tool("reorder_gallery") },
+  PROFILE_MEDIA_ITEM_RE: { PATCH: tool("update_media"), DELETE: tool("remove_media") },
   // ── posts, milestones, launches ──
   PROFILE_PRODUCT_POSTS_RE: { GET: notYet("MC5"), POST: notYet("MC5") },
   PROFILE_PRODUCT_POST_RE: { PATCH: notYet("MC5"), DELETE: notYet("MC5") },
@@ -135,6 +135,8 @@ export const AGENT_ROUTE_CATALOGUE: Record<string, RouteEntry> = {
   AGENT_RESOLVE_PATH: { POST: excluded("agent_credentials") },
   AGENT_IDEMPOTENCY_LOOKUP_PATH: { POST: excluded("agent_credentials") },
   AGENT_IDEMPOTENCY_STORE_PATH: { POST: excluded("agent_credentials") },
+  AGENT_UPLOAD_TICKETS_PATH: { POST: excluded("agent_credentials") },
+  AGENT_UPLOAD_TICKET_CONSUME_PATH: { POST: excluded("agent_credentials") },
   ME_OAUTH_GRANTS_PATH: { POST: excluded("agent_credentials") },
   ME_AGENT_CREDENTIALS_PATH: { GET: excluded("agent_credentials"), POST: excluded("agent_credentials") },
   ME_AGENT_CREDENTIAL_RE: { DELETE: excluded("agent_credentials") },

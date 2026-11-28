@@ -12,6 +12,10 @@
 // the client — and is never echoed again.
 
 import {
+  AGENT_UPLOAD_TICKET_PREFIX,
+  AGENT_UPLOAD_TICKET_TTL_SECONDS,
+  MEDIA_MAX_BYTES,
+  AUTHORED_MEDIA_KINDS,
   AGENT_CREDENTIAL_ID_PREFIX,
   AGENT_LAST_USED_GRANULARITY_SECONDS,
   AGENT_LISTING_RESTRICTION_MAX,
@@ -69,6 +73,9 @@ export interface AgentCredentialDeps {
     | "revokeAgentCredentialByTokenHash"
     | "getAgentIdempotency"
     | "putAgentIdempotency"
+    | "issueAgentUploadTicket"
+    | "consumeAgentUploadTicket"
+    | "getAgentCredential"
     | "listProfilesMaintainedBy"
   >;
   now?: () => number;
@@ -560,4 +567,92 @@ export async function handleIdempotencyStore(
     olderThan: isoAt(now - AGENT_IDEMPOTENCY_WINDOW_MS),
   });
   return successResponse({ kept: true }, requestId, 201);
+}
+
+// ---------------------------------------------------------------------------
+// Upload tickets — an image an agent PUTs (MC4)
+// ---------------------------------------------------------------------------
+
+/**
+ * POST /internal/openproduct/agent-upload-tickets — the gateway mints one
+ * for a live credential, after checking the listing is within its
+ * restriction. Whether the person may write that listing is decided again,
+ * by the media route itself, when the bytes arrive.
+ */
+export async function handleIssueUploadTicket(
+  _env: Env,
+  request: Request,
+  requestId: string,
+  deps: AgentCredentialDeps,
+): Promise<Response> {
+  const body = await bodyOf(request);
+  if (!body) return badBody(requestId);
+  const credentialId = typeof body.credentialId === "string" ? body.credentialId : "";
+  const orgId = typeof body.orgId === "string" ? body.orgId : "";
+  const profileId = typeof body.profileId === "string" ? body.profileId : "";
+  const kind = body.kind;
+  const alt = typeof body.alt === "string" ? body.alt.trim() : "";
+  const position = typeof body.position === "number" && Number.isInteger(body.position) && body.position >= 0 ? body.position : 0;
+  const byteLength = body.byteLength;
+  const fields: Record<string, string[]> = {};
+  if (!CREDENTIAL_ID_RE.test(credentialId)) fields.credentialId = ["A credential id"];
+  if (!/^org_[A-Za-z0-9_-]{1,64}$/.test(orgId) || !/^opp_[A-Za-z0-9_-]{1,64}$/.test(profileId)) fields.listing = ["A listing"];
+  if (typeof kind !== "string" || !(AUTHORED_MEDIA_KINDS as readonly string[]).includes(kind)) fields.kind = [`One of: ${AUTHORED_MEDIA_KINDS.join(", ")}`];
+  if (alt.length === 0 || alt.length > 300) fields.alt = ["Alt text of 1 to 300 characters"];
+  if (typeof byteLength !== "number" || !Number.isInteger(byteLength) || byteLength < 1 || byteLength > MEDIA_MAX_BYTES) {
+    fields.byteLength = [`The image's exact size in bytes, at most ${MEDIA_MAX_BYTES}`];
+  }
+  if (Object.keys(fields).length > 0) return validationError(requestId, fields);
+  const credential = await deps.repo.getAgentCredential(credentialId);
+  const now = nowOf(deps);
+  if (!credential || !agentCredentialUsable({ revokedAt: credential.revokedAt, expiresAt: credential.expiresAt }, now)) {
+    return errorResponse("unauthorized", "Not a live credential", 401, requestId);
+  }
+  const ticket = mintOpaqueToken(AGENT_UPLOAD_TICKET_PREFIX);
+  const expiresAt = isoAt(now + AGENT_UPLOAD_TICKET_TTL_SECONDS * 1000);
+  await deps.repo.issueAgentUploadTicket({
+    ticketHash: await agentTokenHash(ticket),
+    credentialId,
+    orgId,
+    profileId,
+    kind: kind as "logo" | "hero" | "gallery",
+    alt,
+    position,
+    byteLength: byteLength as number,
+    at: isoAt(now),
+    expiresAt,
+  });
+  return successResponse({ ticket, expiresAt }, requestId, 201);
+}
+
+/**
+ * POST /internal/openproduct/agent-upload-tickets/consume — ONE use. Returns
+ * what the ticket names and the credential as resolution would answer it, or
+ * null for an unknown, used or expired ticket or a dead credential.
+ */
+export async function handleConsumeUploadTicket(
+  _env: Env,
+  request: Request,
+  requestId: string,
+  deps: AgentCredentialDeps,
+): Promise<Response> {
+  const body = await bodyOf(request);
+  const ticket = typeof body?.ticket === "string" ? body.ticket : "";
+  if (!ticket.startsWith(AGENT_UPLOAD_TICKET_PREFIX)) return successResponse({ upload: null }, requestId);
+  const now = nowOf(deps);
+  const consumed = await deps.repo.consumeAgentUploadTicket(await agentTokenHash(ticket), isoAt(now));
+  if (!consumed) return successResponse({ upload: null }, requestId);
+  const row = await deps.repo.getAgentCredential(consumed.credentialId);
+  if (!row || !agentCredentialUsable({ revokedAt: row.revokedAt, expiresAt: row.expiresAt }, now)) {
+    return successResponse({ upload: null }, requestId);
+  }
+  const credential: ResolvedAgentCredential = {
+    credentialId: row.id,
+    subjectId: row.subjectId,
+    kind: row.kind,
+    clientName: row.clientName,
+    scopes: normaliseScopes(row.scopes),
+    listingIds: row.listingIds,
+  };
+  return successResponse({ upload: { ...consumed, credential } }, requestId);
 }

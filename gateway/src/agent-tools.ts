@@ -12,7 +12,12 @@
 // the listing restriction, and the shape of an answer an agent can act on.
 
 import {
+  AGENT_INLINE_MEDIA_MAX_BYTES,
   AGENT_UNTRUSTED_NOTE,
+  AUTHORED_MEDIA_KINDS,
+  MEDIA_ALT_MAX,
+  MEDIA_MAX_BYTES,
+  captureTarget,
   PUBLIC_MAINTAINER_KEYS,
   PUBLIC_PROFILE_KEYS,
   PUBLIC_ROLE_OPENING_KEYS,
@@ -30,6 +35,17 @@ export interface SignedInContext {
   readonly asPerson: (method: string, path: string, body?: unknown, opts?: { idempotencyKey?: string }) => Promise<Response>;
   /** The website's origin, for addresses a person must open; empty when unset. */
   readonly siteOrigin: string;
+  /** MC4 — bytes to the website's own media upload, as the person. */
+  readonly uploadAsPerson: (path: string, query: Record<string, string>, bytes: Uint8Array, opts?: { idempotencyKey?: string }) => Promise<Response>;
+  /** MC4 — a one-time upload address for one image. */
+  readonly mintUploadTicket: (
+    listing: { id: string; orgId: string },
+    fields: { kind: string; alt: string; position: number; byteLength: number },
+  ) => Promise<{ ok: true; uploadUrl: string; expiresAt: string } | { ok: false; message: string }>;
+  /** MC4 — the network, for add_media_from_url. */
+  readonly fetchImpl: typeof fetch;
+  /** MC4 — spend one of this connection's writes before work that costs (a fetch). */
+  readonly spendWrite: () => Promise<Response | null>;
   /** A GET of a public route. */
   readonly publicGet: (pathAndQuery: string) => Promise<Response>;
 }
@@ -143,7 +159,19 @@ const STAGE_FIELDS = [
 ] as const;
 
 /** The person's listings, within this connection's restriction. */
-async function myListings(ctx: SignedInContext): Promise<MyListing[] | CallToolResult> {
+const listingsMemo = new WeakMap<SignedInContext, Promise<MyListing[] | CallToolResult>>();
+
+/** The person's listings, read once per MCP request however many tools ask. */
+function myListings(ctx: SignedInContext): Promise<MyListing[] | CallToolResult> {
+  let memo = listingsMemo.get(ctx);
+  if (!memo) {
+    memo = readMyListings(ctx);
+    listingsMemo.set(ctx, memo);
+  }
+  return memo;
+}
+
+async function readMyListings(ctx: SignedInContext): Promise<MyListing[] | CallToolResult> {
   const res = await ctx.asPerson("GET", "/v1/openproduct/me/listings");
   if (!res.ok) return answer(res);
   const body = (await res.json()) as { data?: { listings?: MyListing[] } };
@@ -226,7 +254,7 @@ const HANDLERS: Record<string, Handler> = {
   get_listing: async (args, ctx) => {
     const listing = await listingBySlug(ctx, args.slug);
     if (isRefusal(listing)) return listing;
-    return answer(await ctx.asPerson("GET", crewPath(listing)));
+    return answer(await ctx.asPerson("GET", crewPath(listing)), true);
   },
 
   // ── MC3: listings and their words ──
@@ -308,9 +336,179 @@ const HANDLERS: Record<string, Handler> = {
   get_listing_sync: async (args, ctx) => {
     const listing = await listingBySlug(ctx, args.slug);
     if (isRefusal(listing)) return listing;
-    return answer(await ctx.asPerson("GET", crewPath(listing, "/orunbase")));
+    return answer(await ctx.asPerson("GET", crewPath(listing, "/orunbase")), true);
   },
 };
+
+// ── MC4: images ──
+
+const MEDIA_ID_RE = /^[0-9a-fA-F-]{36}$/;
+
+function mediaFieldsOf(args: Record<string, unknown>): { kind: string; alt: string; position: number } | CallToolResult {
+  const kind = text(args, "kind") ?? "";
+  if (!(AUTHORED_MEDIA_KINDS as readonly string[]).includes(kind)) return refusal(`kind must be one of: ${AUTHORED_MEDIA_KINDS.join(", ")}.`);
+  const alt = (text(args, "alt") ?? "").trim();
+  if (alt.length === 0 || alt.length > MEDIA_ALT_MAX) return refusal(`alt is required: what the image shows, 1 to ${MEDIA_ALT_MAX} characters.`);
+  const position = typeof args.position === "number" && Number.isInteger(args.position) && args.position >= 0 ? args.position : 0;
+  return { kind, alt, position };
+}
+
+function decodeBase64(value: string): Uint8Array | null {
+  try {
+    const clean = value.replace(/^data:[^,]*,/, "").replace(/\s+/g, "");
+    if (!/^[A-Za-z0-9+/_-]*={0,2}$/.test(clean)) return null;
+    const binary = atob(clean.replace(/-/g, "+").replace(/_/g, "/"));
+    const out = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i += 1) out[i] = binary.charCodeAt(i);
+    return out;
+  } catch {
+    return null;
+  }
+}
+
+/** The most redirects add_media_from_url follows, each one checked again. */
+const FETCH_REDIRECTS_MAX = 3;
+const FETCH_TIMEOUT_MS = 10_000;
+
+/**
+ * A public image, fetched the way the screenshot sweep decides where it may
+ * go (`captureTarget`): https only, no credentials, no port, no IP literal,
+ * a public name. Every redirect is checked by the same rule, and the body is
+ * read with a hard cap, because a Content-Length is a claim.
+ */
+async function fetchPublicImage(raw: unknown, fetchImpl: typeof fetch): Promise<Uint8Array | string> {
+  let target = captureTarget(typeof raw === "string" ? raw : null);
+  // ONE DEADLINE OVER EVERY HOP, not one per hop.
+  const deadline = AbortSignal.timeout(FETCH_TIMEOUT_MS);
+  for (let hop = 0; hop <= FETCH_REDIRECTS_MAX; hop += 1) {
+    if (!target.ok) return `That address cannot be fetched (${target.reason}). It must be a public https address with no port, credentials or IP address.`;
+    let res: Response;
+    try {
+      res = await fetchImpl(target.url, { redirect: "manual", signal: deadline, headers: { accept: "image/png, image/jpeg, image/webp" } });
+    } catch {
+      return "That address could not be reached.";
+    }
+    if (res.status >= 300 && res.status < 400) {
+      const next = res.headers.get("location");
+      target = captureTarget(next ? new URL(next, target.url).toString() : null);
+      continue;
+    }
+    if (!res.ok || !res.body) return `That address answered ${res.status}.`;
+    // An image or nothing: a page is refused before a byte of it is read.
+    const type = (res.headers.get("content-type") ?? "").toLowerCase();
+    if (type && !type.startsWith("image/") && !type.startsWith("application/octet-stream")) {
+      await res.body.cancel();
+      return "That address is not an image.";
+    }
+    const declared = Number(res.headers.get("content-length") ?? "0");
+    if (declared > MEDIA_MAX_BYTES) return `That image is larger than ${MEDIA_MAX_BYTES} bytes.`;
+    const reader = res.body.getReader();
+    const chunks: Uint8Array[] = [];
+    let total = 0;
+    for (;;) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      total += value.byteLength;
+      if (total > MEDIA_MAX_BYTES) {
+        await reader.cancel();
+        return `That image is larger than ${MEDIA_MAX_BYTES} bytes.`;
+      }
+      chunks.push(value);
+    }
+    const bytes = new Uint8Array(total);
+    let offset = 0;
+    for (const chunk of chunks) {
+      bytes.set(chunk, offset);
+      offset += chunk.byteLength;
+    }
+    return bytes;
+  }
+  return "That address redirected too many times.";
+}
+
+const MEDIA_HANDLERS: Record<string, Handler> = {
+  list_media: async (args, ctx) => {
+    const listing = await listingBySlug(ctx, args.slug);
+    if (isRefusal(listing)) return listing;
+    return answer(await ctx.asPerson("GET", crewPath(listing, "/media")), true);
+  },
+  request_media_upload: async (args, ctx) => {
+    const listing = await listingBySlug(ctx, args.slug);
+    if (isRefusal(listing)) return listing;
+    const fields = mediaFieldsOf(args);
+    if (isRefusal(fields)) return fields;
+    const byteLength = args.byteLength;
+    if (typeof byteLength !== "number" || !Number.isInteger(byteLength) || byteLength < 1 || byteLength > MEDIA_MAX_BYTES) {
+      return refusal(`byteLength must be the image's exact size in bytes, at most ${MEDIA_MAX_BYTES}.`);
+    }
+    const minted = await ctx.mintUploadTicket(listing, { ...fields, byteLength });
+    if (!minted.ok) return refusal(minted.message);
+    return result({
+      uploadUrl: minted.uploadUrl,
+      method: "PUT",
+      headers: { "content-length": String(byteLength) },
+      expiresAt: minted.expiresAt,
+      note: "PUT the image's bytes to uploadUrl with exactly this Content-Length and no Authorization header. It works once.",
+    });
+  },
+  upload_media: async (args, ctx) => {
+    const listing = await listingBySlug(ctx, args.slug);
+    if (isRefusal(listing)) return listing;
+    const fields = mediaFieldsOf(args);
+    if (isRefusal(fields)) return fields;
+    const keyed = idempotencyOf(args);
+    if (isRefusal(keyed)) return keyed;
+    const bytes = typeof args.dataBase64 === "string" ? decodeBase64(args.dataBase64) : null;
+    if (!bytes || bytes.byteLength === 0) return refusal("dataBase64 must be the image's bytes in base64.");
+    if (bytes.byteLength > AGENT_INLINE_MEDIA_MAX_BYTES) {
+      return refusal(`Inline images are at most ${AGENT_INLINE_MEDIA_MAX_BYTES} bytes. Use request_media_upload for this one.`);
+    }
+    return answer(await ctx.uploadAsPerson(crewPath(listing, "/media"), { kind: fields.kind, alt: fields.alt, position: String(fields.position) }, bytes, keyed));
+  },
+  add_media_from_url: async (args, ctx) => {
+    const listing = await listingBySlug(ctx, args.slug);
+    if (isRefusal(listing)) return listing;
+    const fields = mediaFieldsOf(args);
+    if (isRefusal(fields)) return fields;
+    const keyed = idempotencyOf(args);
+    if (isRefusal(keyed)) return keyed;
+    // THE FETCH SPENDS A WRITE BEFORE IT HAPPENS, so a loop of failing fetches
+    // is bounded like any other write (second review). Its safety from
+    // private addresses is captureTarget's names-only rule plus the Workers
+    // runtime, which cannot reach private networks.
+    const spent = await ctx.spendWrite();
+    if (spent) return answer(spent);
+    const bytes = await fetchPublicImage(args.url, ctx.fetchImpl);
+    if (typeof bytes === "string") return refusal(bytes);
+    return answer(await ctx.uploadAsPerson(crewPath(listing, "/media"), { kind: fields.kind, alt: fields.alt, position: String(fields.position) }, bytes, keyed));
+  },
+  update_media: async (args, ctx) => {
+    const listing = await listingBySlug(ctx, args.slug);
+    if (isRefusal(listing)) return listing;
+    const id = text(args, "mediaId") ?? "";
+    if (!MEDIA_ID_RE.test(id)) return refusal("mediaId must be an image id from list_media.");
+    const alt = (text(args, "alt") ?? "").trim();
+    if (alt.length === 0 || alt.length > MEDIA_ALT_MAX) return refusal(`alt is 1 to ${MEDIA_ALT_MAX} characters.`);
+    return answer(await ctx.asPerson("PATCH", crewPath(listing, `/media/${id}`), { alt }));
+  },
+  reorder_gallery: async (args, ctx) => {
+    const listing = await listingBySlug(ctx, args.slug);
+    if (isRefusal(listing)) return listing;
+    if (!Array.isArray(args.gallery) || args.gallery.some((id) => typeof id !== "string" || !MEDIA_ID_RE.test(id))) {
+      return refusal("gallery must be every gallery image id from list_media, in order.");
+    }
+    return answer(await ctx.asPerson("PUT", crewPath(listing, "/media"), { gallery: args.gallery }));
+  },
+  remove_media: async (args, ctx) => {
+    const listing = await listingBySlug(ctx, args.slug);
+    if (isRefusal(listing)) return listing;
+    const id = text(args, "mediaId") ?? "";
+    if (!MEDIA_ID_RE.test(id)) return refusal("mediaId must be an image id from list_media.");
+    return answer(await ctx.asPerson("DELETE", crewPath(listing, `/media/${id}`)));
+  },
+};
+
+Object.assign(HANDLERS, MEDIA_HANDLERS);
 
 /** Call a signed-in tool, or say why not. */
 export async function callSignedInTool(name: string, args: Record<string, unknown>, ctx: SignedInContext): Promise<CallToolResult | null> {

@@ -26,6 +26,7 @@
 // happens on the website under the website's own session.
 
 import {
+  AGENT_UPLOAD_PATH_PREFIX,
   AUTHORIZATION_SERVER_METADATA_PATH,
   CONSENT_PAGE_PATH,
   MCP_SIGNED_IN_PATH,
@@ -66,8 +67,11 @@ export function isOAuthPath(pathname: string): boolean {
 /** The paths any origin may call from a browser (see the header). */
 export function isOpenCorsPath(pathname: string): boolean {
   return (
-    isOAuthPath(pathname) && pathname !== OAUTH_AUTHORIZE_PATH && !CLIENT_READ_RE.test(pathname)
-  ) || pathname === MCP_SIGNED_IN_PATH;
+    (isOAuthPath(pathname) && pathname !== OAUTH_AUTHORIZE_PATH && !CLIENT_READ_RE.test(pathname)) ||
+    pathname === MCP_SIGNED_IN_PATH ||
+    // MC4 — a one-time upload address reads no cookie either: the ticket is the authority.
+    pathname.startsWith(AGENT_UPLOAD_PATH_PREFIX)
+  );
 }
 
 /**

@@ -455,3 +455,16 @@ export function authorizationRedirect(
 
 /** `state` as a client sends it: opaque, bounded so it cannot carry a payload. */
 export const OAUTH_STATE_MAX = 500;
+
+// ---------------------------------------------------------------------------
+// MC4 — upload tickets
+// ---------------------------------------------------------------------------
+
+/** A one-time upload ticket. It is the authority for one PUT, so it is a token. */
+export const AGENT_UPLOAD_TICKET_PREFIX = "opu_";
+/** How long a ticket lives. */
+export const AGENT_UPLOAD_TICKET_TTL_SECONDS = 10 * 60;
+/** Where a ticket's bytes go. */
+export const AGENT_UPLOAD_PATH_PREFIX = "/v1/agent-uploads/";
+/** The most an agent may send inline as base64, decoded. */
+export const AGENT_INLINE_MEDIA_MAX_BYTES = 1024 * 1024;

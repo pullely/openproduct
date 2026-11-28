@@ -36,7 +36,7 @@ function core(seen: Seen[]): Fetcher {
       if (url.pathname === "/internal/openproduct/agent-credentials/resolve") {
         const token = JSON.parse(String(init?.body)).token as string;
         const c = TOKENS[token];
-        return ok({ credential: c ? { credentialId: `agc_${token.slice(-6)}`, subjectId: ADA, kind: "oauth", clientName: "Claude", ...c } : null });
+        return ok({ credential: c ? { credentialId: `agc_n${Object.keys(TOKENS).indexOf(token)}`, subjectId: ADA, kind: "oauth", clientName: "Claude", ...c } : null });
       }
       if (url.pathname === "/internal/openproduct/me") return ok({ subjectId: ADA, contributor: { displayName: "Ada" } });
       if (url.pathname === "/internal/openproduct/me/listings") {
@@ -126,7 +126,8 @@ describe("MC2 — a call is the website's own request, as the person", () => {
   it("reads one of my listings by slug through the crew route", async () => {
     const seen: Seen[] = [];
     const call = await rpc(READ, "tools/call", { name: "get_listing", arguments: { slug: "two" } }, env(seen));
-    expect(call.structuredContent).toEqual({ profile: { id: "opp_two" } });
+    // Wrapped: a listing carries words other crew members wrote (second review).
+    expect(call.structuredContent).toEqual({ note: AGENT_UNTRUSTED_NOTE, data: { profile: { id: "opp_two" } } });
     expect(seen.some((s) => s.path === "/internal/openproduct/orgs/org_a/profiles/opp_two")).toBe(true);
   });
 
@@ -144,6 +145,36 @@ describe("MC2 — the listing restriction", () => {
     const other = await rpc(RESTRICTED, "tools/call", { name: "get_listing", arguments: { slug: "two" } }, env(seen));
     expect(other.isError).toBe(true);
     expect(seen.some((s) => s.path.includes("opp_two"))).toBe(false);
+  });
+});
+
+describe("MC4 (second review) — an agent spends its own budgets", () => {
+  it("never spends its person's website budget: a busy agent leaves the person's own requests alone", async () => {
+    const e = env();
+    for (let i = 0; i < 61; i += 1) await rpc(READ, "tools/call", { name: "whoami", arguments: {} }, e);
+    // The person, on the website, with their own session, is still served.
+    const own = await route(new Request(`${API}/v1/openproduct/me`, { headers: { authorization: "Bearer ops_test_fixture_session_token_not_a_real_one" } }), {
+      ...e,
+      CORE: {
+        fetch: async (input: RequestInfo | URL) => {
+          const path = new URL(String(input instanceof Request ? input.url : input)).pathname;
+          if (path === "/internal/openproduct/auth/sessions/resolve") return Response.json({ data: { subjectId: ADA } });
+          return Response.json({ data: { subjectId: ADA } });
+        },
+      } as unknown as Fetcher,
+    } as Env);
+    expect(own.status).toBe(200);
+  });
+
+  it("keeps each agent's public reads in a bucket of its own", async () => {
+    const e = env();
+    const seen: string[] = [];
+    let last: any;
+    for (let i = 0; i < 125; i += 1) last = await rpc(READ, "tools/call", { name: "get_feed", arguments: {} }, e);
+    seen.push(last.isError ? "limited" : "ok");
+    const other = await rpc(RESTRICTED, "tools/call", { name: "get_feed", arguments: {} }, e);
+    expect(seen).toEqual(["limited"]);
+    expect(other.isError).toBeFalsy();
   });
 });
 

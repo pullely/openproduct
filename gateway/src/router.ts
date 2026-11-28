@@ -25,7 +25,7 @@
 // epic's status doc), and the Durable-Object rate counter (see ratelimit.ts).
 
 import type { WriteAction } from "@openproduct/contracts";
-import { MCP_SIGNED_IN_PATH, mcpChallenge, type ResolvedAgentCredential } from "@openproduct/contracts";
+import { AGENT_UPLOAD_PATH_PREFIX, MCP_SIGNED_IN_PATH, mcpChallenge, type ResolvedAgentCredential } from "@openproduct/contracts";
 
 import type { Env } from "./env.js";
 import { errorResponse, methodNotAllowed, notFound, resolveRequestId, successResponse } from "./http.js";
@@ -949,12 +949,15 @@ async function handleAuthenticated(
     if (refused) return refused;
     const session = as ? ({ ok: true, subject: as.subject } as const) : await resolveSubject(request, env, fetch, env.CORE);
     if (!session.ok) return errorResponse(session.code, session.message, session.status, requestId);
-    const limited = await rateLimitGate("identity", session.subject.subjectId, env, requestId);
+    // MC4 (second review) — AN AGENT SPENDS ITS OWN IDENTITY BUCKET, never its
+  // person's: a looping agent must not lock the person out of the website.
+  const limited = await rateLimitGate("identity", as ? `agent:${as.agent.credentialId}` : session.subject.subjectId, env, requestId);
     if (limited) return limited;
     const fields = parseUploadFields(new URL(request.url), requestId);
     if (fields instanceof Response) return fields;
     return handleMediaUpload(request, env, requestId, fields, {
       subject: session.subject,
+      ...(as ? { agentCredentialId: as.agent.credentialId } : {}),
       core: env.CORE,
       internalPath: `/internal/openproduct/orgs/${mediaUpload[1]}/profiles/${mediaUpload[2]}/media`,
       origin: new URL(request.url).origin,
@@ -969,7 +972,9 @@ async function handleAuthenticated(
     if (isPrivateThreadRoute(pathname)) return errorResponse("not_found", "Not found", 404, requestId);
     return errorResponse(session.code, session.message, session.status, requestId);
   }
-  const limited = await rateLimitGate("identity", session.subject.subjectId, env, requestId);
+  // MC4 (second review) — AN AGENT SPENDS ITS OWN IDENTITY BUCKET, never its
+  // person's: a looping agent must not lock the person out of the website.
+  const limited = await rateLimitGate("identity", as ? `agent:${as.agent.credentialId}` : session.subject.subjectId, env, requestId);
   if (limited) return limited;
   const orgMatch = ORG_OPENPRODUCT_RE.exec(pathname);
   if (orgMatch) {
@@ -1119,6 +1124,38 @@ export interface WriteContext {
   cache?: { purge(options: { tags: string[] }): Promise<{ success: boolean; errors?: unknown }> };
 }
 
+async function handleAgentUpload(request: Request, env: Env, requestId: string, ticket: string, ctx?: WriteContext): Promise<Response> {
+  if (request.method !== "PUT") return new Response(null, { status: 405, headers: { allow: "PUT" } });
+  if (!env.CORE) return errorResponse("internal_error", "Service unavailable", 503, requestId);
+  if (!/^opu_[A-Za-z0-9_-]{20,80}$/.test(ticket)) return errorResponse("not_found", "Not found", 404, requestId);
+  // Anonymous by design (the ticket is the authority), so bounded per address
+  // before a guessed ticket can cost core a statement.
+  const anonLimited = await rateLimitGate("anon", anonKey(request), env, requestId);
+  if (anonLimited) return anonLimited;
+  const declared = Number(request.headers.get("content-length") ?? "");
+  if (!Number.isInteger(declared) || declared <= 0) return errorResponse("length_required", "Content-Length is required", 411, requestId);
+  const answer = await askCoreJson(env.CORE, "/internal/openproduct/agent-upload-tickets/consume", { ticket });
+  const upload = answer?.upload as
+    | { orgId: string; profileId: string; kind: string; alt: string; position: number; byteLength: number; credential: ResolvedAgentCredential }
+    | null
+    | undefined;
+  // Unknown, used, expired and a revoked credential all read the same.
+  if (!upload) return errorResponse("not_found", "This upload address was used, has expired, or never existed. Ask for another.", 404, requestId);
+  if (declared !== upload.byteLength) {
+    return errorResponse("validation_failed", `This address is for exactly ${upload.byteLength} bytes. Ask for another with the right byteLength.`, 422, requestId);
+  }
+  const bytes = new Uint8Array(await request.arrayBuffer());
+  if (bytes.byteLength !== upload.byteLength) {
+    return errorResponse("validation_failed", `This address is for exactly ${upload.byteLength} bytes.`, 422, requestId);
+  }
+  const context = signedInContext(request, env, requestId, upload.credential, ctx);
+  return context.uploadAsPerson(
+    `/v1/organizations/${upload.orgId}/openproduct/profiles/${upload.profileId}/media`,
+    { kind: upload.kind, alt: upload.alt, position: String(upload.position) },
+    bytes,
+  );
+}
+
 /** POST a JSON body to core and read its `data`; null on anything but an answer. */
 async function askCoreJson(core: Fetcher, path: string, body: unknown): Promise<Record<string, unknown> | null> {
   try {
@@ -1157,53 +1194,96 @@ function signedInContext(
   const subject: ResolvedSubject = { subjectId: agent.subjectId, subjectType: "user" };
   return {
     agent,
-    publicGet: (pathAndQuery) => route(new Request(`${origin}${pathAndQuery}`, { method: "GET" }), env),
+    // MC4 (second review) — each agent's public reads in a bucket of their
+    // own, keyed by the credential, rather than all of them in "unknown".
+    publicGet: (pathAndQuery) =>
+      route(new Request(`${origin}${pathAndQuery}`, { method: "GET", headers: { "cf-connecting-ip": `agent:${agent.credentialId}` } }), env),
+    spendWrite: () => rateLimitGate("agentWrite", agent.credentialId, env, requestId),
     siteOrigin: (env.SITE_ORIGIN ?? "").trim().replace(/\/+$/, ""),
-    asPerson: async (method, path, body, opts) => {
-      const pathname = new URL(`${origin}${path}`).pathname;
-      if (!isAuthenticatedRoute(pathname)) return errorResponse("not_found", "Not found", 404, requestId);
-      // THE LISTING RESTRICTION, at the one door every crew route goes through.
-      if (outsideRestriction(pathname, agent)) return errorResponse("not_found", "Not found", 404, requestId);
-      // MC3 — THE SAME KEY GETS THE FIRST ANSWER. Asked before anything else
-      // costs: a retry neither spends a token nor writes twice. A key reused
-      // for a different call is refused, never answered with the wrong thing.
-      const key = method !== "GET" ? opts?.idempotencyKey : undefined;
-      if (key && env.CORE) {
-        const kept = await askCoreJson(env.CORE, "/internal/openproduct/agent-idempotency/lookup", {
-          credentialId: agent.credentialId,
-          key,
-        });
-        const hit = kept?.kept as { method: string; path: string; status: number; body: unknown } | null | undefined;
-        if (hit) {
-          if (hit.method !== method || hit.path !== path) {
-            return errorResponse("conflict", "That idempotencyKey was used for a different call. Use a fresh one.", 409, requestId);
-          }
-          return Response.json(hit.body, { status: hit.status, headers: { "cache-control": "no-store", "x-idempotent-replay": "true" } });
-        }
-      }
-      // THE AGENT'S OWN BUCKET, on top of the person's: a runaway loop stops at
-      // the credential before it spends what the person has (design §7.2).
-      if (method !== "GET") {
-        const limited = await rateLimitGate("agentWrite", agent.credentialId, env, requestId);
-        if (limited) return limited;
-      }
+    fetchImpl: fetch,
+    asPerson: (method, path, body, opts) => {
       const init: RequestInit = { method, headers: { "content-type": "application/json" } };
       if (body !== undefined) init.body = JSON.stringify(body);
-      const response = await handleAuthenticated(new Request(`${origin}${path}`, init), env, requestId, pathname, ctx, { subject, agent });
-      if (key && env.CORE && response.ok) {
-        const copy = await response.clone().json().catch(() => null);
-        await askCoreJson(env.CORE, "/internal/openproduct/agent-idempotency/store", {
-          credentialId: agent.credentialId,
-          key,
-          method,
-          path,
-          status: response.status,
-          body: copy,
-        });
+      return send(method, path, init, opts?.idempotencyKey);
+    },
+    uploadAsPerson: (path, query, bytes, opts) => {
+      const q = new URLSearchParams(query).toString();
+      return send(
+        "POST",
+        `${path}?${q}`,
+        { method: "POST", headers: { "content-length": String(bytes.byteLength), "content-type": "application/octet-stream" }, body: bytes as unknown as BodyInit },
+        opts?.idempotencyKey,
+      );
+    },
+    mintUploadTicket: async (listing, fields) => {
+      // A ticket is a row: minting one spends a write.
+      const limited = await rateLimitGate("agentWrite", agent.credentialId, env, requestId);
+      if (limited) return { ok: false, message: "Too many writes from this connection. Wait a minute and try again." };
+      if (outsideRestriction(`/v1/organizations/${listing.orgId}/openproduct/profiles/${listing.id}`, agent)) {
+        return { ok: false, message: "Not found, or not yours to change." };
       }
-      return response;
+      const minted = env.CORE
+        ? await askCoreJson(env.CORE, "/internal/openproduct/agent-upload-tickets", {
+            credentialId: agent.credentialId,
+            orgId: listing.orgId,
+            profileId: listing.id,
+            ...fields,
+          })
+        : null;
+      if (!minted || typeof minted.ticket !== "string") {
+        return { ok: false, message: "openproduct could not make an upload address. Check kind, alt and byteLength, then try again." };
+      }
+      return {
+        ok: true,
+        uploadUrl: `${apiOriginOf(request, env)}${AGENT_UPLOAD_PATH_PREFIX}${minted.ticket}`,
+        expiresAt: String(minted.expiresAt),
+      };
     },
   };
+
+  /** Every agent write and read goes through here: restriction, idempotency, bucket, then the website's handler. */
+  async function send(method: string, path: string, init: RequestInit, key?: string): Promise<Response> {
+    const pathname = new URL(`${origin}${path}`).pathname;
+    if (!isAuthenticatedRoute(pathname)) return errorResponse("not_found", "Not found", 404, requestId);
+    // THE LISTING RESTRICTION, at the one door every crew route goes through.
+    if (outsideRestriction(pathname, agent)) return errorResponse("not_found", "Not found", 404, requestId);
+    // MC3 — THE SAME KEY GETS THE FIRST ANSWER. Asked before anything else
+    // costs: a retry neither spends a token nor writes twice. A key reused
+    // for a different call is refused, never answered with the wrong thing.
+    const keyed = method !== "GET" ? key : undefined;
+    if (keyed && env.CORE) {
+      const kept = await askCoreJson(env.CORE, "/internal/openproduct/agent-idempotency/lookup", {
+        credentialId: agent.credentialId,
+        key: keyed,
+      });
+      const hit = kept?.kept as { method: string; path: string; status: number; body: unknown } | null | undefined;
+      if (hit) {
+        if (hit.method !== method || hit.path !== pathname) {
+          return errorResponse("conflict", "That idempotencyKey was used for a different call. Use a fresh one.", 409, requestId);
+        }
+        return Response.json(hit.body, { status: hit.status, headers: { "cache-control": "no-store", "x-idempotent-replay": "true" } });
+      }
+    }
+    // THE AGENT'S OWN BUCKET, on top of the person's: a runaway loop stops at
+    // the credential before it spends what the person has (design §7.2).
+    if (method !== "GET") {
+      const limited = await rateLimitGate("agentWrite", agent.credentialId, env, requestId);
+      if (limited) return limited;
+    }
+    const response = await handleAuthenticated(new Request(`${origin}${path}`, init), env, requestId, pathname, ctx, { subject, agent });
+    if (keyed && env.CORE && response.ok) {
+      const copy = await response.clone().json().catch(() => null);
+      await askCoreJson(env.CORE, "/internal/openproduct/agent-idempotency/store", {
+        credentialId: agent.credentialId,
+        key: keyed,
+        method,
+        path: pathname,
+        status: response.status,
+        body: copy,
+      });
+    }
+    return response;
+  }
 }
 
 export async function route(
@@ -1318,6 +1398,14 @@ export async function route(
   // person's request until the consent page, which lives on the website.
   if (isOAuthPath(pathname)) {
     return handleOAuth(request, env, requestId);
+  }
+
+  // MC4 — an agent's image, by one-time ticket. The ticket is the authority
+  // for this one PUT, so no bearer is read; the length is checked against the
+  // ticket before the body is, and the bytes then go through the website's
+  // own upload path as the agent's person.
+  if (pathname.startsWith(AGENT_UPLOAD_PATH_PREFIX)) {
+    return handleAgentUpload(request, env, requestId, pathname.slice(AGENT_UPLOAD_PATH_PREFIX.length), options?.ctx);
   }
 
   // MC1 — the signed-in MCP endpoint. It ALWAYS asks for an agent's own
