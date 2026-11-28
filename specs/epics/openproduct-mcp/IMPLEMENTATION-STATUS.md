@@ -6,8 +6,8 @@
 | MC1 — connecting an agent | MC-2 | Done | #41 |
 | MC2 — the signed-in endpoint and the parity guard | MC-3 | Done | #42 |
 | MC3 — listings and their words | MC-4 | Done | #43 |
-| MC4 — images | MC-5 | In review | this PR |
-| MC5 — posts, milestones, launches | MC-6 | Not started | |
+| MC4 — images | MC-5 | Done | #44 |
+| MC5 — posts, milestones, launches | MC-6 | In review | this PR |
 | MC6 — seats, crew and the product's discussions | MC-7 | Not started | |
 | MC7 — the contributor's side | MC-8 | Not started | |
 | MC8 — documented and connectable | MC-9 | Not started | |
@@ -237,3 +237,28 @@ nothing high; what it found and what was done, in this PR):
   write (no reservation row); an upload ticket is a bearer address for its
   ten minutes; core's ticket endpoints trust the gateway for the scope and
   the restriction, as every internal route trusts the binding.
+
+## From MC5
+
+What landed:
+
+- **Posts**: `describe_post_kinds` (the four authored kinds and each kind's
+  block catalogue, from `POST_BLOCK_CATALOGUE`, so an agent writes only what
+  the template-only builder accepts), `list_posts`, `create_post` (a draft),
+  `update_post`, `publish_post` (optionally naming the milestone it ships or
+  the role opening it is for), `delete_post`.
+- **Milestones**: `list_milestones`, `create_milestone`, `update_milestone`,
+  `reorder_milestones`, `ship_milestone` (shipped true or false — the
+  website's PUT and DELETE), `delete_milestone`.
+- **Launches**: `list_listing_launches` (with the eligibility the website's
+  form reads), `schedule_launch`, `reschedule_launch`, `cancel_launch`.
+- `get_needs_you`: what the crew has to do next.
+- Creating tools take an `idempotencyKey`; destructive ones carry
+  `destructiveHint`. Each tool is pinned by a test to the exact route,
+  method and body the website sends.
+
+Departures from the design, said plainly:
+
+- **`create_post` does not return a preview address**: the draft itself is
+  the answer, and `list_posts` reads it back. The builder's address needs the
+  website's origin and the draft's kind, and adds nothing an agent can act on.
