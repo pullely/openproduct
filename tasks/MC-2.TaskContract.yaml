@@ -1,0 +1,30 @@
+# MC-2: milestone MC1, connecting an agent. A person can connect an MCP
+# client by OAuth or mint a personal token, see it in Connected agents and
+# revoke it.
+# The file is the contract; the task itself lives in Orunbase.
+apiVersion: orun.io/v1
+kind: TaskContract
+metadata:
+  name: MC-2
+  title: "MC1: connecting an agent"
+spec:
+  goal: An MCP client can obtain a scoped, revocable opa_ credential for a person through OAuth 2.1 with dynamic registration, or the person can mint one in settings.
+  affects:
+    - packages/**
+    - core/**
+    - gateway/**
+    - web/**
+    - tests/**
+    - specs/epics/openproduct-mcp/**
+    - tasks/**
+  deps:
+    - MC-1
+  doneWhen:
+    - agent_credentials and oauth_clients exist, with no email column and classified in the subject registry
+    - Protected-resource and authorization-server metadata are served; /oauth/register, /oauth/authorize, /oauth/token and /oauth/revoke work for public clients with PKCE S256 only
+    - Refresh tokens rotate and a reused one revokes its family
+    - resolveSubject resolves opa_ tokens against core; an ops_ session is refused on /mcp
+    - The consent screen and Settings → Connected agents match the board; a personal token is shown once
+    - A revoked credential is refused within the stated cache TTL
+    - A security review of the OAuth surface is recorded in the status file
+  gates: []

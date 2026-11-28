@@ -1,0 +1,23 @@
+# MC-6: milestone MC5, posts, milestones, launches.
+# The file is the contract; the task itself lives in Orunbase.
+apiVersion: orun.io/v1
+kind: TaskContract
+metadata:
+  name: MC-6
+  title: "MC5: posts, milestones, launches"
+spec:
+  goal: An agent can draft, edit, publish and delete posts of every authored kind, keep the milestones, and schedule launches.
+  affects:
+    - packages/**
+    - core/**
+    - gateway/**
+    - tests/**
+    - specs/epics/openproduct-mcp/**
+    - tasks/**
+  deps:
+    - MC-5
+  doneWhen:
+    - The post, milestone and launch tools of design §4 are in the registry and off NOT_YET
+    - create_post makes a draft through the template-only post blocks and returns its preview address
+    - Destructive tools carry destructiveHint
+  gates: []

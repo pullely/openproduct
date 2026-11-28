@@ -1,0 +1,23 @@
+# MC-8: milestone MC7, the contributor's side.
+# The file is the contract; the task itself lives in Orunbase.
+apiVersion: orun.io/v1
+kind: TaskContract
+metadata:
+  name: MC-8
+  title: "MC7: the contributor's side"
+spec:
+  goal: An agent can comment, start and reply to threads, vote, react, follow, save, endorse, keep collections, read notifications and keep its person's profile.
+  affects:
+    - packages/**
+    - core/**
+    - gateway/**
+    - tests/**
+    - specs/epics/openproduct-mcp/**
+    - tasks/**
+  deps:
+    - MC-7
+  doneWhen:
+    - The community, notification and profile tools of design §4 are in the registry
+    - NOT_YET is empty
+    - Posts made through an agent pass the same defence and moderation as the website's
+  gates: []

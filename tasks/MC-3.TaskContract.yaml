@@ -1,0 +1,26 @@
+# MC-3: milestone MC2, the signed-in endpoint and the parity guard.
+# The file is the contract; the task itself lives in Orunbase.
+apiVersion: orun.io/v1
+kind: TaskContract
+metadata:
+  name: MC-3
+  title: "MC2: the signed-in endpoint and the parity guard"
+spec:
+  goal: /mcp offers each credential the tools its scopes allow, every tool calls its route's own handler, and a test fails when a write route has no tool, no exclusion and is not on NOT_YET.
+  affects:
+    - packages/**
+    - core/**
+    - gateway/**
+    - tests/**
+    - specs/epics/openproduct-mcp/**
+    - tasks/**
+  deps:
+    - MC-2
+  doneWhen:
+    - The tool registry in contracts carries name, schema, scope, route and annotations; mcp.ts dispatches from it
+    - Anonymous tools/list is unchanged plus the public reads; a bearer adds the tools its scopes allow; a bad bearer answers 401 with WWW-Authenticate
+    - Core checks the scope and records via agent in audit entries; creating calls honour idempotencyKey
+    - The agent bucket (30 writes a minute per credential) is enforced
+    - whoami, list_my_listings, get_listing, list_workspaces and the public read tools work
+    - mcp-parity.test.ts walks every gateway write route against tools, exclusions and NOT_YET
+  gates: []

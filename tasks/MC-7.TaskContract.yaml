@@ -1,0 +1,23 @@
+# MC-7: milestone MC6, seats, crew and the product's discussions.
+# The file is the contract; the task itself lives in Orunbase.
+apiVersion: orun.io/v1
+kind: TaskContract
+metadata:
+  name: MC-7
+  title: "MC6: seats, crew and the product's discussions"
+spec:
+  goal: An agent can open and close seats, read the recorded applications, change crew roles as its person may, and moderate and resolve the product's threads.
+  affects:
+    - packages/**
+    - core/**
+    - gateway/**
+    - tests/**
+    - specs/epics/openproduct-mcp/**
+    - tasks/**
+  deps:
+    - MC-6
+  doneWhen:
+    - The openings, applications, crew and private-thread tools of design §4 are in the registry and off NOT_YET
+    - Every field another person wrote comes back marked untrusted
+    - set_crew_roles cannot leave a listing with no Lead and cannot move a locked Lead
+  gates: []
