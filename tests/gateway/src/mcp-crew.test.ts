@@ -11,7 +11,6 @@ import type { Env } from "@openproduct-gateway/env";
 const API = "https://api.openproduct.test";
 const POSTS = "opa_test_fixture_crew_token_not_a_real_11";
 const LIMITED = "opa_test_fixture_crew_limited_not_a_real_1";
-const POST_ID = "ppo_0123456789abcdef0123456789abcdef";
 const BASE = "/internal/openproduct/orgs/org_a/profiles/opp_one";
 
 interface Seen {
