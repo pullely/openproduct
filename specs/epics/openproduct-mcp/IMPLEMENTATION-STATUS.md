@@ -3,8 +3,8 @@
 | Milestone | Task | State | PR |
 |---|---|---|---|
 | MC0 — the spec | MC-1 | Done | #40 |
-| MC1 — connecting an agent | MC-2 | In review | #41 |
-| MC2 — the signed-in endpoint and the parity guard | MC-3 | In review | |
+| MC1 — connecting an agent | MC-2 | Done | #41 |
+| MC2 — the signed-in endpoint and the parity guard | MC-3 | In review | this PR |
 | MC3 — listings and their words | MC-4 | Not started | |
 | MC4 — images | MC-5 | Not started | |
 | MC5 — posts, milestones, launches | MC-6 | Not started | |
