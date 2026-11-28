@@ -49,15 +49,15 @@ const notYet = (milestone: AgentMilestone): RouteUse => ({ notYet: milestone });
 /** Keyed by the route's constant in `core/src/router.ts`. */
 export const AGENT_ROUTE_CATALOGUE: Record<string, RouteEntry> = {
   // ── a listing and its words ──
-  ORG_PROFILES_RE: { GET: tool("list_my_listings"), POST: notYet("MC3") },
-  ORG_PROFILE_RE: { GET: tool("get_listing"), PATCH: notYet("MC3") },
-  PROFILE_PUBLISH_RE: { POST: notYet("MC3"), DELETE: notYet("MC3") },
-  PROFILE_STAGE_RE: { PUT: notYet("MC3") },
+  ORG_PROFILES_RE: { GET: tool("list_my_listings"), POST: tool("create_listing") },
+  ORG_PROFILE_RE: { GET: tool("get_listing"), PATCH: tool("update_listing") },
+  PROFILE_PUBLISH_RE: { POST: tool("publish_listing"), DELETE: tool("unpublish_listing") },
+  PROFILE_STAGE_RE: { PUT: tool("change_stage") },
   PROFILE_REPO_OBSERVATION_RE: { PUT: excluded("observation") },
   PROFILE_REVIEW_RE: { POST: excluded("operator") },
   PROFILE_MAINTAINERS_RE: { PUT: notYet("MC6") },
   PROFILE_LINK_GRANT_RE: { PUT: excluded("link_grant") },
-  PROFILE_ORUNBASE_RE: { GET: notYet("MC3") },
+  PROFILE_ORUNBASE_RE: { GET: tool("get_listing_sync") },
   PROFILE_NEEDS_YOU_RE: { GET: notYet("MC5") },
   // ── images ──
   PROFILE_MEDIA_RE: { GET: notYet("MC4"), POST: notYet("MC4"), PUT: notYet("MC4") },
@@ -133,6 +133,8 @@ export const AGENT_ROUTE_CATALOGUE: Record<string, RouteEntry> = {
   OAUTH_TOKEN_INTERNAL_PATH: { POST: excluded("agent_credentials") },
   OAUTH_REVOKE_INTERNAL_PATH: { POST: excluded("agent_credentials") },
   AGENT_RESOLVE_PATH: { POST: excluded("agent_credentials") },
+  AGENT_IDEMPOTENCY_LOOKUP_PATH: { POST: excluded("agent_credentials") },
+  AGENT_IDEMPOTENCY_STORE_PATH: { POST: excluded("agent_credentials") },
   ME_OAUTH_GRANTS_PATH: { POST: excluded("agent_credentials") },
   ME_AGENT_CREDENTIALS_PATH: { GET: excluded("agent_credentials"), POST: excluded("agent_credentials") },
   ME_AGENT_CREDENTIAL_RE: { DELETE: excluded("agent_credentials") },

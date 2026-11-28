@@ -67,6 +67,8 @@ export interface AgentCredentialDeps {
     | "listAgentCredentials"
     | "revokeAgentCredential"
     | "revokeAgentCredentialByTokenHash"
+    | "getAgentIdempotency"
+    | "putAgentIdempotency"
     | "listProfilesMaintainedBy"
   >;
   now?: () => number;
@@ -503,4 +505,59 @@ export async function handleRevokeMyAgentCredential(
   // The same answer whether or not a row moved: somebody else's id and an
   // already-revoked one are both "not connected", which is what was asked for.
   return successResponse({ revoked: true }, requestId);
+}
+
+// ---------------------------------------------------------------------------
+// Idempotency — an agent's retry gets the first answer (MC3)
+// ---------------------------------------------------------------------------
+
+/** How long a first answer is kept. */
+export const AGENT_IDEMPOTENCY_WINDOW_MS = 24 * 60 * 60 * 1000;
+const IDEMPOTENCY_KEY_RE = /^[A-Za-z0-9._:-]{1,100}$/;
+const CREDENTIAL_ID_RE = /^agc_[A-Za-z0-9_-]{1,64}$/;
+
+/** POST /internal/openproduct/agent-idempotency/lookup — the gateway asks before a creating call. */
+export async function handleIdempotencyLookup(
+  _env: Env,
+  request: Request,
+  requestId: string,
+  deps: AgentCredentialDeps,
+): Promise<Response> {
+  const body = await bodyOf(request);
+  const credentialId = typeof body?.credentialId === "string" ? body.credentialId : "";
+  const key = typeof body?.key === "string" ? body.key : "";
+  if (!CREDENTIAL_ID_RE.test(credentialId) || !IDEMPOTENCY_KEY_RE.test(key)) return successResponse({ kept: null }, requestId);
+  const kept = await deps.repo.getAgentIdempotency(credentialId, key, isoAt(nowOf(deps) - AGENT_IDEMPOTENCY_WINDOW_MS));
+  return successResponse({ kept }, requestId);
+}
+
+/** POST /internal/openproduct/agent-idempotency/store — the gateway keeps a first answer. */
+export async function handleIdempotencyStore(
+  _env: Env,
+  request: Request,
+  requestId: string,
+  deps: AgentCredentialDeps,
+): Promise<Response> {
+  const body = await bodyOf(request);
+  if (!body) return badBody(requestId);
+  const credentialId = typeof body.credentialId === "string" ? body.credentialId : "";
+  const key = typeof body.key === "string" ? body.key : "";
+  const method = typeof body.method === "string" ? body.method : "";
+  const path = typeof body.path === "string" ? body.path : "";
+  const status = typeof body.status === "number" ? body.status : 0;
+  if (!CREDENTIAL_ID_RE.test(credentialId) || !IDEMPOTENCY_KEY_RE.test(key) || !method || !path.startsWith("/v1/") || status < 200 || status > 299) {
+    return validationError(requestId, { idempotency: ["Not a keepable answer"] });
+  }
+  const now = nowOf(deps);
+  await deps.repo.putAgentIdempotency({
+    credentialId,
+    key,
+    method,
+    path,
+    status,
+    body: body.body ?? null,
+    at: isoAt(now),
+    olderThan: isoAt(now - AGENT_IDEMPOTENCY_WINDOW_MS),
+  });
+  return successResponse({ kept: true }, requestId, 201);
 }

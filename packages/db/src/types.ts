@@ -1600,6 +1600,17 @@ export type RotateAgentCredentialResult =
   | { kind: "reused" }
   | { kind: "unknown" };
 
+/** MC3 — a creating call's first answer, kept under (credential, key). */
+export interface AgentIdempotencyRecord {
+  credentialId: string;
+  key: string;
+  method: string;
+  path: string;
+  status: number;
+  body: unknown;
+  createdAt: string;
+}
+
 export interface WriteCredentialInput {
   readonly subjectId: string;
   readonly verifier: string;
@@ -2704,6 +2715,10 @@ export interface OpenproductRepository {
   listAgentCredentials(subjectId: string, now: string): Promise<AgentCredentialRecord[]>;
   /** MC1 — revoke one of the subject's own. False when it is not theirs or already gone. */
   revokeAgentCredential(subjectId: string, id: string, at: string): Promise<boolean>;
+  /** MC3 — a kept answer younger than `since`, or null. */
+  getAgentIdempotency(credentialId: string, key: string, since: string): Promise<AgentIdempotencyRecord | null>;
+  /** MC3 — keep a first answer (the first one wins) and drop a bounded batch of old ones. */
+  putAgentIdempotency(input: Omit<AgentIdempotencyRecord, "createdAt"> & { at: string; olderThan: string }): Promise<void>;
   /** MC1 — RFC 7009: revoke the credential an access or refresh token belongs to. */
   revokeAgentCredentialByTokenHash(tokenHash: string, at: string): Promise<void>;
 

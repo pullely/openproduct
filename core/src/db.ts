@@ -47,5 +47,18 @@ export function repoFor(env: Env, scope?: RequestScope): OpenproductRepository {
   // trip of its own, and a visitor should not wait for a connection they have
   // finished with — `route()` hands these to `ctx.waitUntil`.
   scope?.onDispose(() => executor.dispose());
-  return createOpenproductRepository(executor);
+  return withVia(createOpenproductRepository(executor), scope?.via);
+}
+
+/**
+ * MC3 — ONE PLACE, so no handler can forget: an agent's request stamps `via`
+ * into every audit entry it writes. The act is the person's; the record says
+ * how it arrived (design §2.3).
+ */
+export function withVia(repo: OpenproductRepository, via: RequestScope["via"]): OpenproductRepository {
+  if (!via) return repo;
+  return {
+    ...repo,
+    appendAudit: (input) => repo.appendAudit({ ...input, payload: { ...(input.payload ?? {}), via } }),
+  };
 }

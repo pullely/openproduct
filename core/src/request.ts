@@ -11,6 +11,12 @@
 import { startRequestTimings, type RequestTimings } from "./timing.js";
 
 export interface RequestScope extends RequestTimings {
+  /**
+   * MC3 (openproduct-mcp) — how this request arrived, when an agent made it
+   * for its person: the gateway names the credential, and every audit entry
+   * this request writes says so (`repoFor` stamps it).
+   */
+  via?: { kind: "agent"; credentialId: string };
   /** Register work to run once the response is out. */
   onDispose(fn: () => Promise<void>): void;
   /**

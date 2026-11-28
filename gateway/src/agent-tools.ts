@@ -13,6 +13,9 @@
 
 import {
   AGENT_UNTRUSTED_NOTE,
+  PUBLIC_MAINTAINER_KEYS,
+  PUBLIC_PROFILE_KEYS,
+  PUBLIC_ROLE_OPENING_KEYS,
   signedInTool,
   toolAllowed,
   type ResolvedAgentCredential,
@@ -22,14 +25,22 @@ import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
 /** What the router hands the MCP server for one signed-in request. */
 export interface SignedInContext {
   readonly agent: ResolvedAgentCredential;
-  /** A request to the authenticated plane, as the agent's person. */
-  readonly asPerson: (method: string, path: string, body?: unknown) => Promise<Response>;
+  /** A request to the authenticated plane, as the agent's person. A creating
+   *  call may carry an idempotency key: the same key again gets the first answer. */
+  readonly asPerson: (method: string, path: string, body?: unknown, opts?: { idempotencyKey?: string }) => Promise<Response>;
+  /** The website's origin, for addresses a person must open; empty when unset. */
+  readonly siteOrigin: string;
   /** A GET of a public route. */
   readonly publicGet: (pathAndQuery: string) => Promise<Response>;
 }
 
 function result(data: unknown): CallToolResult {
   return { content: [{ type: "text", text: JSON.stringify(data, null, 2) }], structuredContent: data as Record<string, unknown> };
+}
+
+/** A tool's own answer (rather than the value it was looking for). */
+function isRefusal(value: unknown): value is CallToolResult {
+  return typeof value === "object" && value !== null && "content" in value;
 }
 
 function refusal(message: string): CallToolResult {
@@ -76,7 +87,60 @@ interface MyListing {
   id: string;
   orgId: string;
   slug: string;
+  visibility?: string;
+  workspaceLinkedAt?: string | null;
 }
+
+function crewPath(listing: MyListing, rest = ""): string {
+  return `/v1/organizations/${listing.orgId}/openproduct/profiles/${listing.id}${rest}`;
+}
+
+/** Copy only the named fields that were actually sent. */
+function pick(args: Record<string, unknown>, keys: readonly string[]): Record<string, unknown> {
+  const out: Record<string, unknown> = {};
+  for (const key of keys) if (args[key] !== undefined) out[key] = args[key];
+  return out;
+}
+
+const IDEMPOTENCY_KEY_RE = /^[A-Za-z0-9._:-]{1,100}$/;
+
+function idempotencyOf(args: Record<string, unknown>): { idempotencyKey?: string } | CallToolResult {
+  const key = args.idempotencyKey;
+  if (key === undefined) return {};
+  if (typeof key !== "string" || !IDEMPOTENCY_KEY_RE.test(key)) {
+    return refusal("idempotencyKey is 1 to 100 letters, digits, dots, colons, underscores or hyphens.");
+  }
+  return { idempotencyKey: key };
+}
+
+const UPDATE_FIELDS = [
+  "tagline",
+  "pitch",
+  "installLine",
+  "repoUrl",
+  "liveUrl",
+  "tryUrl",
+  "links",
+  "stack",
+  "category",
+  "hosting",
+  "pricing",
+] as const;
+
+const STAGE_FIELDS = [
+  "to",
+  "repository",
+  "firstMilestone",
+  "stageUrl",
+  "tryWhat",
+  "productionUrl",
+  "version",
+  "liveSince",
+  "access",
+  "reason",
+  "comment",
+  "post",
+] as const;
 
 /** The person's listings, within this connection's restriction. */
 async function myListings(ctx: SignedInContext): Promise<MyListing[] | CallToolResult> {
@@ -161,8 +225,90 @@ const HANDLERS: Record<string, Handler> = {
   },
   get_listing: async (args, ctx) => {
     const listing = await listingBySlug(ctx, args.slug);
-    if (!("id" in listing)) return listing;
-    return answer(await ctx.asPerson("GET", `/v1/organizations/${listing.orgId}/openproduct/profiles/${listing.id}`));
+    if (isRefusal(listing)) return listing;
+    return answer(await ctx.asPerson("GET", crewPath(listing)));
+  },
+
+  // ── MC3: listings and their words ──
+  list_workspaces: async (_args, ctx) => {
+    const listings = await myListings(ctx);
+    if (!Array.isArray(listings)) return listings;
+    const byOrg = new Map<string, { workspace: string; listings: string[]; linkedAt: string | null }>();
+    for (const l of listings) {
+      const entry = byOrg.get(l.orgId) ?? { workspace: l.orgId, listings: [], linkedAt: l.workspaceLinkedAt ?? null };
+      entry.listings.push(l.slug);
+      byOrg.set(l.orgId, entry);
+    }
+    return result({
+      workspaces: [...byOrg.values()],
+      linkAnother: {
+        how: "A person links a workspace in a browser: open this address, choose Link a workspace, and pick it in Orunbase. Orunbase then hands back a listing_grant for create_listing.",
+        open: ctx.siteOrigin ? `${ctx.siteOrigin}/me` : "/me",
+      },
+    });
+  },
+  create_listing: async (args, ctx) => {
+    if (ctx.agent.listingIds !== null) {
+      return refusal("This connection is limited to named listings, so it cannot create one. The person can reconnect it for all listings.");
+    }
+    const workspace = text(args, "workspace") ?? "";
+    if (!/^org_[A-Za-z0-9_-]{1,64}$/.test(workspace)) return refusal("workspace must be a workspace id from list_workspaces.");
+    if (!text(args, "grant")) {
+      return refusal(
+        `create_listing needs the workspace's listing_grant. Ask the person to link the workspace at ${ctx.siteOrigin || ""}/me (Link a workspace), then pass the grant Orunbase hands back.`,
+      );
+    }
+    const keyed = idempotencyOf(args);
+    if (isRefusal(keyed)) return keyed;
+    const body = pick(args, ["grant", "slug", "tagline", "pitch", "repoUrl", "liveUrl", "stack"]);
+    return answer(await ctx.asPerson("POST", `/v1/organizations/${workspace}/openproduct/profiles`, body, keyed));
+  },
+  update_listing: async (args, ctx) => {
+    const listing = await listingBySlug(ctx, args.slug);
+    if (isRefusal(listing)) return listing;
+    const body = pick(args, UPDATE_FIELDS);
+    if (args.newSlug !== undefined) body.slug = args.newSlug;
+    if (Object.keys(body).length === 0) return refusal("Send at least one field to change.");
+    return answer(await ctx.asPerson("PATCH", crewPath(listing), body));
+  },
+  change_stage: async (args, ctx) => {
+    const listing = await listingBySlug(ctx, args.slug);
+    if (isRefusal(listing)) return listing;
+    return answer(await ctx.asPerson("PUT", crewPath(listing, "/stage"), pick(args, STAGE_FIELDS)));
+  },
+  get_publish_checklist: async (args, ctx) => {
+    const listing = await listingBySlug(ctx, args.slug);
+    if (isRefusal(listing)) return listing;
+    return result({
+      slug: listing.slug,
+      visibility: listing.visibility ?? null,
+      becomesPublic: {
+        listing: PUBLIC_PROFILE_KEYS,
+        crewWhoAgreed: PUBLIC_MAINTAINER_KEYS,
+        openRoles: PUBLIC_ROLE_OPENING_KEYS,
+      },
+      inPlainWords:
+        "Publishing puts the listing's page on openproduct.live for anybody, unsigned-in, to read and search: its words, links, stack and stage, what openproduct observed of its repository, the people on its crew who agreed to be shown, and its open roles. Drafts, private threads and crew roles stay private.",
+      next: "Show this to the person. If they agree, call publish_listing with acknowledged: true.",
+    });
+  },
+  publish_listing: async (args, ctx) => {
+    if (args.acknowledged !== true) {
+      return refusal("Call get_publish_checklist, show the person what becomes public, then call this with acknowledged: true.");
+    }
+    const listing = await listingBySlug(ctx, args.slug);
+    if (isRefusal(listing)) return listing;
+    return answer(await ctx.asPerson("POST", crewPath(listing, "/publish"), {}));
+  },
+  unpublish_listing: async (args, ctx) => {
+    const listing = await listingBySlug(ctx, args.slug);
+    if (isRefusal(listing)) return listing;
+    return answer(await ctx.asPerson("DELETE", crewPath(listing, "/publish")));
+  },
+  get_listing_sync: async (args, ctx) => {
+    const listing = await listingBySlug(ctx, args.slug);
+    if (isRefusal(listing)) return listing;
+    return answer(await ctx.asPerson("GET", crewPath(listing, "/orunbase")));
   },
 };
 

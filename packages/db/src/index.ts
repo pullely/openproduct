@@ -25,6 +25,7 @@ export type { NotASubjectColumn, SubjectClass, SubjectColumn } from "./subject-r
 export type {
   // openproduct-mcp MC1 — agent credentials and the OAuth door
   AgentCredentialRecord,
+  AgentIdempotencyRecord,
   ConsumedOAuthCode,
   CreateAgentCredentialInput,
   IssueOAuthCodeInput,
