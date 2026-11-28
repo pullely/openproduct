@@ -779,6 +779,145 @@ const CREW_HANDLERS: Record<string, Handler> = {
 
 Object.assign(HANDLERS, CREW_HANDLERS);
 
+// ── MC7: the contributor's side ──
+
+const FOLLOW_KIND_RE = /^[a-z]+$/;
+const FOLLOW_VALUE_RE = /^[a-z0-9][a-z0-9-]{0,63}$/;
+
+function onOf(args: Record<string, unknown>): boolean | CallToolResult {
+  return typeof args.on === "boolean" ? args.on : refusal("on must be true or false.");
+}
+
+function slugOf(args: Record<string, unknown>): string | CallToolResult {
+  const slug = text(args, "slug") ?? "";
+  return SLUG_RE.test(slug) ? slug : refusal("slug must be a product's slug.");
+}
+
+const ME = "/v1/openproduct/me";
+
+const COMMUNITY_HANDLERS: Record<string, Handler> = {
+  list_open_roles: async (args, ctx) => {
+    const slug = slugOf(args);
+    if (isRefusal(slug)) return slug;
+    return answer(await ctx.publicGet(`/v1/public/openproduct/projects/${slug}`), true);
+  },
+  comment: async (args, ctx) => {
+    const slug = slugOf(args);
+    if (isRefusal(slug)) return slug;
+    if (!text(args, "body")) return refusal("body is required.");
+    const keyed = idempotencyOf(args);
+    if (isRefusal(keyed)) return keyed;
+    return answer(await ctx.asPerson("POST", "/v1/openproduct/comments", pick(args, ["slug", "body", "tag"]), keyed));
+  },
+  create_thread: async (args, ctx) => {
+    const slug = slugOf(args);
+    if (isRefusal(slug)) return slug;
+    if (!text(args, "title") || !text(args, "body")) return refusal("title and body are required.");
+    const keyed = idempotencyOf(args);
+    if (isRefusal(keyed)) return keyed;
+    return answer(await ctx.asPerson("POST", "/v1/openproduct/threads", pick(args, ["slug", "title", "body", "kind", "visibility", "tag"]), keyed));
+  },
+  reply: async (args, ctx) => {
+    const id = idArg(args, "threadId");
+    if (isRefusal(id)) return id;
+    if (!text(args, "body")) return refusal("body is required.");
+    const keyed = idempotencyOf(args);
+    if (isRefusal(keyed)) return keyed;
+    return answer(await ctx.asPerson("POST", `/v1/openproduct/threads/${id}/posts`, pick(args, ["body", "parentPostId"]), keyed));
+  },
+  vote: async (args, ctx) => {
+    const id = idArg(args, "postId", MEDIA_ID_RE);
+    if (isRefusal(id)) return id;
+    const on = onOf(args);
+    if (isRefusal(on)) return on;
+    return answer(await ctx.asPerson(on ? "PUT" : "DELETE", `/v1/openproduct/posts/${id}/vote`, on ? {} : undefined));
+  },
+  react: async (args, ctx) => {
+    const id = idArg(args, "postId", POST_ID_RE);
+    if (isRefusal(id)) return id;
+    const on = onOf(args);
+    if (isRefusal(on)) return on;
+    return answer(await ctx.asPerson(on ? "PUT" : "DELETE", `${ME}/product-post-reactions/${id}`, on ? pick(args, ["reaction"]) : undefined));
+  },
+  follow: async (args, ctx) => {
+    const kind = text(args, "kind") ?? "";
+    const value = (text(args, "value") ?? "").replace(/^@/, "").toLowerCase();
+    if (!FOLLOW_KIND_RE.test(kind) || !FOLLOW_VALUE_RE.test(value)) return refusal("kind is listing, person or topic, and value its slug, handle or topic.");
+    const on = onOf(args);
+    if (isRefusal(on)) return on;
+    return answer(await ctx.asPerson(on ? "PUT" : "DELETE", `${ME}/follows/${kind}/${value}`, on ? {} : undefined));
+  },
+  save: async (args, ctx) => {
+    const slug = slugOf(args);
+    if (isRefusal(slug)) return slug;
+    const on = onOf(args);
+    if (isRefusal(on)) return on;
+    return answer(on ? await ctx.asPerson("PUT", `${ME}/saved`, { slug }) : await ctx.asPerson("DELETE", `${ME}/saved/${slug}`));
+  },
+  endorse: async (args, ctx) => {
+    const slug = slugOf(args);
+    if (isRefusal(slug)) return slug;
+    const on = onOf(args);
+    if (isRefusal(on)) return on;
+    return answer(await ctx.asPerson(on ? "PUT" : "DELETE", `${ME}/endorsements/${slug}`, on ? {} : undefined));
+  },
+  report: async (args, ctx) => {
+    if (!text(args, "subjectKind") || !text(args, "subjectRef") || !text(args, "reason")) return refusal("subjectKind, subjectRef and reason are required.");
+    return answer(await ctx.asPerson("POST", "/v1/openproduct/reports", pick(args, ["subjectKind", "subjectRef", "reason"])));
+  },
+  create_collection: async (args, ctx) => {
+    if (!text(args, "slug") || !text(args, "title")) return refusal("slug and title are required.");
+    const keyed = idempotencyOf(args);
+    if (isRefusal(keyed)) return keyed;
+    return answer(await ctx.asPerson("POST", `${ME}/collections`, pick(args, ["slug", "title", "blurb"]), keyed));
+  },
+  edit_collection: async (args, ctx) => {
+    const action = text(args, "action") ?? "";
+    if (!["add", "remove", "reorder"].includes(action)) return refusal("action must be add, remove or reorder.");
+    if (!text(args, "collectionId")) return refusal("collectionId is required.");
+    return answer(await ctx.asPerson("POST", `${ME}/collections/${action}`, pick(args, ["collectionId", "slug", "note", "order"])));
+  },
+  set_collection_state: async (args, ctx) => {
+    if (!text(args, "collectionId") || !text(args, "state")) return refusal("collectionId and state are required.");
+    return answer(await ctx.asPerson("POST", `${ME}/collections/state`, pick(args, ["collectionId", "state"])));
+  },
+  list_saved: async (_args, ctx) => answer(await ctx.asPerson("GET", `${ME}/saved`)),
+  list_following: async (_args, ctx) => answer(await ctx.asPerson("GET", `${ME}/following`)),
+  list_my_collections: async (_args, ctx) => answer(await ctx.asPerson("GET", `${ME}/collections`), true),
+  list_my_applications: async (_args, ctx) => answer(await ctx.asPerson("GET", `${ME}/applications`), true),
+  list_notifications: async (_args, ctx) => answer(await ctx.asPerson("GET", `${ME}/notifications`), true),
+  mark_notifications_read: async (_args, ctx) => answer(await ctx.asPerson("PUT", `${ME}/notifications`, {})),
+  get_digest_subscription: async (_args, ctx) => answer(await ctx.asPerson("GET", `${ME}/digest`)),
+  list_roster_invitations: async (_args, ctx) => answer(await ctx.asPerson("GET", `${ME}/roster`), true),
+  list_my_appeals: async (_args, ctx) => answer(await ctx.asPerson("GET", `${ME}/appeals`), true),
+  update_my_profile: async (args, ctx) => {
+    const body = pick(args, ["displayName", "bio"]);
+    if (Object.keys(body).length === 0) return refusal("Send a displayName or a bio to change.");
+    return answer(await ctx.asPerson("PUT", ME, body));
+  },
+  claim_handle: async (args, ctx) => {
+    if (!text(args, "handle")) return refusal("handle is required.");
+    return answer(await ctx.asPerson("PUT", `${ME}/handle`, { handle: args.handle }));
+  },
+  set_profile_visibility: async (args, ctx) => {
+    if (typeof args.public !== "boolean") return refusal("public must be true or false.");
+    return answer(await ctx.asPerson("PUT", `${ME}/profile-visibility`, { public: args.public }));
+  },
+  set_digest_subscription: async (args, ctx) => {
+    if (typeof args.subscribed !== "boolean") return refusal("subscribed must be true or false.");
+    return answer(await ctx.asPerson("PUT", `${ME}/digest`, { subscribed: args.subscribed }));
+  },
+  answer_roster: async (args, ctx) => {
+    const listing = text(args, "listing") ?? "";
+    const reply = text(args, "answer") ?? "";
+    if (!ID_RE.test(listing)) return refusal("listing must be the listing named in list_roster_invitations.");
+    if (!["confirm", "decline", "leave"].includes(reply)) return refusal("answer must be confirm, decline or leave.");
+    return answer(await ctx.asPerson("POST", `${ME}/roster/${listing}/${reply}`, {}));
+  },
+};
+
+Object.assign(HANDLERS, COMMUNITY_HANDLERS);
+
 /** Call a signed-in tool, or say why not. */
 export async function callSignedInTool(name: string, args: Record<string, unknown>, ctx: SignedInContext): Promise<CallToolResult | null> {
   const tool = signedInTool(name);

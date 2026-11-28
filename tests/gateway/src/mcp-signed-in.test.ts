@@ -105,6 +105,12 @@ describe("MC2 — what a connection sees", () => {
     expect(call.content[0].text).toContain('"read"');
   });
 
+  it("has a handler for every registered tool, and registers every handler", async () => {
+    const { signedInToolNames } = await import("@openproduct-gateway/agent-tools");
+    const everything = { credentialId: "agc_x", subjectId: ADA, kind: "oauth" as const, clientName: "x", scopes: ["read", "listings", "media", "posts", "crew", "community", "profile"] as const, listingIds: null };
+    expect([...signedInToolNames(everything)].sort()).toEqual(AGENT_SIGNED_IN_TOOLS.map((t) => t.name).sort());
+  });
+
   it("registers every signed-in tool with a scope and annotations", () => {
     for (const tool of AGENT_SIGNED_IN_TOOLS) {
       expect([tool.name, typeof tool.annotations.readOnlyHint]).toEqual([tool.name, "boolean"]);
