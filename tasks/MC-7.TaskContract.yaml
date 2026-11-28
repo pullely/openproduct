@@ -17,7 +17,7 @@ spec:
   deps:
     - MC-6
   doneWhen:
-    - The openings, applications, crew and private-thread tools of design §4 are in the registry and off NOT_YET
+    - The openings, crew, roster and thread tools of design §4 are in the registry and off the not-yet list
     - Every field another person wrote comes back marked untrusted
     - set_crew_roles cannot leave a listing with no Lead and cannot move a locked Lead
   gates: []

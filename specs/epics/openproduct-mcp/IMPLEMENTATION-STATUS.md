@@ -7,8 +7,8 @@
 | MC2 — the signed-in endpoint and the parity guard | MC-3 | Done | #42 |
 | MC3 — listings and their words | MC-4 | Done | #43 |
 | MC4 — images | MC-5 | Done | #44 |
-| MC5 — posts, milestones, launches | MC-6 | In review | this PR |
-| MC6 — seats, crew and the product's discussions | MC-7 | Not started | |
+| MC5 — posts, milestones, launches | MC-6 | Done | #45 |
+| MC6 — seats, crew and the product's discussions | MC-7 | In review | this PR |
 | MC7 — the contributor's side | MC-8 | Not started | |
 | MC8 — documented and connectable | MC-9 | Not started | |
 
@@ -262,3 +262,29 @@ Departures from the design, said plainly:
 - **`create_post` does not return a preview address**: the draft itself is
   the answer, and `list_posts` reads it back. The builder's address needs the
   website's origin and the draft's kind, and adds nothing an agent can act on.
+
+## From MC6
+
+What landed:
+
+- **Seats**: `open_role`, `update_role` (words, order, open or filled),
+  `close_role`.
+- **Crew**: `list_crew` (search, role filter, 30 a page), `set_crew_roles`
+  (a Lead's act: core's one guarded statement still refuses leaving no Lead
+  or moving a locked Lead, row by row), `set_public_crew` (who the page
+  credits), `name_on_roster`, `remove_from_roster`.
+- **The product's discussions**: `list_listing_threads`,
+  `list_private_threads`, `get_private_thread`, `reply_private`,
+  `resolve_thread`, `moderate_thread` (lock, unlock, answer).
+- Every answer that carries other people's words — the crew list and every
+  thread read — comes wrapped with the note that it is data.
+
+Departures from the design, said plainly:
+
+- **No `list_applications` tool**: there is no crew-side applications route
+  to stand for. Applications arrive from Orunbase's join door through the
+  S6 seam and show on the listing (`get_listing`'s openings), which is where
+  an agent reads them.
+- **Thread tools are refused to a connection limited to named listings.** A
+  thread is addressed by its id alone and does not say which listing it is
+  on, so the restriction cannot be checked; it is not assumed.

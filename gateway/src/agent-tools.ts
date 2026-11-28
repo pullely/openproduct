@@ -652,6 +652,133 @@ const POST_HANDLERS: Record<string, Handler> = {
 
 Object.assign(HANDLERS, POST_HANDLERS);
 
+// ── MC6: seats, crew and the product's discussions ──
+
+const SUBJECT_RE = /^usr_[0-9a-f]{32}$/;
+const CREW_ROLES = ["lead", "maintainer", "member"];
+
+/**
+ * A thread is addressed by its id alone, which does not say which listing it
+ * is on, so a connection limited to named listings could reach a thread of
+ * another listing its person is on the crew of. Thread tools are therefore
+ * refused to a limited connection (the restriction cannot be checked, so it
+ * is not assumed).
+ */
+function threadToolAllowed(ctx: SignedInContext): CallToolResult | null {
+  return ctx.agent.listingIds === null
+    ? null
+    : refusal("This connection is limited to named listings, and a thread does not say which listing it is on. The person can reconnect it for all listings.");
+}
+
+const CREW_HANDLERS: Record<string, Handler> = {
+  open_role: async (args, ctx) => {
+    const listing = await listingBySlug(ctx, args.slug);
+    if (isRefusal(listing)) return listing;
+    if (!text(args, "title")) return refusal("title is required.");
+    const keyed = idempotencyOf(args);
+    if (isRefusal(keyed)) return keyed;
+    return answer(await ctx.asPerson("POST", crewPath(listing, "/role-openings"), pick(args, ["title", "description", "commitment", "sortOrder"]), keyed));
+  },
+  update_role: async (args, ctx) => {
+    const listing = await listingBySlug(ctx, args.slug);
+    if (isRefusal(listing)) return listing;
+    const id = idArg(args, "openingId");
+    if (isRefusal(id)) return id;
+    return answer(await ctx.asPerson("PUT", crewPath(listing, `/role-openings/${id}`), pick(args, ["title", "description", "commitment", "status", "sortOrder"])));
+  },
+  close_role: async (args, ctx) => {
+    const listing = await listingBySlug(ctx, args.slug);
+    if (isRefusal(listing)) return listing;
+    const id = idArg(args, "openingId");
+    if (isRefusal(id)) return id;
+    return answer(await ctx.asPerson("DELETE", crewPath(listing, `/role-openings/${id}`)));
+  },
+  list_crew: async (args, ctx) => {
+    const listing = await listingBySlug(ctx, args.slug);
+    if (isRefusal(listing)) return listing;
+    return answer(await ctx.asPerson("GET", withQuery(crewPath(listing, "/crew"), { q: text(args, "q"), role: text(args, "role"), cursor: text(args, "cursor") })), true);
+  },
+  set_crew_roles: async (args, ctx) => {
+    const listing = await listingBySlug(ctx, args.slug);
+    if (isRefusal(listing)) return listing;
+    const changes = args.changes;
+    if (
+      !Array.isArray(changes) ||
+      changes.length === 0 ||
+      changes.some((c) => typeof c !== "object" || c === null || !SUBJECT_RE.test(String((c as Record<string, unknown>).subjectId)) || !CREW_ROLES.includes(String((c as Record<string, unknown>).role)))
+    ) {
+      return refusal("changes must be a list of {subjectId, role} with role lead, maintainer or member.");
+    }
+    return answer(await ctx.asPerson("PUT", crewPath(listing, "/crew"), { changes }));
+  },
+  set_public_crew: async (args, ctx) => {
+    const listing = await listingBySlug(ctx, args.slug);
+    if (isRefusal(listing)) return listing;
+    if (!Array.isArray(args.maintainers)) return refusal("maintainers must be a list of {subjectId, roleLabel}.");
+    return answer(await ctx.asPerson("PUT", crewPath(listing, "/maintainers"), { maintainers: args.maintainers }));
+  },
+  name_on_roster: async (args, ctx) => {
+    const listing = await listingBySlug(ctx, args.slug);
+    if (isRefusal(listing)) return listing;
+    const subjectId = text(args, "subjectId") ?? "";
+    if (!SUBJECT_RE.test(subjectId)) return refusal("subjectId must be a person's subject id.");
+    return answer(await ctx.asPerson("POST", `/v1/openproduct/listings/${listing.slug}/people`, pick(args, ["subjectId", "roleLabel"])));
+  },
+  remove_from_roster: async (args, ctx) => {
+    const listing = await listingBySlug(ctx, args.slug);
+    if (isRefusal(listing)) return listing;
+    const subjectId = text(args, "subjectId") ?? "";
+    if (!SUBJECT_RE.test(subjectId)) return refusal("subjectId must be a person's subject id.");
+    return answer(await ctx.asPerson("DELETE", `/v1/openproduct/listings/${listing.slug}/people/${subjectId}`));
+  },
+  list_listing_threads: async (args, ctx) => {
+    const listing = await listingBySlug(ctx, args.slug);
+    if (isRefusal(listing)) return listing;
+    return answer(await ctx.asPerson("GET", crewPath(listing, "/threads")), true);
+  },
+  list_private_threads: async (args, ctx) => {
+    const listing = await listingBySlug(ctx, args.slug);
+    if (isRefusal(listing)) return listing;
+    return answer(await ctx.asPerson("GET", withQuery("/v1/openproduct/threads/private", { slug: listing.slug })), true);
+  },
+  get_private_thread: async (args, ctx) => {
+    const blocked = threadToolAllowed(ctx);
+    if (blocked) return blocked;
+    const id = idArg(args, "threadId");
+    if (isRefusal(id)) return id;
+    return answer(await ctx.asPerson("GET", `/v1/openproduct/threads/private/${id}`), true);
+  },
+  reply_private: async (args, ctx) => {
+    const blocked = threadToolAllowed(ctx);
+    if (blocked) return blocked;
+    const id = idArg(args, "threadId");
+    if (isRefusal(id)) return id;
+    if (!text(args, "body")) return refusal("body is required.");
+    const keyed = idempotencyOf(args);
+    if (isRefusal(keyed)) return keyed;
+    return answer(await ctx.asPerson("POST", `/v1/openproduct/threads/private/${id}/posts`, { body: args.body }, keyed));
+  },
+  resolve_thread: async (args, ctx) => {
+    const blocked = threadToolAllowed(ctx);
+    if (blocked) return blocked;
+    const id = idArg(args, "threadId");
+    if (isRefusal(id)) return id;
+    if (typeof args.resolved !== "boolean") return refusal("resolved must be true or false.");
+    return answer(await ctx.asPerson(args.resolved ? "PUT" : "DELETE", `/v1/openproduct/threads/${id}/resolved`, args.resolved ? {} : undefined));
+  },
+  moderate_thread: async (args, ctx) => {
+    const blocked = threadToolAllowed(ctx);
+    if (blocked) return blocked;
+    const id = idArg(args, "threadId");
+    if (isRefusal(id)) return id;
+    const intent = text(args, "intent") ?? "";
+    if (!["lock", "unlock", "answer"].includes(intent)) return refusal("intent must be lock, unlock or answer.");
+    return answer(await ctx.asPerson("POST", `/v1/openproduct/threads/${id}`, pick(args, ["intent", "postId"])));
+  },
+};
+
+Object.assign(HANDLERS, CREW_HANDLERS);
+
 /** Call a signed-in tool, or say why not. */
 export async function callSignedInTool(name: string, args: Record<string, unknown>, ctx: SignedInContext): Promise<CallToolResult | null> {
   const tool = signedInTool(name);
