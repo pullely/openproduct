@@ -33,7 +33,6 @@ import type { ProfileLink } from "./types.js";
 import type {
   ActivityEventRecord,
   AgentCredentialRecord,
-  AgentIdempotencyRecord,
   AppendActivityInput,
   AppendAuditInput,
   DueSourceRecord,
