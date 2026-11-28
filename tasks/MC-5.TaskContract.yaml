@@ -1,0 +1,25 @@
+# MC-5: milestone MC4, images.
+# The file is the contract; the task itself lives in Orunbase.
+apiVersion: orun.io/v1
+kind: TaskContract
+metadata:
+  name: MC-5
+  title: "MC4: images"
+spec:
+  goal: An agent can add a logo, hero or gallery image by upload ticket, by public URL or inline, describe it, reorder it and remove it, through media.ts's own checks.
+  affects:
+    - packages/**
+    - core/**
+    - gateway/**
+    - tests/**
+    - specs/epics/openproduct-mcp/**
+    - tasks/**
+  deps:
+    - MC-4
+  doneWhen:
+    - request_media_upload returns a single-use, 10-minute ticket bound to credential, listing, kind and length; PUT /v1/agent-uploads/{ticket} stores through handleMediaUpload
+    - add_media_from_url applies the capture target refusals and a 5 MB streaming cap
+    - upload_media accepts dataBase64 up to 1 MB decoded
+    - list_media, update_media and remove_media work; alt text is required where the website requires it
+    - A reused, expired, foreign or oversize ticket and a private-address URL are refused
+  gates: []

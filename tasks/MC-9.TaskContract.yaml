@@ -1,0 +1,24 @@
+# MC-9: milestone MC8, documented and connectable.
+# The file is the contract; the task itself lives in Orunbase.
+apiVersion: orun.io/v1
+kind: TaskContract
+metadata:
+  name: MC-9
+  title: "MC8: documented and connectable"
+spec:
+  goal: /docs/mcp documents connecting, scopes, every tool and every exclusion, and Claude's connector runs the whole maker flow against stage.
+  affects:
+    - packages/**
+    - gateway/**
+    - web/**
+    - tests/**
+    - specs/epics/openproduct-mcp/**
+    - tasks/**
+  deps:
+    - MC-8
+  doneWhen:
+    - /docs/mcp is generated from the registry and the exclusions table
+    - The API changelog records the MCP server's new version
+    - A recorded connector run on stage connects, creates a draft, describes it, uploads a logo by ticket, posts an update and publishes
+    - NOT_YET and its constant are deleted; the parity test allows only tools and exclusions
+  gates: []

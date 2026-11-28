@@ -1,0 +1,24 @@
+# MC-4: milestone MC3, listings and their words.
+# The file is the contract; the task itself lives in Orunbase.
+apiVersion: orun.io/v1
+kind: TaskContract
+metadata:
+  name: MC-4
+  title: "MC3: listings and their words"
+spec:
+  goal: An agent can create a draft listing in a linked workspace, write its description and every detail, move its stage, and publish or unpublish it.
+  affects:
+    - packages/**
+    - core/**
+    - gateway/**
+    - tests/**
+    - specs/epics/openproduct-mcp/**
+    - tasks/**
+  deps:
+    - MC-3
+  doneWhen:
+    - create_listing, update_listing (links included), change_stage, get_publish_checklist, publish_listing and unpublish_listing are in the registry and off NOT_YET
+    - create_listing on an unlinked workspace refuses with the console address that starts the link
+    - publish_listing requires the publish disclosure to be acknowledged
+    - Each tool's test asserts the same core request as its website route; a Member's agent gets the stranger's 404
+  gates: []

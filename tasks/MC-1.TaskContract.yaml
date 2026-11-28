@@ -1,0 +1,17 @@
+# MC-1: milestone MC0, the openproduct-mcp spec.
+# The file is the contract; the task itself lives in Orunbase.
+apiVersion: orun.io/v1
+kind: TaskContract
+metadata:
+  name: MC-1
+  title: "MC0: the openproduct-mcp spec"
+spec:
+  goal: The epic's doc set and the task contracts are on main, reviewed by the owner.
+  affects:
+    - specs/**
+    - tasks/**
+  doneWhen:
+    - specs/epics/openproduct-mcp/ has README, design, implementation-plan, risks and IMPLEMENTATION-STATUS
+    - tasks/MC-1 to MC-9 contracts exist
+    - The owner has answered Q1 to Q3 or accepted the recommendations
+  gates: []
