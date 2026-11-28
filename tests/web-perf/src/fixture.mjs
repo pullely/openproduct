@@ -1933,6 +1933,9 @@ export const ABSENT = [
 // property under test is that it SURVIVES a save made on another step.
 export const STUDIO_ORG = "acme";
 export const STUDIO_PROFILE = "prf_000000000000000000000001";
+/** MC1 — the MCP client the consent walk is for, and where it returns. */
+export const FIXTURE_OAUTH_CLIENT = "ocl_fixtureclient";
+export const FIXTURE_OAUTH_REDIRECT = "https://client.example/cb";
 
 // OPR-3 — a listing's base address forwards. Signed out (which is how
 // `MOVED` is asked) nobody can be told whether the listing is published, so
@@ -2017,6 +2020,10 @@ export const AUTHED_ROUTES = [
   { path: `/${CREW_SLUG}/new`, name: "post builder · new", expect: 'data-compose-kind="feature"' },
   { path: `/${CREW_SLUG}/new?draft=${SAMPLE_DRAFT_POST}`, name: "post builder · a draft", expect: "data-compose-remove-post" },
   { path: "/me/settings", name: "me · settings", expect: "Download your data" },
+  // MC1 (openproduct-mcp) — Connected agents, and the consent screen an MCP
+  // client sends a person to. The consent request is the fixture client's own.
+  { path: "/me/settings/agents", name: "me · connected agents", expect: "New personal token" },
+  { path: `/me/connect?client_id=${FIXTURE_OAUTH_CLIENT}&redirect_uri=${encodeURIComponent(FIXTURE_OAUTH_REDIRECT)}&code_challenge=E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM&scope=read%20posts&state=fixture`, name: "me · connect an agent", expect: "What it may do" },
   // OPR1 — the inbox's address is `/activity` (the old one is in `MOVED`).
   { path: "/activity", name: "activity", expect: "Mark all read" },
   // (OPR-3 — `/studio` itself is a redirect to `/me` now, and lives in
@@ -2254,6 +2261,17 @@ function answer(pathname, search, req = { method: "GET", body: undefined }) {
       },
       policy: { cooldownDays: 14, maxLeadDays: 30, minLeadMinutes: 15 },
     };
+  }
+  // MC1 — the agents the walker connected, and the client a consent page names.
+  if (pathname === "/v1/openproduct/me/agent-credentials") {
+    return {
+      credentials: [
+        { id: "agc_fixture", kind: "oauth", clientName: "Fixture agent", scopes: ["read", "posts"], listingIds: null, createdAt: EARLIER, lastUsedAt: EARLIER, expiresAt: "2099-01-01T00:00:00.000Z" },
+      ],
+    };
+  }
+  if (pathname === `/v1/openproduct/oauth/clients/${FIXTURE_OAUTH_CLIENT}`) {
+    return { client: { clientId: FIXTURE_OAUTH_CLIENT, clientName: "Fixture agent", redirectUris: [FIXTURE_OAUTH_REDIRECT], registeredAt: EARLIER } };
   }
   if (pathname === "/v1/openproduct/me/listings") {
     return {

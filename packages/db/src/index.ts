@@ -23,6 +23,14 @@ export {
 } from "./subject-registry.js";
 export type { NotASubjectColumn, SubjectClass, SubjectColumn } from "./subject-registry.js";
 export type {
+  // openproduct-mcp MC1 — agent credentials and the OAuth door
+  AgentCredentialRecord,
+  ConsumedOAuthCode,
+  CreateAgentCredentialInput,
+  IssueOAuthCodeInput,
+  OAuthClientRecord,
+  RotateAgentCredentialInput,
+  RotateAgentCredentialResult,
   // openproduct-commons TS0 + SN1
   ActivityEventRecord,
   // openproduct-consumers CS2 — the subject's exit, CS3 — their export

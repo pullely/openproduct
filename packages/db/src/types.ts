@@ -1517,6 +1517,89 @@ export interface AuthSessionRecord {
   revokedAt: string | null;
 }
 
+// ─── MC1 (openproduct-mcp) — agent credentials and the OAuth door ─────────
+
+export interface OAuthClientRecord {
+  clientId: string;
+  clientName: string;
+  redirectUris: string[];
+  registeredAt: string;
+}
+
+export interface IssueOAuthCodeInput {
+  codeHash: string;
+  clientId: string;
+  subjectId: string;
+  redirectUri: string;
+  codeChallenge: string;
+  scopes: string[];
+  listingIds: string[] | null;
+  at: string;
+  expiresAt: string;
+}
+
+/** A code, consumed by the read that returned it. */
+export interface ConsumedOAuthCode {
+  clientId: string;
+  subjectId: string;
+  redirectUri: string;
+  codeChallenge: string;
+  scopes: string[];
+  listingIds: string[] | null;
+  expiresAt: string;
+}
+
+export interface CreateAgentCredentialInput {
+  id: string;
+  subjectId: string;
+  kind: "oauth" | "personal";
+  clientId: string | null;
+  clientName: string;
+  tokenHash: string;
+  tokenExpiresAt: string | null;
+  refreshHash: string | null;
+  scopes: string[];
+  listingIds: string[] | null;
+  at: string;
+  expiresAt: string | null;
+}
+
+/** A credential as stored, minus its hashes. */
+export interface AgentCredentialRecord {
+  id: string;
+  subjectId: string;
+  kind: "oauth" | "personal";
+  clientId: string | null;
+  clientName: string;
+  scopes: string[];
+  listingIds: string[] | null;
+  createdAt: string;
+  lastUsedAt: string | null;
+  tokenExpiresAt: string | null;
+  expiresAt: string | null;
+  revokedAt: string | null;
+}
+
+export interface RotateAgentCredentialInput {
+  refreshHash: string;
+  clientId: string;
+  newTokenHash: string;
+  newRefreshHash: string;
+  tokenExpiresAt: string;
+  expiresAt: string;
+  at: string;
+}
+
+/**
+ * What a refresh found. `rotated` carries the credential as it now stands;
+ * `reused` means the token was the one a rotation already replaced, and the
+ * credential has been revoked by this call.
+ */
+export type RotateAgentCredentialResult =
+  | { kind: "rotated"; credential: AgentCredentialRecord }
+  | { kind: "reused" }
+  | { kind: "unknown" };
+
 export interface WriteCredentialInput {
   readonly subjectId: string;
   readonly verifier: string;
@@ -2590,6 +2673,34 @@ export interface OpenproductRepository {
    *  timestamp is the answer to "when did this end", and a sweep that deleted
    *  them would throw that away to save nothing worth saving. */
   expireAuthSessions(before: string): Promise<number>;
+
+  // ─── MC1 (openproduct-mcp) — agent credentials and the OAuth door ───────
+
+  /** MC1 — a client registered itself (RFC 7591). Public clients only. */
+  registerOAuthClient(input: OAuthClientRecord): Promise<void>;
+  getOAuthClient(clientId: string): Promise<OAuthClientRecord | null>;
+
+  /** MC1 — the person said Allow: remember the code by hash. */
+  issueOAuthCode(input: IssueOAuthCodeInput): Promise<void>;
+  /** MC1 — redeem a code: ONE statement marks it consumed and returns it,
+   *  so two redemptions racing cannot both win. Null when it is unknown or
+   *  already used; an expired code is returned and the caller refuses it. */
+  consumeOAuthCode(codeHash: string, at: string): Promise<ConsumedOAuthCode | null>;
+
+  createAgentCredential(input: CreateAgentCredentialInput): Promise<void>;
+  /** MC1 — the hot-path read, by access-token hash. The row as stored,
+   *  revoked and expired included: `agentCredentialUsable` decides. */
+  resolveAgentCredential(tokenHash: string): Promise<AgentCredentialRecord | null>;
+  /** MC1 — a refresh: rotate both hashes, or detect reuse and revoke. */
+  rotateAgentCredential(input: RotateAgentCredentialInput): Promise<RotateAgentCredentialResult>;
+  /** MC1 — move `last_used_at`, at most once per `granularitySeconds`. */
+  touchAgentCredential(id: string, at: string, granularitySeconds: number): Promise<void>;
+  /** MC1 — a subject's live credentials, newest first. */
+  listAgentCredentials(subjectId: string, now: string): Promise<AgentCredentialRecord[]>;
+  /** MC1 — revoke one of the subject's own. False when it is not theirs or already gone. */
+  revokeAgentCredential(subjectId: string, id: string, at: string): Promise<boolean>;
+  /** MC1 — RFC 7009: revoke the credential an access or refresh token belongs to. */
+  revokeAgentCredentialByTokenHash(tokenHash: string, at: string): Promise<void>;
 
   // ─── the digest by email (openproduct-commons LC5) ───
 

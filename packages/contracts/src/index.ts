@@ -1096,6 +1096,12 @@ export * from "./credentials.js";
 export * from "./sessions.js";
 
 /**
+ * MC1 (openproduct-mcp) — agent credentials: the `opa_` token, the scopes, and
+ * the OAuth 2.1 door (PKCE, dynamic registration, discovery) that mints them.
+ */
+export * from "./agent-credentials.js";
+
+/**
  * SR0 — the search results page. Three sections, three mechanisms: launches
  * come from the DS0 index, TOPICS from this package's own vocabulary, and
  * MAKERS from a live read — because an index is a cache, and caching an

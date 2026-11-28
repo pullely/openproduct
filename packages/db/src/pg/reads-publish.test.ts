@@ -470,6 +470,10 @@ describe("eraseSubject — the subject's own exit, by the registry (OX5c; CS2)",
     await repo.setDigestSubscription(ACTOR, true, NOW);
     await repo.issueAuthSession({ tokenHash: "h".repeat(64), subjectId: ACTOR, at: NOW, expiresAt: "2026-09-17T12:00:00.000Z" });
     await repo.writeCredential({ subjectId: ACTOR, verifier: "v".repeat(64), at: NOW });
+    // MC1 — an agent they connected, and a code they approved and nobody redeemed.
+    await repo.registerOAuthClient({ clientId: "ocl_leaver", clientName: "An agent", redirectUris: ["https://client.example/cb"], registeredAt: NOW });
+    await repo.issueOAuthCode({ codeHash: "c".repeat(64), clientId: "ocl_leaver", subjectId: ACTOR, redirectUri: "https://client.example/cb", codeChallenge: "E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM", scopes: ["read"], listingIds: null, at: NOW, expiresAt: "2026-08-17T12:10:00.000Z" });
+    await repo.createAgentCredential({ id: "agc_leaver", subjectId: ACTOR, kind: "personal", clientId: null, clientName: "A script", tokenHash: "a".repeat(64), tokenExpiresAt: null, refreshHash: null, scopes: ["read"], listingIds: null, at: NOW, expiresAt: null });
     await repo.issueCredentialToken({ tokenHash: "t".repeat(64), purpose: "reset", subjectId: ACTOR, at: NOW, expiresAt: "2026-08-18T12:00:00.000Z" });
     await repo.setTrustLevel(ACTOR, "established", ADMIN, null);
     await repo.setTrustLevel(ADMIN, "trusted", ACTOR, "set by the leaver");

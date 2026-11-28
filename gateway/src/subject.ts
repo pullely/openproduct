@@ -1,4 +1,10 @@
-import { isOpenproductSessionToken } from "@openproduct/contracts";
+import {
+  AGENT_RESOLVE_CACHE_SECONDS,
+  isAgentRefreshToken,
+  isAgentToken,
+  isOpenproductSessionToken,
+  type ResolvedAgentCredential,
+} from "@openproduct/contracts";
 
 import type { Env } from "./env.js";
 
@@ -66,6 +72,14 @@ export async function resolveSubject(
   const token = auth.startsWith("Bearer ") ? auth.slice("Bearer ".length).trim() : "";
   if (!token) {
     return { ok: false, status: 401, code: "unauthorized", message: "Authentication required" };
+  }
+
+  // MC1 — AN AGENT'S TOKEN IS NOT A PERSON'S. An `opa_` token is honoured on
+  // the MCP endpoint alone, where its scopes are read (`resolveAgent` below);
+  // on every other route it is refused here, before it can reach the
+  // platform's identity read or act with the person's whole authority.
+  if (isAgentToken(token) || isAgentRefreshToken(token)) {
+    return { ok: false, status: 401, code: "unauthorized", message: "Agent credentials are accepted on the MCP endpoint only" };
   }
 
   const key = await tokenDigest(token);
@@ -194,4 +208,56 @@ async function resolveOwnSession(
 /** Test seam: the cache is module state; suites reset it between cases. */
 export function resetSubjectCache(): void {
   cache.clear();
+}
+
+// ─── MC1 — the third door: an agent's own credential ────────────────────
+
+export type AgentResult =
+  | { ok: true; credential: ResolvedAgentCredential }
+  | { ok: false; status: 401 | 503 };
+
+const agentCache = new Map<string, { credential: ResolvedAgentCredential; expiresAt: number }>();
+
+/**
+ * Resolve an `opa_` bearer against core: the credential, its subject, its
+ * scopes and its listings. Same rule as the other two doors: positives
+ * cached for ≤`AGENT_RESOLVE_CACHE_SECONDS`, keyed by a digest; negatives
+ * never. Anything that is not an `opa_` token — a person's session above
+ * all — is a 401 here, so the MCP endpoint never acts on a session.
+ */
+export async function resolveAgent(request: Request, core: Fetcher | undefined): Promise<AgentResult> {
+  const auth = request.headers.get("authorization") ?? "";
+  const token = auth.startsWith("Bearer ") ? auth.slice("Bearer ".length).trim() : "";
+  if (!isAgentToken(token)) return { ok: false, status: 401 };
+  const key = await tokenDigest(token);
+  const cached = agentCache.get(key);
+  if (cached && cached.expiresAt > Date.now()) return { ok: true, credential: cached.credential };
+  if (!core) return { ok: false, status: 503 };
+  let res: Response;
+  try {
+    res = await core.fetch("https://openproduct.internal/internal/openproduct/agent-credentials/resolve", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ token }),
+    });
+  } catch {
+    return { ok: false, status: 503 };
+  }
+  if (!res.ok) return { ok: false, status: 503 };
+  let credential: ResolvedAgentCredential | null = null;
+  try {
+    const body = (await res.json()) as { data?: { credential?: ResolvedAgentCredential | null } };
+    const c = body?.data?.credential ?? null;
+    credential = c && typeof c.subjectId === "string" && c.subjectId.startsWith("usr_") ? c : null;
+  } catch {
+    credential = null;
+  }
+  if (!credential) return { ok: false, status: 401 };
+  agentCache.set(key, { credential, expiresAt: Date.now() + AGENT_RESOLVE_CACHE_SECONDS * 1000 });
+  return { ok: true, credential };
+}
+
+/** Test seam: the agent cache, cleared between cases. */
+export function resetAgentCache(): void {
+  agentCache.clear();
 }

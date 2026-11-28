@@ -76,6 +76,8 @@ const EXCLUDED: Record<string, string> = {
   activity:
     "personal — one reader's inbox (it was `me/notifications` until openproduct-redesign OPR1 moved the address)",
   "me/settings": "personal — one reader's own settings, behind a session (openproduct-redesign OPR1)",
+  "me/settings/agents": "personal — one reader's connected agents and personal tokens, behind a session (openproduct-mcp MC1)",
+  "me/connect": "personal — the consent screen an MCP client sends one reader to, behind a session (openproduct-mcp MC1)",
   // OPR-3 — `/studio` itself is not a page any more: the list of your
   // listings is "Your products" on `/me`, and the address answers 308 from a
   // route handler (`studio/route.ts`). A listing's own settings are dynamic

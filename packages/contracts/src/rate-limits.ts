@@ -60,6 +60,12 @@ export const AUTH_RATE_LIMITS = {
   authVerify: { limit: 30, windowSec: 3600, keyedBy: "address", guards: "verification" },
   authSignIn: { limit: 20, windowSec: 3600, keyedBy: "address", guards: "sign-in" },
   authSignInSubject: { limit: 10, windowSec: 3600, keyedBy: "subject", guards: "sign-in to one account" },
+  // MC1 — the OAuth door. Registration is self-service and costs a row, so
+  // it is bounded like sign-up; the token endpoint is called once an hour per
+  // connected agent and on every refresh, so its ceiling only has to clear a
+  // household of clients behind one address.
+  oauthRegister: { limit: 20, windowSec: 3600, keyedBy: "address", guards: "registering an MCP client" },
+  oauthToken: { limit: 120, windowSec: 3600, keyedBy: "address", guards: "the OAuth token endpoint" },
 } as const satisfies Record<string, RateBucket>;
 
 /** "a minute", "an hour", or "every N seconds" — for the sentence. */

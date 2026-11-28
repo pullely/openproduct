@@ -32,6 +32,7 @@ import {
 import type { ProfileLink } from "./types.js";
 import type {
   ActivityEventRecord,
+  AgentCredentialRecord,
   AppendActivityInput,
   AppendAuditInput,
   DueSourceRecord,
@@ -460,6 +461,47 @@ function componentsOf(value: unknown): Array<{ name: string; kind: string | null
     out.push({ name: e.name, kind: typeof e.kind === "string" ? e.kind : null });
   }
   return out.length > 0 ? out : null;
+}
+
+/** MC1 — a nullable JSONB string array (a listing restriction), either encoding. */
+function nullableStringsOf(value: unknown): string[] | null {
+  if (value === null || value === undefined) return null;
+  return stackOf(value);
+}
+
+type AgentCredentialRow = {
+  id: string;
+  subject_id: string;
+  kind: "oauth" | "personal";
+  client_id: string | null;
+  client_name: string;
+  scopes: unknown;
+  listing_ids: unknown;
+  created_at: string | Date;
+  last_used_at: string | Date | null;
+  token_expires_at: string | Date | null;
+  expires_at: string | Date | null;
+  revoked_at: string | Date | null;
+};
+
+const AGENT_CREDENTIAL_COLUMNS = `id, subject_id, kind, client_id, client_name, scopes, listing_ids,
+       created_at, last_used_at, token_expires_at, expires_at, revoked_at`;
+
+function agentCredentialOf(row: AgentCredentialRow): AgentCredentialRecord {
+  return {
+    id: row.id,
+    subjectId: row.subject_id,
+    kind: row.kind,
+    clientId: row.client_id,
+    clientName: row.client_name,
+    scopes: stackOf(row.scopes),
+    listingIds: nullableStringsOf(row.listing_ids),
+    createdAt: iso(row.created_at)!,
+    lastUsedAt: iso(row.last_used_at),
+    tokenExpiresAt: iso(row.token_expires_at),
+    expiresAt: iso(row.expires_at),
+    revokedAt: iso(row.revoked_at),
+  };
 }
 
 function stackOf(value: unknown): string[] {
@@ -5765,6 +5807,198 @@ export function createOpenproductRepository(sql: SqlExecutor): OpenproductReposi
         [before],
       );
       return res.rows.length;
+    },
+
+    // ─── MC1 (openproduct-mcp) — agent credentials and the OAuth door ─────
+
+    async registerOAuthClient(input) {
+      // No conflict clause: the id is 32 random bytes this app just minted.
+      await sql.execute(
+        `INSERT INTO openproduct.oauth_clients (client_id, client_name, redirect_uris, registered_at)
+         VALUES ($1, $2, $3::text::jsonb, $4)`,
+        [input.clientId, input.clientName, JSON.stringify(input.redirectUris), input.registeredAt],
+      );
+    },
+
+    async getOAuthClient(clientId) {
+      const res = await sql.execute<{
+        client_id: string;
+        client_name: string;
+        redirect_uris: unknown;
+        registered_at: string | Date;
+      }>(
+        `SELECT client_id, client_name, redirect_uris, registered_at
+           FROM openproduct.oauth_clients WHERE client_id = $1`,
+        [clientId],
+      );
+      const row = res.rows[0];
+      if (!row) return null;
+      return {
+        clientId: row.client_id,
+        clientName: row.client_name,
+        redirectUris: stackOf(row.redirect_uris),
+        registeredAt: iso(row.registered_at)!,
+      };
+    },
+
+    async issueOAuthCode(input) {
+      await sql.execute(
+        `INSERT INTO openproduct.oauth_codes
+           (code_hash, client_id, subject_id, redirect_uri, code_challenge, scopes, listing_ids, created_at, expires_at)
+         VALUES ($1, $2, $3, $4, $5, $6::text::jsonb, $7::text::jsonb, $8, $9)`,
+        [
+          input.codeHash,
+          input.clientId,
+          input.subjectId,
+          input.redirectUri,
+          input.codeChallenge,
+          JSON.stringify(input.scopes),
+          input.listingIds === null ? null : JSON.stringify(input.listingIds),
+          input.at,
+          input.expiresAt,
+        ],
+      );
+    },
+
+    async consumeOAuthCode(codeHash, at) {
+      // ONE STATEMENT: the row is marked and returned together, so two
+      // redemptions of one code racing each other cannot both see it unused.
+      const res = await sql.execute<{
+        client_id: string;
+        subject_id: string;
+        redirect_uri: string;
+        code_challenge: string;
+        scopes: unknown;
+        listing_ids: unknown;
+        expires_at: string | Date;
+      }>(
+        `UPDATE openproduct.oauth_codes
+            SET consumed_at = $2
+          WHERE code_hash = $1 AND consumed_at IS NULL
+        RETURNING client_id, subject_id, redirect_uri, code_challenge, scopes, listing_ids, expires_at`,
+        [codeHash, at],
+      );
+      const row = res.rows[0];
+      if (!row) return null;
+      return {
+        clientId: row.client_id,
+        subjectId: row.subject_id,
+        redirectUri: row.redirect_uri,
+        codeChallenge: row.code_challenge,
+        scopes: stackOf(row.scopes),
+        listingIds: nullableStringsOf(row.listing_ids),
+        expiresAt: iso(row.expires_at)!,
+      };
+    },
+
+    async createAgentCredential(input) {
+      await sql.execute(
+        `INSERT INTO openproduct.agent_credentials
+           (id, subject_id, kind, client_id, client_name, token_hash, token_expires_at, refresh_hash,
+            scopes, listing_ids, created_at, expires_at)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9::text::jsonb, $10::text::jsonb, $11, $12)`,
+        [
+          input.id,
+          input.subjectId,
+          input.kind,
+          input.clientId,
+          input.clientName,
+          input.tokenHash,
+          input.tokenExpiresAt,
+          input.refreshHash,
+          JSON.stringify(input.scopes),
+          input.listingIds === null ? null : JSON.stringify(input.listingIds),
+          input.at,
+          input.expiresAt,
+        ],
+      );
+    },
+
+    async resolveAgentCredential(tokenHash) {
+      const res = await sql.execute<AgentCredentialRow>(
+        `SELECT ${AGENT_CREDENTIAL_COLUMNS} FROM openproduct.agent_credentials WHERE token_hash = $1`,
+        [tokenHash],
+      );
+      const row = res.rows[0];
+      return row ? agentCredentialOf(row) : null;
+    },
+
+    async rotateAgentCredential(input) {
+      // THE LIVE REFRESH TOKEN: rotate both hashes in one guarded statement.
+      // The guard is the hash itself, so two refreshes racing with one token
+      // rotate once; the loser finds the hash already moved and lands below.
+      const rotated = await sql.execute<AgentCredentialRow>(
+        `UPDATE openproduct.agent_credentials
+            SET previous_refresh_hash = refresh_hash,
+                refresh_hash = $3,
+                token_hash = $4,
+                token_expires_at = $5,
+                expires_at = $6,
+                last_used_at = $7
+          WHERE refresh_hash = $1 AND client_id = $2 AND kind = 'oauth'
+            AND revoked_at IS NULL AND expires_at > $7
+        RETURNING ${AGENT_CREDENTIAL_COLUMNS}`,
+        [
+          input.refreshHash,
+          input.clientId,
+          input.newRefreshHash,
+          input.newTokenHash,
+          input.tokenExpiresAt,
+          input.expiresAt,
+          input.at,
+        ],
+      );
+      if (rotated.rows[0]) return { kind: "rotated", credential: agentCredentialOf(rotated.rows[0]) };
+      // A TOKEN A ROTATION ALREADY REPLACED was copied: whoever holds the live
+      // one and whoever holds this one cannot both be the client. Revoke.
+      const reused = await sql.execute<{ id: string }>(
+        `UPDATE openproduct.agent_credentials
+            SET revoked_at = COALESCE(revoked_at, $2)
+          WHERE previous_refresh_hash = $1
+        RETURNING id`,
+        [input.refreshHash, input.at],
+      );
+      return reused.rows.length > 0 ? { kind: "reused" } : { kind: "unknown" };
+    },
+
+    async touchAgentCredential(id, at, granularitySeconds) {
+      await sql.execute(
+        `UPDATE openproduct.agent_credentials
+            SET last_used_at = $2
+          WHERE id = $1
+            AND (last_used_at IS NULL OR last_used_at <= $2::timestamptz - make_interval(secs => $3))`,
+        [id, at, granularitySeconds],
+      );
+    },
+
+    async listAgentCredentials(subjectId, now) {
+      const res = await sql.execute<AgentCredentialRow>(
+        `SELECT ${AGENT_CREDENTIAL_COLUMNS} FROM openproduct.agent_credentials
+          WHERE subject_id = $1 AND revoked_at IS NULL AND (expires_at IS NULL OR expires_at > $2)
+          ORDER BY created_at DESC, id`,
+        [subjectId, now],
+      );
+      return res.rows.map(agentCredentialOf);
+    },
+
+    async revokeAgentCredential(subjectId, id, at) {
+      const res = await sql.execute<{ id: string }>(
+        `UPDATE openproduct.agent_credentials
+            SET revoked_at = $3
+          WHERE id = $2 AND subject_id = $1 AND revoked_at IS NULL
+        RETURNING id`,
+        [subjectId, id, at],
+      );
+      return res.rows.length > 0;
+    },
+
+    async revokeAgentCredentialByTokenHash(tokenHash, at) {
+      await sql.execute(
+        `UPDATE openproduct.agent_credentials
+            SET revoked_at = COALESCE(revoked_at, $2)
+          WHERE token_hash = $1 OR refresh_hash = $1`,
+        [tokenHash, at],
+      );
     },
 
     async votePost(postId, subjectId, at) {
