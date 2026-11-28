@@ -8,8 +8,8 @@
 | MC3 — listings and their words | MC-4 | Done | #43 |
 | MC4 — images | MC-5 | Done | #44 |
 | MC5 — posts, milestones, launches | MC-6 | Done | #45 |
-| MC6 — seats, crew and the product's discussions | MC-7 | In review | this PR |
-| MC7 — the contributor's side | MC-8 | Not started | |
+| MC6 — seats, crew and the product's discussions | MC-7 | Done | #46 |
+| MC7 — the contributor's side | MC-8 | In review | this PR |
 | MC8 — documented and connectable | MC-9 | Not started | |
 
 The owner accepted the spec on 2026-11-28 and took the recommendation on
@@ -288,3 +288,37 @@ Departures from the design, said plainly:
 - **Thread tools are refused to a connection limited to named listings.** A
   thread is addressed by its id alone and does not say which listing it is
   on, so the restriction cannot be checked; it is not assumed.
+
+## From MC7
+
+What landed:
+
+- **Taking part**: `comment`, `create_thread` (question, issue or
+  suggestion; public or private to the crew), `reply`, `vote`, `react`,
+  `follow`, `save`, `endorse`, `report`, and collections
+  (`create_collection`, `edit_collection`, `set_collection_state`). Each
+  undoable act is one tool with `on: true | false`, mapping to the
+  website's PUT and DELETE.
+- **The person's own reads**: `list_saved`, `list_following`,
+  `list_my_collections`, `list_my_applications`, `list_notifications`
+  (wrapped as other people's words), `get_digest_subscription`,
+  `list_roster_invitations`, `list_my_appeals`; and
+  `mark_notifications_read`.
+- **Their profile**: `update_my_profile`, `claim_handle`,
+  `set_profile_visibility`, `set_digest_subscription`, `answer_roster`.
+- `list_open_roles`: a product's open seats and the door to apply at.
+  Applying happens at that door, in Orunbase, as the person.
+- **The "not yet" list is empty.** Every internal route core serves is a
+  tool or a stated exclusion; the parity test now holds it at zero, and a
+  test holds the registry and the handlers to the same names.
+- What an agent posts goes through the same routes, so the same defence,
+  velocity and moderation as the website's (TS2, TS4), with no public
+  "agent" label (owner decision Q2).
+
+Departures from the design, said plainly:
+
+- **`mark_notifications_read` needs `community`**, not `read`: it changes
+  state, and a read-only connection changes nothing.
+- **`ME_ENDORSEMENTS_PATH` is catalogued as an exclusion** (`no_verbs`): the
+  collection answers no method; each endorsement is its own route, which
+  `endorse` stands for.
