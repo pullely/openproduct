@@ -144,6 +144,7 @@ export async function GET(request: Request): Promise<Response> {
     { path: "docs/runbook", lastmod: null },
     // OPR-3 — how posting works: the templates, generated from the catalogue.
     { path: "docs/posting", lastmod: null },
+    { path: "docs/mcp", lastmod: null },
     { path: "collections", lastmod: null },
     { path: "digest", lastmod: null },
     { path: "people", lastmod: null },

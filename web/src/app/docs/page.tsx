@@ -191,6 +191,14 @@ export default function DocsPage() {
               untouched, provenance and all, so anything an agent reads it can also verify by hand.
             </p>
             {base ? <pre className={DOC_PRE}>{base}/mcp</pre> : null}
+            <p className={DOC_BODY}>
+              To let an agent act for you — edit your listings, add images, post — connect it to{" "}
+              <span className="font-mono text-[14px]">/mcp/me</span> instead.{" "}
+              <AppLink href="/docs/mcp" className="underline underline-offset-[3px]">
+                Connecting, the scopes and every tool
+              </AppLink>
+              .
+            </p>
             {/* RENDERED FROM THE TOOL SET THE SERVER REGISTERS, which is this
                 page's own rule applied to a second surface: a tool that exists and
                 a tool that is documented cannot be different sets. AG0's finding

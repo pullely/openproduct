@@ -9,8 +9,8 @@
 | MC4 — images | MC-5 | Done | #44 |
 | MC5 — posts, milestones, launches | MC-6 | Done | #45 |
 | MC6 — seats, crew and the product's discussions | MC-7 | Done | #46 |
-| MC7 — the contributor's side | MC-8 | In review | this PR |
-| MC8 — documented and connectable | MC-9 | Not started | |
+| MC7 — the contributor's side | MC-8 | Done | #47 |
+| MC8 — documented and connectable | MC-9 | In review | this PR |
 
 The owner accepted the spec on 2026-11-28 and took the recommendation on
 Q1 to Q3. The two screens in design §6 had no board when MC1 started; MC1
@@ -322,3 +322,32 @@ Departures from the design, said plainly:
 - **`ME_ENDORSEMENTS_PATH` is catalogued as an exclusion** (`no_verbs`): the
   collection answers no method; each endorsement is its own route, which
   `endorse` stands for.
+
+## From MC8
+
+What landed:
+
+- **`/docs/mcp`**: the two endpoints, connecting by OAuth or a personal
+  token, the scopes, every tool grouped by the scope it needs (destructive
+  ones marked), images, the limits, and every exclusion with its reason. It
+  is rendered from the registry, the scope words and the exclusions table,
+  so a tool that exists and a tool documented there cannot be different
+  sets. It is a tab under Docs, in the sitemap, and walked by the axe and
+  web-perf lanes. `/docs`'s own "For an agent" section points to it.
+- **The "not yet" kind is deleted.** The catalogue allows only a tool or an
+  exclusion, and the parity test says so.
+- **The MCP server reports version 2**, the first with signed-in tools.
+
+Departures from the design, said plainly:
+
+- **No API changelog entry.** `api-changelog.ts` records the catalogue API's
+  keys, which this epic did not change; the MCP server's version is reported
+  by the server itself and the tools are listed on `/docs/mcp`.
+- **The recorded connector run on stage is not in this PR.** This session
+  cannot reach the stage deployment, so connecting Claude to
+  `/mcp/me` on stage, creating a draft, describing it, uploading a logo by
+  ticket, posting an update and publishing is left as the owner's check
+  before the epic is marked complete in Orunbase.
+
+**The epic is complete when MC8 lands**, apart from that check and, in the
+console, creating EP-7 and its tasks in Orunbase.

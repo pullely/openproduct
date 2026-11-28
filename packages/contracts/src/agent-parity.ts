@@ -9,13 +9,12 @@
 //
 //   a tool       the MCP tool that stands for it
 //   excluded     a reason from `AGENT_EXCLUSIONS` (design §5)
-//   not yet      the milestone that brings its tool
 //
 // `tests/core/src/agent-parity.test.ts` reads the router's source and fails
 // when a constant is missing here, when an entry names a tool the registry
 // does not have, or when an entry names a constant that no longer exists.
-// When the epic ends (MC8) the "not yet" kind is deleted, and the test then
-// allows only tools and exclusions.
+// Until MC8 there was a third kind, "not yet", naming the milestone that
+// would bring a route's tool; MC7 emptied it and MC8 deleted it.
 
 export type RouteMethod = "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
 
@@ -34,12 +33,7 @@ export const AGENT_EXCLUSIONS = {
 } as const;
 export type AgentExclusion = keyof typeof AGENT_EXCLUSIONS;
 
-export type AgentMilestone = "MC3" | "MC4" | "MC5" | "MC6" | "MC7";
-
-export type RouteUse =
-  | { readonly tool: string }
-  | { readonly excluded: AgentExclusion }
-  | { readonly notYet: AgentMilestone };
+export type RouteUse = { readonly tool: string } | { readonly excluded: AgentExclusion };
 
 export type RouteEntry = Partial<Record<RouteMethod, RouteUse>>;
 

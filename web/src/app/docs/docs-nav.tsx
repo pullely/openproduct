@@ -20,6 +20,8 @@ export const DOCS_TABS = [
   { id: "runbook", label: "Runbook", href: "/docs/runbook" },
   // OPR-3 — how posting works: the templates, read from the block catalogue.
   { id: "posting", label: "Posting", href: "/docs/posting" },
+  // MC8 (openproduct-mcp) — connecting an agent, every tool, what is not one.
+  { id: "mcp", label: "MCP", href: "/docs/mcp" },
 ] as const;
 
 export type DocsTab = (typeof DOCS_TABS)[number]["id"];

@@ -1803,6 +1803,8 @@ export const ROUTES = [
   // OPR-3 — how posting works, generated from the block catalogue: the
   // attribute is on the grid of templates, which a failure page has none of.
   { path: "/docs/posting", name: "posting spec", expect: "data-posting-templates" },
+  // MC8 (openproduct-mcp) — connecting an agent, rendered from the registry.
+  { path: "/docs/mcp", name: "mcp docs", expect: "data-mcp-tool" },
   // SB0 — the design's address. The old one, `/create`, is in `MOVED` below:
   // it has no bytes to budget and no headings to check, so it is not walked
   // like a page — but its STATUS is checked, because the first attempt at this
