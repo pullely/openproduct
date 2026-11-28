@@ -43,6 +43,20 @@ const nextConfig = {
   //
   // A rewrite, not a redirect: the address bar keeps the link the person
   // handed out.
+  // MC1 (openproduct-mcp) — THE CONSENT SCREEN IS NEVER FRAMED. Allow is the
+  // one button on this site that hands somebody else authority, so another
+  // page must not be able to draw it under a decoy and catch the click.
+  async headers() {
+    return [
+      {
+        source: "/me/connect",
+        headers: [
+          { key: "X-Frame-Options", value: "DENY" },
+          { key: "Content-Security-Policy", value: "frame-ancestors 'none'" },
+        ],
+      },
+    ];
+  },
   async rewrites() {
     // CG0 — the handle namespace claims `/@:handle` AT THE ROUTER, before any
     // slug matching can see it. That is what lets `openproduct.live/@ada` and
