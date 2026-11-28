@@ -18,6 +18,6 @@ spec:
     - MC-5
   doneWhen:
     - The post, milestone and launch tools of design §4 are in the registry and off NOT_YET
-    - create_post makes a draft through the template-only post blocks and returns its preview address
+    - create_post makes a draft through the template-only post blocks; describe_post_kinds names each kind's blocks
     - Destructive tools carry destructiveHint
   gates: []
